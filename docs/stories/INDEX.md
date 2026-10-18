@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 115 historias.** done: 5, draft: 104, icebox: 5, ready: 1
+**Total: 115 historias.** done: 6, draft: 103, icebox: 5, ready: 1
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -29,7 +29,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E01-01](E01-acceso/E01-01-iniciar-sesion-con-correo-y-contrasena.md) | Iniciar sesión con correo y contraseña | Debe | S | done | admin, technician, owner | - | D-007 | E00-01 |
 | [E01-02](E01-acceso/E01-02-mantener-y-cerrar-la-sesion.md) | Mantener y cerrar la sesión | Debe | S | draft | admin, technician, owner | - | - | E01-01 |
 | [E01-03](E01-acceso/E01-03-gestionar-usuarios.md) | Gestionar usuarios | Debe | M | draft | admin, owner | - | - | E01-04 |
-| [E01-04](E01-acceso/E01-04-autorizacion-por-rol-en-la-api.md) | Autorización por rol en la API | Debe | M | draft | admin, technician, owner | - | - | E01-01, E00-04 |
+| [E01-04](E01-acceso/E01-04-autorizacion-por-rol-en-la-api.md) | Autorización por rol en la API | Debe | M | done | admin, technician, owner | - | - | E01-01, E00-04 |
 | [E01-05](E01-acceso/E01-05-restablecer-la-contrasena-de-un-usuario.md) | Restablecer la contraseña de un usuario | Debería | S | draft | admin | - | - | E01-03 |
 | [E01-06](E01-acceso/E01-06-bloqueo-temporal-por-intentos-fallidos.md) | Bloqueo temporal por intentos fallidos | Debería | S | draft | admin, technician, owner | - | - | E01-01 |
 
