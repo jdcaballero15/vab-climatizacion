@@ -40,3 +40,9 @@ def create_access_token(*, subject: str, role: str) -> str:
         "exp": int((now + timedelta(minutes=settings.access_token_expire_minutes)).timestamp()),
     }
     return jwt.encode(payload, settings.app_secret_key, algorithm=settings.jwt_algorithm)
+
+
+def decode_access_token(token: str) -> dict[str, Any]:
+    """Valida y decodifica el JWT. Lanza jwt.InvalidTokenError si no es válido."""
+    settings = get_settings()
+    return jwt.decode(token, settings.app_secret_key, algorithms=[settings.jwt_algorithm])
