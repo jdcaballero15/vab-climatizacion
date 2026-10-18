@@ -2,7 +2,21 @@
 
 App del técnico. PWA instalable en celulares Android de la empresa. Pensada para una mano, con sol y guantes finos.
 
-**Estado: sin crear.** El esqueleto lo crea la historia [E00-03](../docs/stories/E00-fundaciones/E00-03-base-de-la-app-del-tecnico-como-pwa-instalable.md). Hasta entonces el job de CI de esta carpeta se omite (no hay `package-lock.json`).
+**Estado: esqueleto creado** en la historia [E00-03](../docs/stories/E00-fundaciones/E00-03-base-de-la-app-del-tecnico-como-pwa-instalable.md).
+
+## Comandos
+
+```bash
+npm ci               # instala dependencias
+npm run dev          # servidor de desarrollo
+npm run build        # typecheck, build y service worker
+npm run lint         # ESLint
+npm run typecheck    # tsc -b
+npm test             # Vitest
+npm run generate:api # regenera src/api/schema.d.ts desde openapi.json
+```
+
+PWA con `vite-plugin-pwa`: el `build` genera el manifest y el service worker (carcasa offline y aviso de versión nueva). El cliente de API (`src/api/`) se genera desde el OpenAPI del backend; no se escriben tipos a mano.
 
 ## Stack previsto
 

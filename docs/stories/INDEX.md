@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 115 historias.** done: 3, draft: 105, icebox: 5, ready: 2
+**Total: 115 historias.** done: 4, draft: 105, icebox: 5, ready: 1
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -12,7 +12,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 |---|---|---|---|---|---|---|---|---|
 | [E00-01](E00-fundaciones/E00-01-base-del-backend-con-postgresql-y-migraciones.md) | Base del backend con PostgreSQL y migraciones | Debe | S | done | dev | - | - | - |
 | [E00-02](E00-fundaciones/E00-02-base-de-la-app-de-administracion.md) | Base de la app de administración | Debe | S | done | dev | - | - | - |
-| [E00-03](E00-fundaciones/E00-03-base-de-la-app-del-tecnico-como-pwa-instalable.md) | Base de la app del técnico como PWA instalable | Debe | M | ready | dev | - | - | - |
+| [E00-03](E00-fundaciones/E00-03-base-de-la-app-del-tecnico-como-pwa-instalable.md) | Base de la app del técnico como PWA instalable | Debe | M | done | dev | - | - | - |
 | [E00-04](E00-fundaciones/E00-04-test-de-contrato-el-tecnico-no-ve-precios.md) | Test de contrato: el técnico no ve precios | Debe | S | done | dev | - | - | E00-01 |
 | [E00-05](E00-fundaciones/E00-05-elegir-proveedor-de-hosting-y-desplegar-staging.md) | Elegir proveedor de hosting y desplegar staging | Debe | M | draft | dev | D-006 | - | E00-01 |
 | [E00-06](E00-fundaciones/E00-06-despliegue-a-produccion-por-tag-con-aprobacion.md) | Despliegue a producción por tag con aprobación | Debe | S | draft | dev | - | - | E00-05 |
