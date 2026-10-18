@@ -22,7 +22,7 @@ jobs:
       pwa-tecnico: ${{ steps.filter.outputs.pwa-tecnico }}
       stories: ${{ steps.filter.outputs.stories }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -68,7 +68,7 @@ jobs:
       APP_ENV: test
       DATABASE_URL: postgresql+asyncpg://ot:ot@localhost:5432/ot_test
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -89,7 +89,7 @@ jobs:
       run:
         working-directory: web-admin
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Detectar si la app ya fue creada
         id: scaffold
         run: |
@@ -120,7 +120,7 @@ jobs:
       run:
         working-directory: pwa-tecnico
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Detectar si la app ya fue creada
         id: scaffold
         run: |
@@ -148,7 +148,7 @@ jobs:
     if: needs.changes.outputs.stories == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -159,7 +159,7 @@ jobs:
     name: secrets
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       # CLI directo: la accion oficial pide licencia en repositorios de organizaciones.
@@ -194,7 +194,7 @@ jobs:
     name: guards
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: bash .claude/hooks/test_guards.sh
 
   # Unico check requerido en la proteccion de rama. Pasa si los jobs que corrieron pasaron
