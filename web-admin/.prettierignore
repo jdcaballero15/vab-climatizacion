@@ -1,0 +1,4 @@
+openapi.json
+dist
+src/api/schema.d.ts
+README.md
