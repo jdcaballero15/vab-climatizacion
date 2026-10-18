@@ -1,0 +1,93 @@
+:root {
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f4f5f7;
+  color: #1a1a1a;
+}
+
+.login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 24rem;
+  padding: 1.5rem;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+}
+
+.login__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+}
+
+.login__form label {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.login__form input {
+  padding: 0.75rem;
+  border: 1px solid #c4c4c4;
+  border-radius: 6px;
+  font-size: 1.125rem;
+  min-height: 48px;
+}
+
+/* Botones grandes para una mano, con sol y guantes finos (pwa-tecnico/README.md). */
+.login__form button {
+  margin-top: 1rem;
+  padding: 0.875rem;
+  border: none;
+  border-radius: 6px;
+  background: #1f6feb;
+  color: #ffffff;
+  font-size: 1.125rem;
+  min-height: 48px;
+  cursor: pointer;
+}
+
+.update-banner {
+  position: fixed;
+  inset: auto 0 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  background: #1a1a1a;
+  color: #ffffff;
+}
+
+.update-banner button {
+  padding: 0.625rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: #1f6feb;
+  color: #ffffff;
+  font-size: 1rem;
+  min-height: 48px;
+  cursor: pointer;
+}
