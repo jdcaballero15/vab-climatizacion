@@ -1,0 +1,42 @@
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+import jwt
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHashError, VerifyMismatchError
+
+from app.core.config import get_settings
+
+_hasher = PasswordHasher()
+
+# Hash de descarte con el mismo coste, para que verificar un usuario inexistente
+# tarde lo mismo que uno real y no se filtre por tiempo si el correo existe.
+_DUMMY_HASH = _hasher.hash("dummy-password-para-tiempo-constante")
+
+
+def hash_password(password: str) -> str:
+    return _hasher.hash(password)
+
+
+def verify_password(password: str, password_hash: str) -> bool:
+    try:
+        return _hasher.verify(password_hash, password)
+    except (VerifyMismatchError, InvalidHashError):
+        return False
+
+
+def waste_password_time() -> None:
+    """Verifica contra un hash de descarte para igualar el tiempo de respuesta."""
+    verify_password("", _DUMMY_HASH)
+
+
+def create_access_token(*, subject: str, role: str) -> str:
+    settings = get_settings()
+    now = datetime.now(UTC)
+    payload: dict[str, Any] = {
+        "sub": subject,
+        "role": role,
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(minutes=settings.access_token_expire_minutes)).timestamp()),
+    }
+    return jwt.encode(payload, settings.app_secret_key, algorithm=settings.jwt_algorithm)

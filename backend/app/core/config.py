@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://ot:ot@localhost:5433/ot"
     cors_origins: str = "http://localhost:5173,http://localhost:5174"
 
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

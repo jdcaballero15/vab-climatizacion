@@ -1,10 +1,10 @@
 import { createBrowserRouter } from "react-router-dom";
 
-import { LoginPage } from "../features/auth/LoginPage";
+import { AppRoot } from "./AppRoot";
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <LoginPage />,
+    element: <AppRoot />,
   },
 ]);
