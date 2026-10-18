@@ -70,3 +70,20 @@ body {
   font-size: 1rem;
   cursor: pointer;
 }
+
+.login__form button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.login__error {
+  margin: 0;
+  color: #b42318;
+  font-size: 0.875rem;
+}
+
+.home {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}

@@ -9,5 +9,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: "./src/test/setup.ts",
+    // openapi-fetch (undici) necesita URL absoluta para construir el Request.
+    env: { VITE_API_URL: "http://localhost/api" },
   },
 });
