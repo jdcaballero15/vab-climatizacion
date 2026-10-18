@@ -4,7 +4,7 @@ title: "Base del backend con PostgreSQL y migraciones"
 epic: E00
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [dev]
 size: S
 areas: [backend, infra]
@@ -30,3 +30,10 @@ assumes: []
 
 - Capas y convenciones en `backend/README.md`. El repositorio base es el único lugar que filtra `deleted_at`.
 - En CI las pruebas usan el servicio Postgres del workflow.
+
+## Notas de implementación
+
+- Capa de base de datos en `app/db/`: `base.py` (`Base` declarativa y `TimestampedBase` con `id` uuid, `created_at`, `updated_at`, `deleted_at`), `session.py` (engine async, `async_sessionmaker` y la dependencia `get_session`) y `repository.py` (`BaseRepository` genérico que filtra `deleted_at IS NULL` salvo `include_deleted=True`).
+- `GET /health/ready` hace `SELECT 1`: responde `{"status":"ready","database":"ok"}` con 200 si la base responde y 503 (`not_ready`) si no.
+- Alembic async configurado en `backend/alembic.ini` y `backend/migrations/`. La migración `0001_initial` es la línea base sin tablas de dominio (las agregan las historias siguientes); `upgrade head` y `downgrade base` verificados por CLI y por test.
+- Tests contra Postgres real (uno por criterio) en `backend/tests/`. `conftest.py` apunta a la base `ot_test` vía `DATABASE_URL` y dispone el engine por test.

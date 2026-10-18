@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 115 historias.** draft: 105, icebox: 5, ready: 5
+**Total: 115 historias.** done: 1, draft: 105, icebox: 5, ready: 4
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -10,7 +10,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
-| [E00-01](E00-fundaciones/E00-01-base-del-backend-con-postgresql-y-migraciones.md) | Base del backend con PostgreSQL y migraciones | Debe | S | ready | dev | - | - | - |
+| [E00-01](E00-fundaciones/E00-01-base-del-backend-con-postgresql-y-migraciones.md) | Base del backend con PostgreSQL y migraciones | Debe | S | done | dev | - | - | - |
 | [E00-02](E00-fundaciones/E00-02-base-de-la-app-de-administracion.md) | Base de la app de administración | Debe | S | ready | dev | - | - | - |
 | [E00-03](E00-fundaciones/E00-03-base-de-la-app-del-tecnico-como-pwa-instalable.md) | Base de la app del técnico como PWA instalable | Debe | M | ready | dev | - | - | - |
 | [E00-04](E00-fundaciones/E00-04-test-de-contrato-el-tecnico-no-ve-precios.md) | Test de contrato: el técnico no ve precios | Debe | S | ready | dev | - | - | E00-01 |
