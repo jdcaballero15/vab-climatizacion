@@ -2,7 +2,21 @@
 
 App de administración y tablero. Uso principal en PC o tablet, con el tablero también usable desde el celular (dirección).
 
-**Estado: sin crear.** El esqueleto lo crea la historia [E00-02](../docs/stories/E00-fundaciones/E00-02-base-de-la-app-de-administracion.md). Hasta entonces el job de CI de esta carpeta se omite (no hay `package-lock.json`).
+**Estado: esqueleto creado** en la historia [E00-02](../docs/stories/E00-fundaciones/E00-02-base-de-la-app-de-administracion.md).
+
+## Comandos
+
+```bash
+npm ci               # instala dependencias
+npm run dev          # servidor de desarrollo
+npm run build        # typecheck y build de produccion
+npm run lint         # ESLint
+npm run typecheck    # tsc -b
+npm test             # Vitest
+npm run generate:api # regenera src/api/schema.d.ts desde openapi.json
+```
+
+El cliente de API (`src/api/`) se genera desde el OpenAPI del backend: `openapi.json` es el snapshot del esquema y `generate:api` produce los tipos. No se escriben tipos a mano.
 
 ## Stack previsto
 

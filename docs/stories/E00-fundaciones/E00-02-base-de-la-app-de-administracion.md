@@ -4,7 +4,7 @@ title: "Base de la app de administración"
 epic: E00
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [dev]
 size: S
 areas: [web-admin, infra]
@@ -30,3 +30,11 @@ assumes: []
 
 - Incluir `package-lock.json` para que el job de CI deje de omitirse.
 - TanStack Query para datos del servidor. Estructura por funcionalidad, no por tipo de archivo.
+
+## Notas de implementación
+
+- Esqueleto Vite + React 18 + TypeScript estricto en `web-admin/`. Scripts: `lint` (ESLint 9 flat), `typecheck` (`tsc -b`), `test` (Vitest + Testing Library), `build` (`tsc -b && vite build`), más `format` (Prettier) y `generate:api`. Son los que corre el job `web-admin` del CI; se incluye `package-lock.json`.
+- Cliente de API tipado desde el OpenAPI del backend (criterio 3): `web-admin/openapi.json` es el snapshot del esquema (`app.openapi()`), `npm run generate:api` genera `src/api/schema.d.ts` con `openapi-typescript`, y `src/api/client.ts` usa esos tipos con `openapi-fetch`. No hay tipos escritos a mano; el `.d.ts` generado se excluye de lint y Prettier.
+- Estructura por funcionalidad: `src/features/auth/LoginPage.tsx` (login vacío en español en la ruta raíz, criterio 4), `src/app/` (router y QueryClient de TanStack Query).
+- Verificado: `npm ci && npm run build` compila; lint, typecheck y 2 tests en verde; captura del login confirmada.
+- El snapshot del OpenAPI hoy solo tiene `/health`; se regenera con `generate:api` a medida que crece la API.
