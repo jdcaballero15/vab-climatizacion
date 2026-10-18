@@ -1,5 +1,6 @@
 import createClient from "openapi-fetch";
 
+import { getAccessToken } from "../features/auth/token";
 import type { paths } from "./schema";
 
 const baseUrl = import.meta.env.VITE_API_URL ?? "/api";
@@ -10,4 +11,15 @@ const baseUrl = import.meta.env.VITE_API_URL ?? "/api";
 export const api = createClient<paths>({
   baseUrl,
   fetch: (request) => globalThis.fetch(request),
+});
+
+// Agrega el token de la sesión a cada request si hay uno.
+api.use({
+  onRequest({ request }) {
+    const token = getAccessToken();
+    if (token) {
+      request.headers.set("Authorization", `Bearer ${token}`);
+    }
+    return request;
+  },
 });
