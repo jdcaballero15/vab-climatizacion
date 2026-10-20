@@ -20,6 +20,9 @@ PUBLIC_PATHS = {
     "/health",
     "/health/ready",
     "/auth/login",
+    # El refresco y el cierre se autentican con el token de refresco en el cuerpo, no con rol.
+    "/auth/refresh",
+    "/auth/logout",
     "/openapi.json",
     "/docs",
     "/docs/oauth2-redirect",
