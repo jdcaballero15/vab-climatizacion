@@ -16,6 +16,11 @@ jobs:
       github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Si el repo todavia no tiene cargado el secret ANTHROPIC_API_KEY, el job corre pero
+    # saltea la revision (queda en verde) en vez de fallar. Al cargar el secret, vuelve a
+    # correr solo, sin cambiar este archivo.
+    env:
+      HAS_ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
     concurrency:
       group: claude-review-${{ github.event.pull_request.number }}
       cancel-in-progress: true
@@ -25,10 +30,12 @@ jobs:
       issues: read
       id-token: write
     steps:
-      - uses: actions/checkout@v7
+      - if: env.HAS_ANTHROPIC_KEY == 'true'
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
-      - uses: anthropics/claude-code-action@v1
+      - if: env.HAS_ANTHROPIC_KEY == 'true'
+        uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
