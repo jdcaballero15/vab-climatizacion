@@ -87,3 +87,52 @@ body {
   margin: 0 auto;
   padding: 2rem 1rem;
 }
+
+.home__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.users {
+  margin-top: 1.5rem;
+}
+
+.users__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 24rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.users__form input,
+.users__form select {
+  padding: 0.5rem;
+  border: 1px solid #c4c4c4;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.users__error {
+  margin: 0;
+  color: #b42318;
+  font-size: 0.875rem;
+}
+
+.users__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users__table th,
+.users__table td {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}

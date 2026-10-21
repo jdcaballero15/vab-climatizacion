@@ -15,14 +15,15 @@ describe("AppRoot", () => {
       token_type: "bearer",
       user: { id: "u1", email: "ana@ot-demo.com", full_name: "Ana Gómez", role: "admin" },
     };
+    const json = (body: unknown) =>
+      new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
     vi.stubGlobal(
       "fetch",
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify(session), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }),
+      vi.fn(async (request: Request) =>
+        request.url.includes("/admin/users") ? json([]) : json(session),
       ),
     );
 
