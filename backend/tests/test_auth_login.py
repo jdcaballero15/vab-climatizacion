@@ -14,11 +14,14 @@ from tests.factories import make_user
 
 @pytest.fixture
 async def schema() -> AsyncGenerator[None, None]:
+    from app.db.models.refresh_token import RefreshToken
+
+    tables = [User.__table__, RefreshToken.__table__]
     async with engine.begin() as conn:
-        await conn.run_sync(User.metadata.create_all, tables=[User.__table__])
+        await conn.run_sync(User.metadata.create_all, tables=tables)
     yield
     async with engine.begin() as conn:
-        await conn.run_sync(User.metadata.drop_all, tables=[User.__table__])
+        await conn.run_sync(User.metadata.drop_all, tables=list(reversed(tables)))
         await conn.execute(text("DROP TYPE IF EXISTS user_role"))
 
 
@@ -44,6 +47,7 @@ async def test_login_ok_devuelve_token_y_rol(schema: None) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["token_type"] == "bearer"
+    assert body["refresh_token"]
     assert body["user"]["email"] == "ana@ot-demo.com"
     assert body["user"]["role"] == "admin"
     assert "password_hash" not in body["user"]
