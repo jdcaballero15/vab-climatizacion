@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { EquipmentTypesPage } from "../equipment-types/EquipmentTypesPage";
 import type { EquipmentType } from "../equipment-types/types";
 import { FailuresPage } from "./FailuresPage";
 import type { Failure } from "./types";
@@ -222,5 +223,42 @@ describe("FailuresPage", () => {
         ),
       ).toBe(true),
     );
+  });
+
+  it("al desactivar un tipo de equipo deja de mostrar sus fallas propias", async () => {
+    // El backend real: con el tipo desactivado, solo devuelve las genéricas (criterio 5).
+    let splitActive = true;
+    stubApi((call) => {
+      if (call.method === "PATCH" && call.path === "/api/admin/equipment-types/et1") {
+        splitActive = false;
+        return json({ ...SPLIT, is_active: false });
+      }
+      if (call.path.endsWith("/equipment-types")) {
+        const split = { ...SPLIT, is_active: splitActive };
+        const includeInactive = call.params.get("include_inactive") === "true";
+        return json(includeInactive || splitActive ? [FREEZER, split] : []);
+      }
+      if (call.params.get("equipment_type_id") === "et1") {
+        return json(splitActive ? [NO_ENCIENDE, PIERDE_AGUA] : [NO_ENCIENDE]);
+      }
+      return undefined;
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <EquipmentTypesPage />
+        <FailuresPage />
+      </QueryClientProvider>,
+    );
+    await screen.findByText("No enciende");
+    await userEvent.selectOptions(screen.getByLabelText("Tipo de equipo"), "et1");
+    expect(await screen.findByText("Pierde agua")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Desactivar Split" }));
+
+    await waitFor(() => expect(screen.queryByText("Pierde agua")).not.toBeInTheDocument());
+    expect(failuresList().getByText("No enciende")).toBeInTheDocument();
   });
 });

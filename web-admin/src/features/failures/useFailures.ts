@@ -5,7 +5,7 @@ import { catalogSaveError } from "../catalogs/errors";
 import type { Failure, FailureUpdate } from "./types";
 
 // Prefijo común: cualquier cambio invalida todos los listados de fallas.
-const FAILURES_KEY = ["failures"] as const;
+export const FAILURES_KEY = ["failures"] as const;
 
 /**
  * Sin tipo de equipo, la API devuelve todas las fallas; con un tipo, las suyas más las
