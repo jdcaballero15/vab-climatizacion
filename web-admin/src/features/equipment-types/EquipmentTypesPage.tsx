@@ -41,7 +41,7 @@ export function EquipmentTypesPage() {
       {equipmentTypes.isLoading && <p>Cargando tipos de equipo…</p>}
       {equipmentTypes.isError && <p role="alert">No se pudieron cargar los tipos de equipo.</p>}
 
-      {/* El catálogo arranca vacío: la lista inicial la pasa el cliente. */}
+      {/* Puede quedar vacío si administración desactiva todos los tipos. */}
       {equipmentTypes.data && equipmentTypes.data.length === 0 && (
         <p>Todavía no hay tipos de equipo.</p>
       )}
