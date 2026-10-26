@@ -99,13 +99,20 @@ def test_migracion_carga_los_tipos_de_trabajo_iniciales() -> None:
         command.downgrade(cfg, "base")
 
 
-# E02-02, criterio 6: una base recién migrada trae el catálogo de tipos de equipo vacío.
-def test_migracion_deja_los_tipos_de_equipo_vacios() -> None:
+# E02-02, criterio 6: una base recién migrada trae los seis tipos de equipo iniciales.
+def test_migracion_carga_los_tipos_de_equipo_iniciales() -> None:
     cfg = _alembic_config()
     _reset_database()
 
     command.upgrade(cfg, "head")
     try:
-        assert _names("SELECT name FROM equipment_type") == []
+        assert _names("SELECT name FROM equipment_type WHERE is_active") == [
+            "Aire acondicionado",
+            "Cámara de frío",
+            "Freezer",
+            "Heladera comercial",
+            "Heladera familiar",
+            "Otros",
+        ]
     finally:
         command.downgrade(cfg, "base")
