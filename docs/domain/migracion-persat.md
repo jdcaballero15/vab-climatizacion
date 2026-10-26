@@ -32,9 +32,10 @@ Generales: se recortan los espacios de más en todos los textos.
 - **No se migran** los registros internos (tipo operario, depósito o administración) ni los registros de prueba de Persat.
 - **Número de cliente**: es texto (ver `D-002`). Se corrigen los espacios alrededor del guion (`CLI -123` pasa a `CLI-123`). Un cliente sin número recibe uno nuevo y queda para revisar.
 - **Segmento**: sale de la columna Tipo (particular, comercio, estado, sanatorio o clínica, hotel; el resto, sin clasificar).
-- **Descripción** viene mezclada y se reparte: si son 11 dígitos, es el CUIT; si dice consumidor final, RI o monotributo, es la condición fiscal; el resto (piso, departamento, referencias de ubicación, rubro) va a Referencia.
+- **Un domicilio por cliente**: cada registro de Persat es un cliente con un domicilio, tal cual viene. **No se unifican automáticamente** las sedes que Persat tiene cargadas como clientes distintos (cadenas, organismos con varias sedes, particulares repetidos), porque no se sabe si se facturan por separado. Se unifican después a mano (E03-08).
+- **Descripción** viene mezclada y se reparte: si son 11 dígitos, es el CUIT del cliente; si dice consumidor final, RI o monotributo, es la condición fiscal del cliente; el resto (piso, departamento, referencias de ubicación, rubro) va a la referencia del domicilio.
 - **Contacto**: Nombre, Telefono y Email forman un contacto del cliente, si alguno está cargado. Email en minúsculas, teléfono como texto sin decimales.
-- **Dirección**: se migra como texto (incluye la localidad) y se usa para ubicar al cliente. Sin dirección: queda para revisar.
+- **Dirección**: va al domicilio como texto (incluye la localidad). Sin dirección: queda para revisar.
 - **No se migran**: coordenadas (muchas son inválidas, como una longitud de nueve dígitos), inicio y fin de jornada, tiempo de servicio, grupo, altura, localidad y provincia. Ver E03-01.
 
 ### Equipos

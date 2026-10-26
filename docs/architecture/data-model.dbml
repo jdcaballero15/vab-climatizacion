@@ -170,7 +170,6 @@ Table client {
   segment client_segment [not null, default: 'unclassified']
   tax_id varchar [note: 'CUIT o DNI. Dato personal, ver SECURITY.md']
   tax_condition tax_condition [note: 'Opcional']
-  reference varchar [note: 'Piso, departamento, referencia de ubicación o rubro']
   notes text
 }
 

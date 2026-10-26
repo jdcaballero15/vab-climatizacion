@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 116 historias.** done: 13, draft: 94, icebox: 8, ready: 1
+**Total: 117 historias.** done: 13, draft: 95, icebox: 8, ready: 1
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -57,6 +57,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E03-05](E03-clientes-equipos/E03-05-ficha-de-equipo-con-historial-y-mediciones.md) | Ficha de equipo con historial y mediciones | Debe | M | draft | admin, owner | - | D-002 | E03-03, E04-06 |
 | [E03-06](E03-clientes-equipos/E03-06-buscar-clientes-y-equipos.md) | Buscar clientes y equipos | Debe | S | draft | admin, owner | - | - | E03-01 |
 | [E03-07](E03-clientes-equipos/E03-07-baja-logica-y-restauracion-de-clientes-y-equipos.md) | Baja lógica y restauración de clientes y equipos | Debería | S | draft | admin | - | - | E03-01, E03-03 |
+| [E03-08](E03-clientes-equipos/E03-08-unificar-dos-clientes.md) | Unificar dos clientes | Debería | M | draft | admin | - | D-002 | E03-02, E03-03, E03-07 |
 
 ## E04 Órdenes de trabajo (administración)
 
