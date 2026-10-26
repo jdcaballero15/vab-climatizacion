@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 115 historias.** done: 10, draft: 100, icebox: 5
+**Total: 115 historias.** done: 11, draft: 99, icebox: 5
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -38,7 +38,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
 | [E02-01](E02-catalogos/E02-01-gestionar-tipos-de-trabajo-y-tareas.md) | Gestionar tipos de trabajo y tareas | Debe | M | done | admin | - | D-003 | E01-04 |
-| [E02-02](E02-catalogos/E02-02-gestionar-tipos-de-equipo.md) | Gestionar tipos de equipo | Debe | S | draft | admin | - | D-003 | E01-04 |
+| [E02-02](E02-catalogos/E02-02-gestionar-tipos-de-equipo.md) | Gestionar tipos de equipo | Debe | S | done | admin | - | D-003 | E01-04 |
 | [E02-03](E02-catalogos/E02-03-gestionar-fallas-por-tipo-de-equipo.md) | Gestionar fallas por tipo de equipo | Debe | M | draft | admin | - | D-003 | E02-02 |
 | [E02-04](E02-catalogos/E02-04-gestionar-reparaciones.md) | Gestionar reparaciones | Debe | S | draft | admin | - | D-003 | E02-02 |
 | [E02-05](E02-catalogos/E02-05-gestionar-el-catalogo-de-repuestos.md) | Gestionar el catálogo de repuestos | Debe | M | draft | admin | - | D-003 | E01-04, E00-04 |

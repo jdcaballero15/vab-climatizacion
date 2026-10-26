@@ -1,4 +1,5 @@
 import type { Session } from "../auth/types";
+import { EquipmentTypesPage } from "../equipment-types/EquipmentTypesPage";
 import { UsersPage } from "../users/UsersPage";
 import { WorkTypesPage } from "../work-types/WorkTypesPage";
 
@@ -32,6 +33,7 @@ export function HomePage({ session, onLogout }: HomePageProps) {
 
       {canManageUsers && <UsersPage />}
       {canEditCatalogs && <WorkTypesPage />}
+      {canEditCatalogs && <EquipmentTypesPage />}
     </main>
   );
 }
