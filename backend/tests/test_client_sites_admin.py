@@ -7,14 +7,23 @@ from sqlalchemy import text
 
 from app.api.schemas.client import ClientSiteTechnicianOut
 from app.core.security import create_access_token
+from app.db.models.catalog import EquipmentType
 from app.db.models.client import Client, ClientContact, ClientSite
+from app.db.models.equipment import Equipment
 from app.db.models.user import User, UserRole
 from app.db.session import SessionLocal, engine
 from app.main import app
 from app.services import clients as clients_service
 from tests.factories import make_user
 
-TABLES = [User.__table__, Client.__table__, ClientSite.__table__, ClientContact.__table__]
+TABLES = [
+    User.__table__,
+    Client.__table__,
+    ClientSite.__table__,
+    ClientContact.__table__,
+    EquipmentType.__table__,
+    Equipment.__table__,
+]
 CLIENTS_URL = "/admin/clients"
 SITES_URL = "/admin/sites"
 MAPS_PREFIX = "https://www.google.com/maps/search/?api=1&query="

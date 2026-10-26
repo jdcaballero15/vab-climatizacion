@@ -18,7 +18,7 @@ from app.api.schemas.client import (
     SiteCreate,
     SiteUpdate,
 )
-from app.db.models.client import Client, ClientContact, ClientSegment, ClientSite
+from app.db.models.client import Client, ClientContact, ClientSegment
 from app.db.models.user import User, UserRole
 from app.services import clients as clients_service
 
@@ -137,9 +137,7 @@ async def update_contact(
 
 
 @router.get("/{client_id}/sites", response_model=list[SiteAdminOut])
-async def list_sites(
-    client_id: uuid.UUID, session: SessionDep, _: AdminOnly
-) -> Sequence[ClientSite]:
+async def list_sites(client_id: uuid.UUID, session: SessionDep, _: AdminOnly) -> list[SiteAdminOut]:
     try:
         return await clients_service.list_sites(session, client_id)
     except clients_service.ClientNotFoundError:
@@ -149,29 +147,32 @@ async def list_sites(
 @router.post("/{client_id}/sites", response_model=SiteAdminOut, status_code=status.HTTP_201_CREATED)
 async def create_site(
     client_id: uuid.UUID, payload: SiteCreate, session: SessionDep, _: AdminOnly
-) -> ClientSite:
+) -> SiteAdminOut:
     try:
-        return await clients_service.create_site(session, client_id, payload)
+        site = await clients_service.create_site(session, client_id, payload)
     except clients_service.ClientNotFoundError:
         raise _client_not_found() from None
+    return await clients_service.site_admin_out(session, site)
 
 
 @sites_router.get("/{site_id}", response_model=SiteAdminOut)
-async def get_site(site_id: uuid.UUID, session: SessionDep, _: AdminOnly) -> ClientSite:
+async def get_site(site_id: uuid.UUID, session: SessionDep, _: AdminOnly) -> SiteAdminOut:
     try:
-        return await clients_service.get_site(session, site_id)
+        site = await clients_service.get_site(session, site_id)
     except clients_service.SiteNotFoundError:
         raise _site_not_found() from None
+    return await clients_service.site_admin_out(session, site)
 
 
 @sites_router.patch("/{site_id}", response_model=SiteAdminOut)
 async def update_site(
     site_id: uuid.UUID, payload: SiteUpdate, session: SessionDep, _: AdminOnly
-) -> ClientSite:
+) -> SiteAdminOut:
     try:
-        return await clients_service.update_site(session, site_id, payload)
+        site = await clients_service.update_site(session, site_id, payload)
     except clients_service.SiteNotFoundError:
         raise _site_not_found() from None
+    return await clients_service.site_admin_out(session, site)
 
 
 def _client_not_found() -> HTTPException:
