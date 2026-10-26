@@ -43,6 +43,21 @@ class Client(TimestampedBase):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
+class ClientSite(TimestampedBase):
+    """Domicilio o sede de un cliente: a dónde va el técnico y dónde están los equipos."""
+
+    __tablename__ = "client_site"
+
+    client_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("client.id"), nullable=False, index=True
+    )
+    label: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Incluye la localidad; el enlace al mapa suma la provincia.
+    address: Mapped[str] = mapped_column(String(255), nullable=False)
+    reference: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
 class ClientContact(TimestampedBase):
     """Persona de contacto de un cliente. Teléfono y email son datos personales."""
 
@@ -50,6 +65,10 @@ class ClientContact(TimestampedBase):
 
     client_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("client.id"), nullable=False, index=True
+    )
+    # Sin domicilio, el contacto es del cliente en general.
+    client_site_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("client_site.id"), nullable=True, index=True
     )
     name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)

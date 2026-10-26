@@ -59,3 +59,14 @@ Validadas con negocio el 2026-10-26:
 ## Preguntas abiertas
 
 - Para el cliente: ¿el técnico tiene que ver el teléfono del contacto del lugar? Por defecto, no.
+
+## Notas de implementación
+
+Se entrega en dos PR: backend primero, web-admin después.
+
+- Backend (PR 1): `/admin/clients/{id}/sites` (listar, crear) y `/admin/sites/{id}` (consultar, editar), todos con `require_role(admin)`. No hay ruta de borrado: se desactiva con `is_active`. El listado trae activos e inactivos en orden de alta. Migración `fab1063f3189` crea `client_site` y agrega `client_contact.client_site_id` (opcional, con índice).
+- `map_url` se calcula en la respuesta con la dirección más ", Santiago del Estero", codificada. La misma función arma el enlace del técnico.
+- Contactos: `client_site_id` opcional al crear y editar; en null queda como contacto general. Un domicilio de otro cliente o inexistente da 404 `site_not_found`.
+- Criterio 7: `ClientSiteTechnicianOut` (dirección, referencia, `map_url`, nombres de los contactos de ese domicilio) y el servicio `get_site_for_technician`, que va a usar E05-02 al mostrar la orden. `phone` y `email` se sumaron a los campos prohibidos para el técnico en todo el sistema (`app/core/sensitive_fields.py`), así el test de contrato los frena en cualquier esquema.
+- Criterios 1 y 2, la parte de órdenes, llegan con E04-02, que elige el domicilio activo.
+- Criterio 3, la cantidad de equipos de cada domicilio, se suma con E03-03, cuando exista la tabla `equipment`. Decidido el 2026-10-26.
