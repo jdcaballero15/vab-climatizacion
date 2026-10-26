@@ -23,7 +23,7 @@ assumes: []
 
 1. **Dado:** una orden asignada a mí. **Cuando:** la abro. **Entonces:** veo cliente, dirección, equipo, tarea e instrucciones de la oficina.
 2. **Dado:** el detalle. **Cuando:** lo consulto. **Entonces:** no incluye historial del cliente ni del equipo, ni precios, ni mano de obra.
-3. **Dado:** una orden que no es mía. **Cuando:** intento abrirla por su ID. **Entonces:** recibe 404.
+3. **Dado:** una orden que no está asignada a mi escuadrilla. **Cuando:** intento abrirla por su ID. **Entonces:** recibe 404.
 4. **Dado:** una dirección. **Cuando:** la toco. **Entonces:** se abre en la app de mapas del celular.
 
 ## Preguntas abiertas

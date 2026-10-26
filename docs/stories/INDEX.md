@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 117 historias.** done: 19, draft: 90, icebox: 8
+**Total: 118 historias.** done: 18, draft: 90, icebox: 8, ready: 2
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -45,6 +45,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E02-06](E02-catalogos/E02-06-gestionar-la-lista-de-precios-de-repuestos.md) | Gestionar la lista de precios de repuestos | Debe | M | draft | admin | - | - | E02-05 |
 | [E02-07](E02-catalogos/E02-07-promover-un-texto-de-otro-a-la-lista.md) | Promover un texto de "Otro" a la lista | Debería | M | draft | admin | - | - | E02-03, E02-04, E05-04 |
 | [E02-08](E02-catalogos/E02-08-importar-y-exportar-catalogos-por-csv.md) | Importar y exportar catálogos por CSV | Podría | M | draft | admin | - | D-003 | E02-01, E02-05 |
+| [E02-09](E02-catalogos/E02-09-gestionar-escuadrillas-y-tecnicos.md) | Gestionar escuadrillas y técnicos | Debe | M | ready | admin | - | - | E01-03, E01-04 |
 
 ## E03 Clientes y equipos
 
@@ -65,7 +66,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 |---|---|---|---|---|---|---|---|---|
 | [E04-01](E04-ordenes/E04-01-maquina-de-estados-y-linea-de-tiempo-de-la-orden.md) | Máquina de estados y línea de tiempo de la orden | Debe | M | done | admin | - | - | E00-01, E03-02, E02-01 |
 | [E04-02](E04-ordenes/E04-02-crear-una-orden-de-trabajo.md) | Crear una orden de trabajo | Debe | M | done | admin | - | - | E04-01, E03-02, E02-01 |
-| [E04-03](E04-ordenes/E04-03-asignar-una-orden-a-un-tecnico.md) | Asignar una orden a un técnico | Debe | S | done | admin | - | - | E04-02, E01-03 |
+| [E04-03](E04-ordenes/E04-03-asignar-una-orden-a-un-tecnico.md) | Asignar una orden a una escuadrilla | Debe | S | ready | admin | - | - | E04-02, E02-09 |
 | [E04-04](E04-ordenes/E04-04-reasignar-o-desasignar-una-orden.md) | Reasignar o desasignar una orden | Debe | S | draft | admin | - | - | E04-03 |
 | [E04-05](E04-ordenes/E04-05-panel-de-ordenes-por-estado.md) | Panel de órdenes por estado | Debe | M | draft | admin, owner | - | - | E04-01 |
 | [E04-06](E04-ordenes/E04-06-detalle-de-la-orden-con-linea-de-tiempo.md) | Detalle de la orden con línea de tiempo | Debe | M | draft | admin, owner | - | - | E04-01, E00-09 |
@@ -97,7 +98,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 |---|---|---|---|---|---|---|---|---|
 | [E06-01](E06-taller/E06-01-crear-una-orden-de-taller-desde-la-oficina.md) | Crear una orden de taller desde la oficina | Debe | M | draft | admin | - | - | E04-02 |
 | [E06-02](E06-taller/E06-02-convertir-una-orden-en-el-lugar-en-orden-de-taller.md) | Convertir una orden en el lugar en orden de taller | Debe | M | draft | technician, admin | - | - | E05-08, E06-01 |
-| [E06-03](E06-taller/E06-03-asignar-cada-etapa-a-un-tecnico.md) | Asignar cada etapa a un técnico | Debe | S | draft | admin | - | - | E06-01, E04-03 |
+| [E06-03](E06-taller/E06-03-asignar-cada-etapa-a-un-tecnico.md) | Asignar cada etapa a una escuadrilla | Debe | S | draft | admin | - | - | E06-01, E04-03 |
 | [E06-04](E06-taller/E06-04-registrar-el-retiro-del-equipo-con-firma-del-cliente.md) | Registrar el retiro del equipo con firma del cliente | Debe | M | draft | technician | - | - | E06-03, E05-07 |
 | [E06-05](E06-taller/E06-05-registrar-el-trabajo-en-taller.md) | Registrar el trabajo en taller | Debe | M | draft | technician | - | - | E06-04, E05-05 |
 | [E06-06](E06-taller/E06-06-registrar-la-devolucion-del-equipo-con-firma-del-client.md) | Registrar la devolución del equipo con firma del cliente | Debe | M | draft | technician | - | - | E06-05, E05-07 |
@@ -147,7 +148,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
 | [E10-01](E10-tablero/E10-01-tablero-ordenes-por-estado.md) | Tablero: órdenes por estado | Debe | M | draft | owner, admin | - | - | E04-05 |
-| [E10-02](E10-tablero/E10-02-tablero-trabajos-por-tecnico.md) | Tablero: trabajos por técnico | Debe | S | draft | owner, admin | - | - | E10-01 |
+| [E10-02](E10-tablero/E10-02-tablero-trabajos-por-tecnico.md) | Tablero: trabajos por técnico | Debe | S | draft | owner, admin | - | - | E10-01, E05-04 |
 | [E10-03](E10-tablero/E10-03-tablero-tipos-de-reparacion-mas-comunes.md) | Tablero: tipos de reparación más comunes | Debe | S | draft | owner, admin | - | - | E10-01, E05-04 |
 | [E10-04](E10-tablero/E10-04-tablero-avance-del-mantenimiento-preventivo.md) | Tablero: avance del mantenimiento preventivo | Debe | S | draft | owner, admin | - | - | E10-01, E07-04 |
 | [E10-05](E10-tablero/E10-05-tablero-ordenes-terminadas-sin-facturar.md) | Tablero: órdenes terminadas sin facturar | Debe | S | draft | owner, admin | - | - | E10-01, E04-09 |

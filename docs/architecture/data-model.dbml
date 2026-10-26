@@ -111,6 +111,21 @@ Table app_user {
   is_active boolean [not null, default: true]
 }
 
+// ---------- Escuadrillas (D-013) ----------
+
+Table crew {
+  id uuid [pk]
+  name varchar [not null, note: 'Escuadrilla 1, Escuadrilla 2… Única sin distinguir mayúsculas']
+  app_user_id uuid [ref: - app_user.id, unique, note: 'Usuario del celular de la escuadrilla (rol technician)']
+  is_active boolean [not null, default: true]
+}
+
+Table field_technician {
+  id uuid [pk]
+  full_name varchar [not null, note: 'Persona de campo. No tiene usuario']
+  is_active boolean [not null, default: true]
+}
+
 // ---------- Catálogos ----------
 
 Table work_type {
@@ -255,7 +270,7 @@ Table work_order_assignment {
   id uuid [pk]
   work_order_id uuid [ref: > work_order.id, not null]
   stage_id uuid [ref: > work_order_stage.id, note: 'Se agrega con taller (E06)']
-  technician_id uuid [ref: > app_user.id, not null]
+  crew_id uuid [ref: > crew.id, not null, note: 'Escuadrilla responsable (D-013). Reemplaza a technician_id de E04-03']
   scheduled_for date [not null, note: 'Solo el día, sin hora (E04-03)']
   assigned_at timestamptz [not null]
   unassigned_at timestamptz [note: 'La vigente es la que no lo tiene: índice único parcial, una por orden']
@@ -265,7 +280,7 @@ Table work_order_closure {
   id uuid [pk]
   work_order_id uuid [ref: > work_order.id, not null]
   stage_id uuid [ref: > work_order_stage.id]
-  closed_by uuid [ref: > app_user.id, not null]
+  closed_by uuid [ref: > app_user.id, not null, note: 'Usuario de la escuadrilla que cerró']
   closed_at timestamptz [not null]
   outcome closure_outcome [not null]
   failure_id uuid [ref: > failure.id]
@@ -275,6 +290,17 @@ Table work_order_closure {
   equipment_working boolean
   observation text
   idempotency_key uuid [unique, not null, note: 'Generada en el celular. Evita duplicados al sincronizar']
+}
+
+Table work_order_closure_technician {
+  closure_id uuid [ref: > work_order_closure.id, not null]
+  field_technician_id uuid [ref: > field_technician.id, not null]
+
+  indexes {
+    (closure_id, field_technician_id) [pk]
+  }
+
+  Note: 'Quiénes fueron (D-013). Base de los trabajos por técnico (E10-02)'
 }
 
 Table signature {

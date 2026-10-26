@@ -21,6 +21,7 @@ El índice [docs/stories/INDEX.md](../stories/INDEX.md) lista las historias bloq
 | D-010 | Formato y calidad de la exportación de Persat | Cliente y desarrollo | Resuelta | E11-01 a E11-04 |
 | D-011 | ¿La firma del cliente es obligatoria en todo cierre? | Negocio | **Propuesta** | E05-07, E06-04, E06-06 |
 | D-012 | Cierre de los issues de historias terminadas | Desarrollo | **Propuesta** | `scripts/sync_stories.py`, plantilla de PR |
+| D-013 | Trabajo por escuadrillas en vez de técnico individual | Cliente | Resuelta | E02-09, E04-03, E04-04, E04-05, E04-08, E05-01, E05-02, E06-03, E08-01, E10-02 |
 
 ## Detalle
 
@@ -132,3 +133,16 @@ Opciones:
 2. **Que `sync_stories.py` cierre el issue cuando la historia pasa a `done`** (y lo reabra si vuelve a otro estado): el cierre queda atado al archivo de la historia, que ya es la fuente de verdad, y funciona igual con una o varias PR. Al correr por primera vez cerraría los issues de las historias ya terminadas.
 
 *Propuesta*: opción 2. En la plantilla, cambiar `Cierra #` por `Relacionado #` para que no parezca que cierra algo. Si se aprueba, se implementa en una PR aparte que actualice el script, su docstring y la plantilla.
+
+### D-013 Trabajo por escuadrillas
+
+El prototipo que armó el cliente (2026-10-26) asigna las órdenes a **escuadrillas**, no a técnicos. Contradice lo decidido en E04-01 y E04-03 ("un solo técnico responsable por orden").
+
+*Resuelta con negocio el 2026-10-26*:
+
+- Las escuadrillas son una **lista fija con nombre** que carga administración ("Escuadrilla 1", "Escuadrilla 2"…). Van de a 2 personas, pero **las personas cambian**: lo fijo es la escuadrilla, no quiénes la forman.
+- **Un usuario por celular**: cada escuadrilla tiene su usuario de la app (rol `technician`). Quienes salen ese día usan ese celular.
+- Los **técnicos** son una lista de personas de campo, sin usuario. **Al cerrar una orden se tilda quiénes fueron**; de ahí salen los trabajos por técnico (E10-02).
+- Una orden (o una etapa, en taller) tiene **una sola escuadrilla responsable** (R7).
+- Las demás diferencias con el prototipo se revisan una por una, en otras decisiones.
+

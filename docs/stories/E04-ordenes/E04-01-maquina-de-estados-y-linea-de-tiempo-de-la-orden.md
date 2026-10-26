@@ -43,7 +43,7 @@ Validadas con negocio el 2026-10-26. Se confirma la tabla de transiciones de `or
 - **Cancelar**, siempre con motivo, solo antes de `Terminada` (desde `Pendiente`, `Asignada` o `En curso`).
 - **Devolver al técnico** una orden `Terminada`: vuelve a `Asignada` con el mismo técnico y un motivo.
 - **"Requiere otra visita"** vuelve a `Pendiente`, sin técnico ni fecha: administración la reprograma y la puede asignar a otro.
-- **Un solo técnico responsable por orden** (o por etapa, en taller). Si van dos, uno figura como responsable.
+- **Un solo técnico responsable por orden** (o por etapa, en taller). Si van dos, uno figura como responsable. *Reemplazada por D-013: la responsable es una escuadrilla.*
 
 ## Notas técnicas
 

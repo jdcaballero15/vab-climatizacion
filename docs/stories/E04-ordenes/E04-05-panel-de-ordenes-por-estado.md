@@ -22,7 +22,7 @@ assumes: []
 ## Criterios de aceptación
 
 1. **Dado:** órdenes en varios estados. **Cuando:** abro el panel. **Entonces:** veo columnas o pestañas por estado con la cantidad de cada una.
-2. **Dado:** el panel. **Cuando:** filtro por técnico, cliente, tipo de trabajo o período. **Entonces:** la lista y los totales se actualizan.
+2. **Dado:** el panel. **Cuando:** filtro por escuadrilla, cliente, tipo de trabajo o período. **Entonces:** la lista y los totales se actualizan.
 3. **Dado:** miles de órdenes. **Cuando:** navego. **Entonces:** la lista está paginada y responde en menos de un segundo.
 4. **Dado:** una orden terminada hace más de un día sin facturar. **Cuando:** abro el panel. **Entonces:** se destaca como "terminada sin facturar".
 5. **Dado:** dirección. **Cuando:** abre el panel. **Entonces:** ve lo mismo en modo lectura.

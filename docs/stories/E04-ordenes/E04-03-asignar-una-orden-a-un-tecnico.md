@@ -1,40 +1,42 @@
 ---
 id: E04-03
-title: "Asignar una orden a un técnico"
+title: "Asignar una orden a una escuadrilla"
 epic: E04
 phase: 1
 priority: must
-status: done
+status: ready
 roles: [admin]
 size: S
 areas: [backend, web-admin]
-depends_on: [E04-02, E01-03]
+depends_on: [E04-02, E02-09]
 blocked_by: []
 assumes: []
 ---
 
-# E04-03 Asignar una orden a un técnico
+# E04-03 Asignar una orden a una escuadrilla
 
 ## Historia
 
-**Como** administración, **quiero** asignar una orden pendiente a un técnico con una fecha prevista, **para** que el técnico la vea en su celular y sepa cuándo ir.
+**Como** administración, **quiero** asignar una orden pendiente a una escuadrilla con una fecha prevista, **para** que la escuadrilla la vea en su celular y sepa cuándo ir.
 
 ## Criterios de aceptación
 
-1. **Dado:** una orden `Pendiente`. **Cuando:** administración la asigna a un técnico activo con una fecha prevista. **Entonces:** pasa a `Asignada` con ese técnico como responsable.
-2. **Dado:** una asignación. **Cuando:** se realiza. **Entonces:** queda un evento con quién asignó, a quién y para qué fecha.
-3. **Dado:** el formulario de asignación. **Cuando:** se elige el técnico. **Entonces:** solo se ofrecen usuarios activos con rol técnico. Un usuario inactivo o que no es técnico se rechaza con 422.
+1. **Dado:** una orden `Pendiente`. **Cuando:** administración la asigna a una escuadrilla activa con una fecha prevista. **Entonces:** pasa a `Asignada` con esa escuadrilla como responsable.
+2. **Dado:** una asignación. **Cuando:** se realiza. **Entonces:** queda un evento con quién asignó, a qué escuadrilla y para qué fecha.
+3. **Dado:** el formulario de asignación. **Cuando:** se elige la escuadrilla. **Entonces:** solo se ofrecen escuadrillas activas. Una inactiva o inexistente se rechaza con 422.
 4. **Dado:** una fecha prevista anterior a hoy o sin fecha. **Cuando:** se intenta asignar. **Entonces:** se rechaza con 422.
 5. **Dado:** una orden con aprobación pendiente (`requires_approval`). **Cuando:** se intenta asignar. **Entonces:** se rechaza hasta que se apruebe el lote.
 6. **Dado:** una orden que no está `Pendiente`. **Cuando:** se intenta asignar. **Entonces:** se rechaza (la reasignación es E04-04).
 7. **Dado:** el listado de órdenes pendientes (E04-02). **Cuando:** administración asigna una. **Entonces:** sale del listado.
-8. **Dado:** un técnico o dirección. **Cuando:** llama a la API de asignación. **Entonces:** recibe acceso denegado (403).
+8. **Dado:** un técnico (usuario de escuadrilla) o dirección. **Cuando:** llama a la API de asignación. **Entonces:** recibe acceso denegado (403).
+9. **Dado:** una escuadrilla con órdenes `Asignada` o `En curso`. **Cuando:** administración intenta desactivarla (E02-09). **Entonces:** se rechaza con un mensaje que pide reasignarlas antes.
 
 ## Fuera de alcance
 
 - Reasignar o desasignar: E04-04.
-- Lo que ve el técnico en su celular: E05-01 y E05-02 (sin precios ni historial, ADR 0006).
-- Avisos al técnico (push o mail).
+- Lo que ve la escuadrilla en su celular: E05-01 y E05-02 (sin precios ni historial, ADR 0006).
+- Quiénes fueron: se tilda al cerrar (E05-04), no al asignar.
+- Avisos al celular (push o mail).
 - Franja u hora de visita.
 
 ## Decisiones tomadas en el refinamiento
@@ -42,17 +44,26 @@ assumes: []
 Validadas con negocio el 2026-10-26:
 
 - **Solo el día**: la fecha prevista no lleva hora ni franja.
-- **Un solo técnico responsable** por orden. Si van dos, uno figura como responsable.
+- **Una sola escuadrilla responsable** por orden (D-013, reemplaza "un solo técnico responsable").
 - El criterio original 5 (visibilidad para el técnico) pasa a E05-01 y E05-02, que son las que muestran la orden en el celular.
+
+## Cambio por D-013 (escuadrillas)
+
+La primera versión (#171 y #172) asignaba a un **técnico** (`technician_id`, usuarios con rol técnico). Con D-013 se rehace para asignar a una **escuadrilla**:
+
+- Migración: `work_order_assignment.technician_id` pasa a `crew_id` (referencia a `crew`). En producción todavía no hay asignaciones; en bases de prueba, las asignaciones existentes se descartan en la migración (se documenta en el PR).
+- Cuerpo del endpoint: `crew_id` en lugar de `technician_id`. Error `crew_not_available` en lugar de `technician_not_available`. La nota del evento dice "Escuadrilla: Nombre. Fecha prevista: dd/mm/aaaa.".
+- Web-admin: se elige la escuadrilla (de `GET /admin/crews`) en lugar del técnico.
+- Se mantiene todo lo demás de la primera versión: transacción, "hoy" en Argentina, índice de una asignación vigente por orden, `requires_approval`, errores 404 y 409.
 
 ## Notas técnicas
 
-- `work_order_assignment` según `data-model.dbml`: técnico, `scheduled_for` y `assigned_at`. La asignación vigente es la que no tiene `unassigned_at`.
-- Asignación, cambio de estado (`pending → assigned`) y evento `assigned` (con técnico y fecha en la nota o en columnas del evento) en la misma transacción, con el servicio de E04-01.
-- Endpoint `POST /admin/orders/{id}/assignment` con `require_role(admin)`. Errores: `order_not_found`, `invalid_transition`, `order_requires_approval`, `technician_not_available`.
-- Web-admin: acción "Asignar" en el listado de pendientes, con técnico y fecha.
+- `work_order_assignment` según `data-model.dbml`: escuadrilla, `scheduled_for` y `assigned_at`. La asignación vigente es la que no tiene `unassigned_at`.
+- Asignación, cambio de estado (`pending → assigned`) y evento `assigned` en la misma transacción, con el servicio de E04-01.
+- Endpoint `POST /admin/orders/{id}/assignment` con `require_role(admin)`. Errores: `order_not_found`, `invalid_transition`, `order_requires_approval`, `crew_not_available`, `scheduled_date_in_past`.
+- Web-admin: acción "Asignar" en el listado de pendientes, con escuadrilla y fecha.
 
-## Notas de implementación
+## Notas de implementación (primera versión, a técnico)
 
 Se entrega en dos PR: backend primero, web-admin después.
 
