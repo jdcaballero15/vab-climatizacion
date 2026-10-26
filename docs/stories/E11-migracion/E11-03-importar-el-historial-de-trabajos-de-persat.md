@@ -9,7 +9,7 @@ roles: [admin]
 size: L
 areas: [backend, datos]
 depends_on: [E11-02, E04-06]
-blocked_by: [D-010]
+blocked_by: []
 assumes: []
 ---
 
@@ -30,6 +30,11 @@ assumes: []
 
 - Se sumó al alcance: originalmente estaba fuera. El cliente confirmó que Persat es exportable.
 
+- Lee los archivos de órdenes de Persat, uno por formulario: `.xls` que en realidad son HTML, con tablas anidadas en algunas celdas. Reglas en `docs/domain/migracion-persat.md` (`D-010`).
+- Por orden se toma: número de Persat, tipo de trabajo (según el formulario), fecha, estado de Persat, cliente, cuadrilla, técnicos, código de equipo (si no es `N/A`) y un detalle de texto que junta reclamo, observación, trabajo realizado y falla detectada.
+- Verificación manual con la exportación del 2026-10-08: 1.743 órdenes. Los tests usan archivos ficticios con el mismo formato.
+
 ## Preguntas abiertas
 
-- Qué campos trae el historial de Persat (fechas, técnico, repuestos, observaciones) define cuánto se puede mapear a falla y reparación.
+- Falla y reparación no se mapean a las listas del sistema nuevo: en Persat son texto libre y quedan en el detalle. ¿Alcanza con eso para el historial?
+- En casi 9 de cada 10 reparaciones no hay código de equipo: esas órdenes quedan en el historial del cliente pero no en el de un equipo.

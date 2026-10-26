@@ -29,3 +29,4 @@ assumes: []
 ## Notas técnicas
 
 - No depende del formato de Persat: es la infraestructura de lotes.
+- Los archivos de Persat y el de decisiones de migración se pasan por parámetro. Nunca se suben al repo: `persat-export/`, `*.xls` y `*.xlsx` están en `.gitignore` (salvo los archivos ficticios de `backend/tests/fixtures/`).

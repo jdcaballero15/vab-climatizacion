@@ -160,10 +160,10 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
-| [E11-01](E11-migracion/E11-01-importar-clientes-desde-persat.md) | Importar clientes desde Persat | Debe | M | draft | admin | D-010 | - | E03-01, E11-05 |
-| [E11-02](E11-migracion/E11-02-importar-equipos-desde-persat.md) | Importar equipos desde Persat | Debe | M | draft | admin | D-010, D-002 | - | E11-01, E03-03 |
-| [E11-03](E11-migracion/E11-03-importar-el-historial-de-trabajos-de-persat.md) | Importar el historial de trabajos de Persat | Debe | L | draft | admin | D-010 | - | E11-02, E04-06 |
-| [E11-04](E11-migracion/E11-04-informe-de-calidad-de-datos-de-la-importacion.md) | Informe de calidad de datos de la importación | Debería | M | draft | admin | D-010 | - | E11-01 |
+| [E11-01](E11-migracion/E11-01-importar-clientes-desde-persat.md) | Importar clientes desde Persat | Debe | M | draft | admin | - | - | E03-01, E11-05 |
+| [E11-02](E11-migracion/E11-02-importar-equipos-desde-persat.md) | Importar equipos desde Persat | Debe | M | draft | admin | D-002 | - | E11-01, E03-03 |
+| [E11-03](E11-migracion/E11-03-importar-el-historial-de-trabajos-de-persat.md) | Importar el historial de trabajos de Persat | Debe | L | draft | admin | - | - | E11-02, E04-06 |
+| [E11-04](E11-migracion/E11-04-informe-de-calidad-de-datos-de-la-importacion.md) | Informe de calidad de datos de la importación | Debería | M | draft | admin | - | - | E11-01 |
 | [E11-05](E11-migracion/E11-05-importacion-repetible-y-reversible.md) | Importación repetible y reversible | Debe | M | draft | admin | - | - | E00-01 |
 | [E11-06](E11-migracion/E11-06-cargar-los-abonados-y-los-equipos-de-cada-abono.md) | Cargar los abonados y los equipos de cada abono | Debe | M | draft | admin | D-002 | - | E07-03, E11-02, E11-05 |
 | [E11-07](E11-migracion/E11-07-guia-de-uso-y-practica-con-datos-de-prueba.md) | Guía de uso y práctica con datos de prueba | Debe | M | draft | admin, technician | - | - | E11-09 |
@@ -200,4 +200,3 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | D-006 | Abierta | E00-05 |
 | D-008 | Abierta | E12-04 |
 | D-009 | Abierta | E00-10 |
-| D-010 | Abierta | E11-01, E11-02, E11-03, E11-04 |

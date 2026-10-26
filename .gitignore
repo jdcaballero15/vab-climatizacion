@@ -32,6 +32,10 @@ coverage/
 *.csv
 !docs/**/*.csv
 !backend/tests/fixtures/*.csv
+*.xls
+*.xlsx
+!backend/tests/fixtures/*.xls
+!backend/tests/fixtures/*.xlsx
 *.sql.gz
 *.dump
 

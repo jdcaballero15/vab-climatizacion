@@ -9,7 +9,7 @@ roles: [admin]
 size: M
 areas: [backend, datos]
 depends_on: [E03-01, E11-05]
-blocked_by: [D-010]
+blocked_by: []
 assumes: []
 ---
 
@@ -17,7 +17,7 @@ assumes: []
 
 ## Historia
 
-**Como** administración, **quiero** importar los clientes desde la exportación de Persat, **para** no cargar a mano 50 a 200 clientes.
+**Como** administración, **quiero** importar los clientes desde la exportación de Persat, **para** no cargar a mano unos 630 clientes.
 
 ## Criterios de aceptación
 
@@ -25,3 +25,11 @@ assumes: []
 2. **Dado:** la confirmación. **Cuando:** se aplica. **Entonces:** se crean los clientes y cada uno guarda su referencia al identificador de Persat.
 3. **Dado:** una segunda importación del mismo archivo. **Cuando:** se ejecuta. **Entonces:** no crea duplicados.
 4. **Dado:** una fila con datos inválidos. **Cuando:** se importa. **Entonces:** se informa con su número y el motivo.
+5. **Dado:** un registro interno o de prueba de Persat (operario, depósito, administración). **Cuando:** se importa. **Entonces:** no se migra y figura en el informe.
+6. **Dado:** un archivo de decisiones de migración. **Cuando:** se pasa al importar. **Entonces:** se aplican sus decisiones (registros que no se migran, clientes a unificar); si no se pasa, la importación funciona igual.
+
+## Notas técnicas
+
+- Lee la exportación cruda de Persat (`.xlsx`), no la planilla limpia. Reglas de limpieza en `docs/domain/migracion-persat.md` (`D-010`). El archivo de Persat y el de decisiones se pasan por parámetro y nunca se suben al repo.
+- Persat trae campos que hoy no están en el modelo de cliente (segmento, referencia, coordenadas): se definen al refinar E03-01.
+- Verificación manual con la exportación del 2026-10-08: 632 clientes. Los tests usan archivos ficticios.

@@ -9,7 +9,7 @@ roles: [admin]
 size: M
 areas: [backend, datos]
 depends_on: [E11-01, E03-03]
-blocked_by: [D-010, D-002]
+blocked_by: [D-002]
 assumes: []
 ---
 
@@ -25,3 +25,7 @@ assumes: []
 2. **Dado:** un equipo. **Cuando:** se importa. **Entonces:** queda asociado a su cliente y domicilio, con el identificador según `D-002`.
 3. **Dado:** la importación. **Cuando:** se aplica. **Entonces:** cada equipo guarda su referencia al identificador de Persat.
 4. **Dado:** una segunda importación. **Cuando:** se repite. **Entonces:** no duplica equipos.
+
+## Notas técnicas
+
+- Lee la exportación cruda de Persat (`.xlsx`). Reglas de limpieza (tipo, subtipo, marca, gas, capacidad, tensión, columnas corridas) en `docs/domain/migracion-persat.md` (`D-010`). Verificación manual con la exportación del 2026-10-08: 532 equipos.

@@ -18,7 +18,7 @@ El índice [docs/stories/INDEX.md](../stories/INDEX.md) lista las historias bloq
 | D-007 | Método de inicio de sesión | Desarrollo y negocio | **Propuesta** | E01-01 |
 | D-008 | Retención y texto legal de datos personales (DNI y firmas) | Negocio y asesoría legal | **Abierta** | E12-04 |
 | D-009 | Proveedor de mail transaccional | Desarrollo | **Abierta** | E00-10 |
-| D-010 | Formato y calidad de la exportación de Persat | Cliente y desarrollo | **Abierta** | E11-01 a E11-04 |
+| D-010 | Formato y calidad de la exportación de Persat | Cliente y desarrollo | Resuelta | E11-01 a E11-04 |
 | D-011 | ¿La firma del cliente es obligatoria en todo cierre? | Negocio | **Propuesta** | E05-07, E06-04, E06-06 |
 | D-012 | Cierre de los issues de historias terminadas | Desarrollo | **Propuesta** | `scripts/sync_stories.py`, plantilla de PR |
 
@@ -70,7 +70,11 @@ Los formularios del cliente dicen que la firma es obligatoria al cerrar una orde
 
 ### D-010 Exportación de Persat
 
-El cliente confirmó que es exportable. Falta ver el formato real (CSV, Excel), qué campos trae el historial de trabajos y la calidad de los datos (duplicados, equipos sin cliente, fechas). Pedir una muestra con datos anonimizados antes de diseñar la importación. **La muestra no se sube al repo.**
+El cliente confirmó que es exportable. Faltaba ver el formato real, qué campos trae el historial de trabajos y la calidad de los datos. **La muestra no se sube al repo.**
+
+**Resuelta** (Gonza, 2026-10-26, con la exportación del 2026-10-08): clientes, equipos y repuestos vienen en `.xlsx`; las órdenes, un archivo por formulario en `.xls` que en realidad es HTML con tablas anidadas. El importador lee la **exportación cruda** y aplica las reglas de limpieza, porque la migración real se hace con una exportación nueva justo antes de salir. Las decisiones puntuales sobre registros reales van en un archivo de decisiones de migración fuera del repo. El detalle de archivos, columnas y reglas está en [migracion-persat.md](migracion-persat.md).
+
+Queda abierto: no hay historia para importar repuestos y servicios de Persat (302 repuestos sin precio y 84 servicios). Hay que decidir si entran por la importación de catálogos (E02-08) o por una historia nueva de E11.
 
 ### D-012 Cierre de los issues de historias terminadas
 
