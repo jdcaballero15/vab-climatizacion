@@ -14,12 +14,17 @@ from app.api.schemas.client import (
     ContactAdminOut,
     ContactCreate,
     ContactUpdate,
+    SiteAdminOut,
+    SiteCreate,
+    SiteUpdate,
 )
-from app.db.models.client import Client, ClientContact, ClientSegment
+from app.db.models.client import Client, ClientContact, ClientSegment, ClientSite
 from app.db.models.user import User, UserRole
 from app.services import clients as clients_service
 
 router = APIRouter(prefix="/admin/clients", tags=["clientes"])
+# Un domicilio se edita por su id, sin repetir el del cliente en la ruta.
+sites_router = APIRouter(prefix="/admin/sites", tags=["clientes"])
 
 # Solo administración gestiona clientes; dirección los ve en la ficha (E03-04).
 AdminOnly = Annotated[User, Depends(require_role(UserRole.admin))]
@@ -98,6 +103,8 @@ async def create_contact(
         return await clients_service.create_contact(session, client_id, payload)
     except clients_service.ClientNotFoundError:
         raise _client_not_found() from None
+    except clients_service.SiteNotFoundError:
+        raise _site_not_found() from None
     except clients_service.ContactWithoutDataError:
         raise _contact_without_data() from None
     except clients_service.MonthlyReportRequiresEmailError:
@@ -121,16 +128,63 @@ async def update_contact(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "contact_not_found", "message": "No se encontró el contacto."},
         ) from None
+    except clients_service.SiteNotFoundError:
+        raise _site_not_found() from None
     except clients_service.ContactWithoutDataError:
         raise _contact_without_data() from None
     except clients_service.MonthlyReportRequiresEmailError:
         raise _report_requires_email() from None
 
 
+@router.get("/{client_id}/sites", response_model=list[SiteAdminOut])
+async def list_sites(
+    client_id: uuid.UUID, session: SessionDep, _: AdminOnly
+) -> Sequence[ClientSite]:
+    try:
+        return await clients_service.list_sites(session, client_id)
+    except clients_service.ClientNotFoundError:
+        raise _client_not_found() from None
+
+
+@router.post("/{client_id}/sites", response_model=SiteAdminOut, status_code=status.HTTP_201_CREATED)
+async def create_site(
+    client_id: uuid.UUID, payload: SiteCreate, session: SessionDep, _: AdminOnly
+) -> ClientSite:
+    try:
+        return await clients_service.create_site(session, client_id, payload)
+    except clients_service.ClientNotFoundError:
+        raise _client_not_found() from None
+
+
+@sites_router.get("/{site_id}", response_model=SiteAdminOut)
+async def get_site(site_id: uuid.UUID, session: SessionDep, _: AdminOnly) -> ClientSite:
+    try:
+        return await clients_service.get_site(session, site_id)
+    except clients_service.SiteNotFoundError:
+        raise _site_not_found() from None
+
+
+@sites_router.patch("/{site_id}", response_model=SiteAdminOut)
+async def update_site(
+    site_id: uuid.UUID, payload: SiteUpdate, session: SessionDep, _: AdminOnly
+) -> ClientSite:
+    try:
+        return await clients_service.update_site(session, site_id, payload)
+    except clients_service.SiteNotFoundError:
+        raise _site_not_found() from None
+
+
 def _client_not_found() -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail={"code": "client_not_found", "message": "No se encontró el cliente."},
+    )
+
+
+def _site_not_found() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail={"code": "site_not_found", "message": "No se encontró el domicilio."},
     )
 
 

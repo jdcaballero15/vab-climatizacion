@@ -145,3 +145,15 @@ def test_scanner_detects_forbidden_field_at_any_depth() -> None:
 
 def test_scanner_passes_a_clean_schema() -> None:
     assert _forbidden_in(_CleanTechnicianOut) == set()
+
+
+# E03-02, criterio 7: el técnico ve el nombre del contacto del lugar, nunca su teléfono ni
+# su email (le permitirían contactar al cliente por fuera de la empresa).
+class _SiteWithPhoneTechnicianOut(BaseModel):
+    address: str
+    phone: str
+    email: str
+
+
+def test_scanner_detects_contact_phone_and_email() -> None:
+    assert _forbidden_in(_SiteWithPhoneTechnicianOut) == {"phone", "email"}

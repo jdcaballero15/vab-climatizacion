@@ -32,6 +32,7 @@ def create_app() -> FastAPI:
     app.include_router(failures.router)
     app.include_router(repairs.router)
     app.include_router(clients.router)
+    app.include_router(clients.sites_router)
     return app
 
 

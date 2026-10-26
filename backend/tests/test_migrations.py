@@ -28,6 +28,7 @@ def _reset_database() -> None:
         engine = create_async_engine(TEST_DATABASE_URL)
         async with engine.begin() as conn:
             await conn.execute(text("DROP TABLE IF EXISTS client_contact CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS client_site CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS client CASCADE"))
             await conn.execute(text("DROP TYPE IF EXISTS client_segment"))
             await conn.execute(text("DROP TYPE IF EXISTS tax_condition"))
@@ -204,5 +205,24 @@ def test_downgrade_de_clientes_borra_sus_tipos() -> None:
             )
             == []
         )
+    finally:
+        command.downgrade(cfg, "base")
+
+
+# E03-02: la migración crea client_site y client_contact.client_site_id; el downgrade los quita.
+def test_migracion_de_domicilios_es_reversible() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    columnas = (
+        "SELECT table_name || '.' || column_name FROM information_schema.columns "
+        "WHERE (table_name = 'client_site' AND column_name = 'address') "
+        "OR (table_name = 'client_contact' AND column_name = 'client_site_id')"
+    )
+    command.upgrade(cfg, "head")
+    try:
+        assert _names(columnas) == ["client_contact.client_site_id", "client_site.address"]
+        command.downgrade(cfg, "db29fc2db829")
+        assert _names(columnas) == []
     finally:
         command.downgrade(cfg, "base")

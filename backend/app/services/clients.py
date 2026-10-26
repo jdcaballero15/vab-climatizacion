@@ -5,9 +5,22 @@ from collections.abc import Sequence
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.schemas.client import ClientCreate, ClientUpdate, ContactCreate, ContactUpdate
-from app.db.models.client import Client, ClientContact, ClientSegment
-from app.db.repositories.client import ClientContactRepository, ClientRepository
+from app.api.schemas.client import (
+    ClientCreate,
+    ClientSiteTechnicianOut,
+    ClientUpdate,
+    ContactCreate,
+    ContactUpdate,
+    SiteCreate,
+    SiteUpdate,
+    site_map_url,
+)
+from app.db.models.client import Client, ClientContact, ClientSegment, ClientSite
+from app.db.repositories.client import (
+    ClientContactRepository,
+    ClientRepository,
+    ClientSiteRepository,
+)
 
 # Veces que se reintenta el alta si dos altas simultáneas toman el mismo número.
 _NUMBER_ATTEMPTS = 3
@@ -26,6 +39,10 @@ class ClientNumberAlreadyExistsError(Exception):
 
 class ContactNotFoundError(Exception):
     """No existe un contacto activo con ese id en ese cliente."""
+
+
+class SiteNotFoundError(Exception):
+    """No existe un domicilio con ese id (o no es del cliente indicado)."""
 
 
 class ContactWithoutDataError(Exception):
@@ -125,6 +142,7 @@ async def create_contact(
     session: AsyncSession, client_id: uuid.UUID, data: ContactCreate
 ) -> ClientContact:
     await get_client(session, client_id)
+    await _check_site_of_client(session, client_id, data.client_site_id)
     contact = ClientContact(client_id=client_id, **data.model_dump())
     _check_contact(contact)
     session.add(contact)
@@ -143,6 +161,8 @@ async def update_contact(
     changes = data.model_dump(exclude_unset=True)
     if changes.get("receives_monthly_report", False) is None:
         changes.pop("receives_monthly_report")
+    if changes.get("client_site_id") is not None:
+        await _check_site_of_client(session, client_id, changes["client_site_id"])
     for field, value in changes.items():
         setattr(contact, field, value)
     # Las reglas se chequean sobre el contacto ya modificado: un cambio parcial puede
@@ -162,3 +182,57 @@ def _check_contact(contact: ClientContact) -> None:
         raise ContactWithoutDataError
     if contact.receives_monthly_report and not contact.email:
         raise MonthlyReportRequiresEmailError
+
+
+async def _check_site_of_client(
+    session: AsyncSession, client_id: uuid.UUID, site_id: uuid.UUID | None
+) -> None:
+    if site_id is None:
+        return
+    site = await ClientSiteRepository(session).get(site_id)
+    if site is None or site.client_id != client_id:
+        raise SiteNotFoundError
+
+
+async def list_sites(session: AsyncSession, client_id: uuid.UUID) -> Sequence[ClientSite]:
+    await get_client(session, client_id)
+    return await ClientSiteRepository(session).list_for_client(client_id)
+
+
+async def create_site(session: AsyncSession, client_id: uuid.UUID, data: SiteCreate) -> ClientSite:
+    await get_client(session, client_id)
+    site = ClientSite(client_id=client_id, **data.model_dump())
+    session.add(site)
+    await session.commit()
+    await session.refresh(site)
+    return site
+
+
+async def get_site(session: AsyncSession, site_id: uuid.UUID) -> ClientSite:
+    site = await ClientSiteRepository(session).get(site_id)
+    if site is None:
+        raise SiteNotFoundError
+    return site
+
+
+async def update_site(session: AsyncSession, site_id: uuid.UUID, data: SiteUpdate) -> ClientSite:
+    site = await get_site(session, site_id)
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(site, field, value)
+    await session.commit()
+    await session.refresh(site)
+    return site
+
+
+async def get_site_for_technician(
+    session: AsyncSession, site_id: uuid.UUID
+) -> ClientSiteTechnicianOut:
+    """Domicilio tal como lo ve el técnico en su orden (lo usa E05-02)."""
+    site = await get_site(session, site_id)
+    contacts = await ClientContactRepository(session).list_for_site(site_id)
+    return ClientSiteTechnicianOut(
+        address=site.address,
+        reference=site.reference,
+        map_url=site_map_url(site.address),
+        contact_names=[c.name for c in contacts if c.name],
+    )

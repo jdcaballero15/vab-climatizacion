@@ -3,7 +3,7 @@ from collections.abc import Sequence
 
 from sqlalchemy import BigInteger, cast, func, select
 
-from app.db.models.client import Client, ClientContact, ClientSegment
+from app.db.models.client import Client, ClientContact, ClientSegment, ClientSite
 from app.db.repository import BaseRepository
 
 
@@ -57,3 +57,26 @@ class ClientContactRepository(BaseRepository[ClientContact]):
         stmt = self._select().where(self.model.client_id == client_id, self.model.id == contact_id)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def list_for_site(self, site_id: uuid.UUID) -> Sequence[ClientContact]:
+        stmt = (
+            self._select()
+            .where(self.model.client_site_id == site_id)
+            .order_by(self.model.created_at, self.model.id)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+
+class ClientSiteRepository(BaseRepository[ClientSite]):
+    model = ClientSite
+
+    async def list_for_client(self, client_id: uuid.UUID) -> Sequence[ClientSite]:
+        """Todos los domicilios del cliente, activos e inactivos, en orden de alta."""
+        stmt = (
+            self._select()
+            .where(self.model.client_id == client_id)
+            .order_by(self.model.created_at, self.model.id)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
