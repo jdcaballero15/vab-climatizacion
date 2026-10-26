@@ -10,7 +10,7 @@ El índice [docs/stories/INDEX.md](../stories/INDEX.md) lista las historias bloq
 | ID | Decisión | Quién resuelve | Estado | Afecta |
 |---|---|---|---|---|
 | D-001 | Conectividad en campo: ¿hace falta modo offline? | Cliente | **Abierta** | E05-09 a E05-11, ADR 0003 |
-| D-002 | Identificación de equipos: código propio o por ubicación | Negocio | **Abierta** | E03-03, E03-05, E04-12, E07-03, E07-09, E11-02, E11-06 |
+| D-002 | Identificación de equipos: código propio o por ubicación | Negocio | **Propuesta** | E03-03, E03-05, E04-12, E07-03, E07-09, E11-02, E11-06 |
 | D-003 | Edición de catálogos en el sistema nuevo | Negocio | **Propuesta** | E02-01 a E02-06, E02-08 |
 | D-004 | Datos exactos que necesita administración para facturar | Negocio | Pospuesta | E04-09 |
 | D-005 | Revisión y aprobación en bloque: ¿acciones o estados? | Negocio | **Propuesta** | E04-08, E07-04, E07-05 |
@@ -31,7 +31,47 @@ Mientras tanto, la PWA se diseña con soporte offline (ADR 0003, provisional). E
 
 ### D-002 Identificación de equipos
 
-Contradicción en los formularios: "código propio" contra "por ubicación dentro del cliente". Hay que definir el esquema real antes de construir el catálogo de equipos. El modelo de datos admite ambos campos como opcionales hasta decidir (`internal_code`, `location_note`).
+Contradicción en los formularios: "código propio" contra "por ubicación dentro del cliente". No es una cosa o la otra: se usan las dos, para fines distintos.
+
+Lo que se sabe (relevamiento de Gonza con los datos de Persat):
+
+- **La gente se refiere al equipo por su ubicación dentro del cliente** (por ejemplo "Habitación 12" u "Oficina planta alta"). Es lo que reconoce el técnico y el cliente pidió explícitamente que se vea así. En Persat, al cerrar una orden, el técnico describe el equipo a mano con ubicación, subtipo, marca y potencia.
+- **Existe un código interno de VAB**, guardado en Persat en la columna de número de serie (no es el número de serie de fábrica). Se arma con un prefijo, el número de cliente y un correlativo del equipo dentro del cliente (por ejemplo `EA0012301` = cliente 00123, equipo 01). La intención es que sea único en toda la empresa, pero no está controlado: hay unos pocos códigos repetidos entre clientes distintos.
+- **El código no tiene largo fijo.** La estructura real es `[EA|EH]` + sigla de sector (opcional) + número de cliente + correlativo:
+  - `EA` es equipo de aire acondicionado y `EH` es heladera (hoy solo en un cliente).
+  - Las siglas de sector (unas ocho distintas) aparecen solo en un cliente con planta industrial, por ejemplo `EAFAB` + número de cliente + correlativo. Se cree que son sectores de la planta, sin confirmar.
+  - Hay dos excepciones de formato viejo: un cliente con `EACAB` + correlativo sin número de cliente y otro con `CLI-` + número de cliente + correlativo.
+  - El correlativo empieza en 2 dígitos y pasa a 3 al superar 99 (el equipo 100 de un cliente lleva `100`, sin rellenar los anteriores). Hay clientes con más de 100 equipos y varios con más de 60.
+  - El número de cliente dentro del código no tiene una cantidad fija de dígitos.
+- **Persat trae unos 530 equipos de unos 55 clientes.** Algunas decenas no tienen ubicación, unos 20 no tienen ningún dato y ninguno tiene número de serie de fábrica.
+- **En casi 9 de cada 10 reparaciones de Persat no se eligió el equipo cargado**: el técnico lo describió a mano. El caso "el equipo no está cargado" es frecuente.
+- **Los equipos se mueven dentro del cliente**: existe el trabajo de reubicación de unidad condensadora o evaporadora.
+- **El número de cliente de Persat es texto, no un número**: conviven una serie numérica de 5 dígitos y una serie `CLI-` + 5 dígitos, y hay algunos sueltos con otro formato o sin número.
+
+*Propuesta*:
+
+1. **Código interno (`internal_code`)**: identificador único en toda la empresa, obligatorio y generado por el sistema, nunca escrito a mano. Es texto libre: no se valida por largo ni por formato, porque los códigos migrados no son parejos.
+   - **Equipos nuevos**: prefijo según el tipo de equipo (`EA` aire acondicionado, `EH` heladera) + dígitos del número de cliente + correlativo del equipo dentro del cliente, con mínimo 2 dígitos y sin tope (01 a 99, después 100, 101...). Sin sigla de sector hasta que el cliente confirme qué son.
+   - **Unicidad**: la garantiza una restricción en la base, no el formato. Como los largos son variables, dos combinaciones distintas podrían dar el mismo texto; si el código generado ya existe, el sistema prueba el siguiente correlativo.
+   - **Equipos migrados**: conservan su código de Persat tal cual, con el formato que tengan. A los códigos repetidos se les asigna uno nuevo en la migración y el viejo queda como referencia a Persat.
+2. **Ubicación (`location_note`)**: obligatoria. Es lo que se muestra primero en listados, órdenes y comprobantes, junto con el tipo de equipo. Dentro de un mismo domicilio no hay unicidad: pueden existir dos equipos con la misma ubicación (por ejemplo, dos splits en el mismo salón) y los distingue el código.
+3. **Alta con lo mínimo**: para dar de alta un equipo alcanza con ubicación y tipo de equipo. Marca, modelo, potencia y el resto son opcionales y administración los completa después.
+4. **Mudanzas**: si un equipo cambia de ubicación dentro del cliente, se edita la ubicación. Conserva su código y su historial; no se crea un equipo nuevo.
+5. **Migración**: los equipos de Persat sin ubicación se importan con la ubicación "Sin ubicación" y quedan en el informe de calidad (E11-04) para que administración la complete.
+
+Consecuencias:
+
+- El cliente necesita un **número de cliente** (`client.number`), porque forma parte del código. Es texto y único. En la migración se toma el número de Persat tal cual; los clientes sin número reciben uno nuevo. En los clientes nuevos lo asigna el sistema siguiendo la serie numérica (el siguiente al máximo).
+- Que el técnico dé de alta un equipo desde la app no está en ninguna historia (E03-03 es de administración). Queda como pregunta abierta; si se confirma, va en una historia nueva. Según el relevamiento las cuadrillas siempre tienen señal (ver `D-001`), así que el código se puede generar en el momento.
+- El QR por equipo (E99-01) sigue en el icebox; si vuelve, se apoya en el código interno.
+
+Preguntas abiertas para el cliente:
+
+- ¿Quién asigna hoy los códigos? ¿Hay etiquetas físicas pegadas en los equipos?
+- ¿Un equipo puede pasar de un cliente a otro? Si pasa, la propuesta es que conserve el historial, pero hay que confirmarlo.
+- ¿Las siglas como `FAB` son sectores de la planta? ¿Hay que seguir usándolas en los equipos nuevos de ese cliente?
+- ¿Qué prefijo llevan los tipos de equipo que no son aire ni heladera (cámara de frío, freezer, otros)?
+- ¿El técnico tiene que poder dar de alta un equipo que no encuentra en la lista?
 
 ### D-003 Edición de catálogos
 
