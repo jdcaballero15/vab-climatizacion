@@ -2,7 +2,7 @@
 
 Los siete estados los pidió el cliente: **Pendiente, Asignada, En curso, Terminada, Facturada, Cobrada, Cancelada**.
 
-> Las transiciones de esta página son una **propuesta** a partir del circuito de la propuesta técnica. Falta validarlas con negocio. Lo que no está claro está marcado y figura en [decisiones pendientes](../domain/decisiones-pendientes.md).
+> Las transiciones de esta página se validaron con negocio el 2026-10-26 (refinamiento de E04-01). Lo que sigue abierto figura en [decisiones pendientes](../domain/decisiones-pendientes.md).
 
 ## Diagrama
 
@@ -19,7 +19,7 @@ stateDiagram-v2
   EnCurso --> EnCurso: "requiere retiro" convierte en orden de taller
 
   Terminada --> Facturada: administración revisa y registra factura
-  Terminada --> Asignada: administración devuelve al técnico (propuesta)
+  Terminada --> Asignada: administración devuelve al técnico (con motivo)
   Facturada --> Cobrada: administración registra cobro
 
   Pendiente --> Cancelada: administración cancela (con motivo)
@@ -38,10 +38,12 @@ stateDiagram-v2
 |---|---|
 | R1 | Solo administración crea, asigna, revisa, factura, cobra y cancela. Solo el técnico asignado inicia y cierra. |
 | R2 | Cada cambio de estado inserta un `work_order_event` con actor y fecha. Las fechas de la orden salen de ahí. |
-| R3 | Cancelar exige motivo y solo es posible antes de `Terminada`. *Propuesta.* |
+| R3 | Cancelar exige motivo y solo es posible antes de `Terminada`. |
 | R4 | `Facturada` exige número de factura. `Cobrada` solo desde `Facturada`. |
 | R5 | `Cobrada` y `Cancelada` son finales. Una corrección es una nueva orden o un ajuste con auditoría, no una reapertura. |
 | R6 | Una orden con `requires_approval = true` no se puede asignar hasta que administración apruebe el lote. |
+| R7 | Cada orden (o etapa, en taller) tiene un solo técnico responsable. Se asigna con fecha prevista, sin hora. |
+| R8 | Devolver al técnico una orden `Terminada` exige motivo y la deja `Asignada` al mismo técnico. |
 
 ## Órdenes de taller (retiro, taller y devolución)
 
@@ -62,10 +64,9 @@ Retiro y devolución exigen firma del cliente (nombre y DNI). La orden se factur
 |---|---|
 | Resuelta | La orden pasa a `Terminada` |
 | Requiere retiro | La misma orden pasa a `workshop`, se crean las etapas y sigue `En curso` |
-| Requiere otra visita | Vuelve a `Pendiente` para reprogramarla, conservando lo registrado |
+| Requiere otra visita | Vuelve a `Pendiente` sin técnico ni fecha, para reprogramarla (se puede asignar a otro), conservando lo registrado |
 
 ## Puntos sin resolver
 
 - **Revisión**: la propuesta técnica muestra "Revisión" como paso entre Terminada y Facturada, pero no es uno de los siete estados del cliente. Se modela como una acción de administración sobre `Terminada` (aprobar o devolver), no como estado. Ver `D-005`.
 - **Aprobación en bloque** de mantenimiento: se modela con el campo `requires_approval`, no con un estado extra. Ver `D-005`.
-- **Devolver al técnico** una orden terminada: transición propuesta, no pedida por el cliente.
