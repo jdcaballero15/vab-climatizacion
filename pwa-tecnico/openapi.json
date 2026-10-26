@@ -2919,6 +2919,54 @@
           }
         ]
       }
+    },
+    "/tech/orders/{order_id}": {
+      "get": {
+        "tags": [
+          "app del técnico"
+        ],
+        "summary": "Get My Order",
+        "operationId": "get_my_order_tech_orders__order_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailTechnicianOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4239,6 +4287,99 @@
           "in_person"
         ],
         "title": "OrderChannel"
+      },
+      "OrderDetailTechnicianOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "work_type_name": {
+            "type": "string",
+            "title": "Work Type Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date",
+            "title": "Scheduled For"
+          },
+          "site": {
+            "$ref": "#/components/schemas/ClientSiteTechnicianOut"
+          },
+          "equipment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentTechnicianOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requester_area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requester Area"
+          },
+          "tasks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tasks"
+          },
+          "today": {
+            "type": "string",
+            "format": "date",
+            "title": "Today"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "status",
+          "work_type_name",
+          "description",
+          "client_name",
+          "scheduled_for",
+          "site",
+          "equipment",
+          "requester_area",
+          "tasks",
+          "today"
+        ],
+        "title": "OrderDetailTechnicianOut",
+        "description": "Detalle de una orden abierta de la escuadrilla (E05-02). Sin historial ni quién pidió."
       },
       "OrderKind": {
         "type": "string",

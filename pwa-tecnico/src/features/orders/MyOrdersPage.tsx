@@ -1,15 +1,11 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 
 import type { components } from "../../api/schema";
-import { isOverdue, relativeDay } from "./dates";
+import { dueLabel, statusLabel } from "./labels";
 import { useMyOrders } from "./useMyOrders";
 
 type Order = components["schemas"]["OrderTechnicianOut"];
-
-const STATUS_LABELS: Partial<Record<Order["status"], string>> = {
-  assigned: "Asignada",
-  in_progress: "En curso",
-};
 
 interface MyOrdersPageProps {
   onLogout: () => void;
@@ -85,33 +81,36 @@ export function MyOrdersPage({ onLogout }: MyOrdersPageProps) {
 }
 
 function OrderCard({ order, today }: { order: Order; today: string }) {
-  const overdue = isOverdue(order.scheduled_for, today);
-  const day = relativeDay(order.scheduled_for, today);
+  const due = dueLabel(order.scheduled_for, today);
   const equipment = order.equipment
     ? `${order.equipment.location_note} · ${order.equipment.equipment_type_name}`
     : "Sin equipo";
 
   return (
-    <article className="order-card">
-      <div className="order-card__row">
-        <span>
-          <span className="order-card__number">N° {order.number}</span>
-          {" · "}
-          <span>{order.work_type_name}</span>
-        </span>
-        <span className={`order-card__status order-card__status--${order.status}`}>
-          {STATUS_LABELS[order.status] ?? order.status}
-        </span>
-      </div>
-      {order.description && <p className="order-card__description">{order.description}</p>}
-      <div className="order-card__row">
-        <span className="order-card__client">{order.client_name}</span>
-        <span className={overdue ? "order-card__day order-card__day--overdue" : "order-card__day"}>
-          {overdue ? `Vencida · ${day}` : day}
-        </span>
-      </div>
-      <p className="order-card__detail">{order.site.address}</p>
-      <p className="order-card__detail">{equipment}</p>
-    </article>
+    <Link to={`/ordenes/${order.id}`} className="order-card-link">
+      <article className="order-card">
+        <div className="order-card__row">
+          <span>
+            <span className="order-card__number">N° {order.number}</span>
+            {" · "}
+            <span>{order.work_type_name}</span>
+          </span>
+          <span className={`order-card__status order-card__status--${order.status}`}>
+            {statusLabel(order.status)}
+          </span>
+        </div>
+        {order.description && <p className="order-card__description">{order.description}</p>}
+        <div className="order-card__row">
+          <span className="order-card__client">{order.client_name}</span>
+          <span
+            className={due.overdue ? "order-card__day order-card__day--overdue" : "order-card__day"}
+          >
+            {due.text}
+          </span>
+        </div>
+        <p className="order-card__detail">{order.site.address}</p>
+        <p className="order-card__detail">{equipment}</p>
+      </article>
+    </Link>
   );
 }

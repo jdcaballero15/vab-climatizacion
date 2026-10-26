@@ -4,7 +4,7 @@ title: "Ver el detalle de una orden asignada"
 epic: E05
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [technician]
 size: S
 areas: [backend, pwa]
@@ -62,3 +62,7 @@ Se entrega en dos PR: backend primero, PWA después.
 - Backend (PR 1): `GET /tech/orders/{id}` devuelve `OrderDetailTechnicianOut`, que extiende `OrderTechnicianOut` con `requester_area`, `tasks` y `today`. Usa la misma consulta que la lista (`list_open_for_crew` con un filtro opcional por id) y la misma función que arma cada orden, para que lista y detalle no se desfasen.
 - Las tareas salen de `catalog.list_tasks` (solo activas, ninguna si el tipo de trabajo está desactivado), ordenadas por nombre. No hay un orden propio de tareas; si el cliente quiere ordenarlas a mano, es otra historia.
 - Cualquier orden que no sea abierta y de la escuadrilla del usuario responde 404 `order_not_found`.
+- PWA (PR 2): rutas `/` (lista) y `/ordenes/:id` (detalle) dentro de la sesión; cualquier otra vuelve a la lista. La tarjeta entera es un enlace al detalle.
+- `OrderDetailPage`: "← Mis órdenes", número, tipo y estado, cliente, dirección como enlace a `map_url` con su referencia, sector y contactos (si hay), equipo (ubicación, tipo, marca y modelo) o "Sin equipo", fecha relativa con "Vencida", indicaciones y tareas como lista de solo lectura.
+- Un 404 muestra "Esta orden ya no está entre las de tu escuadrilla." (puede pasar si la reasignan o cancelan mientras está abierta). Etiquetas de estado y fecha prevista en `features/orders/labels.ts`, compartidas con la lista.
+- Probado en el navegador contra el backend real: abrir desde la lista, ver tareas, 404 y volver.

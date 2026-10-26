@@ -4,7 +4,8 @@ import { AppRoot } from "./AppRoot";
 
 export const router = createBrowserRouter([
   {
-    path: "/",
+    // AppRoot resuelve la sesión y adentro las rutas de la app (lista y detalle).
+    path: "/*",
     element: <AppRoot />,
   },
 ]);

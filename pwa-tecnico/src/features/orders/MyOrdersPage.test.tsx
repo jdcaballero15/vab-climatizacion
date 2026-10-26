@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter, Route, Routes, useParams } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { components } from "../../api/schema";
@@ -53,10 +54,20 @@ function renderPage() {
   const onLogout = vi.fn();
   render(
     <QueryClientProvider client={client}>
-      <MyOrdersPage onLogout={onLogout} />
+      <MemoryRouter>
+        <Routes>
+          <Route path="/" element={<MyOrdersPage onLogout={onLogout} />} />
+          <Route path="/ordenes/:orderId" element={<DetailStub />} />
+        </Routes>
+      </MemoryRouter>
     </QueryClientProvider>,
   );
   return { onLogout };
+}
+
+function DetailStub() {
+  const { orderId } = useParams();
+  return <h1>Detalle {orderId}</h1>;
 }
 
 afterEach(() => vi.restoreAllMocks());
@@ -179,6 +190,17 @@ describe("MyOrdersPage", () => {
       await screen.findByText("No se pudo actualizar. Se muestra la última lista cargada."),
     ).toBeInTheDocument();
     expect(screen.getByText("N° 7")).toBeInTheDocument();
+  });
+
+  // E05-02: tocar una tarjeta abre el detalle de esa orden.
+  it("al tocar una tarjeta abre el detalle de la orden", async () => {
+    const id = "6f1c2a9e-0000-4000-8000-000000000001";
+    stubOrders(() => json(payload([order({ id, number: 7 })])));
+    renderPage();
+
+    await userEvent.click(await screen.findByText("N° 7"));
+
+    expect(screen.getByRole("heading", { name: `Detalle ${id}` })).toBeInTheDocument();
   });
 
   it("cierra la sesión", async () => {
