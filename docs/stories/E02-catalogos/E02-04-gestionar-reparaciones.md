@@ -4,7 +4,7 @@ title: "Gestionar reparaciones"
 epic: E02
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -77,4 +77,8 @@ Se entrega en dos PR: backend primero, web-admin después.
   - Al crear: 404 `failure_not_found` si la falla no existe; 422 `repair_failure_mismatch` si la falla es de un tipo y la reparación es genérica o de otro tipo.
   - Listado con filtro opcional `failure_id`; una falla desactivada no ofrece reparaciones (con `include_inactive` sí).
   - Migración de datos `7a8a9559f9b4`: las 3 fallas genéricas y 36 reparaciones (48 filas, porque las de varios tipos van una vez por cada uno), sin "Otros". Busca los tipos de equipo por nombre y aborta si falta alguno. El `downgrade` borra solo lo que cargó.
-- web-admin (PR 3): pendiente.
+- web-admin (PR 3): pantalla "Reparaciones" en `features/repairs/`, visible solo para administración.
+  - Fallas y reparaciones comparten el componente `EquipmentScopedCatalogView` de `features/catalogs/` (selector de tipo de equipo, genéricas, alta, lista, desactivadas); cada pantalla le pasa sus textos y datos. Los tests de "Fallas" pasan sin cambios.
+  - Selector de falla con "Todas" y solo las fallas que aplican al tipo elegido, para que no se pueda elegir una incompatible. Para dar de alta hay que elegir una falla. Con "Todas", cada reparación muestra el nombre de su falla.
+  - Claves de caché en `catalogs/queryKeys.ts`: cambiar un tipo de equipo refresca fallas y reparaciones; cambiar una falla refresca las reparaciones.
+  - Probada en el navegador contra el backend real con la lista del cliente.
