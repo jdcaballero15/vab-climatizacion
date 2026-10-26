@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 115 historias.** done: 12, draft: 98, icebox: 5
+**Total: 115 historias.** done: 12, draft: 97, icebox: 5, ready: 1
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -40,7 +40,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E02-01](E02-catalogos/E02-01-gestionar-tipos-de-trabajo-y-tareas.md) | Gestionar tipos de trabajo y tareas | Debe | M | done | admin | - | D-003 | E01-04 |
 | [E02-02](E02-catalogos/E02-02-gestionar-tipos-de-equipo.md) | Gestionar tipos de equipo | Debe | S | done | admin | - | D-003 | E01-04 |
 | [E02-03](E02-catalogos/E02-03-gestionar-fallas-por-tipo-de-equipo.md) | Gestionar fallas por tipo de equipo | Debe | M | done | admin | - | D-003 | E02-02 |
-| [E02-04](E02-catalogos/E02-04-gestionar-reparaciones.md) | Gestionar reparaciones | Debe | S | draft | admin | - | D-003 | E02-02 |
+| [E02-04](E02-catalogos/E02-04-gestionar-reparaciones.md) | Gestionar reparaciones | Debe | M | ready | admin | - | D-003 | E02-02 |
 | [E02-05](E02-catalogos/E02-05-gestionar-el-catalogo-de-repuestos.md) | Gestionar el catálogo de repuestos | Debe | M | draft | admin | - | D-003 | E01-04, E00-04 |
 | [E02-06](E02-catalogos/E02-06-gestionar-la-lista-de-precios-de-repuestos.md) | Gestionar la lista de precios de repuestos | Debe | M | draft | admin | - | - | E02-05 |
 | [E02-07](E02-catalogos/E02-07-promover-un-texto-de-otro-a-la-lista.md) | Promover un texto de "Otro" a la lista | Debería | M | draft | admin | - | - | E02-03, E02-04, E05-04 |
