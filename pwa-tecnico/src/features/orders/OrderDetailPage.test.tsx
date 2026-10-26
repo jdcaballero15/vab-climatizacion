@@ -177,4 +177,107 @@ describe("OrderDetailPage", () => {
 
     expect(screen.getByRole("heading", { name: "Lista de órdenes" })).toBeInTheDocument();
   });
+
+  // E05-03: iniciar la orden desde el detalle.
+  describe("Iniciar", () => {
+    function stubStart(get: () => Response, post: () => Response | Promise<Response>) {
+      const posts: string[] = [];
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (request: Request) => {
+          if (request.method === "POST") {
+            posts.push(new URL(request.url).pathname);
+            return post();
+          }
+          return get();
+        }),
+      );
+      return posts;
+    }
+
+    // Criterio 1: pide confirmar y, si se cancela, no envía nada.
+    it("pide confirmar antes de iniciar y cancelar no envía nada", async () => {
+      const posts = stubStart(
+        () => json(detail()),
+        () => json(detail({ status: "in_progress" })),
+      );
+      renderDetail();
+
+      await userEvent.click(await screen.findByRole("button", { name: "Iniciar" }));
+      expect(screen.getByText("¿Empezar la orden N° 3?")).toBeInTheDocument();
+      expect(posts).toEqual([]);
+
+      await userEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+      expect(screen.queryByText("¿Empezar la orden N° 3?")).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Iniciar" })).toBeInTheDocument();
+      expect(posts).toEqual([]);
+    });
+
+    // Criterio 2: al confirmar queda En curso y desaparece el botón.
+    it("al confirmar la orden queda En curso sin el botón", async () => {
+      const posts = stubStart(
+        () => json(detail()),
+        () => json(detail({ status: "in_progress" })),
+      );
+      renderDetail();
+
+      await userEvent.click(await screen.findByRole("button", { name: "Iniciar" }));
+      await userEvent.click(screen.getByRole("button", { name: "Sí, empezar" }));
+
+      expect(await screen.findByText("En curso")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Iniciar" })).not.toBeInTheDocument();
+      expect(posts).toHaveLength(1);
+      expect(posts[0]).toMatch(new RegExp(`/tech/orders/${ORDER_ID}/start$`));
+    });
+
+    it("una orden En curso no muestra el botón", async () => {
+      stubStart(
+        () => json(detail({ status: "in_progress" })),
+        () => json(detail({ status: "in_progress" })),
+      );
+      renderDetail();
+
+      expect(await screen.findByText("En curso")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Iniciar" })).not.toBeInTheDocument();
+    });
+
+    // Criterio 8: sin conexión avisa y la orden sigue Asignada para reintentar.
+    it("si falla avisa y deja la orden Asignada para reintentar", async () => {
+      stubStart(
+        () => json(detail()),
+        () => {
+          throw new TypeError("sin conexión");
+        },
+      );
+      renderDetail();
+
+      await userEvent.click(await screen.findByRole("button", { name: "Iniciar" }));
+      await userEvent.click(screen.getByRole("button", { name: "Sí, empezar" }));
+
+      expect(
+        await screen.findByText(
+          "No se pudo iniciar la orden. Revisá la conexión e intentá de nuevo.",
+        ),
+      ).toBeInTheDocument();
+      expect(screen.getByText("Asignada")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Iniciar" })).toBeInTheDocument();
+    });
+
+    // Criterio 4: si la orden ya no es de la escuadrilla, se avisa como en el detalle.
+    it("si la orden ya no es de la escuadrilla lo avisa", async () => {
+      stubStart(
+        () => json(detail()),
+        () =>
+          json({ detail: { code: "order_not_found", message: "No se encontró la orden." } }, 404),
+      );
+      renderDetail();
+
+      await userEvent.click(await screen.findByRole("button", { name: "Iniciar" }));
+      await userEvent.click(screen.getByRole("button", { name: "Sí, empezar" }));
+
+      expect(
+        await screen.findByText("Esta orden ya no está entre las de tu escuadrilla."),
+      ).toBeInTheDocument();
+    });
+  });
 });
