@@ -27,6 +27,8 @@ def _reset_database() -> None:
     async def reset() -> None:
         engine = create_async_engine(TEST_DATABASE_URL)
         async with engine.begin() as conn:
+            await conn.execute(text("DROP TABLE IF EXISTS field_technician CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS crew CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS work_order_assignment CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS work_order_event CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS work_order CASCADE"))
@@ -331,5 +333,20 @@ def test_migracion_de_asignaciones_es_reversible() -> None:
         assert _names(objetos) == ["requires_approval", "work_order_assignment"]
         command.downgrade(cfg, "b4e1c7a20d93")
         assert _names(objetos) == []
+    finally:
+        command.downgrade(cfg, "base")
+
+
+# E02-09: escuadrillas y técnicos; el downgrade los quita.
+def test_migracion_de_escuadrillas_es_reversible() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    tablas = "SELECT tablename FROM pg_tables WHERE tablename IN ('crew', 'field_technician')"
+    command.upgrade(cfg, "head")
+    try:
+        assert _names(tablas) == ["crew", "field_technician"]
+        command.downgrade(cfg, "c7d2f4e81a56")
+        assert _names(tablas) == []
     finally:
         command.downgrade(cfg, "base")

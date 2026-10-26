@@ -51,3 +51,14 @@ Validadas con negocio el 2026-10-26 (D-013):
 - Tablas `crew` (`name`, `app_user_id` único y opcional, `is_active`) y `field_technician` (`full_name`, `is_active`) según `data-model.dbml`. Índice único por `lower(name)` en `crew`, como en los catálogos de E02.
 - Endpoints `/admin/crews` y `/admin/field-technicians` (listar con `include_inactive`, crear, editar) con `require_role(admin)`. Errores: `crew_not_found`, `crew_name_already_exists`, `crew_user_not_available`, `field_technician_not_found`.
 - Web-admin: sección "Escuadrillas y técnicos" (como en Configuración del prototipo). Reutilizar los componentes de `features/catalogs/` donde se pueda.
+
+## Notas de implementación
+
+Se entrega en dos PR: backend primero, web-admin después.
+
+- Backend (PR 1): `/admin/crews` y `/admin/field-technicians` (listar con `include_inactive`, crear, editar; escuadrillas también consultar) con `require_role(admin)`. Sin borrado. Migración `d3a9b6e2f417`: tablas `crew` (índice único por `lower(name)`, `app_user_id` único) y `field_technician` (índice único por `lower(full_name)`).
+- Nombres recortados y sin espacios de más (`CatalogName`). Decidido en el plan: los técnicos con nombre repetido también se rechazan (409 `field_technician_name_already_exists`), para no tener dos iguales para tildar.
+- Usuario del celular: al crear o editar, `app_user_id` tiene que ser un usuario activo con rol técnico que no esté en otra escuadrilla (si no, 422 `crew_user_not_available`). En la edición, `null` lo desasocia y no mandarlo lo deja como está. La respuesta trae el usuario (id, nombre, email y si está activo).
+- Si después desactivan o cambian de rol al usuario desde Usuarios, la escuadrilla conserva el vínculo y la respuesta lo muestra inactivo.
+- Listados: primero los activos, después por nombre.
+
