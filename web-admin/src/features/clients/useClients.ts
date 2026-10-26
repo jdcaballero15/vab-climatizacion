@@ -11,6 +11,9 @@ import type {
   Contact,
   ContactCreate,
   ContactUpdate,
+  Site,
+  SiteCreate,
+  SiteUpdate,
 } from "./types";
 
 // Prefijo común: cualquier alta o edición invalida listados y fichas.
@@ -148,5 +151,56 @@ export function useUpdateContact(clientId: string, contactId: string) {
     },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: [...CLIENTS_KEY, "contacts", clientId] }),
+  });
+}
+
+export function useSites(clientId: string) {
+  return useQuery<Site[]>({
+    queryKey: [...CLIENTS_KEY, "sites", clientId],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/admin/clients/{client_id}/sites", {
+        params: { path: { client_id: clientId } },
+      });
+      if (error || !data) {
+        throw new Error("no se pudieron cargar los domicilios");
+      }
+      return data;
+    },
+  });
+}
+
+export function useCreateSite(clientId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<Site, Error, SiteCreate>({
+    mutationFn: async (nuevo) => {
+      const { data, error } = await api.POST("/admin/clients/{client_id}/sites", {
+        params: { path: { client_id: clientId } },
+        body: nuevo,
+      });
+      if (error || !data) {
+        throw saveError(error, "No se pudo agregar el domicilio.");
+      }
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: [...CLIENTS_KEY, "sites", clientId] }),
+  });
+}
+
+export function useUpdateSite(clientId: string, siteId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<Site, Error, SiteUpdate>({
+    mutationFn: async (changes) => {
+      const { data, error } = await api.PATCH("/admin/sites/{site_id}", {
+        params: { path: { site_id: siteId } },
+        body: changes,
+      });
+      if (error || !data) {
+        throw saveError(error, "No se pudo guardar el domicilio.");
+      }
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: [...CLIENTS_KEY, "sites", clientId] }),
   });
 }
