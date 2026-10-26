@@ -9,7 +9,7 @@ roles: [admin]
 size: M
 areas: [backend, datos]
 depends_on: [E11-01, E03-03]
-blocked_by: [D-010]
+blocked_by: []
 assumes: [D-002]
 ---
 
@@ -31,3 +31,4 @@ assumes: [D-002]
 ## Notas técnicas
 
 - Identificación según la propuesta de `D-002`. Unos 530 equipos de unos 55 clientes. Los códigos no son parejos (prefijos `EA` y `EH`, siglas de sector, formatos viejos y correlativos de 2 o 3 dígitos) y se importan tal cual, sin validarlos por largo ni formato.
+- Lee la exportación cruda de Persat (`.xlsx`). Reglas de limpieza (tipo, subtipo, marca, gas, capacidad, tensión, columnas corridas) en `docs/domain/migracion-persat.md` (`D-010`). Verificación manual con la exportación del 2026-10-08: 532 equipos.
