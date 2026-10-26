@@ -9,8 +9,8 @@ roles: [admin]
 size: M
 areas: [backend, web-admin]
 depends_on: [E03-03, E07-01]
-blocked_by: [D-002]
-assumes: []
+blocked_by: []
+assumes: [D-002]
 ---
 
 # E07-03 Gestionar abonos: equipos incluidos y frecuencia

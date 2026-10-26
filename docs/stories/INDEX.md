@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 115 historias.** done: 13, draft: 97, icebox: 5
+**Total: 116 historias.** done: 13, draft: 95, icebox: 8
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -50,11 +50,11 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
-| [E03-01](E03-clientes-equipos/E03-01-alta-y-edicion-de-clientes.md) | Alta y edición de clientes | Debe | M | draft | admin | - | - | E01-04 |
+| [E03-01](E03-clientes-equipos/E03-01-alta-y-edicion-de-clientes.md) | Alta y edición de clientes | Debe | M | draft | admin | - | D-002 | E01-04 |
 | [E03-02](E03-clientes-equipos/E03-02-domicilios-o-sitios-de-un-cliente.md) | Domicilios o sitios de un cliente | Debe | S | draft | admin | - | - | E03-01 |
-| [E03-03](E03-clientes-equipos/E03-03-alta-y-edicion-de-equipos.md) | Alta y edición de equipos | Debe | M | draft | admin | D-002 | - | E03-02, E02-02 |
+| [E03-03](E03-clientes-equipos/E03-03-alta-y-edicion-de-equipos.md) | Alta y edición de equipos | Debe | M | draft | admin | - | D-002 | E03-02, E02-02 |
 | [E03-04](E03-clientes-equipos/E03-04-ficha-de-cliente-con-historial.md) | Ficha de cliente con historial | Debe | M | draft | admin, owner | - | - | E03-01, E04-06 |
-| [E03-05](E03-clientes-equipos/E03-05-ficha-de-equipo-con-historial-y-mediciones.md) | Ficha de equipo con historial y mediciones | Debe | M | draft | admin, owner | D-002 | - | E03-03, E04-06 |
+| [E03-05](E03-clientes-equipos/E03-05-ficha-de-equipo-con-historial-y-mediciones.md) | Ficha de equipo con historial y mediciones | Debe | M | draft | admin, owner | - | D-002 | E03-03, E04-06 |
 | [E03-06](E03-clientes-equipos/E03-06-buscar-clientes-y-equipos.md) | Buscar clientes y equipos | Debe | S | draft | admin, owner | - | - | E03-01 |
 | [E03-07](E03-clientes-equipos/E03-07-baja-logica-y-restauracion-de-clientes-y-equipos.md) | Baja lógica y restauración de clientes y equipos | Debería | S | draft | admin | - | - | E03-01, E03-03 |
 
@@ -73,7 +73,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E04-09](E04-ordenes/E04-09-registrar-la-factura-de-una-orden.md) | Registrar la factura de una orden | Debe | S | draft | admin | - | D-004 | E04-08 |
 | [E04-10](E04-ordenes/E04-10-registrar-el-cobro-de-una-orden.md) | Registrar el cobro de una orden | Debe | S | draft | admin | - | - | E04-09 |
 | [E04-11](E04-ordenes/E04-11-registrar-mano-de-obra-y-otros-cargos-de-una-orden.md) | Registrar mano de obra y otros cargos de una orden | Debería | M | draft | admin | - | - | E04-06, E00-04 |
-| [E04-12](E04-ordenes/E04-12-asociar-un-equipo-a-la-orden.md) | Asociar un equipo a la orden | Debe | S | draft | admin | D-002 | - | E04-02, E03-03 |
+| [E04-12](E04-ordenes/E04-12-asociar-un-equipo-a-la-orden.md) | Asociar un equipo a la orden | Debe | S | draft | admin | - | D-002 | E04-02, E03-03 |
 
 ## E05 App del técnico
 
@@ -87,10 +87,8 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E05-06](E05-app-tecnico/E05-06-agregar-foto-y-observacion-al-cierre.md) | Agregar foto y observación al cierre | Debe | M | draft | technician | - | - | E05-04, E00-09 |
 | [E05-07](E05-app-tecnico/E05-07-firma-del-cliente-en-pantalla-con-nombre-y-dni.md) | Firma del cliente en pantalla con nombre y DNI | Debe | M | draft | technician | - | D-011 | E05-04, E00-09 |
 | [E05-08](E05-app-tecnico/E05-08-elegir-el-resultado-del-trabajo.md) | Elegir el resultado del trabajo | Debe | M | draft | technician | - | - | E05-04, E04-01 |
-| [E05-09](E05-app-tecnico/E05-09-guardar-mis-ordenes-en-el-celular-para-trabajar-sin-sen.md) | Guardar mis órdenes en el celular para trabajar sin señal | Debe | L | draft | technician | D-001 | - | E05-01, E00-03 |
-| [E05-10](E05-app-tecnico/E05-10-cola-de-cierres-pendientes-de-sincronizar.md) | Cola de cierres pendientes de sincronizar | Debe | L | draft | technician | D-001 | - | E05-09, E05-12 |
-| [E05-11](E05-app-tecnico/E05-11-ver-el-estado-de-sincronizacion-y-resolver-conflictos.md) | Ver el estado de sincronización y resolver conflictos | Debe | M | draft | technician, admin | D-001 | - | E05-10, E04-04 |
 | [E05-12](E05-app-tecnico/E05-12-cierre-de-orden-idempotente.md) | Cierre de orden idempotente | Debe | S | draft | technician | - | - | E05-04, E04-01 |
+| [E05-13](E05-app-tecnico/E05-13-no-perder-un-cierre-si-se-corta-la-conexion.md) | No perder un cierre si se corta la conexión | Debe | M | draft | technician | - | - | E05-04, E05-12 |
 
 ## E06 Órdenes de taller
 
@@ -111,13 +109,13 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 |---|---|---|---|---|---|---|---|---|
 | [E07-01](E07-mantenimiento/E07-01-gestionar-plantillas-de-checklist-por-frecuencia-y-tipo.md) | Gestionar plantillas de checklist por frecuencia y tipo de equipo | Debe | M | draft | admin | - | - | E02-02, E01-04 |
 | [E07-02](E07-mantenimiento/E07-02-definir-mediciones-con-unidad-y-rango-esperado.md) | Definir mediciones con unidad y rango esperado | Debe | S | draft | admin | - | - | E07-01 |
-| [E07-03](E07-mantenimiento/E07-03-gestionar-abonos-equipos-incluidos-y-frecuencia.md) | Gestionar abonos: equipos incluidos y frecuencia | Debe | M | draft | admin | D-002 | - | E03-03, E07-01 |
+| [E07-03](E07-mantenimiento/E07-03-gestionar-abonos-equipos-incluidos-y-frecuencia.md) | Gestionar abonos: equipos incluidos y frecuencia | Debe | M | draft | admin | - | D-002 | E03-03, E07-01 |
 | [E07-04](E07-mantenimiento/E07-04-generar-las-ordenes-de-mantenimiento-cada-mes.md) | Generar las órdenes de mantenimiento cada mes | Debe | L | draft | admin | - | D-005 | E07-03, E00-11, E04-02 |
 | [E07-05](E07-mantenimiento/E07-05-aprobar-en-bloque-las-ordenes-de-mantenimiento-generada.md) | Aprobar en bloque las órdenes de mantenimiento generadas | Debe | M | draft | admin | - | D-005 | E07-04, E04-07 |
 | [E07-06](E07-mantenimiento/E07-06-completar-el-checklist-de-mantenimiento-en-la-app-del-t.md) | Completar el checklist de mantenimiento en la app del técnico | Debe | M | draft | technician | - | - | E07-04, E05-03 |
 | [E07-07](E07-mantenimiento/E07-07-registrar-mediciones-y-marcar-las-que-estan-fuera-de-ra.md) | Registrar mediciones y marcar las que están fuera de rango | Debe | M | draft | technician | - | - | E07-06, E07-02 |
 | [E07-08](E07-mantenimiento/E07-08-marcar-requiere-reparacion-desde-un-item-no-ok.md) | Marcar "requiere reparación" desde un ítem No OK | Debe | M | draft | technician | - | - | E07-06, E05-04 |
-| [E07-09](E07-mantenimiento/E07-09-ver-la-evolucion-de-mediciones-de-un-equipo.md) | Ver la evolución de mediciones de un equipo | Debería | M | draft | admin, owner | D-002 | - | E07-07, E03-05 |
+| [E07-09](E07-mantenimiento/E07-09-ver-la-evolucion-de-mediciones-de-un-equipo.md) | Ver la evolución de mediciones de un equipo | Debería | M | draft | admin, owner | - | D-002 | E07-07, E03-05 |
 
 ## E08 Stock de repuestos
 
@@ -161,11 +159,11 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
 | [E11-01](E11-migracion/E11-01-importar-clientes-desde-persat.md) | Importar clientes desde Persat | Debe | M | draft | admin | - | - | E03-01, E11-05 |
-| [E11-02](E11-migracion/E11-02-importar-equipos-desde-persat.md) | Importar equipos desde Persat | Debe | M | draft | admin | D-002 | - | E11-01, E03-03 |
+| [E11-02](E11-migracion/E11-02-importar-equipos-desde-persat.md) | Importar equipos desde Persat | Debe | M | draft | admin | - | D-002 | E11-01, E03-03 |
 | [E11-03](E11-migracion/E11-03-importar-el-historial-de-trabajos-de-persat.md) | Importar el historial de trabajos de Persat | Debe | L | draft | admin | - | - | E11-02, E04-06 |
 | [E11-04](E11-migracion/E11-04-informe-de-calidad-de-datos-de-la-importacion.md) | Informe de calidad de datos de la importación | Debería | M | draft | admin | - | - | E11-01 |
 | [E11-05](E11-migracion/E11-05-importacion-repetible-y-reversible.md) | Importación repetible y reversible | Debe | M | draft | admin | - | - | E00-01 |
-| [E11-06](E11-migracion/E11-06-cargar-los-abonados-y-los-equipos-de-cada-abono.md) | Cargar los abonados y los equipos de cada abono | Debe | M | draft | admin | D-002 | - | E07-03, E11-02, E11-05 |
+| [E11-06](E11-migracion/E11-06-cargar-los-abonados-y-los-equipos-de-cada-abono.md) | Cargar los abonados y los equipos de cada abono | Debe | M | draft | admin | - | D-002 | E07-03, E11-02, E11-05 |
 | [E11-07](E11-migracion/E11-07-guia-de-uso-y-practica-con-datos-de-prueba.md) | Guía de uso y práctica con datos de prueba | Debe | M | draft | admin, technician | - | - | E11-09 |
 | [E11-08](E11-migracion/E11-08-criterios-de-salida-de-la-convivencia-con-persat.md) | Criterios de salida de la convivencia con Persat | Debería | S | draft | owner | - | - | E11-03 |
 | [E11-09](E11-migracion/E11-09-datos-de-prueba-ficticios.md) | Datos de prueba ficticios | Debe | S | done | dev | - | - | E00-01 |
@@ -190,13 +188,14 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E99-03](E99-icebox/E99-03-agentes-de-ia-dentro-del-producto.md) | Agentes de IA dentro del producto | Podría | L | icebox | admin | - | - | - |
 | [E99-04](E99-icebox/E99-04-portal-de-clientes.md) | Portal de clientes | Podría | L | icebox | admin | - | - | - |
 | [E99-05](E99-icebox/E99-05-emision-de-factura-electronica.md) | Emisión de factura electrónica | Podría | L | icebox | admin | - | - | - |
+| [E99-06](E99-icebox/E99-06-guardar-mis-ordenes-en-el-celular-para-trabajar-sin-senal.md) | Guardar mis órdenes en el celular para trabajar sin señal | Podría | L | icebox | technician | - | - | - |
+| [E99-07](E99-icebox/E99-07-cola-de-cierres-pendientes-de-sincronizar.md) | Cola de cierres pendientes de sincronizar | Podría | L | icebox | technician | - | - | - |
+| [E99-08](E99-icebox/E99-08-ver-el-estado-de-sincronizacion-y-resolver-conflictos.md) | Ver el estado de sincronización y resolver conflictos | Podría | M | icebox | technician, admin | - | - | - |
 
 ## Historias bloqueadas por decisión
 
 | Decisión | Estado | Historias bloqueadas |
 |---|---|---|
-| D-001 | Abierta | E05-09, E05-10, E05-11 |
-| D-002 | Abierta | E03-03, E03-05, E04-12, E07-03, E07-09, E11-02, E11-06 |
 | D-006 | Abierta | E00-05 |
 | D-008 | Abierta | E12-04 |
 | D-009 | Abierta | E00-10 |

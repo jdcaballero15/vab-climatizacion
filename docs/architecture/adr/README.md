@@ -39,9 +39,10 @@ No hace falta ADR para: nombrar una función, agregar un test, corregir un bug.
 |---|---|---|
 | [0001](0001-monorepo.md) | Monorepo | Aceptado |
 | [0002](0002-backend-fastapi-postgresql.md) | Backend con FastAPI y PostgreSQL | Aceptado |
-| [0003](0003-pwa-offline-first-provisional.md) | PWA con modo offline (provisional, depende de D-001) | Provisional |
+| [0003](0003-pwa-offline-first-provisional.md) | PWA con modo offline (provisional, depende de D-001) | Reemplazado por 0009 |
 | [0004](0004-hosting-paas-postgres-administrado.md) | Hosting PaaS con Postgres administrado | Aceptado |
 | [0005](0005-reglas-de-datos.md) | Reglas de datos | Aceptado |
 | [0006](0006-visibilidad-por-rol-en-la-api.md) | Visibilidad por rol en la API | Aceptado |
 | [0007](0007-orden-unificada-con-etapas.md) | Orden unificada con etapas | Aceptado |
 | [0008](0008-agentes-de-ia-en-el-repositorio.md) | Agentes de IA en el repositorio | Aceptado |
+| [0009](0009-pwa-con-conexion-y-borrador-local.md) | App del técnico con conexión y borrador local del cierre | Propuesto |

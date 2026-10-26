@@ -28,4 +28,4 @@ assumes: []
 
 ## Notas técnicas
 
-- Si el técnico anterior tenía datos sin sincronizar (offline), ver conflictos en E05-11.
+- Sin modo offline (ADR 0009) no hay datos sin sincronizar. Si el técnico anterior tenía un cierre pendiente de enviar, el servidor lo rechaza (ver E05-13).

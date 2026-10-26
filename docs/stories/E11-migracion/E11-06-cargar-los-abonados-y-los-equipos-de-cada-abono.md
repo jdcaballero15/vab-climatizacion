@@ -9,8 +9,8 @@ roles: [admin]
 size: M
 areas: [backend, datos]
 depends_on: [E07-03, E11-02, E11-05]
-blocked_by: [D-002]
-assumes: []
+blocked_by: []
+assumes: [D-002]
 ---
 
 # E11-06 Cargar los abonados y los equipos de cada abono

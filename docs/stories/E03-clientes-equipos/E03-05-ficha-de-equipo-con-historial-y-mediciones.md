@@ -9,8 +9,8 @@ roles: [admin, owner]
 size: M
 areas: [backend, web-admin]
 depends_on: [E03-03, E04-06]
-blocked_by: [D-002]
-assumes: []
+blocked_by: []
+assumes: [D-002]
 ---
 
 # E03-05 Ficha de equipo con historial y mediciones

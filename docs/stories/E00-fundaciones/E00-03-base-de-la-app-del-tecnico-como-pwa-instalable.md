@@ -28,7 +28,7 @@ assumes: []
 
 ## Notas técnicas
 
-- La carcasa offline no depende de `D-001`: instalarse y abrir sin red es útil en cualquier caso. El almacenamiento de datos offline está en E05-09 a E05-11.
+- La carcasa offline no depende de `D-001`: instalarse y abrir sin red es útil en cualquier caso. El almacenamiento de datos offline quedó en el icebox (E99-06 a E99-08, ADR 0009).
 
 ## Notas de implementación
 
