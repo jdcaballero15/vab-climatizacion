@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import { NameTakenError } from "./useWorkTypes";
+import { NameTakenError } from "./errors";
 
 interface CatalogItemProps {
   name: string;
