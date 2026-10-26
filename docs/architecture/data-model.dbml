@@ -115,7 +115,12 @@ Table task {
 
 Table equipment_type {
   id uuid [pk]
-  name varchar [not null]
+  name varchar [not null, note: 'Split, cámara frigorífica, etc. Sin lista inicial. Se guarda sin espacios sobrantes']
+  is_active boolean [not null, default: true]
+
+  indexes {
+    `lower(name)` [unique, name: 'uq_equipment_type_name', note: 'Sin distinguir mayúsculas, también contra inactivos']
+  }
 }
 
 Table failure {

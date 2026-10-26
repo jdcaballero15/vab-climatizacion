@@ -47,3 +47,20 @@ class TaskAdminOut(BaseModel):
     work_type_id: uuid.UUID
     name: str
     is_active: bool
+
+
+class EquipmentTypeCreate(BaseModel):
+    name: CatalogName
+
+
+class EquipmentTypeUpdate(BaseModel):
+    name: CatalogName | None = None
+    is_active: bool | None = None
+
+
+class EquipmentTypeAdminOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    is_active: bool
