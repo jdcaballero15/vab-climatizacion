@@ -136,9 +136,13 @@ Table failure {
 
 Table repair {
   id uuid [pk]
-  equipment_type_id uuid [ref: > equipment_type.id]
-  name varchar [not null]
-  is_active boolean [default: true]
+  equipment_type_id uuid [ref: > equipment_type.id, note: 'Null = genérica, aplica a todos los tipos. Mismas reglas que failure']
+  name varchar [not null, note: 'Sin lista inicial. Se guarda sin espacios sobrantes']
+  is_active boolean [not null, default: true]
+
+  indexes {
+    (`coalesce(equipment_type_id, '00000000-0000-0000-0000-000000000000')`, `lower(name)`) [unique, name: 'uq_repair_scope_name', note: 'Único dentro de su tipo y entre genéricas. El cruce genérica-específica lo chequea el servicio']
+  }
 }
 
 // ---------- Clientes y equipos ----------

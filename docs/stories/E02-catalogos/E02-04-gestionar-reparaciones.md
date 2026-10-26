@@ -57,3 +57,13 @@ Validadas con negocio el 2026-10-26:
 - La lógica de fallas y reparaciones es la misma: extraer lo común (repositorio, servicio y, en web-admin, la pantalla) en vez de copiarlo.
 - web-admin: pantalla "Reparaciones", igual que "Fallas". Desactivar o reactivar un tipo de equipo también tiene que refrescar las reparaciones.
 - Si el PR pasa de unas 400 líneas, se divide en backend y web-admin.
+
+## Notas de implementación
+
+Se entrega en dos PR: backend primero, web-admin después.
+
+- Backend (PR 1): endpoints `/admin/repairs` y `/admin/repairs/{id}`, con el mismo contrato que `/admin/failures`, todos con `require_role(admin)`. 409 con `repair_name_already_exists`; inexistente, 404 con `repair_not_found`.
+  - Lo común con fallas se extrajo en vez de copiarse: modelo abstracto `EquipmentScopedCatalog` (columnas e índice único `uq_<tabla>_scope_name`), repositorio genérico `EquipmentScopedRepository` y funciones de servicio parametrizadas por catálogo. `Failure` y `Repair` solo declaran su tabla. Los tests de fallas pasan sin modificarse.
+  - Los esquemas de la API tienen una clase por catálogo (`Failure*` y `Repair*`) sobre una base común, para que el cliente generado los nombre por separado.
+  - Migración `11cec86d9eaa`: crea la tabla sin datos; el `downgrade` la borra.
+- web-admin (PR 2): pendiente.

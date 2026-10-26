@@ -3,7 +3,14 @@ from collections.abc import Sequence
 
 from sqlalchemy import ColumnElement, func, or_
 
-from app.db.models.catalog import EquipmentType, Failure, Task, WorkType
+from app.db.models.catalog import (
+    EquipmentScopedCatalog,
+    EquipmentType,
+    Failure,
+    Repair,
+    Task,
+    WorkType,
+)
 from app.db.repository import BaseRepository
 
 
@@ -62,8 +69,8 @@ class EquipmentTypeRepository(BaseRepository[EquipmentType]):
         return result.scalar_one_or_none()
 
 
-class FailureRepository(BaseRepository[Failure]):
-    model = Failure
+class EquipmentScopedRepository[ModelT: EquipmentScopedCatalog](BaseRepository[ModelT]):
+    """Catálogos de un tipo de equipo o genéricos: fallas y reparaciones."""
 
     async def list_filtered(
         self,
@@ -71,8 +78,8 @@ class FailureRepository(BaseRepository[Failure]):
         equipment_type_id: uuid.UUID | None,
         include_specific: bool,
         include_inactive: bool,
-    ) -> Sequence[Failure]:
-        """Sin tipo, todas las fallas. Con tipo, las genéricas más (si se piden) las de ese tipo."""
+    ) -> Sequence[ModelT]:
+        """Sin tipo, todos los valores. Con tipo, los genéricos y, si se piden, los de ese tipo."""
         stmt = self._select()
         if equipment_type_id is not None:
             scope: ColumnElement[bool] = self.model.equipment_type_id.is_(None)
@@ -86,9 +93,9 @@ class FailureRepository(BaseRepository[Failure]):
 
     async def find_conflicting(
         self, name: str, equipment_type_id: uuid.UUID | None
-    ) -> Sequence[Failure]:
-        """Fallas, activas o no, cuyo nombre choca: una genérica choca con cualquiera;
-        una específica, con las de su tipo y con las genéricas."""
+    ) -> Sequence[ModelT]:
+        """Valores, activos o no, cuyo nombre choca: uno genérico choca con cualquiera;
+        uno específico, con los de su tipo y con los genéricos."""
         stmt = self._select().where(func.lower(self.model.name) == func.lower(name))
         if equipment_type_id is not None:
             stmt = stmt.where(
@@ -99,3 +106,11 @@ class FailureRepository(BaseRepository[Failure]):
             )
         result = await self.session.execute(stmt)
         return result.scalars().all()
+
+
+class FailureRepository(EquipmentScopedRepository[Failure]):
+    model = Failure
+
+
+class RepairRepository(EquipmentScopedRepository[Repair]):
+    model = Repair
