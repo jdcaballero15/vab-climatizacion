@@ -2893,6 +2893,128 @@
           }
         }
       }
+    },
+    "/tech/orders": {
+      "get": {
+        "tags": [
+          "app del técnico"
+        ],
+        "summary": "List My Orders",
+        "operationId": "list_my_orders_tech_orders_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrewOrdersTechnicianOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/tech/orders/{order_id}": {
+      "get": {
+        "tags": [
+          "app del técnico"
+        ],
+        "summary": "Get My Order",
+        "operationId": "get_my_order_tech_orders__order_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailTechnicianOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tech/orders/{order_id}/start": {
+      "post": {
+        "tags": [
+          "app del técnico"
+        ],
+        "summary": "Start My Order",
+        "operationId": "start_my_order_tech_orders__order_id__start_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailTechnicianOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3115,6 +3237,45 @@
           "unclassified"
         ],
         "title": "ClientSegment"
+      },
+      "ClientSiteTechnicianOut": {
+        "properties": {
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "map_url": {
+            "type": "string",
+            "title": "Map Url"
+          },
+          "contact_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Contact Names"
+          }
+        },
+        "type": "object",
+        "required": [
+          "address",
+          "reference",
+          "map_url",
+          "contact_names"
+        ],
+        "title": "ClientSiteTechnicianOut",
+        "description": "Lo que ve el técnico del domicilio de su orden. Sin datos de otros domicilios."
       },
       "ClientSummaryOut": {
         "properties": {
@@ -3473,6 +3634,52 @@
         ],
         "title": "CrewCreate"
       },
+      "CrewOrdersTechnicianOut": {
+        "properties": {
+          "crew": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CrewTechnicianOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "today": {
+            "type": "string",
+            "format": "date",
+            "title": "Today"
+          },
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/OrderTechnicianOut"
+            },
+            "type": "array",
+            "title": "Orders"
+          }
+        },
+        "type": "object",
+        "required": [
+          "crew",
+          "today",
+          "orders"
+        ],
+        "title": "CrewOrdersTechnicianOut"
+      },
+      "CrewTechnicianOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CrewTechnicianOut"
+      },
       "CrewUpdate": {
         "properties": {
           "name": {
@@ -3705,6 +3912,48 @@
           "location_note"
         ],
         "title": "EquipmentCreate"
+      },
+      "EquipmentTechnicianOut": {
+        "properties": {
+          "location_note": {
+            "type": "string",
+            "title": "Location Note"
+          },
+          "equipment_type_name": {
+            "type": "string",
+            "title": "Equipment Type Name"
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "location_note",
+          "equipment_type_name",
+          "brand",
+          "model"
+        ],
+        "title": "EquipmentTechnicianOut"
       },
       "EquipmentTypeAdminOut": {
         "properties": {
@@ -4087,6 +4336,99 @@
         ],
         "title": "OrderChannel"
       },
+      "OrderDetailTechnicianOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "work_type_name": {
+            "type": "string",
+            "title": "Work Type Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date",
+            "title": "Scheduled For"
+          },
+          "site": {
+            "$ref": "#/components/schemas/ClientSiteTechnicianOut"
+          },
+          "equipment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentTechnicianOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requester_area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requester Area"
+          },
+          "tasks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tasks"
+          },
+          "today": {
+            "type": "string",
+            "format": "date",
+            "title": "Today"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "status",
+          "work_type_name",
+          "description",
+          "client_name",
+          "scheduled_for",
+          "site",
+          "equipment",
+          "requester_area",
+          "tasks",
+          "today"
+        ],
+        "title": "OrderDetailTechnicianOut",
+        "description": "Detalle de una orden abierta de la escuadrilla (E05-02). Sin historial ni quién pidió."
+      },
       "OrderKind": {
         "type": "string",
         "enum": [
@@ -4115,6 +4457,72 @@
           "cancelled"
         ],
         "title": "OrderStatus"
+      },
+      "OrderTechnicianOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "work_type_name": {
+            "type": "string",
+            "title": "Work Type Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date",
+            "title": "Scheduled For"
+          },
+          "site": {
+            "$ref": "#/components/schemas/ClientSiteTechnicianOut"
+          },
+          "equipment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentTechnicianOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "status",
+          "work_type_name",
+          "description",
+          "client_name",
+          "scheduled_for",
+          "site",
+          "equipment"
+        ],
+        "title": "OrderTechnicianOut"
       },
       "PendingOrderOut": {
         "properties": {
@@ -4976,6 +5384,10 @@
             "type": "string",
             "title": "Name"
           },
+          "requires_failure_repair": {
+            "type": "boolean",
+            "title": "Requires Failure Repair"
+          },
           "is_active": {
             "type": "boolean",
             "title": "Is Active"
@@ -4985,6 +5397,7 @@
         "required": [
           "id",
           "name",
+          "requires_failure_repair",
           "is_active"
         ],
         "title": "WorkTypeAdminOut"
@@ -5029,6 +5442,17 @@
               }
             ],
             "title": "Is Active"
+          },
+          "requires_failure_repair": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requires Failure Repair"
           }
         },
         "type": "object",

@@ -604,6 +604,57 @@ export interface paths {
         patch: operations["update_field_technician_admin_field_technicians__technician_id__patch"];
         trace?: never;
     };
+    "/tech/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List My Orders */
+        get: operations["list_my_orders_tech_orders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tech/orders/{order_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get My Order */
+        get: operations["get_my_order_tech_orders__order_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tech/orders/{order_id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start My Order */
+        post: operations["start_my_order_tech_orders__order_id__start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -695,6 +746,20 @@ export interface components {
          * @enum {string}
          */
         ClientSegment: "private_person" | "business" | "government" | "healthcare" | "hotel" | "unclassified";
+        /**
+         * ClientSiteTechnicianOut
+         * @description Lo que ve el técnico del domicilio de su orden. Sin datos de otros domicilios.
+         */
+        ClientSiteTechnicianOut: {
+            /** Address */
+            address: string;
+            /** Reference */
+            reference: string | null;
+            /** Map Url */
+            map_url: string;
+            /** Contact Names */
+            contact_names: string[];
+        };
         /** ClientSummaryOut */
         ClientSummaryOut: {
             /**
@@ -797,6 +862,22 @@ export interface components {
             /** App User Id */
             app_user_id?: string | null;
         };
+        /** CrewOrdersTechnicianOut */
+        CrewOrdersTechnicianOut: {
+            crew: components["schemas"]["CrewTechnicianOut"] | null;
+            /**
+             * Today
+             * Format: date
+             */
+            today: string;
+            /** Orders */
+            orders: components["schemas"]["OrderTechnicianOut"][];
+        };
+        /** CrewTechnicianOut */
+        CrewTechnicianOut: {
+            /** Name */
+            name: string;
+        };
         /**
          * CrewUpdate
          * @description Solo se cambian los campos enviados; app_user_id en null desasocia el usuario.
@@ -878,6 +959,17 @@ export interface components {
             serial_number?: string | null;
             /** Notes */
             notes?: string | null;
+        };
+        /** EquipmentTechnicianOut */
+        EquipmentTechnicianOut: {
+            /** Location Note */
+            location_note: string;
+            /** Equipment Type Name */
+            equipment_type_name: string;
+            /** Brand */
+            brand: string | null;
+            /** Model */
+            model: string | null;
         };
         /** EquipmentTypeAdminOut */
         EquipmentTypeAdminOut: {
@@ -1001,6 +1093,42 @@ export interface components {
          */
         OrderChannel: "whatsapp" | "email" | "phone" | "in_person";
         /**
+         * OrderDetailTechnicianOut
+         * @description Detalle de una orden abierta de la escuadrilla (E05-02). Sin historial ni quién pidió.
+         */
+        OrderDetailTechnicianOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            status: components["schemas"]["OrderStatus"];
+            /** Work Type Name */
+            work_type_name: string;
+            /** Description */
+            description: string | null;
+            /** Client Name */
+            client_name: string;
+            /**
+             * Scheduled For
+             * Format: date
+             */
+            scheduled_for: string;
+            site: components["schemas"]["ClientSiteTechnicianOut"];
+            equipment: components["schemas"]["EquipmentTechnicianOut"] | null;
+            /** Requester Area */
+            requester_area: string | null;
+            /** Tasks */
+            tasks: string[];
+            /**
+             * Today
+             * Format: date
+             */
+            today: string;
+        };
+        /**
          * OrderKind
          * @enum {string}
          */
@@ -1015,6 +1143,30 @@ export interface components {
          * @enum {string}
          */
         OrderStatus: "pending" | "assigned" | "in_progress" | "done" | "invoiced" | "paid" | "cancelled";
+        /** OrderTechnicianOut */
+        OrderTechnicianOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            status: components["schemas"]["OrderStatus"];
+            /** Work Type Name */
+            work_type_name: string;
+            /** Description */
+            description: string | null;
+            /** Client Name */
+            client_name: string;
+            /**
+             * Scheduled For
+             * Format: date
+             */
+            scheduled_for: string;
+            site: components["schemas"]["ClientSiteTechnicianOut"];
+            equipment: components["schemas"]["EquipmentTechnicianOut"] | null;
+        };
         /** PendingOrderOut */
         PendingOrderOut: {
             /**
@@ -1351,6 +1503,8 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Requires Failure Repair */
+            requires_failure_repair: boolean;
             /** Is Active */
             is_active: boolean;
         };
@@ -1365,6 +1519,8 @@ export interface components {
             name?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+            /** Requires Failure Repair */
+            requires_failure_repair?: boolean | null;
         };
     };
     responses: never;
@@ -3160,6 +3316,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FieldTechnicianAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_orders_tech_orders_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrewOrdersTechnicianOut"];
+                };
+            };
+        };
+    };
+    get_my_order_tech_orders__order_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetailTechnicianOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_my_order_tech_orders__order_id__start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetailTechnicianOut"];
                 };
             };
             /** @description Validation Error */

@@ -21,6 +21,7 @@ class WorkTypeCreate(BaseModel):
 class WorkTypeUpdate(BaseModel):
     name: CatalogName | None = None
     is_active: bool | None = None
+    requires_failure_repair: bool | None = None
 
 
 class WorkTypeAdminOut(BaseModel):
@@ -28,6 +29,7 @@ class WorkTypeAdminOut(BaseModel):
 
     id: uuid.UUID
     name: str
+    requires_failure_repair: bool
     is_active: bool
 
 

@@ -419,3 +419,24 @@ def test_migracion_a_escuadrilla_no_corre_con_asignaciones() -> None:
     finally:
         # El downgrade de c7d2f4e81a56 quita la tabla con sus filas.
         command.downgrade(cfg, "base")
+
+
+# E02-10, criterio 3: la migración marca Reparación y Service; el downgrade quita la columna.
+def test_migracion_marca_los_tipos_que_piden_falla_y_reparacion() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    columna = (
+        "SELECT column_name FROM information_schema.columns "
+        "WHERE table_name = 'work_type' AND column_name = 'requires_failure_repair'"
+    )
+    command.upgrade(cfg, "head")
+    try:
+        assert _names("SELECT name FROM work_type WHERE requires_failure_repair") == [
+            "Reparación",
+            "Service",
+        ]
+        command.downgrade(cfg, "e5b8c1d4a903")
+        assert _names(columna) == []
+    finally:
+        command.downgrade(cfg, "base")

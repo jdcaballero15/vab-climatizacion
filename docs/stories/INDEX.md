@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 120 historias.** done: 23, draft: 85, icebox: 8, ready: 4
+**Total: 120 historias.** done: 24, draft: 85, icebox: 8, ready: 3
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -46,7 +46,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E02-07](E02-catalogos/E02-07-promover-un-texto-de-otro-a-la-lista.md) | Promover un texto de "Otro" a la lista | Debería | M | draft | admin | - | - | E02-03, E02-04, E05-04 |
 | [E02-08](E02-catalogos/E02-08-importar-y-exportar-catalogos-por-csv.md) | Importar y exportar catálogos por CSV | Podría | M | draft | admin | - | D-003 | E02-01, E02-05 |
 | [E02-09](E02-catalogos/E02-09-gestionar-escuadrillas-y-tecnicos.md) | Gestionar escuadrillas y técnicos | Debe | M | done | admin | - | - | E01-03, E01-04 |
-| [E02-10](E02-catalogos/E02-10-marcar-que-tipos-de-trabajo-piden-falla-y-reparacion.md) | Marcar qué tipos de trabajo piden falla y reparación | Debe | S | ready | admin | - | - | E02-01 |
+| [E02-10](E02-catalogos/E02-10-marcar-que-tipos-de-trabajo-piden-falla-y-reparacion.md) | Marcar qué tipos de trabajo piden falla y reparación | Debe | S | done | admin | - | - | E02-01 |
 
 ## E03 Clientes y equipos
 
