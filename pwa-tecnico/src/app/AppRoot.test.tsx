@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { notifySessionExpired } from "../features/auth/session";
@@ -40,7 +41,9 @@ function renderApp() {
   });
   render(
     <QueryClientProvider client={client}>
-      <AppRoot />
+      <MemoryRouter>
+        <AppRoot />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
   return client;
