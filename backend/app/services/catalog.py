@@ -115,6 +115,8 @@ async def update_work_type(
         work_type.name = data.name
     if data.is_active is not None:
         work_type.is_active = data.is_active
+    if data.requires_failure_repair is not None:
+        work_type.requires_failure_repair = data.requires_failure_repair
     await _commit(session, WorkTypeNameAlreadyExistsError)
     await session.refresh(work_type)
     return work_type

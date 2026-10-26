@@ -4,7 +4,7 @@ title: "Marcar qué tipos de trabajo piden falla y reparación"
 epic: E02
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin]
 size: S
 areas: [backend, web-admin]
@@ -34,3 +34,9 @@ assumes: []
 ## Fuera de alcance
 
 - Otras reglas de cierre por tipo de trabajo (por ejemplo, firma obligatoria según el tipo).
+
+## Notas de implementación
+
+- Migración `a1f3c5e7b902`: agrega `requires_failure_repair` con `false` por defecto y marca por nombre (sin distinguir mayúsculas) "Reparación" y "Service". Si alguno fue renombrado, queda sin marcar. El downgrade quita la columna.
+- `WorkTypeUpdate` y `WorkTypeAdminOut` suman el campo; cambiar otro campo no toca la marca.
+- Web-admin: casilla "Pide falla y reparación al cerrar" en cada tipo de trabajo de la pantalla de catálogos; se guarda al tocarla.

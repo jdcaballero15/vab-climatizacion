@@ -70,6 +70,16 @@ function WorkTypeItem({ workType, showInactive }: { workType: WorkType; showInac
       nameTakenMessage={WORK_TYPE_TAKEN}
       onSave={(changes) => update.mutate(changes)}
     >
+      <label className="catalog__flag">
+        <input
+          type="checkbox"
+          aria-label={`${workType.name} pide falla y reparación`}
+          checked={workType.requires_failure_repair}
+          disabled={update.isPending}
+          onChange={(event) => update.mutate({ requires_failure_repair: event.target.checked })}
+        />
+        Pide falla y reparación al cerrar
+      </label>
       <button
         type="button"
         className="catalog__expand"

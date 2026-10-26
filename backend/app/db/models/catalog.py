@@ -18,6 +18,10 @@ class WorkType(TimestampedBase):
     __table_args__ = (Index("uq_work_type_name", text("lower(name)"), unique=True),)
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    # El cierre pide falla y reparación solo en los tipos marcados (E02-10).
+    requires_failure_repair: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 

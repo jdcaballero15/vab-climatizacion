@@ -138,7 +138,12 @@ async def test_desactivar_y_reactivar_tipo(admin: User) -> None:
 
     assert _nombres(activos) == []
     assert _nombres(todos) == ["Retiro"]
-    assert consultado.json() == {"id": tipo["id"], "name": "Retiro", "is_active": False}
+    assert consultado.json() == {
+        "id": tipo["id"],
+        "name": "Retiro",
+        "requires_failure_repair": False,
+        "is_active": False,
+    }
     assert _nombres(reactivado) == ["Retiro"]
 
 
@@ -308,3 +313,50 @@ async def test_tecnico_y_direccion_reciben_403(admin: User, role: UserRole) -> N
             await client.patch(tarea_url, json={"name": "X"}, headers=_auth(otro)),
         ]
     assert [r.status_code for r in respuestas] == [403] * len(respuestas)
+
+
+# E02-10, criterios 1 y 2: un tipo nuevo no pide falla y reparación; se marca y desmarca.
+async def test_marcar_que_un_tipo_pide_falla_y_reparacion(admin: User) -> None:
+    async with _client() as client:
+        creado = await _crear_tipo(client, admin, "Reparación")
+        url = f"/admin/work-types/{creado['id']}"
+        marcado = await client.patch(
+            url, json={"requires_failure_repair": True}, headers=_auth(admin)
+        )
+        listado = await client.get("/admin/work-types", headers=_auth(admin))
+        desmarcado = await client.patch(
+            url, json={"requires_failure_repair": False}, headers=_auth(admin)
+        )
+
+    assert creado["requires_failure_repair"] is False
+    assert marcado.status_code == 200, marcado.text
+    assert marcado.json()["requires_failure_repair"] is True
+    assert listado.json()[0]["requires_failure_repair"] is True
+    assert desmarcado.json()["requires_failure_repair"] is False
+
+
+# E02-10: cambiar otro campo no toca la marca.
+async def test_renombrar_no_cambia_la_marca(admin: User) -> None:
+    async with _client() as client:
+        creado = await _crear_tipo(client, admin, "Reparación")
+        url = f"/admin/work-types/{creado['id']}"
+        await client.patch(url, json={"requires_failure_repair": True}, headers=_auth(admin))
+        renombrado = await client.patch(url, json={"name": "Reparaciones"}, headers=_auth(admin))
+
+    assert renombrado.json()["requires_failure_repair"] is True
+
+
+# E02-10, criterio 4: técnico y dirección no pueden cambiar la marca.
+@pytest.mark.parametrize("role", [UserRole.technician, UserRole.owner])
+async def test_otros_roles_no_cambian_la_marca(admin: User, role: UserRole) -> None:
+    otro = make_user(email=f"{role.value}@ot-demo.com", role=role)
+    await _seed([otro])
+    async with _client() as client:
+        creado = await _crear_tipo(client, admin, "Reparación")
+        response = await client.patch(
+            f"/admin/work-types/{creado['id']}",
+            json={"requires_failure_repair": True},
+            headers=_auth(otro),
+        )
+
+    assert response.status_code == 403

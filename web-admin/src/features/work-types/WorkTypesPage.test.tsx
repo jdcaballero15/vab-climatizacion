@@ -6,8 +6,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Task, WorkType } from "./types";
 import { WorkTypesPage } from "./WorkTypesPage";
 
-const SERVICE: WorkType = { id: "wt1", name: "Service", is_active: true };
-const RETIRO: WorkType = { id: "wt2", name: "Retiro", is_active: false };
+const SERVICE: WorkType = {
+  id: "wt1",
+  name: "Service",
+  requires_failure_repair: false,
+  is_active: true,
+};
+const RETIRO: WorkType = {
+  id: "wt2",
+  name: "Retiro",
+  requires_failure_repair: false,
+  is_active: false,
+};
 const LIMPIEZA: Task = { id: "t1", work_type_id: "wt1", name: "Limpieza", is_active: true };
 
 function json(body: unknown, status = 200) {
@@ -79,7 +89,10 @@ describe("WorkTypesPage", () => {
   it("crea un tipo de trabajo", async () => {
     const calls = stubApi((call) =>
       call.method === "POST"
-        ? json({ id: "wt3", name: "Relevamiento", is_active: true }, 201)
+        ? json(
+            { id: "wt3", name: "Relevamiento", requires_failure_repair: false, is_active: true },
+            201,
+          )
         : undefined,
     );
     renderPage();
@@ -186,5 +199,40 @@ describe("WorkTypesPage", () => {
         }),
       ),
     );
+  });
+
+  // E02-10, criterio 1: marcar que un tipo pide falla y reparación al cerrar.
+  it("marca que un tipo de trabajo pide falla y reparación", async () => {
+    const calls = stubApi((call) =>
+      call.method === "PATCH" ? json({ ...SERVICE, requires_failure_repair: true }) : undefined,
+    );
+    renderPage();
+
+    const casilla = await screen.findByRole("checkbox", {
+      name: "Service pide falla y reparación",
+    });
+    expect(casilla).not.toBeChecked();
+
+    await userEvent.click(casilla);
+
+    await waitFor(() =>
+      expect(calls.find((call) => call.method === "PATCH")).toMatchObject({
+        path: "/api/admin/work-types/wt1",
+        body: { requires_failure_repair: true },
+      }),
+    );
+  });
+
+  it("muestra marcado un tipo que ya pide falla y reparación", async () => {
+    stubApi((call) =>
+      call.method === "GET" && !call.path.endsWith("/tasks")
+        ? json([{ ...SERVICE, requires_failure_repair: true }])
+        : undefined,
+    );
+    renderPage();
+
+    expect(
+      await screen.findByRole("checkbox", { name: "Service pide falla y reparación" }),
+    ).toBeChecked();
   });
 });
