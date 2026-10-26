@@ -4,7 +4,7 @@ title: "Gestionar tipos de equipo"
 epic: E02
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin]
 size: S
 areas: [backend, web-admin]
@@ -52,3 +52,15 @@ Validadas con negocio el 2026-10-26:
 - Reusar el servicio y los repositorios de catálogos de E02-01 (`services/catalog.py`, `db/repositories/catalog.py`).
 - web-admin: pantalla "Tipos de equipo" con alta, edición del nombre, desactivar y reactivar, y ver los desactivados. Reusar `CatalogItem` y `NewNameForm` de `features/work-types/`.
 - Si el PR pasa de unas 400 líneas, se divide en backend y web-admin, como en E02-01.
+
+## Notas de implementación
+
+Se entrega en dos PR: backend primero, web-admin después.
+
+- Backend: endpoints `/admin/equipment-types` y `/admin/equipment-types/{id}` (listar con `include_inactive`, crear, ver, editar), todos con `require_role(admin)`. Lógica en `services/catalog.py`, repositorio `EquipmentTypeRepository` en `db/repositories/catalog.py`.
+  - Desactivar y reactivar es `PATCH` con `is_active`, no `DELETE`.
+  - Duplicados: chequeo en el servicio e índice único `uq_equipment_type_name` sobre `lower(name)` como respaldo. 409 con `equipment_type_name_already_exists`; inexistente, 404 con `equipment_type_not_found`.
+  - Migración `891a93da0872`: crea la tabla y carga los seis tipos iniciales del cliente; el `downgrade` la borra.
+- web-admin: pantalla "Tipos de equipo" en `features/equipment-types/`, visible solo para administración, con alta, renombrar, desactivar y reactivar, ver los desactivados y un aviso cuando no hay tipos activos. Reusa `CatalogItem`, `NewNameForm` y `NameTakenError` de `features/work-types/`.
+  - Se regeneró `openapi.json` y `src/api/schema.d.ts` desde el backend.
+- `EquipmentTypeRepository` repite el patrón de `WorkTypeRepository`. Con fallas y reparaciones (E02-03, E02-04) conviene extraer una base común para catálogos, y decidir si los componentes compartidos se mueven fuera de `features/work-types/`.
