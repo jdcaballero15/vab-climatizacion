@@ -4,7 +4,7 @@ title: "Ver el detalle de una orden asignada"
 epic: E05
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [technician]
 size: S
 areas: [backend, pwa]
@@ -51,6 +51,14 @@ Validadas con negocio el 2026-10-26, con el prototipo del cliente:
 ## Notas técnicas
 
 - Endpoint `GET /tech/orders/{id}` con `require_role(technician)`. La escuadrilla sale del usuario de la sesión, como en E05-01; mismo filtro (`CREW_OPEN_STATUSES` y asignación vigente). Si no cumple, 404 `order_not_found`.
-- Esquema `OrderDetailTechnicianOut`: lo de `OrderTechnicianOut` más `requester_area` y `tasks` (nombres de las tareas activas del tipo de trabajo, por orden de carga). Cubierto por el test de contrato E00-04.
+- Esquema `OrderDetailTechnicianOut`: lo de `OrderTechnicianOut` más `requester_area` y `tasks` (nombres de las tareas activas del tipo de trabajo, por nombre como en administración; ninguna si el tipo está desactivado). Cubierto por el test de contrato E00-04.
 - `today` del backend para "Hoy" y "Vencida", como en la lista.
 - PWA: ruta `/ordenes/:id` (la lista pasa a `/`). La tarjeta de la lista abre el detalle. La dirección es un enlace a `map_url`.
+
+## Notas de implementación
+
+Se entrega en dos PR: backend primero, PWA después.
+
+- Backend (PR 1): `GET /tech/orders/{id}` devuelve `OrderDetailTechnicianOut`, que extiende `OrderTechnicianOut` con `requester_area`, `tasks` y `today`. Usa la misma consulta que la lista (`list_open_for_crew` con un filtro opcional por id) y la misma función que arma cada orden, para que lista y detalle no se desfasen.
+- Las tareas salen de `catalog.list_tasks` (solo activas, ninguna si el tipo de trabajo está desactivado), ordenadas por nombre. No hay un orden propio de tareas; si el cliente quiere ordenarlas a mano, es otra historia.
+- Cualquier orden que no sea abierta y de la escuadrilla del usuario responde 404 `order_not_found`.

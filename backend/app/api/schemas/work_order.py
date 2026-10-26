@@ -103,6 +103,16 @@ class OrderTechnicianOut(BaseModel):
     equipment: EquipmentTechnicianOut | None
 
 
+class OrderDetailTechnicianOut(OrderTechnicianOut):
+    """Detalle de una orden abierta de la escuadrilla (E05-02). Sin historial ni quién pidió."""
+
+    # Dónde se pidió (sector, piso o ala); quién pidió no llega al técnico.
+    requester_area: str | None
+    # Tareas activas del tipo de trabajo, de solo lectura: se tildan al cerrar (E05-04).
+    tasks: list[str]
+    today: date
+
+
 class CrewTechnicianOut(BaseModel):
     name: str
 
