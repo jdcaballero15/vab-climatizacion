@@ -9,8 +9,8 @@ roles: [admin]
 size: M
 areas: [backend, web-admin]
 depends_on: [E03-02, E02-02]
-blocked_by: [D-002]
-assumes: []
+blocked_by: []
+assumes: [D-002]
 ---
 
 # E03-03 Alta y edición de equipos
@@ -21,11 +21,14 @@ assumes: []
 
 ## Criterios de aceptación
 
-1. **Dado:** administración. **Cuando:** crea un equipo con tipo, domicilio y marca o modelo. **Entonces:** queda asociado al cliente y disponible para órdenes.
-2. **Dado:** el esquema de identificación decidido en `D-002`. **Cuando:** se carga un equipo. **Entonces:** se exige el identificador que corresponda (código propio o ubicación dentro del cliente).
+1. **Dado:** administración. **Cuando:** crea un equipo con domicilio, ubicación y tipo. **Entonces:** queda asociado al cliente y disponible para órdenes. Marca, modelo y el resto de los datos son opcionales.
+2. **Dado:** un equipo nuevo. **Cuando:** se guarda. **Entonces:** el sistema le genera el código interno (`EA` + número de cliente + correlativo) y no se puede escribir a mano.
 3. **Dado:** un equipo. **Cuando:** se quiere eliminar. **Entonces:** solo se puede dar de baja lógica y conserva su historial.
-4. **Dado:** un identificador duplicado dentro del cliente. **Cuando:** se guarda. **Entonces:** se rechaza.
+4. **Dado:** un código interno que ya existe en cualquier cliente. **Cuando:** se guarda. **Entonces:** se rechaza.
+5. **Dado:** un equipo. **Cuando:** se le cambia la ubicación. **Entonces:** conserva su código y su historial.
+6. **Dado:** el rol técnico. **Cuando:** llama a la API de equipos de administración. **Entonces:** recibe acceso denegado.
 
 ## Notas técnicas
 
-- El modelo tiene `internal_code` y `location_note` opcionales hasta resolver `D-002`. Entre 200 y 1.000 equipos.
+- Identificación según la propuesta de `D-002`: `internal_code` único en toda la empresa y generado por el sistema, `location_note` obligatoria y sin unicidad (dos equipos pueden compartir ubicación). Unos 530 equipos en Persat.
+- El código usa el número de cliente (`client.number`, E03-01).

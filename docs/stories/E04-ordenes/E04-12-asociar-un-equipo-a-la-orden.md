@@ -9,8 +9,8 @@ roles: [admin]
 size: S
 areas: [backend, web-admin]
 depends_on: [E04-02, E03-03]
-blocked_by: [D-002]
-assumes: []
+blocked_by: []
+assumes: [D-002]
 ---
 
 # E04-12 Asociar un equipo a la orden

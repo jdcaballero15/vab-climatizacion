@@ -26,4 +26,4 @@ assumes: []
 
 ## Notas técnicas
 
-- El cliente contestó que lo evaluaría. No es un sí firme, por eso queda fuera de la Fase 1. Depende de `D-002`.
+- El cliente contestó que lo evaluaría. No es un sí firme, por eso queda fuera de la Fase 1. Si vuelve, se apoya en el código interno del equipo (`D-002`).

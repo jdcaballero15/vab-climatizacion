@@ -10,7 +10,7 @@ size: M
 areas: [backend, web-admin]
 depends_on: [E01-04]
 blocked_by: []
-assumes: []
+assumes: [D-002]
 ---
 
 # E03-01 Alta y edición de clientes
@@ -30,3 +30,4 @@ assumes: []
 ## Notas técnicas
 
 - Entre 50 y 200 clientes. CUIT o DNI del cliente es dato personal (ver `SECURITY.md`).
+- Cada cliente tiene un número único (`client.number`) que forma parte del código de sus equipos (`D-002`). En los clientes nuevos lo asigna el sistema; en los migrados se toma el de Persat (E11-01).
