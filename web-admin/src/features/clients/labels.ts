@@ -19,3 +19,7 @@ export const TAX_CONDITION_LABELS: Record<TaxCondition, string> = {
 export function siteName(site: Pick<Site, "label" | "address">): string {
   return site.label ?? site.address;
 }
+
+export function equipmentCountLabel(count: number): string {
+  return count === 1 ? "1 equipo" : `${count} equipos`;
+}

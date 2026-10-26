@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ClientsPage } from "./ClientsPage";
-import type { Client, ClientSummary, Contact, Site } from "./types";
+import type { Client, ClientSummary, Contact, Equipment, Site } from "./types";
 
 const HOTEL: Client = {
   id: "c1",
@@ -38,6 +38,7 @@ const SEDE: Site = {
   address: "Av. Belgrano 123",
   reference: "Piso 2",
   is_active: true,
+  equipment_count: 2,
   map_url: `${MAPS}Av.%20Belgrano%20123%2C%20Santiago%20del%20Estero`,
 };
 const DEPOSITO: Site = {
@@ -47,7 +48,41 @@ const DEPOSITO: Site = {
   address: "Calle Falsa 742",
   reference: null,
   is_active: false,
+  equipment_count: 0,
   map_url: `${MAPS}Calle%20Falsa%20742%2C%20Santiago%20del%20Estero`,
+};
+const OTRA_SEDE: Site = {
+  ...SEDE,
+  id: "s3",
+  label: "Depósito",
+  address: "Ruta 9",
+  equipment_count: 1,
+};
+const TIPOS = [
+  { id: "t1", name: "Aire acondicionado", is_active: true },
+  { id: "t2", name: "Freezer", is_active: true },
+  { id: "t3", name: "Tipo viejo", is_active: false },
+];
+const SPLIT: Equipment = {
+  id: "e1",
+  client_site_id: "s1",
+  equipment_type_id: "t1",
+  internal_code: "EA1064201",
+  location_note: "Habitación 12",
+  brand: "Marca Ficticia",
+  model: "Split 3000",
+  serial_number: null,
+  notes: null,
+};
+const FREEZER: Equipment = {
+  ...SPLIT,
+  id: "e2",
+  client_site_id: "s3",
+  equipment_type_id: "t2",
+  internal_code: "EF1064202",
+  location_note: "Cocina",
+  brand: null,
+  model: null,
 };
 
 function json(body: unknown, status = 200) {
@@ -71,7 +106,11 @@ function mockApi(handler: Handler) {
     if (response) {
       return response;
     }
-    if (url.pathname.endsWith("/contacts") || url.pathname.endsWith("/sites")) {
+    if (
+      ["/contacts", "/sites", "/equipment", "/equipment-types"].some((end) =>
+        url.pathname.endsWith(end),
+      )
+    ) {
       return json([]);
     }
     return json(page([]));
@@ -501,6 +540,182 @@ describe("ClientsPage", () => {
         client_site_id: "s1",
         name: "Beto",
       });
+    });
+  });
+
+  describe("equipos (E03-03)", () => {
+    function conEquipos(extra: Handler = () => undefined) {
+      return mockApi(async (request, url) => {
+        const propio = await extra(request, url);
+        if (propio) {
+          return propio;
+        }
+        if (url.pathname.endsWith("/admin/clients") && request.method === "GET") {
+          return json(page([HOTEL]));
+        }
+        if (url.pathname.endsWith("/admin/clients/c1")) {
+          return json(HOTEL);
+        }
+        if (url.pathname.endsWith("/c1/sites") && request.method === "GET") {
+          return json([SEDE, DEPOSITO, OTRA_SEDE]);
+        }
+        if (url.pathname.endsWith("/admin/equipment-types")) {
+          return json(TIPOS);
+        }
+        if (url.pathname.endsWith("/c1/equipment") && request.method === "GET") {
+          const siteId = url.searchParams.get("site_id");
+          return json([FREEZER, SPLIT].filter((e) => !siteId || e.client_site_id === siteId));
+        }
+        return undefined;
+      });
+    }
+
+    async function abrirEquipos() {
+      renderClients();
+      await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
+      return within(await screen.findByRole("region", { name: "Equipos" }));
+    }
+
+    // Criterio 6: ubicación y tipo primero, después código, domicilio, marca y modelo.
+    it("lista los equipos del cliente con ubicación, tipo, código y domicilio", async () => {
+      conEquipos();
+      const equipos = await abrirEquipos();
+
+      const split = within(await equipos.findByRole("listitem", { name: "EA1064201" }));
+      expect(split.getByText("Habitación 12")).toBeInTheDocument();
+      expect(await split.findByText("Aire acondicionado")).toBeInTheDocument();
+      expect(await split.findByText("Sede central")).toBeInTheDocument();
+      expect(split.getByText("Marca Ficticia")).toBeInTheDocument();
+      expect(split.getByText("Split 3000")).toBeInTheDocument();
+      expect(equipos.getByRole("listitem", { name: "EF1064202" })).toBeInTheDocument();
+    });
+
+    // Criterio 6: filtro por domicilio.
+    it("filtra los equipos por domicilio", async () => {
+      const fetchMock = conEquipos();
+      const equipos = await abrirEquipos();
+      await equipos.findByRole("listitem", { name: "EF1064202" });
+
+      await userEvent.selectOptions(await equipos.findByLabelText("Filtrar por domicilio"), "s1");
+
+      await waitFor(() =>
+        expect(equipos.queryByRole("listitem", { name: "EF1064202" })).not.toBeInTheDocument(),
+      );
+      const ultima = calls(fetchMock, "GET", "/c1/equipment").at(-1);
+      expect(new URL(ultima!.url).searchParams.get("site_id")).toBe("s1");
+    });
+
+    // Criterio 7: cada domicilio muestra su cantidad de equipos.
+    it("muestra la cantidad de equipos de cada domicilio", async () => {
+      conEquipos();
+      renderClients();
+      await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
+      const domicilios = within(await screen.findByRole("region", { name: "Domicilios" }));
+
+      const sede = within(await domicilios.findByRole("listitem", { name: "Sede central" }));
+      expect(sede.getByText("2 equipos")).toBeInTheDocument();
+      const deposito = within(domicilios.getByRole("listitem", { name: "Depósito" }));
+      expect(deposito.getByText("1 equipo")).toBeInTheDocument();
+    });
+
+    // Criterios 1 y 8: alta con lo mínimo; solo se ofrecen domicilios y tipos activos.
+    it("agrega un equipo con domicilio, tipo y ubicación", async () => {
+      const fetchMock = conEquipos((request, url) =>
+        url.pathname.endsWith("/c1/equipment") && request.method === "POST"
+          ? json({ ...SPLIT, id: "e3", internal_code: "EA1064203" }, 201)
+          : undefined,
+      );
+      const equipos = await abrirEquipos();
+
+      const alta = within(equipos.getByRole("form", { name: "Agregar equipo" }));
+      const domicilio = await alta.findByLabelText("Domicilio");
+      await within(domicilio).findByRole("option", { name: "Sede central" });
+      expect(
+        within(domicilio).queryByRole("option", { name: "Calle Falsa 742" }),
+      ).not.toBeInTheDocument();
+      const tipo = alta.getByLabelText("Tipo de equipo");
+      await within(tipo).findByRole("option", { name: "Freezer" });
+      expect(within(tipo).queryByRole("option", { name: "Tipo viejo" })).not.toBeInTheDocument();
+
+      await userEvent.selectOptions(domicilio, "s3");
+      await userEvent.selectOptions(tipo, "t2");
+      await userEvent.type(alta.getByLabelText("Ubicación"), "Cámara 2");
+      await userEvent.click(alta.getByRole("button", { name: "Agregar equipo" }));
+
+      await waitFor(() => expect(calls(fetchMock, "POST", "/c1/equipment")).toHaveLength(1));
+      expect(await calls(fetchMock, "POST", "/c1/equipment")[0].json()).toEqual({
+        client_site_id: "s3",
+        equipment_type_id: "t2",
+        location_note: "Cámara 2",
+        brand: null,
+        model: null,
+        serial_number: null,
+        notes: null,
+      });
+    });
+
+    // Criterio 9: la ubicación es obligatoria, también en el cliente.
+    it("no manda un equipo sin ubicación ni tipo", async () => {
+      const fetchMock = conEquipos();
+      const equipos = await abrirEquipos();
+
+      const alta = within(equipos.getByRole("form", { name: "Agregar equipo" }));
+      await userEvent.type(alta.getByLabelText("Ubicación"), "   ");
+      await userEvent.click(alta.getByRole("button", { name: "Agregar equipo" }));
+
+      expect(await alta.findByText("Falta el tipo de equipo y la ubicación.")).toBeInTheDocument();
+      expect(calls(fetchMock, "POST", "/c1/equipment")).toHaveLength(0);
+    });
+
+    // Criterio 5: editar y mudar sin mandar el código ni campos de más.
+    it("edita y muda un equipo a otro domicilio", async () => {
+      const fetchMock = conEquipos((request, url) =>
+        url.pathname.endsWith("/admin/equipment/e1") && request.method === "PATCH"
+          ? json({ ...SPLIT, client_site_id: "s3", location_note: "Depósito norte" })
+          : undefined,
+      );
+      const equipos = await abrirEquipos();
+
+      await userEvent.click(await equipos.findByRole("button", { name: "Editar EA1064201" }));
+      const edicion = within(equipos.getByRole("form", { name: "Editar EA1064201" }));
+      await userEvent.selectOptions(edicion.getByLabelText("Domicilio"), "s3");
+      await userEvent.clear(edicion.getByLabelText("Ubicación"));
+      await userEvent.type(edicion.getByLabelText("Ubicación"), "Depósito norte");
+      await userEvent.click(edicion.getByRole("button", { name: "Guardar" }));
+
+      await waitFor(() => expect(calls(fetchMock, "PATCH", "/admin/equipment/e1")).toHaveLength(1));
+      expect(await calls(fetchMock, "PATCH", "/admin/equipment/e1")[0].json()).toEqual({
+        client_site_id: "s3",
+        equipment_type_id: "t1",
+        location_note: "Depósito norte",
+        brand: "Marca Ficticia",
+        model: "Split 3000",
+        serial_number: null,
+        notes: null,
+      });
+    });
+
+    it("muestra el error del backend al guardar", async () => {
+      conEquipos((request, url) =>
+        url.pathname.endsWith("/c1/equipment") && request.method === "POST"
+          ? json(
+              { detail: { code: "site_inactive", message: "El domicilio está desactivado." } },
+              422,
+            )
+          : undefined,
+      );
+      const equipos = await abrirEquipos();
+
+      const alta = within(equipos.getByRole("form", { name: "Agregar equipo" }));
+      await within(await alta.findByLabelText("Domicilio")).findByRole("option", {
+        name: "Sede central",
+      });
+      await userEvent.selectOptions(alta.getByLabelText("Domicilio"), "s1");
+      await userEvent.selectOptions(alta.getByLabelText("Tipo de equipo"), "t1");
+      await userEvent.type(alta.getByLabelText("Ubicación"), "Oficina");
+      await userEvent.click(alta.getByRole("button", { name: "Agregar equipo" }));
+
+      expect(await alta.findByText("El domicilio está desactivado.")).toBeInTheDocument();
     });
   });
 });

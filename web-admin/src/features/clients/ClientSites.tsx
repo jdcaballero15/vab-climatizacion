@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 
-import { siteName } from "./labels";
+import { equipmentCountLabel, siteName } from "./labels";
 import type { Site, SiteCreate } from "./types";
 import { useCreateSite, useSites, useUpdateSite } from "./useClients";
 
@@ -109,6 +109,7 @@ function SiteRow({ clientId, site }: { clientId: string; site: Site }) {
       {site.label && <strong>{site.label}</strong>}
       <span>{site.address}</span>
       {site.reference && <span>{site.reference}</span>}
+      <span>{equipmentCountLabel(site.equipment_count)}</span>
       <a href={site.map_url} target="_blank" rel="noreferrer">
         Ver en el mapa
       </a>

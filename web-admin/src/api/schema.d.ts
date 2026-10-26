@@ -462,6 +462,42 @@ export interface paths {
         patch: operations["update_site_admin_sites__site_id__patch"];
         trace?: never;
     };
+    "/admin/clients/{client_id}/equipment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Equipment */
+        get: operations["list_equipment_admin_clients__client_id__equipment_get"];
+        put?: never;
+        /** Create Equipment */
+        post: operations["create_equipment_admin_clients__client_id__equipment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/equipment/{equipment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Equipment */
+        get: operations["get_equipment_admin_equipment__equipment_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Equipment */
+        patch: operations["update_equipment_admin_equipment__equipment_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -594,6 +630,59 @@ export interface components {
             /** Receives Monthly Report */
             receives_monthly_report?: boolean | null;
         };
+        /** EquipmentAdminOut */
+        EquipmentAdminOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Client Site Id
+             * Format: uuid
+             */
+            client_site_id: string;
+            /**
+             * Equipment Type Id
+             * Format: uuid
+             */
+            equipment_type_id: string;
+            /** Internal Code */
+            internal_code: string;
+            /** Location Note */
+            location_note: string;
+            /** Brand */
+            brand: string | null;
+            /** Model */
+            model: string | null;
+            /** Serial Number */
+            serial_number: string | null;
+            /** Notes */
+            notes: string | null;
+        };
+        /** EquipmentCreate */
+        EquipmentCreate: {
+            /**
+             * Client Site Id
+             * Format: uuid
+             */
+            client_site_id: string;
+            /**
+             * Equipment Type Id
+             * Format: uuid
+             */
+            equipment_type_id: string;
+            /** Location Note */
+            location_note: string;
+            /** Brand */
+            brand?: string | null;
+            /** Model */
+            model?: string | null;
+            /** Serial Number */
+            serial_number?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
         /** EquipmentTypeAdminOut */
         EquipmentTypeAdminOut: {
             /**
@@ -617,6 +706,26 @@ export interface components {
             name?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+        };
+        /**
+         * EquipmentUpdate
+         * @description Solo se cambian los campos enviados; un dato opcional en null se borra.
+         */
+        EquipmentUpdate: {
+            /** Client Site Id */
+            client_site_id?: string | null;
+            /** Equipment Type Id */
+            equipment_type_id?: string | null;
+            /** Location Note */
+            location_note?: string | null;
+            /** Brand */
+            brand?: string | null;
+            /** Model */
+            model?: string | null;
+            /** Serial Number */
+            serial_number?: string | null;
+            /** Notes */
+            notes?: string | null;
         };
         /** FailureAdminOut */
         FailureAdminOut: {
@@ -741,6 +850,8 @@ export interface components {
             reference: string | null;
             /** Is Active */
             is_active: boolean;
+            /** Equipment Count */
+            equipment_count: number;
             /** Map Url */
             readonly map_url: string;
         };
@@ -2239,6 +2350,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SiteAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_equipment_admin_clients__client_id__equipment_get: {
+        parameters: {
+            query?: {
+                site_id?: string | null;
+            };
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_equipment_admin_clients__client_id__equipment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_equipment_admin_equipment__equipment_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                equipment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_equipment_admin_equipment__equipment_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                equipment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentAdminOut"];
                 };
             };
             /** @description Validation Error */
