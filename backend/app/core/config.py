@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 30
 
+    # Contraseña de los usuarios del generador de datos de prueba. Sin valor por defecto.
+    seed_password: str | None = None
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

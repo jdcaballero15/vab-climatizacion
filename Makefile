@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help up down logs test lint fmt stories-validate stories-index stories-sync-dry hooks-install hooks-test
+.PHONY: help up down logs test lint fmt stories-validate stories-index stories-sync-dry hooks-install hooks-test seed
 
 help: ## Lista los comandos
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -18,6 +18,9 @@ test: ## Corre los tests del backend
 
 lint: ## Lint y chequeo de tipos del backend
 	cd backend && ruff check . && ruff format --check . && mypy app
+
+seed: ## Genera datos de prueba ficticios en una base vacía (requiere SEED_PASSWORD)
+	cd backend && python -m app.demo_data
 
 fmt: ## Formatea el backend
 	cd backend && ruff check --fix . && ruff format .
