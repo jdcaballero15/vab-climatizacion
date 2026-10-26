@@ -267,4 +267,34 @@ describe("RepairsPage", () => {
       ),
     );
   });
+
+  it("con una falla desactivada explica por qué no se ofrecen sus reparaciones", async () => {
+    // Como el backend: una falla desactivada no ofrece reparaciones salvo que se pidan inactivas.
+    stubApi((call) => {
+      if (call.path.endsWith("/failures")) {
+        return json([{ ...GAS, is_active: false }, ELECTRICA]);
+      }
+      if (
+        call.params.get("failure_id") === "f1" &&
+        call.params.get("include_inactive") !== "true"
+      ) {
+        return json([]);
+      }
+      return undefined;
+    });
+    renderPages(<RepairsPage key="r" />);
+    await screen.findByText("Cambio de capacitor");
+
+    await userEvent.selectOptions(selector("Falla"), "f1");
+
+    expect(
+      await screen.findByText(
+        "La falla elegida está desactivada y no ofrece reparaciones. Marcá «Mostrar desactivadas» para verlas.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Todavía no hay reparaciones.")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByLabelText("Mostrar desactivadas"));
+    expect(await screen.findByText("Cambio de filtro de gas")).toBeInTheDocument();
+  });
 });

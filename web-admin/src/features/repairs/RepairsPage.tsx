@@ -30,6 +30,9 @@ export function RepairsPage() {
       : failures.data;
   const failureNames = new Map(failures.data?.map((failure) => [failure.id, failure.name]));
   const repairs = useRepairs(equipmentTypeId, failureId, showInactive);
+  // Una falla desactivada no ofrece reparaciones: la lista vacía no significa que no haya.
+  const selectedFailureInactive =
+    failures.data?.find((failure) => failure.id === failureId)?.is_active === false;
   const create = useCreateRepair();
 
   function changeEquipmentType(next: string | null) {
@@ -40,7 +43,15 @@ export function RepairsPage() {
 
   return (
     <EquipmentScopedCatalogView
-      texts={TEXTS}
+      texts={
+        selectedFailureInactive && !showInactive
+          ? {
+              ...TEXTS,
+              empty:
+                "La falla elegida está desactivada y no ofrece reparaciones. Marcá «Mostrar desactivadas» para verlas.",
+            }
+          : TEXTS
+      }
       equipmentTypeId={equipmentTypeId}
       onEquipmentTypeChange={changeEquipmentType}
       showInactive={showInactive}
