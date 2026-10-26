@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,17 +9,19 @@ from app.api.schemas.work_order import (
     CrewOrdersTechnicianOut,
     CrewTechnicianOut,
     EquipmentTechnicianOut,
+    OrderDetailTechnicianOut,
     OrderTechnicianOut,
     PendingOrderOut,
     WorkOrderAdminOut,
     WorkOrderCreate,
 )
 from app.core.dates import business_today, format_date
+from app.db.models.crew import Crew
 from app.db.models.user import User
 from app.db.models.work_order import WorkOrder, WorkOrderAssignment, WorkOrderEvent
 from app.db.repositories.client import ClientContactRepository
 from app.db.repositories.crew import CrewRepository
-from app.db.repositories.work_order import WorkOrderRepository
+from app.db.repositories.work_order import OpenCrewOrderRow, WorkOrderRepository
 from app.domain.work_order import (
     STATUSLESS_EVENT_TYPES,
     OrderAction,
@@ -113,11 +116,54 @@ async def list_for_crew_user(session: AsyncSession, user: User) -> CrewOrdersTec
     La escuadrilla sale del usuario de la sesión. Sin una activa, no ve órdenes.
     """
     today = business_today()
-    crew = await CrewRepository(session).get_by_app_user(user.id)
-    if crew is None or not crew.is_active or crew.deleted_at is not None:
+    crew = await _active_crew_of(session, user)
+    if crew is None:
         return CrewOrdersTechnicianOut(crew=None, today=today, orders=[])
 
     rows = await WorkOrderRepository(session).list_open_for_crew(crew.id)
+    orders = await _technician_orders(session, rows)
+    return CrewOrdersTechnicianOut(
+        crew=CrewTechnicianOut(name=crew.name), today=today, orders=orders
+    )
+
+
+async def get_for_crew_user(
+    session: AsyncSession, user: User, order_id: uuid.UUID
+) -> OrderDetailTechnicianOut:
+    """Detalle de una orden abierta de la escuadrilla del usuario (E05-02).
+
+    Otra escuadrilla, otro estado, desasignada o inexistente: no se distingue (404).
+    """
+    crew = await _active_crew_of(session, user)
+    rows = (
+        await WorkOrderRepository(session).list_open_for_crew(crew.id, order_id=order_id)
+        if crew is not None
+        else []
+    )
+    if not rows:
+        raise WorkOrderNotFoundError
+    (order_out,) = await _technician_orders(session, rows)
+    order = rows[0][0]
+    tasks = await catalog_service.list_tasks(session, order.work_type_id, include_inactive=False)
+    return OrderDetailTechnicianOut(
+        **order_out.model_dump(),
+        requester_area=order.requester_area,
+        tasks=[task.name for task in tasks],
+        today=business_today(),
+    )
+
+
+async def _active_crew_of(session: AsyncSession, user: User) -> Crew | None:
+    crew = await CrewRepository(session).get_by_app_user(user.id)
+    if crew is None or not crew.is_active or crew.deleted_at is not None:
+        return None
+    return crew
+
+
+async def _technician_orders(
+    session: AsyncSession, rows: Sequence[OpenCrewOrderRow]
+) -> list[OrderTechnicianOut]:
+    """Arma las órdenes como las ve el técnico: la lista y el detalle no se desfasan."""
     site_ids = {site.id for _, _, _, site, _, _, _ in rows}
     contacts = await ClientContactRepository(session).list_for_sites(site_ids) if rows else []
     names_by_site: dict[uuid.UUID, list[str]] = {}
@@ -125,7 +171,7 @@ async def list_for_crew_user(session: AsyncSession, user: User) -> CrewOrdersTec
         if contact.name and contact.client_site_id is not None:
             names_by_site.setdefault(contact.client_site_id, []).append(contact.name)
 
-    orders = [
+    return [
         OrderTechnicianOut(
             id=order.id,
             number=order.number,
@@ -161,9 +207,6 @@ async def list_for_crew_user(session: AsyncSession, user: User) -> CrewOrdersTec
             equipment_type_name,
         ) in rows
     ]
-    return CrewOrdersTechnicianOut(
-        crew=CrewTechnicianOut(name=crew.name), today=today, orders=orders
-    )
 
 
 def _columns(order: WorkOrder) -> dict[str, object]:

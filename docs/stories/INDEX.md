@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 119 historias.** done: 21, draft: 89, icebox: 8, ready: 1
+**Total: 119 historias.** done: 21, draft: 89, icebox: 8, in_progress: 1
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -82,7 +82,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
 | [E05-01](E05-app-tecnico/E05-01-ver-mis-ordenes-asignadas.md) | Ver mis órdenes asignadas | Debe | M | done | technician | - | - | E04-03, E01-04, E00-03 |
-| [E05-02](E05-app-tecnico/E05-02-ver-el-detalle-de-una-orden-asignada.md) | Ver el detalle de una orden asignada | Debe | S | ready | technician | - | - | E05-01 |
+| [E05-02](E05-app-tecnico/E05-02-ver-el-detalle-de-una-orden-asignada.md) | Ver el detalle de una orden asignada | Debe | S | in_progress | technician | - | - | E05-01 |
 | [E05-03](E05-app-tecnico/E05-03-iniciar-una-orden.md) | Iniciar una orden | Debe | S | draft | technician | - | - | E05-02, E04-01 |
 | [E05-04](E05-app-tecnico/E05-04-cerrar-una-orden-con-falla-y-reparacion-de-listas.md) | Cerrar una orden con falla y reparación de listas | Debe | M | draft | technician | - | - | E05-03, E02-03, E02-04 |
 | [E05-05](E05-app-tecnico/E05-05-registrar-repuestos-usados-con-cantidades-sin-precios.md) | Registrar repuestos usados con cantidades, sin precios | Debe | M | draft | technician | - | - | E05-04, E02-06, E08-04 |

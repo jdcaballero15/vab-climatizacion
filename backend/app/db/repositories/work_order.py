@@ -11,6 +11,10 @@ from app.db.models.work_order import WorkOrder, WorkOrderAssignment, WorkOrderEv
 from app.db.repository import BaseRepository
 from app.domain.work_order import CREW_OPEN_STATUSES, OrderStatus, WorkOrderEventType
 
+# Orden abierta de una escuadrilla: orden, fecha prevista, cliente, domicilio, tipo de
+# trabajo, equipo y nombre de su tipo (estos dos, nulos sin equipo).
+type OpenCrewOrderRow = Row[WorkOrder, date, str, ClientSite, str, Equipment | None, str | None]
+
 
 class WorkOrderRepository(BaseRepository[WorkOrder]):
     model = WorkOrder
@@ -71,13 +75,14 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         return result.all(), total or 0
 
     async def list_open_for_crew(
-        self, crew_id: uuid.UUID
-    ) -> Sequence[Row[WorkOrder, date, str, ClientSite, str, Equipment | None, str | None]]:
+        self, crew_id: uuid.UUID, *, order_id: uuid.UUID | None = None
+    ) -> Sequence[OpenCrewOrderRow]:
         """Órdenes Asignada y En curso con la asignación vigente de la escuadrilla.
 
         Por fecha prevista y número. Cada fila trae la orden, la fecha prevista, el nombre
         del cliente, el domicilio, el nombre del tipo de trabajo, el equipo y el nombre de
-        su tipo (estos dos, nulos si la orden no tiene equipo).
+        su tipo (estos dos, nulos si la orden no tiene equipo). Con order_id, solo esa orden
+        (vacío si no es una orden abierta de la escuadrilla).
         """
         stmt = (
             select(
@@ -104,5 +109,7 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             )
             .order_by(WorkOrderAssignment.scheduled_for, self.model.number)
         )
+        if order_id is not None:
+            stmt = stmt.where(self.model.id == order_id)
         result = await self.session.execute(stmt)
         return result.all()
