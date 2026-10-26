@@ -11,15 +11,15 @@ stateDiagram-v2
   [*] --> Pendiente: administración crea la orden
   [*] --> Pendiente: mantenimiento generado (requiere aprobación en bloque)
 
-  Pendiente --> Asignada: administración asigna técnico
+  Pendiente --> Asignada: administración asigna escuadrilla
   Asignada --> Pendiente: administración desasigna
-  Asignada --> EnCurso: técnico inicia
-  EnCurso --> Terminada: técnico cierra (resuelta)
-  EnCurso --> Pendiente: técnico marca "requiere otra visita"
+  Asignada --> EnCurso: escuadrilla inicia
+  EnCurso --> Terminada: escuadrilla cierra (resuelta)
+  EnCurso --> Pendiente: escuadrilla marca "requiere otra visita"
   EnCurso --> EnCurso: "requiere retiro" convierte en orden de taller
 
   Terminada --> Facturada: administración revisa y registra factura
-  Terminada --> Asignada: administración devuelve al técnico (con motivo)
+  Terminada --> Asignada: administración devuelve a la escuadrilla (con motivo)
   Facturada --> Cobrada: administración registra cobro
 
   Pendiente --> Cancelada: administración cancela (con motivo)
@@ -36,14 +36,14 @@ stateDiagram-v2
 
 | # | Regla |
 |---|---|
-| R1 | Solo administración crea, asigna, revisa, factura, cobra y cancela. Solo el técnico asignado inicia y cierra. |
+| R1 | Solo administración crea, asigna, revisa, factura, cobra y cancela. Solo la escuadrilla asignada (su usuario, rol `technician`) inicia y cierra. |
 | R2 | Cada cambio de estado inserta un `work_order_event` con actor y fecha. Las fechas de la orden salen de ahí. |
 | R3 | Cancelar exige motivo y solo es posible antes de `Terminada`. |
 | R4 | `Facturada` exige número de factura. `Cobrada` solo desde `Facturada`. |
 | R5 | `Cobrada` y `Cancelada` son finales. Una corrección es una nueva orden o un ajuste con auditoría, no una reapertura. |
 | R6 | Una orden con `requires_approval = true` no se puede asignar hasta que administración apruebe el lote. |
-| R7 | Cada orden (o etapa, en taller) tiene un solo técnico responsable. Se asigna con fecha prevista, sin hora. |
-| R8 | Devolver al técnico una orden `Terminada` exige motivo y la deja `Asignada` al mismo técnico. |
+| R7 | Cada orden (o etapa, en taller) tiene una sola escuadrilla responsable (D-013). Se asigna con fecha prevista, sin hora. Quiénes fueron se registra al cerrar. |
+| R8 | Devolver a la escuadrilla una orden `Terminada` exige motivo y la deja `Asignada` a la misma escuadrilla. |
 
 ## Órdenes de taller (retiro, taller y devolución)
 
@@ -58,13 +58,13 @@ Una orden `workshop` tiene tres etapas con avance propio. El estado de la orden 
 
 Retiro y devolución exigen firma del cliente (nombre y DNI). La orden se factura una sola vez, al quedar `Terminada`.
 
-## Cierre del técnico y resultados
+## Cierre de la escuadrilla y resultados
 
 | Resultado elegido | Efecto |
 |---|---|
 | Resuelta | La orden pasa a `Terminada` |
 | Requiere retiro | La misma orden pasa a `workshop`, se crean las etapas y sigue `En curso` |
-| Requiere otra visita | Vuelve a `Pendiente` sin técnico ni fecha, para reprogramarla (se puede asignar a otro), conservando lo registrado |
+| Requiere otra visita | Vuelve a `Pendiente` sin escuadrilla ni fecha, para reprogramarla (se puede asignar a otra), conservando lo registrado |
 
 ## Puntos sin resolver
 

@@ -17,13 +17,13 @@ assumes: [D-005]
 
 ## Historia
 
-**Como** administración, **quiero** revisar cada orden terminada antes de facturar y poder aprobarla o devolverla al técnico, **para** no facturar trabajos con datos incompletos o dudosos.
+**Como** administración, **quiero** revisar cada orden terminada antes de facturar y poder aprobarla o devolverla a la escuadrilla, **para** no facturar trabajos con datos incompletos o dudosos.
 
 ## Criterios de aceptación
 
-1. **Dado:** una orden `Terminada`. **Cuando:** administración la revisa. **Entonces:** ve todo lo cargado por el técnico en una sola pantalla.
+1. **Dado:** una orden `Terminada`. **Cuando:** administración la revisa. **Entonces:** ve todo lo cargado por la escuadrilla en una sola pantalla, incluido quiénes fueron.
 2. **Dado:** una orden `Terminada` en revisión. **Cuando:** administración la aprueba. **Entonces:** queda marcada como revisada (evento) y habilitada para facturar.
-3. **Dado:** una orden `Terminada` en revisión. **Cuando:** administración la devuelve con un motivo. **Entonces:** vuelve a `Asignada` al mismo técnico con el motivo visible.
+3. **Dado:** una orden `Terminada` en revisión. **Cuando:** administración la devuelve con un motivo. **Entonces:** vuelve a `Asignada` a la misma escuadrilla con el motivo visible.
 4. **Dado:** una orden `Terminada` sin revisar. **Cuando:** se intenta facturar. **Entonces:** se rechaza.
 5. **Dado:** una medición fuera de rango o una observación en "Otro". **Cuando:** se revisa. **Entonces:** se destaca para que no pase inadvertida.
 

@@ -7,10 +7,12 @@ Los términos de negocio van en español. Entre paréntesis, el nombre usado en 
 | **Orden de trabajo, OT** (`work_order`) | Unidad de trabajo que viaja desde el pedido hasta el cobro |
 | **Orden en el lugar** (`on_site`) | OT de una sola etapa que el técnico cierra en el domicilio del cliente |
 | **Orden de taller** (`workshop`) | OT con tres etapas: retiro, taller y devolución |
-| **Etapa** (`work_order_stage`) | Tramo de una orden de taller. Cada una puede hacerla un técnico distinto |
+| **Etapa** (`work_order_stage`) | Tramo de una orden de taller. Cada una puede hacerla una escuadrilla distinta |
+| **Escuadrilla** (`crew`) | Equipo de campo, normalmente de a 2, con nombre fijo y un celular con su usuario. Las personas que la forman cambian (D-013) |
+| **Técnico** (`field_technician`) | Persona de campo. No tiene usuario: se tilda al cerrar las órdenes en las que fue |
 | **Estado** (`status`) | Pendiente, Asignada, En curso, Terminada, Facturada, Cobrada, Cancelada |
 | **Revisión** | Control de administración sobre una orden Terminada antes de facturar |
-| **Cierre** (`work_order_closure`) | Registro que hace el técnico al terminar: falla, reparación, repuestos, foto, observación, firma |
+| **Cierre** (`work_order_closure`) | Registro que hace la escuadrilla al terminar: quiénes fueron, falla, reparación, repuestos, foto, observación, firma |
 | **Falla** (`failure`) | Problema encontrado, elegido de una lista por tipo de equipo |
 | **Reparación** (`repair`) | Solución aplicada, elegida de una lista |
 | **Otro** | Opción de cierre que exige observación. Los textos repetidos se pueden promover a la lista |
