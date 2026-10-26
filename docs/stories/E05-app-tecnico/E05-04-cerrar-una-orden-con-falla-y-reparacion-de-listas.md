@@ -4,11 +4,11 @@ title: "Cerrar una orden con falla y reparación de listas"
 epic: E05
 phase: 1
 priority: must
-status: draft
+status: ready
 roles: [technician]
 size: M
 areas: [backend, pwa]
-depends_on: [E05-03, E02-03, E02-04]
+depends_on: [E05-03, E02-03, E02-04, E02-09, E02-10]
 blocked_by: []
 assumes: []
 ---
@@ -17,19 +17,40 @@ assumes: []
 
 ## Historia
 
-**Como** técnico, **quiero** elegir la falla encontrada y la reparación realizada de listas predefinidas, **para** cerrar rápido, sin escribir, y dejar datos medibles.
+**Como** escuadrilla, **quiero** cerrar una orden eligiendo de listas quiénes fueron, qué tareas se hicieron, la falla, la reparación y cómo quedó el equipo, **para** cerrar rápido, casi sin escribir, y dejar datos medibles.
 
 ## Criterios de aceptación
 
-1. **Dado:** una orden `En curso` de un equipo. **Cuando:** abro el cierre. **Entonces:** veo las fallas del tipo de equipo y las reparaciones como botones o lista, no como texto libre.
-2. **Dado:** la lista de fallas o reparaciones. **Cuando:** elijo "Otro". **Entonces:** la observación pasa a ser obligatoria.
-3. **Dado:** un cierre sin falla o sin reparación elegidas. **Cuando:** intento enviarlo. **Entonces:** se marca qué falta.
-4. **Dado:** los listados. **Cuando:** se cargan. **Entonces:** no incluyen precios ni datos de otros clientes.
+1. **Dado:** una orden `En curso` de mi escuadrilla. **Cuando:** abro su detalle. **Entonces:** veo el botón "Cerrar orden", que abre el formulario de cierre.
+2. **Dado:** el formulario. **Cuando:** lo completo. **Entonces:** tildo quiénes fueron de la lista de técnicos activos (al menos uno, E02-09).
+3. **Dado:** las tareas del tipo de trabajo. **Cuando:** cierro. **Entonces:** tildo las que se hicieron; se puede cerrar aunque falte alguna y queda registrado cuáles se tildaron.
+4. **Dado:** un tipo de trabajo que pide falla y reparación (E02-10) y el resultado "Resuelta" (E05-08). **Cuando:** cierro. **Entonces:** elijo la falla y después la reparación, de listas y no como texto libre. Las dos son obligatorias. En los demás casos se pueden cargar pero no se exigen.
+5. **Dado:** la lista de fallas. **Cuando:** se muestra. **Entonces:** tiene las fallas activas del tipo de equipo de la orden y las genéricas; si la orden no tiene equipo, solo las genéricas. Las reparaciones son las activas de la falla elegida, con el mismo criterio de tipo de equipo.
+6. **Dado:** la lista de fallas o de reparaciones. **Cuando:** elijo "Otro". **Entonces:** escribo cuál, y la observación pasa a ser obligatoria.
+7. **Dado:** el formulario. **Cuando:** indico cómo quedó el equipo. **Entonces:** elijo "Funcionando bien", "Funciona con observaciones" o "No funciona". Con observaciones, la observación es obligatoria. Se pide salvo con el resultado "No se pudo hacer" (E05-08).
+8. **Dado:** un cierre incompleto. **Cuando:** intento enviarlo. **Entonces:** se marca qué falta, en la app y en la API (422 con el campo).
+9. **Dado:** las listas y la respuesta del cierre. **Cuando:** se inspeccionan. **Entonces:** no incluyen precios, mano de obra ni datos de otros clientes.
+10. **Dado:** una orden que no es `En curso` de mi escuadrilla. **Cuando:** intento cerrarla. **Entonces:** recibo 404, como en E05-02.
+
+## Fuera de alcance
+
+- El resultado y su efecto en la orden: E05-08 (se envían juntos).
+- Reintentos y doble envío: E05-12.
+- Repuestos (E05-05), foto (E05-06) y firma (E05-07): se suman al cierre cuando estén precios y stock (E02-06, E08) y el bucket (E00-09).
+- Borrador en el celular si se corta la señal: E05-13.
+
+## Decisiones tomadas en el refinamiento
+
+Validadas con negocio el 2026-10-26, con el prototipo del cliente:
+
+- **Tareas tildadas sin exigirlas**: el prototipo exige todas para cerrar como hecha; acá se registran las tildadas y no se traba el cierre.
+- **Falla y reparación según el tipo de trabajo**: administración marca qué tipos las piden (E02-10). Responde la pregunta de instalación y relevamiento.
+- **Cómo quedó el equipo, en tres opciones**, aparte del resultado, como en el prototipo.
+- **Cierre básico primero**: repuestos, foto y firma se agregan después, sin cambiar lo de esta historia.
 
 ## Notas técnicas
 
-- Cada reparación pertenece a una falla (decidido al refinar E02-04): el técnico elige primero la falla y después ve solo las reparaciones activas de esa falla y del tipo de equipo de la orden (`GET` con `failure_id` y `equipment_type_id`). "Otro" es una opción fija del cierre, no un valor del catálogo.
-
-## Preguntas abiertas
-
-- ¿Qué datos de cierre aplican a instalación y relevamiento? Falla y reparación tienen sentido para reparación y service.
+- Cada reparación pertenece a una falla (decidido al refinar E02-04). "Otro" es una opción fija del cierre, no un valor del catálogo: se guarda en `failure_other_text` o `repair_other_text`.
+- Listas para el técnico: `GET /tech/orders/{id}/closure-options` devuelve técnicos activos, tareas activas del tipo de trabajo, si pide falla y reparación, y las fallas con sus reparaciones según el tipo de equipo de la orden. Esquemas `*TechnicianOut`, solo nombres e ids.
+- El cierre se envía en un solo `POST /tech/orders/{id}/closure` con la clave de idempotencia de E05-12 y el resultado de E05-08. Tablas `work_order_closure`, `work_order_closure_technician` y `work_order_closure_task` (ver `data-model.dbml`).
+- Que la falla y la reparación no exigidas por el resultado sean opcionales es una propuesta del refinamiento: si negocio prefiere exigirlas también en "Requiere otra visita", es un cambio de validación.

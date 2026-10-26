@@ -69,6 +69,19 @@ Enum closure_outcome {
   done
   needs_pickup   [note: 'Requiere retiro: convierte la orden en orden de taller']
   needs_revisit  [note: 'Requiere otra visita: vuelve a administración para reprogramar']
+  not_done       [note: 'No se pudo hacer, con motivo: vuelve a administración (E05-08)']
+}
+
+Enum equipment_condition {
+  working
+  working_with_notes [note: 'Funciona con observaciones: exige observación']
+  not_working
+}
+
+Enum not_done_reason {
+  client_absent  [note: 'Cliente ausente o sin acceso']
+  missing_part   [note: 'Falta repuesto o herramienta']
+  beyond_repair  [note: 'El equipo no tiene arreglo']
 }
 
 Enum signature_purpose {
@@ -131,6 +144,7 @@ Table field_technician {
 Table work_type {
   id uuid [pk]
   name varchar [not null, note: 'Instalación, reparación, service, devolución, retiro, relevamiento. Se guarda sin espacios sobrantes']
+  requires_failure_repair boolean [not null, default: false, note: 'El cierre pide falla y reparación (E02-10)']
   is_active boolean [not null, default: true]
 
   indexes {
@@ -287,7 +301,8 @@ Table work_order_closure {
   failure_other_text varchar
   repair_id uuid [ref: > repair.id]
   repair_other_text varchar
-  equipment_working boolean
+  equipment_condition equipment_condition [note: 'Nulo si no se pudo hacer']
+  not_done_reason not_done_reason [note: 'Solo con outcome not_done']
   observation text
   idempotency_key uuid [unique, not null, note: 'Generada en el celular. Evita duplicados al sincronizar']
 }
@@ -301,6 +316,17 @@ Table work_order_closure_technician {
   }
 
   Note: 'Quiénes fueron (D-013). Base de los trabajos por técnico (E10-02)'
+}
+
+Table work_order_closure_task {
+  closure_id uuid [ref: > work_order_closure.id, not null]
+  task_id uuid [ref: > task.id, not null]
+
+  indexes {
+    (closure_id, task_id) [pk]
+  }
+
+  Note: 'Tareas del tipo de trabajo que se tildaron al cerrar (E05-04)'
 }
 
 Table signature {

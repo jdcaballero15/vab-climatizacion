@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 119 historias.** done: 23, draft: 88, icebox: 8
+**Total: 120 historias.** done: 23, draft: 85, icebox: 8, ready: 4
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -46,6 +46,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E02-07](E02-catalogos/E02-07-promover-un-texto-de-otro-a-la-lista.md) | Promover un texto de "Otro" a la lista | Debería | M | draft | admin | - | - | E02-03, E02-04, E05-04 |
 | [E02-08](E02-catalogos/E02-08-importar-y-exportar-catalogos-por-csv.md) | Importar y exportar catálogos por CSV | Podría | M | draft | admin | - | D-003 | E02-01, E02-05 |
 | [E02-09](E02-catalogos/E02-09-gestionar-escuadrillas-y-tecnicos.md) | Gestionar escuadrillas y técnicos | Debe | M | done | admin | - | - | E01-03, E01-04 |
+| [E02-10](E02-catalogos/E02-10-marcar-que-tipos-de-trabajo-piden-falla-y-reparacion.md) | Marcar qué tipos de trabajo piden falla y reparación | Debe | S | ready | admin | - | - | E02-01 |
 
 ## E03 Clientes y equipos
 
@@ -84,12 +85,12 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E05-01](E05-app-tecnico/E05-01-ver-mis-ordenes-asignadas.md) | Ver mis órdenes asignadas | Debe | M | done | technician | - | - | E04-03, E01-04, E00-03 |
 | [E05-02](E05-app-tecnico/E05-02-ver-el-detalle-de-una-orden-asignada.md) | Ver el detalle de una orden asignada | Debe | S | done | technician | - | - | E05-01 |
 | [E05-03](E05-app-tecnico/E05-03-iniciar-una-orden.md) | Iniciar una orden | Debe | S | done | technician | - | - | E05-02, E04-01 |
-| [E05-04](E05-app-tecnico/E05-04-cerrar-una-orden-con-falla-y-reparacion-de-listas.md) | Cerrar una orden con falla y reparación de listas | Debe | M | draft | technician | - | - | E05-03, E02-03, E02-04 |
+| [E05-04](E05-app-tecnico/E05-04-cerrar-una-orden-con-falla-y-reparacion-de-listas.md) | Cerrar una orden con falla y reparación de listas | Debe | M | ready | technician | - | - | E05-03, E02-03, E02-04, E02-09, E02-10 |
 | [E05-05](E05-app-tecnico/E05-05-registrar-repuestos-usados-con-cantidades-sin-precios.md) | Registrar repuestos usados con cantidades, sin precios | Debe | M | draft | technician | - | - | E05-04, E02-06, E08-04 |
 | [E05-06](E05-app-tecnico/E05-06-agregar-foto-y-observacion-al-cierre.md) | Agregar foto y observación al cierre | Debe | M | draft | technician | - | - | E05-04, E00-09 |
 | [E05-07](E05-app-tecnico/E05-07-firma-del-cliente-en-pantalla-con-nombre-y-dni.md) | Firma del cliente en pantalla con nombre y DNI | Debe | M | draft | technician | - | D-011 | E05-04, E00-09 |
-| [E05-08](E05-app-tecnico/E05-08-elegir-el-resultado-del-trabajo.md) | Elegir el resultado del trabajo | Debe | M | draft | technician | - | - | E05-04, E04-01 |
-| [E05-12](E05-app-tecnico/E05-12-cierre-de-orden-idempotente.md) | Cierre de orden idempotente | Debe | S | draft | technician | - | - | E05-04, E04-01 |
+| [E05-08](E05-app-tecnico/E05-08-elegir-el-resultado-del-trabajo.md) | Elegir el resultado del trabajo | Debe | M | ready | technician | - | - | E05-04, E04-01 |
+| [E05-12](E05-app-tecnico/E05-12-cierre-de-orden-idempotente.md) | Cierre de orden idempotente | Debe | S | ready | technician | - | - | E05-04, E04-01 |
 | [E05-13](E05-app-tecnico/E05-13-no-perder-un-cierre-si-se-corta-la-conexion.md) | No perder un cierre si se corta la conexión | Debe | M | draft | technician | - | - | E05-04, E05-12 |
 | [E05-14](E05-app-tecnico/E05-14-ver-las-ordenes-hechas-esta-semana.md) | Ver las órdenes hechas esta semana | Debería | S | draft | technician | - | - | E05-01, E05-04 |
 
