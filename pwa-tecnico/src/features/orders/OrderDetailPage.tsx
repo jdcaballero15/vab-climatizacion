@@ -1,9 +1,10 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import type { components } from "../../api/schema";
 import { dueLabel, statusLabel } from "./labels";
 import { useOrderDetail } from "./useOrderDetail";
+import { useStartOrder } from "./useStartOrder";
 
 type OrderDetail = components["schemas"]["OrderDetailTechnicianOut"];
 
@@ -66,6 +67,7 @@ function OrderDetail({ order }: { order: OrderDetail }) {
         </span>
       </div>
       <h1 className="order-detail__client">{order.client_name}</h1>
+      {order.status === "assigned" && <StartOrder order={order} />}
 
       <dl className="order-detail__facts">
         <dt>Dirección</dt>
@@ -115,5 +117,57 @@ function OrderDetail({ order }: { order: OrderDetail }) {
         )}
       </section>
     </article>
+  );
+}
+
+/** Botón "Iniciar" con confirmación dentro de la app (sin diálogos del navegador). */
+function StartOrder({ order }: { order: OrderDetail }) {
+  const [confirming, setConfirming] = useState(false);
+  const start = useStartOrder(order.id);
+
+  if (!confirming) {
+    return (
+      <div className="order-start">
+        <button
+          type="button"
+          className="order-start__primary"
+          onClick={() => {
+            start.reset();
+            setConfirming(true);
+          }}
+        >
+          Iniciar
+        </button>
+        {start.isError && (
+          <p className="order-start__error" role="alert">
+            No se pudo iniciar la orden. Revisá la conexión e intentá de nuevo.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="order-start order-start--confirm" role="group" aria-label="Confirmar inicio">
+      <p className="order-start__question">¿Empezar la orden N° {order.number}?</p>
+      <div className="order-start__actions">
+        <button
+          type="button"
+          className="order-start__primary"
+          disabled={start.isPending}
+          onClick={() => start.mutate(undefined, { onError: () => setConfirming(false) })}
+        >
+          {start.isPending ? "Iniciando…" : "Sí, empezar"}
+        </button>
+        <button
+          type="button"
+          className="order-start__secondary"
+          disabled={start.isPending}
+          onClick={() => setConfirming(false)}
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
   );
 }

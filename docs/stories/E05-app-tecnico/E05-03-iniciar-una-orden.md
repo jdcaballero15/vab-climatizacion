@@ -4,7 +4,7 @@ title: "Iniciar una orden"
 epic: E05
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [technician]
 size: S
 areas: [backend, pwa]
@@ -59,3 +59,6 @@ Se entrega en dos PR: backend primero, PWA después.
 
 - Backend (PR 1): `POST /tech/orders/{id}/start` llama a `start_for_crew_user`, que lee el detalle con el filtro de E05-02, aplica `start` con `apply_transition` si está `Asignada` y devuelve el detalle actualizado.
 - Carrera entre dos pedidos: el conflicto de `apply_transition` hace rollback; se recarga el usuario de la sesión y se vuelve a leer el detalle. Probado contra la base real simulando el cambio de estado entre la lectura y la transición.
+- PWA (PR 2): en el detalle de una orden `Asignada`, botón "Iniciar" grande; al tocarlo se abre una confirmación dentro de la app ("¿Empezar la orden N° X?" con "Sí, empezar" y "Cancelar"). Al confirmar, el detalle queda con la respuesta (`En curso`, sin botón) y la lista se vuelve a pedir.
+- Si falla la conexión, avisa "No se pudo iniciar la orden..." y deja el botón para reintentar (el backend es idempotente). Si responde 404, el detalle muestra que la orden ya no es de la escuadrilla.
+- Probado en el navegador contra el backend real: confirmación, inicio, estado en detalle y lista, y el evento en la base con el usuario de la escuadrilla.
