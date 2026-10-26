@@ -20,6 +20,11 @@ class OrderStatus(StrEnum):
     cancelled = "cancelled"
 
 
+# Órdenes que una escuadrilla tiene entre manos: las ve en el celular (E05-01) y
+# no se puede desactivar mientras tenga alguna (E04-03, criterio 9).
+CREW_OPEN_STATUSES = frozenset({OrderStatus.assigned, OrderStatus.in_progress})
+
+
 class OrderKind(StrEnum):
     on_site = "on_site"
     workshop = "workshop"

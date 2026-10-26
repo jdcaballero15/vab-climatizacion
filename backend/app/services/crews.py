@@ -28,6 +28,10 @@ class CrewUserNotAvailableError(Exception):
     """El usuario no existe, está inactivo, no es técnico o es de otra escuadrilla."""
 
 
+class CrewHasOpenOrdersError(Exception):
+    """La escuadrilla tiene órdenes Asignada o En curso: hay que reasignarlas antes."""
+
+
 class FieldTechnicianNotFoundError(Exception):
     """No existe un técnico con ese id."""
 
@@ -66,6 +70,9 @@ async def update_crew(session: AsyncSession, crew_id: uuid.UUID, data: CrewUpdat
         if existing is not None and existing.id != crew.id:
             raise CrewNameAlreadyExistsError
         crew.name = data.name
+    deactivating = data.is_active is False and crew.is_active
+    if deactivating and await CrewRepository(session).has_open_orders(crew.id):
+        raise CrewHasOpenOrdersError
     if data.is_active is not None:
         crew.is_active = data.is_active
     # null desasocia; si no vino el campo, el usuario no se toca.

@@ -102,10 +102,10 @@ class WorkOrderEvent(TimestampedBase):
 
 
 class WorkOrderAssignment(TimestampedBase):
-    """Técnico responsable de la orden y fecha prevista (solo el día, sin hora).
+    """Escuadrilla responsable de la orden y fecha prevista (solo el día, sin hora).
 
     La vigente es la que no tiene unassigned_at; el índice parcial garantiza una sola
-    por orden (un solo técnico responsable, R7).
+    por orden (una sola escuadrilla responsable, R7, D-013).
     """
 
     __tablename__ = "work_order_assignment"
@@ -121,9 +121,7 @@ class WorkOrderAssignment(TimestampedBase):
     work_order_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("work_order.id"), nullable=False, index=True
     )
-    technician_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("app_user.id"), nullable=False, index=True
-    )
+    crew_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("crew.id"), nullable=False, index=True)
     scheduled_for: Mapped[date] = mapped_column(Date, nullable=False)
     assigned_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

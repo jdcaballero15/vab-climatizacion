@@ -35,6 +35,11 @@ _ERROR_DETAIL: dict[type[Exception], tuple[int, str, str]] = {
         "crew_user_not_available",
         "Elegí un usuario técnico activo que no sea de otra escuadrilla.",
     ),
+    crews_service.CrewHasOpenOrdersError: (
+        409,
+        "crew_has_open_orders",
+        "Tiene órdenes asignadas o en curso. Reasignalas antes de desactivarla.",
+    ),
     crews_service.FieldTechnicianNotFoundError: (
         404,
         "field_technician_not_found",
