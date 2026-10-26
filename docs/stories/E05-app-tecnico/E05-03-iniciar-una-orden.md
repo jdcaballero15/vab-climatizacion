@@ -25,6 +25,10 @@ assumes: []
 2. **Dado:** una orden de otro técnico. **Cuando:** intento iniciarla. **Entonces:** se rechaza.
 3. **Dado:** una orden que ya está `En curso`. **Cuando:** toco "Iniciar" de nuevo. **Entonces:** no cambia nada ni se duplica el evento.
 
+## Decisiones
+
+- **Se mantiene el botón "Iniciar"** (negocio, 2026-10-26), aunque el prototipo del cliente cierra directo sin iniciar: así administración ve qué orden se está trabajando.
+
 ## Fuera de alcance
 
 - Registro de hora de llegada y salida: confirmado que NO se registra. El evento de inicio es solo el cambio de estado.
