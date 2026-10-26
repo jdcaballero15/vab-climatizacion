@@ -5,6 +5,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from app.core.security import create_access_token
+from app.db.models.refresh_token import RefreshToken
 from app.db.models.user import User, UserRole
 from app.db.repositories.user import UserRepository
 from app.db.session import SessionLocal, engine
@@ -15,10 +16,12 @@ from tests.factories import make_user
 @pytest.fixture
 async def schema() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
-        await conn.run_sync(User.metadata.create_all, tables=[User.__table__])
+        await conn.run_sync(
+            User.metadata.create_all, tables=[User.__table__, RefreshToken.__table__]
+        )
     yield
     async with engine.begin() as conn:
-        await conn.run_sync(User.metadata.drop_all, tables=[User.__table__])
+        await conn.run_sync(User.metadata.drop_all, tables=[RefreshToken.__table__, User.__table__])
         await conn.execute(text("DROP TYPE IF EXISTS user_role"))
 
 

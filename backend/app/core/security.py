@@ -1,3 +1,5 @@
+import hashlib
+import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -46,3 +48,13 @@ def decode_access_token(token: str) -> dict[str, Any]:
     """Valida y decodifica el JWT. Lanza jwt.InvalidTokenError si no es válido."""
     settings = get_settings()
     return jwt.decode(token, settings.app_secret_key, algorithms=[settings.jwt_algorithm])
+
+
+def generate_refresh_token() -> str:
+    """Genera un token de refresco aleatorio (se entrega al cliente una sola vez)."""
+    return secrets.token_urlsafe(32)
+
+
+def hash_refresh_token(token: str) -> str:
+    """Hash del token de refresco. En la base solo se guarda el hash, nunca el valor."""
+    return hashlib.sha256(token.encode()).hexdigest()
