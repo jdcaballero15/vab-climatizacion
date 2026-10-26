@@ -46,7 +46,7 @@ Validadas con negocio el 2026-10-26:
 - **Varios domicilios por cliente desde el primer día.** Pasa mucho (cadenas de farmacias, organismos públicos, sanatorios con varias sedes). Persat no lo soporta y cada sede está cargada como un cliente distinto. La migración las importa tal cual y no las unifica; unificar es E03-08.
 - **La referencia va en el domicilio**, no en el cliente: es lo que el técnico necesita en la orden.
 - **Enlace al mapa** con una búsqueda de Google Maps. En Android abre Google Maps, o Waze si el técnico lo eligió como predeterminado. La localidad está en el texto de la dirección.
-- **El técnico ve el nombre del contacto del lugar, pero no el teléfono.** El criterio del cliente es darle al técnico el menor margen posible, y el teléfono le permitiría contactar al cliente por fuera de la empresa. Está pendiente de confirmar con el cliente.
+- **El técnico ve el nombre del contacto del lugar, pero no el teléfono.** El criterio del cliente es darle al técnico el menor margen posible, y el teléfono le permitiría contactar al cliente por fuera de la empresa. Confirmado con negocio el 2026-10-26 (E05-02).
 - Los criterios originales se mantienen: el 1 queda ampliado, el 2 ("solo se puede desactivar") pasa al 4 y el 3 (el técnico solo ve su domicilio) pasa al 7. Tamaño de S a M.
 
 ## Notas técnicas
@@ -58,7 +58,7 @@ Validadas con negocio el 2026-10-26:
 
 ## Preguntas abiertas
 
-- Para el cliente: ¿el técnico tiene que ver el teléfono del contacto del lugar? Por defecto, no.
+- Respondida (negocio, 2026-10-26, al refinar E05-02): el técnico no ve el teléfono del contacto del lugar, aunque el prototipo del cliente lo muestre. Solo el nombre.
 
 ## Notas de implementación
 
