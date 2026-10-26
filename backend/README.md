@@ -30,7 +30,7 @@ api  ->  services  ->  domain  <-  db
 | `app/db/` | Modelos SQLAlchemy, repositorios, migraciones | Contener reglas de negocio |
 | `app/core/` | Configuración, seguridad, logging, errores | Depender de otras capas |
 
-Estas carpetas se crean con la primera historia que las necesite. Hoy existen `api/` y `core/`.
+Estas carpetas se crean con la primera historia que las necesite. Hoy existen `api/`, `core/`, `db/`, `domain/` y `services/`.
 
 ## Convenciones
 

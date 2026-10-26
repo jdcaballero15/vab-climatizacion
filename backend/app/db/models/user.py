@@ -1,15 +1,11 @@
-from enum import StrEnum
-
 from sqlalchemy import Boolean, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import TimestampedBase
+from app.domain.user import UserRole
 
-
-class UserRole(StrEnum):
-    admin = "admin"
-    technician = "technician"
-    owner = "owner"
+# UserRole vive en el dominio (la máquina de estados lo usa); se re-exporta acá.
+__all__ = ["User", "UserRole"]
 
 
 class User(TimestampedBase):

@@ -4,7 +4,7 @@ title: "Máquina de estados y línea de tiempo de la orden"
 epic: E04
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin]
 size: M
 areas: [backend]
@@ -52,3 +52,13 @@ Validadas con negocio el 2026-10-26. Se confirma la tabla de transiciones de `or
 - Tablas `work_order` y `work_order_event` según `data-model.dbml`, con los enums `order_status`, `order_kind` y `order_source`. `work_order.number` sale de una secuencia de Postgres. Las columnas del pedido (canal y solicitante) las agrega E04-02.
 - Un servicio aplica la transición: actualiza `status` con `WHERE status = <estado leído>` y, si no afecta ninguna fila, devuelve conflicto (409 `order_status_conflict` cuando haya API). Evento y estado van en la misma transacción. Fechas de negocio solo en `work_order_event` (ADR 0005).
 - `work_order_event.event_type`: `created`, `status_change`, `assigned`, `unassigned`, `reassigned`, `review_approved`, `review_returned`, `converted_to_workshop`.
+
+## Notas de implementación
+
+Solo backend, sin endpoints (cada acción llega con su historia).
+
+- Dominio puro en `app/domain/work_order.py` (primera vez que existe `app/domain/`): enums de estado, tipo, origen, tipo de evento y acción; tabla `TRANSITIONS` con origen, destino, acción, rol, tipo de evento y si exige motivo; y `resolve_transition`. Errores con código y mensaje en español: `invalid_transition` (lleva el estado actual y la acción pedida), `transition_forbidden` y `reason_required`. Un motivo vacío o de solo espacios cuenta como falta de motivo. `UserRole` se movió a `app/domain/user.py` (el dominio no puede importar `app/db/`); el modelo lo re-exporta.
+- Tipo de evento de cada transición: asignar da `assigned`, desasignar `unassigned`, devolver al técnico `review_returned` y el resto `status_change`. Los hechos sin cambio de estado (`reassigned`, `review_approved`, `converted_to_workshop`) se registran con `record_event`, sin estados. `created` lo inserta E04-02 al crear la orden.
+- Servicio `app/services/work_orders.py`: `apply_transition` recibe la orden tal como se leyó, hace `UPDATE ... WHERE status = <leído> RETURNING id` e inserta el evento en la misma transacción. Si el UPDATE no devuelve fila, deshace y lanza `OrderStatusConflictError` (`order_status_conflict`, 409 cuando haya API). Que el técnico sea el asignado lo controla cada historia.
+- Migración `9ded0ea86f52`: enums `order_status`, `order_kind` y `order_source`, secuencia `work_order_number_seq` (de `work_order.number`) y tablas `work_order` y `work_order_event`. `event_type` es `varchar` con `CHECK` sobre los valores válidos, para no migrar un enum de Postgres por cada tipo nuevo. `occurred_at` toma `now()` de la base.
+- Quedan para otras historias: `channel` y solicitante (E04-02), `requires_approval` y `maintenance_run_id` (E07, la tabla `maintenance_run` no existe aún) y el tipo `closure_in_review` que figura en `data-model.dbml` (cuando lo pida E04-08 o E05-04).
