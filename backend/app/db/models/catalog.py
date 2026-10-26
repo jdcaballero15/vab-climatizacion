@@ -31,3 +31,13 @@ class Task(TimestampedBase):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
+class EquipmentType(TimestampedBase):
+    """Tipo de equipo (split, cámara frigorífica, etc.). Clasifica equipos, fallas y checklists."""
+
+    __tablename__ = "equipment_type"
+    __table_args__ = (Index("uq_equipment_type_name", text("lower(name)"), unique=True),)
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

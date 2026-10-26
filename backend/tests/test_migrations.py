@@ -27,6 +27,7 @@ def _reset_database() -> None:
     async def reset() -> None:
         engine = create_async_engine(TEST_DATABASE_URL)
         async with engine.begin() as conn:
+            await conn.execute(text("DROP TABLE IF EXISTS equipment_type CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS task CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS work_type CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS app_user CASCADE"))
@@ -53,12 +54,12 @@ def _current_revision() -> str | None:
     return asyncio.run(query())
 
 
-def _work_type_names() -> list[str]:
+def _names(query_sql: str) -> list[str]:
     async def query() -> list[str]:
         engine = create_async_engine(TEST_DATABASE_URL)
         try:
             async with engine.connect() as conn:
-                result = await conn.execute(text("SELECT name FROM work_type WHERE is_active"))
+                result = await conn.execute(text(query_sql))
                 return sorted(row[0] for row in result)
         finally:
             await engine.dispose()
@@ -86,13 +87,32 @@ def test_migracion_carga_los_tipos_de_trabajo_iniciales() -> None:
 
     command.upgrade(cfg, "head")
     try:
-        assert _work_type_names() == [
+        assert _names("SELECT name FROM work_type WHERE is_active") == [
             "Devolución",
             "Instalación",
             "Relevamiento",
             "Reparación",
             "Retiro",
             "Service",
+        ]
+    finally:
+        command.downgrade(cfg, "base")
+
+
+# E02-02, criterio 6: una base recién migrada trae los seis tipos de equipo iniciales.
+def test_migracion_carga_los_tipos_de_equipo_iniciales() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    command.upgrade(cfg, "head")
+    try:
+        assert _names("SELECT name FROM equipment_type WHERE is_active") == [
+            "Aire acondicionado",
+            "Cámara de frío",
+            "Freezer",
+            "Heladera comercial",
+            "Heladera familiar",
+            "Otros",
         ]
     finally:
         command.downgrade(cfg, "base")
