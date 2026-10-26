@@ -6,7 +6,7 @@ import { onSessionExpired } from "../features/auth/session";
 import { setAccessToken, setRefreshToken } from "../features/auth/token";
 import type { Session } from "../features/auth/types";
 import { useLogout } from "../features/auth/useLogout";
-import { HomePage } from "../features/home/HomePage";
+import { MyOrdersPage } from "../features/orders/MyOrdersPage";
 
 export function AppRoot() {
   const [session, setSession] = useState<Session | null>(null);
@@ -37,8 +37,7 @@ export function AppRoot() {
   }
 
   return (
-    <HomePage
-      session={session}
+    <MyOrdersPage
       onLogout={() => {
         setSession(null);
         logout.mutate();

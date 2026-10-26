@@ -4,7 +4,7 @@ title: "Ver mis órdenes asignadas"
 epic: E05
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [technician]
 size: M
 areas: [backend, pwa]
@@ -61,3 +61,7 @@ Se entrega en dos PR: backend primero, PWA después.
 - Backend (PR 1): `GET /tech/orders` devuelve `CrewOrdersTechnicianOut`: `crew` (nombre, o nulo sin escuadrilla activa), `today` (día de Argentina, para que el celular calcule "Hoy" y "Vencida" sin depender de su reloj) y `orders` (`OrderTechnicianOut`).
 - Cada orden trae número, estado, tipo de trabajo, descripción, cliente, fecha prevista, sede (`ClientSiteTechnicianOut`) y equipo (`EquipmentTechnicianOut`: ubicación, tipo, marca y modelo; nulo si no tiene). El sector (`requester_area`) queda para el detalle (E05-02).
 - Una consulta trae las órdenes con cliente, sede, tipo de trabajo y equipo; otra, los nombres de contacto de todas las sedes juntas.
+- PWA (PR 2): la pantalla "Mis órdenes" reemplaza a la de bienvenida. Encabezado con el nombre de la escuadrilla y la cantidad, botones "Actualizar" y "Cerrar sesión", y una tarjeta por orden (número, tipo de trabajo, estado, descripción en dos líneas, cliente, fecha relativa, dirección y equipo o "Sin equipo"). "Vencida · ..." en rojo.
+- La fecha relativa se calcula con el `today` del backend, contando días sin pasar por el huso del celular. La lista se vuelve a pedir al volver a la app. Si falla una actualización, se avisa y queda la última lista.
+- Mensajes para escuadrilla sin trabajo, usuario sin escuadrilla y error de carga. Las tarjetas todavía no abren el detalle (E05-02).
+- Probado en el navegador contra el backend real con un usuario de escuadrilla.

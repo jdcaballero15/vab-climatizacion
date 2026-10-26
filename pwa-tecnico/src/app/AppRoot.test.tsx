@@ -25,6 +25,8 @@ const session: Session = {
   },
 };
 
+const noOrders = { crew: { name: "Escuadrilla 1" }, today: "2026-10-26", orders: [] };
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -44,11 +46,16 @@ function renderApp() {
   return client;
 }
 
+// Login y sesión devuelven la sesión; la lista del técnico, una escuadrilla sin órdenes.
+function respond(request: Request) {
+  return new URL(request.url).pathname.endsWith("/tech/orders") ? json(noOrders) : json(session);
+}
+
 async function login() {
   await userEvent.type(screen.getByLabelText("Correo electrónico"), "tecnico@ot-demo.com");
   await userEvent.type(screen.getByLabelText("Contraseña"), "Secreta123");
   await userEvent.click(screen.getByRole("button", { name: "Iniciar sesión" }));
-  await screen.findByRole("heading", { name: "Hola, Juan Pérez" });
+  await screen.findByRole("heading", { name: "Escuadrilla 1" });
 }
 
 beforeEach(() => {
@@ -62,7 +69,7 @@ describe("AppRoot", () => {
   it("guarda los tokens en memoria al iniciar sesión", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => json(session)),
+      vi.fn(async (request: Request) => respond(request)),
     );
     renderApp();
 
@@ -82,7 +89,7 @@ describe("AppRoot", () => {
           logoutBodies.push(await request.json());
           return new Response(null, { status: 204 });
         }
-        return json(session);
+        return respond(request);
       }),
     );
     const client = renderApp();
@@ -105,7 +112,7 @@ describe("AppRoot", () => {
         if (new URL(request.url).pathname.endsWith("/auth/logout")) {
           throw new TypeError("sin conexión");
         }
-        return json(session);
+        return respond(request);
       }),
     );
     renderApp();
@@ -122,7 +129,7 @@ describe("AppRoot", () => {
   it("vuelve al login cuando la sesión cae", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => json(session)),
+      vi.fn(async (request: Request) => respond(request)),
     );
     const client = renderApp();
     await login();
