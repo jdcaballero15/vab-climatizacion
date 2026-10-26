@@ -22,15 +22,22 @@ async def list_repairs(
     session: SessionDep,
     _: AdminOnly,
     equipment_type_id: uuid.UUID | None = None,
+    failure_id: uuid.UUID | None = None,
     include_inactive: bool = False,
 ) -> Sequence[Repair]:
-    """Sin `equipment_type_id`, todas las reparaciones. Con él, las de ese tipo y las genéricas."""
+    """Sin `equipment_type_id`, todas las reparaciones. Con él, las de ese tipo y las genéricas.
+    Con `failure_id`, solo las de esa falla."""
     try:
         return await catalog_service.list_repairs(
-            session, equipment_type_id=equipment_type_id, include_inactive=include_inactive
+            session,
+            equipment_type_id=equipment_type_id,
+            failure_id=failure_id,
+            include_inactive=include_inactive,
         )
     except catalog_service.EquipmentTypeNotFoundError:
         raise _equipment_type_not_found() from None
+    except catalog_service.FailureNotFoundError:
+        raise _failure_not_found() from None
 
 
 @router.post("", response_model=RepairAdminOut, status_code=status.HTTP_201_CREATED)
@@ -39,6 +46,17 @@ async def create_repair(payload: RepairCreate, session: SessionDep, _: AdminOnly
         return await catalog_service.create_repair(session, payload)
     except catalog_service.EquipmentTypeNotFoundError:
         raise _equipment_type_not_found() from None
+    except catalog_service.FailureNotFoundError:
+        raise _failure_not_found() from None
+    except catalog_service.RepairFailureMismatchError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "repair_failure_mismatch",
+                "message": "La falla elegida es de otro tipo de equipo: tiene que aplicar al "
+                "tipo de la reparación.",
+            },
+        ) from None
     except catalog_service.RepairNameAlreadyExistsError:
         raise _name_taken() from None
 
@@ -67,6 +85,13 @@ def _not_found() -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail={"code": "repair_not_found", "message": "No se encontró la reparación."},
+    )
+
+
+def _failure_not_found() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail={"code": "failure_not_found", "message": "No se encontró la falla."},
     )
 
 

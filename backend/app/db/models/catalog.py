@@ -79,6 +79,10 @@ class Failure(EquipmentScopedCatalog):
 
 
 class Repair(EquipmentScopedCatalog):
-    """Reparación predefinida que el técnico elige al cerrar."""
+    """Reparación predefinida que el técnico elige al cerrar, dentro de una falla."""
 
     __tablename__ = "repair"
+
+    failure_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("failure.id"), nullable=False, index=True
+    )
