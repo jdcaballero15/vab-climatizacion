@@ -4,7 +4,7 @@ title: "Mantener y cerrar la sesión"
 epic: E01
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [admin, technician, owner]
 size: S
 areas: [backend, web-admin, pwa]
@@ -32,7 +32,7 @@ assumes: []
 
 ## Notas de implementación
 
-- Se entrega en dos partes. Esta historia queda `in_progress` hasta completar la PWA.
+- Se entregó en dos PR: backend y web-admin (#129), y pwa-tecnico apilada sobre esa.
 - **Backend (hecho):**
   - Modelo `refresh_token` con migración Alembic reversible. Solo se guarda el hash (SHA256), nunca el token en claro.
   - `POST /auth/refresh` **rota** el token: revoca el presentado y emite un access token y un refresh token nuevos. Un usuario inactivo no puede refrescar (criterio 4).
@@ -43,5 +43,9 @@ assumes: []
   - `features/auth/useLogout.ts`: llama a `/auth/logout` y, pase lo que pase con esa llamada, limpia los tokens en memoria y la cache de TanStack Query (criterio 2).
   - Limitación conocida: un reintento tras 401 no puede reenviar el cuerpo de una request que ya lo consumió (p. ej. un POST); en ese caso se devuelve el 401 y el token queda renovado para la próxima acción.
   - Se regeneró `openapi.json` y `src/api/schema.d.ts` desde el backend para incorporar `/auth/refresh`, `/auth/logout` y `refresh_token`.
-- **pwa-tecnico (pendiente, otra PR):** hoy no tiene token store ni interceptor; hay que replicar el cableo de web-admin.
-- **Criterio 3 (técnico offline):** diferido. El almacenamiento offline está bloqueado por **D-001**; hasta que exista no hay órdenes guardadas que borrar ni cambios sin sincronizar que avisar al cerrar sesión.
+- **pwa-tecnico (hecho):**
+  - Se copió el cableado de web-admin: `features/auth/token.ts`, `features/auth/session.ts`, `features/auth/useLogout.ts`, el interceptor de `api/client.ts` y `app/AppRoot.tsx`. Mismo comportamiento y misma limitación con el cuerpo de las requests reintentadas.
+  - Se actualizó `openapi.json` con el snapshot actual del backend y se regeneró `src/api/schema.d.ts`.
+  - Tests: interceptor (`api/client.test.ts`, criterios 1 y 4) y `app/AppRoot.test.tsx` (guardado de tokens, cierre de sesión aunque falle la llamada, vuelta al login cuando la sesión cae).
+  - Deuda técnica: token store, aviso de sesión e interceptor quedan duplicados entre web-admin y pwa-tecnico. Unificarlos requiere un paquete compartido, que necesita un ADR.
+- **Criterio 3 (técnico offline):** diferido. Hoy cerrar sesión en la PWA ya limpia tokens y cache. El almacenamiento offline está bloqueado por **D-001**; hasta que exista no hay órdenes guardadas que borrar ni cambios sin sincronizar que avisar al cerrar sesión.
