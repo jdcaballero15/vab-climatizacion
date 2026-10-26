@@ -4,7 +4,7 @@ title: "Gestionar tipos de trabajo y tareas"
 epic: E02
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -69,4 +69,6 @@ Se entrega en dos PR: backend primero, web-admin después.
   - Una subtarea pedida bajo otro tipo de trabajo responde 404 (`task_not_found`).
   - Migración `51d29e6b730e`: crea las tablas y carga los seis tipos iniciales; el `downgrade` las borra.
   - Dirección recibe 403 también al leer, porque la matriz no le da acceso a catálogos.
-- web-admin (PR 2): pendiente.
+- web-admin (PR 2): pantalla "Tipos de trabajo" en el inicio, visible solo para administración. Alta, renombrar, desactivar y reactivar tipos; cada tipo despliega sus subtareas con las mismas acciones. "Mostrar desactivados" pide `include_inactive=true` para tipos y subtareas. Un 409 se muestra con un mensaje claro.
+  - Componentes compartidos `CatalogItem` y `NewNameForm` en `features/work-types/`, pensados para los demás catálogos de E02 cuando lleguen.
+  - Se regeneró `openapi.json` y `src/api/schema.d.ts` desde el backend.
