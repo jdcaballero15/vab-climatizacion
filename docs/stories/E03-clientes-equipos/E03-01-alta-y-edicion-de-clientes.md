@@ -30,4 +30,4 @@ assumes: [D-002]
 ## Notas técnicas
 
 - Entre 50 y 200 clientes. CUIT o DNI del cliente es dato personal (ver `SECURITY.md`).
-- Cada cliente tiene un número único (`client.number`) que forma parte del código de sus equipos (`D-002`). En los clientes nuevos lo asigna el sistema; en los migrados se toma el de Persat (E11-01).
+- Cada cliente tiene un número único (`client.number`, texto) que forma parte del código de sus equipos (`D-002`). En los clientes nuevos lo asigna el sistema siguiendo la serie numérica (el siguiente al máximo); en los migrados se toma el de Persat tal cual (E11-01), que mezcla series.

@@ -30,4 +30,4 @@ assumes: [D-002]
 
 ## Notas técnicas
 
-- Identificación según la propuesta de `D-002`. Unos 530 equipos de unos 55 clientes; los formatos de código no son parejos (varios prefijos) y se importan tal cual.
+- Identificación según la propuesta de `D-002`. Unos 530 equipos de unos 55 clientes. Los códigos no son parejos (prefijos `EA` y `EH`, siglas de sector, formatos viejos y correlativos de 2 o 3 dígitos) y se importan tal cual, sin validarlos por largo ni formato.
