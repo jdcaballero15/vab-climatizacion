@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 118 historias.** done: 20, draft: 90, icebox: 8
+**Total: 119 historias.** done: 20, draft: 90, icebox: 8, ready: 1
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -81,7 +81,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
-| [E05-01](E05-app-tecnico/E05-01-ver-mis-ordenes-asignadas.md) | Ver mis órdenes asignadas | Debe | S | draft | technician | - | - | E04-03, E01-04, E00-03 |
+| [E05-01](E05-app-tecnico/E05-01-ver-mis-ordenes-asignadas.md) | Ver mis órdenes asignadas | Debe | M | ready | technician | - | - | E04-03, E01-04, E00-03 |
 | [E05-02](E05-app-tecnico/E05-02-ver-el-detalle-de-una-orden-asignada.md) | Ver el detalle de una orden asignada | Debe | S | draft | technician | - | - | E05-01 |
 | [E05-03](E05-app-tecnico/E05-03-iniciar-una-orden.md) | Iniciar una orden | Debe | S | draft | technician | - | - | E05-02, E04-01 |
 | [E05-04](E05-app-tecnico/E05-04-cerrar-una-orden-con-falla-y-reparacion-de-listas.md) | Cerrar una orden con falla y reparación de listas | Debe | M | draft | technician | - | - | E05-03, E02-03, E02-04 |
@@ -91,6 +91,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E05-08](E05-app-tecnico/E05-08-elegir-el-resultado-del-trabajo.md) | Elegir el resultado del trabajo | Debe | M | draft | technician | - | - | E05-04, E04-01 |
 | [E05-12](E05-app-tecnico/E05-12-cierre-de-orden-idempotente.md) | Cierre de orden idempotente | Debe | S | draft | technician | - | - | E05-04, E04-01 |
 | [E05-13](E05-app-tecnico/E05-13-no-perder-un-cierre-si-se-corta-la-conexion.md) | No perder un cierre si se corta la conexión | Debe | M | draft | technician | - | - | E05-04, E05-12 |
+| [E05-14](E05-app-tecnico/E05-14-ver-las-ordenes-hechas-esta-semana.md) | Ver las órdenes hechas esta semana | Debería | S | draft | technician | - | - | E05-01, E05-04 |
 
 ## E06 Órdenes de taller
 

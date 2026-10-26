@@ -27,4 +27,5 @@ assumes: []
 
 ## Preguntas abiertas
 
-- ¿Cuántos depósitos hay? ¿Cada escuadrilla anda siempre en la misma camioneta (D-013)? Si es así, la camioneta podría ser un dato de la escuadrilla.
+- ¿Cuántos depósitos hay?
+- Respondida (negocio, 2026-10-26): cada escuadrilla anda siempre en la misma camioneta (D-013). La camioneta puede ser un dato de la escuadrilla; se define al refinar.
