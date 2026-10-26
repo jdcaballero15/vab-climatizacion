@@ -2,8 +2,13 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.schemas.client import ClientSiteTechnicianOut, site_map_url
 from app.api.schemas.work_order import (
     AssignmentCreate,
+    CrewOrdersTechnicianOut,
+    CrewTechnicianOut,
+    EquipmentTechnicianOut,
+    OrderTechnicianOut,
     PendingOrderOut,
     WorkOrderAdminOut,
     WorkOrderCreate,
@@ -11,6 +16,7 @@ from app.api.schemas.work_order import (
 from app.core.dates import business_today, format_date
 from app.db.models.user import User
 from app.db.models.work_order import WorkOrder, WorkOrderAssignment, WorkOrderEvent
+from app.db.repositories.client import ClientContactRepository
 from app.db.repositories.crew import CrewRepository
 from app.db.repositories.work_order import WorkOrderRepository
 from app.domain.work_order import (
@@ -99,6 +105,65 @@ async def list_pending(
         for order, created_at, client_name, site_label, site_address, work_type_name in rows
     ]
     return items, total
+
+
+async def list_for_crew_user(session: AsyncSession, user: User) -> CrewOrdersTechnicianOut:
+    """Órdenes abiertas de la escuadrilla del usuario del celular (E05-01, D-013).
+
+    La escuadrilla sale del usuario de la sesión. Sin una activa, no ve órdenes.
+    """
+    today = business_today()
+    crew = await CrewRepository(session).get_by_app_user(user.id)
+    if crew is None or not crew.is_active or crew.deleted_at is not None:
+        return CrewOrdersTechnicianOut(crew=None, today=today, orders=[])
+
+    rows = await WorkOrderRepository(session).list_open_for_crew(crew.id)
+    site_ids = {site.id for _, _, _, site, _, _, _ in rows}
+    contacts = await ClientContactRepository(session).list_for_sites(site_ids) if rows else []
+    names_by_site: dict[uuid.UUID, list[str]] = {}
+    for contact in contacts:
+        if contact.name and contact.client_site_id is not None:
+            names_by_site.setdefault(contact.client_site_id, []).append(contact.name)
+
+    orders = [
+        OrderTechnicianOut(
+            id=order.id,
+            number=order.number,
+            status=order.status,
+            work_type_name=work_type_name,
+            description=order.description,
+            client_name=client_name,
+            scheduled_for=scheduled_for,
+            site=ClientSiteTechnicianOut(
+                address=site.address,
+                reference=site.reference,
+                map_url=site_map_url(site.address),
+                contact_names=names_by_site.get(site.id, []),
+            ),
+            equipment=(
+                EquipmentTechnicianOut(
+                    location_note=equipment.location_note,
+                    equipment_type_name=equipment_type_name or "",
+                    brand=equipment.brand,
+                    model=equipment.model,
+                )
+                if equipment is not None
+                else None
+            ),
+        )
+        for (
+            order,
+            scheduled_for,
+            client_name,
+            site,
+            work_type_name,
+            equipment,
+            equipment_type_name,
+        ) in rows
+    ]
+    return CrewOrdersTechnicianOut(
+        crew=CrewTechnicianOut(name=crew.name), today=today, orders=orders
+    )
 
 
 def _columns(order: WorkOrder) -> dict[str, object]:

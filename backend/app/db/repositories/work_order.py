@@ -1,14 +1,15 @@
 import uuid
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import Row, func, select, update
 
-from app.db.models.catalog import WorkType
+from app.db.models.catalog import EquipmentType, WorkType
 from app.db.models.client import Client, ClientSite
-from app.db.models.work_order import WorkOrder, WorkOrderEvent
+from app.db.models.equipment import Equipment
+from app.db.models.work_order import WorkOrder, WorkOrderAssignment, WorkOrderEvent
 from app.db.repository import BaseRepository
-from app.domain.work_order import OrderStatus, WorkOrderEventType
+from app.domain.work_order import CREW_OPEN_STATUSES, OrderStatus, WorkOrderEventType
 
 
 class WorkOrderRepository(BaseRepository[WorkOrder]):
@@ -68,3 +69,40 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         )
         result = await self.session.execute(stmt)
         return result.all(), total or 0
+
+    async def list_open_for_crew(
+        self, crew_id: uuid.UUID
+    ) -> Sequence[Row[WorkOrder, date, str, ClientSite, str, Equipment | None, str | None]]:
+        """Órdenes Asignada y En curso con la asignación vigente de la escuadrilla.
+
+        Por fecha prevista y número. Cada fila trae la orden, la fecha prevista, el nombre
+        del cliente, el domicilio, el nombre del tipo de trabajo, el equipo y el nombre de
+        su tipo (estos dos, nulos si la orden no tiene equipo).
+        """
+        stmt = (
+            select(
+                self.model,
+                WorkOrderAssignment.scheduled_for,
+                Client.name,
+                ClientSite,
+                WorkType.name,
+                Equipment,
+                EquipmentType.name,
+            )
+            .join(WorkOrderAssignment, WorkOrderAssignment.work_order_id == self.model.id)
+            .join(Client, Client.id == self.model.client_id)
+            .join(ClientSite, ClientSite.id == self.model.client_site_id)
+            .join(WorkType, WorkType.id == self.model.work_type_id)
+            .outerjoin(Equipment, Equipment.id == self.model.equipment_id)
+            .outerjoin(EquipmentType, EquipmentType.id == Equipment.equipment_type_id)
+            .where(
+                WorkOrderAssignment.crew_id == crew_id,
+                WorkOrderAssignment.unassigned_at.is_(None),
+                WorkOrderAssignment.deleted_at.is_(None),
+                self.model.status.in_(CREW_OPEN_STATUSES),
+                self.model.deleted_at.is_(None),
+            )
+            .order_by(WorkOrderAssignment.scheduled_for, self.model.number)
+        )
+        result = await self.session.execute(stmt)
+        return result.all()

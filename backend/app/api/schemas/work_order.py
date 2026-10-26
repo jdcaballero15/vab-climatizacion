@@ -4,7 +4,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, StringConstraints
 
-from app.api.schemas.client import blank_to_none
+from app.api.schemas.client import ClientSiteTechnicianOut, blank_to_none
 from app.domain.work_order import OrderChannel, OrderKind, OrderSource, OrderStatus
 
 # Obligatoria: un texto vacío pasa a None y se rechaza con 422.
@@ -81,3 +81,35 @@ class AssignmentAdminOut(BaseModel):
     crew_id: uuid.UUID
     scheduled_for: date
     assigned_at: datetime
+
+
+# E05-01: lo que ve la escuadrilla en el celular. Sin quién pidió, canal ni precios (ADR 0006).
+class EquipmentTechnicianOut(BaseModel):
+    location_note: str
+    equipment_type_name: str
+    brand: str | None
+    model: str | None
+
+
+class OrderTechnicianOut(BaseModel):
+    id: uuid.UUID
+    number: int
+    status: OrderStatus
+    work_type_name: str
+    description: str | None
+    client_name: str
+    scheduled_for: date
+    site: ClientSiteTechnicianOut
+    equipment: EquipmentTechnicianOut | None
+
+
+class CrewTechnicianOut(BaseModel):
+    name: str
+
+
+class CrewOrdersTechnicianOut(BaseModel):
+    # Nulo si el usuario no tiene una escuadrilla activa (criterio 7).
+    crew: CrewTechnicianOut | None
+    # Día de hoy en Argentina: el celular calcula "Hoy" y "Vencida" con este, no con su reloj.
+    today: date
+    orders: list[OrderTechnicianOut]

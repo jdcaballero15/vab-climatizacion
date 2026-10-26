@@ -4,7 +4,7 @@ title: "Ver mis órdenes asignadas"
 epic: E05
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [technician]
 size: M
 areas: [backend, pwa]
@@ -53,3 +53,11 @@ Validadas con negocio el 2026-10-26, con el prototipo del cliente:
 - Esquema `OrderTechnicianOut`, cubierto por el test de contrato E00-04. La sede reutiliza `ClientSiteTechnicianOut` (dirección, referencia, link de mapas, solo nombres de contacto). Del equipo, solo ubicación, tipo, marca y modelo. No incluye `requester_name` ni `channel`.
 - "Hoy" y "Vencida" con el día de Argentina (`app/core/dates.py` en el backend). En la PWA, las fechas sin hora se formatean sin pasar por `Date`, como en el web-admin.
 - PWA: TanStack Query; la lista se actualiza al volver a la app y con un botón "Actualizar".
+
+## Notas de implementación
+
+Se entrega en dos PR: backend primero, PWA después.
+
+- Backend (PR 1): `GET /tech/orders` devuelve `CrewOrdersTechnicianOut`: `crew` (nombre, o nulo sin escuadrilla activa), `today` (día de Argentina, para que el celular calcule "Hoy" y "Vencida" sin depender de su reloj) y `orders` (`OrderTechnicianOut`).
+- Cada orden trae número, estado, tipo de trabajo, descripción, cliente, fecha prevista, sede (`ClientSiteTechnicianOut`) y equipo (`EquipmentTechnicianOut`: ubicación, tipo, marca y modelo; nulo si no tiene). El sector (`requester_area`) queda para el detalle (E05-02).
+- Una consulta trae las órdenes con cliente, sede, tipo de trabajo y equipo; otra, los nombres de contacto de todas las sedes juntas.

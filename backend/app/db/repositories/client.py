@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 
 from sqlalchemy import BigInteger, cast, func, select
 
@@ -62,6 +62,16 @@ class ClientContactRepository(BaseRepository[ClientContact]):
         stmt = (
             self._select()
             .where(self.model.client_site_id == site_id)
+            .order_by(self.model.created_at, self.model.id)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def list_for_sites(self, site_ids: Collection[uuid.UUID]) -> Sequence[ClientContact]:
+        """Contactos de varios domicilios en una consulta (lista de órdenes del técnico)."""
+        stmt = (
+            self._select()
+            .where(self.model.client_site_id.in_(site_ids))
             .order_by(self.model.created_at, self.model.id)
         )
         result = await self.session.execute(stmt)
