@@ -426,6 +426,42 @@ export interface paths {
         patch: operations["update_contact_admin_clients__client_id__contacts__contact_id__patch"];
         trace?: never;
     };
+    "/admin/clients/{client_id}/sites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sites */
+        get: operations["list_sites_admin_clients__client_id__sites_get"];
+        put?: never;
+        /** Create Site */
+        post: operations["create_site_admin_clients__client_id__sites_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/sites/{site_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Site */
+        get: operations["get_site_admin_sites__site_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Site */
+        patch: operations["update_site_admin_sites__site_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -515,6 +551,8 @@ export interface components {
              * Format: uuid
              */
             client_id: string;
+            /** Client Site Id */
+            client_site_id: string | null;
             /** Name */
             name: string | null;
             /** Phone */
@@ -526,6 +564,8 @@ export interface components {
         };
         /** ContactCreate */
         ContactCreate: {
+            /** Client Site Id */
+            client_site_id?: string | null;
             /** Name */
             name?: string | null;
             /** Phone */
@@ -543,6 +583,8 @@ export interface components {
          * @description Solo se cambian los campos enviados; un campo en null se borra.
          */
         ContactUpdate: {
+            /** Client Site Id */
+            client_site_id?: string | null;
             /** Name */
             name?: string | null;
             /** Phone */
@@ -676,6 +718,52 @@ export interface components {
         RepairUpdate: {
             /** Name */
             name?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
+        /** SiteAdminOut */
+        SiteAdminOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Client Id
+             * Format: uuid
+             */
+            client_id: string;
+            /** Label */
+            label: string | null;
+            /** Address */
+            address: string;
+            /** Reference */
+            reference: string | null;
+            /** Is Active */
+            is_active: boolean;
+            /** Map Url */
+            readonly map_url: string;
+        };
+        /** SiteCreate */
+        SiteCreate: {
+            /** Label */
+            label?: string | null;
+            /** Address */
+            address: string;
+            /** Reference */
+            reference?: string | null;
+        };
+        /**
+         * SiteUpdate
+         * @description Solo se cambian los campos enviados; etiqueta o referencia en null se borran.
+         */
+        SiteUpdate: {
+            /** Label */
+            label?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Reference */
+            reference?: string | null;
             /** Is Active */
             is_active?: boolean | null;
         };
@@ -2019,6 +2107,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContactAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sites_admin_clients__client_id__sites_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_site_admin_clients__client_id__sites_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_site_admin_sites__site_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_site_admin_sites__site_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteAdminOut"];
                 };
             };
             /** @description Validation Error */
