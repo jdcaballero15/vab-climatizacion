@@ -17,7 +17,7 @@ assumes: []
 
 ## Historia
 
-**Como** administración, **quiero** importar los clientes desde la exportación de Persat, **para** no cargar a mano unos 630 clientes.
+**Como** administración, **quiero** importar los clientes desde la exportación de Persat, **para** no cargar a mano unos 640 clientes.
 
 ## Criterios de aceptación
 
@@ -31,5 +31,5 @@ assumes: []
 ## Notas técnicas
 
 - Lee la exportación cruda de Persat (`.xlsx`), no la planilla limpia. Reglas de limpieza en `docs/domain/migracion-persat.md` (`D-010`). El archivo de Persat y el de decisiones se pasan por parámetro y nunca se suben al repo.
-- Persat trae campos que hoy no están en el modelo de cliente (segmento, referencia, coordenadas): se definen al refinar E03-01.
+- Campos que entran y cómo se reparte la columna Descripción (CUIT, condición fiscal, referencia): ver E03-01 y `docs/domain/migracion-persat.md`. El cliente sin número se resuelve con el archivo de decisiones de migración.
 - Verificación manual con la exportación del 2026-10-08: 632 clientes. Los tests usan archivos ficticios.

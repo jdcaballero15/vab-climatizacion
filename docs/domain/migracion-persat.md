@@ -32,10 +32,10 @@ Generales: se recortan los espacios de más en todos los textos.
 - **No se migran** los registros internos (tipo operario, depósito o administración) ni los registros de prueba de Persat.
 - **Número de cliente**: es texto (ver `D-002`). Se corrigen los espacios alrededor del guion (`CLI -123` pasa a `CLI-123`). Un cliente sin número recibe uno nuevo y queda para revisar.
 - **Segmento**: sale de la columna Tipo (particular, comercio, estado, sanatorio o clínica, hotel; el resto, sin clasificar).
-- **Localidad**: se toma de la dirección cuando la dirección termina en el país; si no, de la columna Localidad.
-- **Coordenadas**: muchas son inválidas (valores fuera de rango, como una longitud de nueve dígitos). Solo se conservan las que caen dentro de la región de trabajo; para ubicar al cliente se usa la dirección.
-- **Email** en minúsculas. **Teléfono** como texto, sin decimales.
-- Sin dirección: queda para revisar.
+- **Descripción** viene mezclada y se reparte: si son 11 dígitos, es el CUIT; si dice consumidor final, RI o monotributo, es la condición fiscal; el resto (piso, departamento, referencias de ubicación, rubro) va a Referencia.
+- **Contacto**: Nombre, Telefono y Email forman un contacto del cliente, si alguno está cargado. Email en minúsculas, teléfono como texto sin decimales.
+- **Dirección**: se migra como texto (incluye la localidad) y se usa para ubicar al cliente. Sin dirección: queda para revisar.
+- **No se migran**: coordenadas (muchas son inválidas, como una longitud de nueve dígitos), inicio y fin de jornada, tiempo de servicio, grupo, altura, localidad y provincia. Ver E03-01.
 
 ### Equipos
 

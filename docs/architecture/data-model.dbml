@@ -44,6 +44,21 @@ Enum order_source {
   maintenance
 }
 
+Enum client_segment {
+  private_person [note: 'Particular']
+  business       [note: 'Comercio']
+  government     [note: 'Estado']
+  healthcare     [note: 'Sanatorio o clínica']
+  hotel
+  unclassified   [note: 'Sin clasificar']
+}
+
+Enum tax_condition {
+  final_consumer         [note: 'Consumidor final']
+  registered_taxpayer    [note: 'Responsable inscripto']
+  monotributo
+}
+
 Enum closure_outcome {
   done
   needs_pickup   [note: 'Requiere retiro: convierte la orden en orden de taller']
@@ -152,7 +167,10 @@ Table client {
   id uuid [pk]
   number varchar [unique, not null, note: 'Número de cliente, texto (Persat mezcla series). Forma parte del código de equipo (D-002)']
   name varchar [not null]
+  segment client_segment [not null, default: 'unclassified']
   tax_id varchar [note: 'CUIT o DNI. Dato personal, ver SECURITY.md']
+  tax_condition tax_condition [note: 'Opcional']
+  reference varchar [note: 'Piso, departamento, referencia de ubicación o rubro']
   notes text
 }
 
