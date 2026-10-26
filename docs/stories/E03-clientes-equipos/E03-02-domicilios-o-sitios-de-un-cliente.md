@@ -4,7 +4,7 @@ title: "Domicilios o sitios de un cliente"
 epic: E03
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -70,3 +70,4 @@ Se entrega en dos PR: backend primero, web-admin después.
 - Criterio 7: `ClientSiteTechnicianOut` (dirección, referencia, `map_url`, nombres de los contactos de ese domicilio) y el servicio `get_site_for_technician`, que va a usar E05-02 al mostrar la orden. `phone` y `email` se sumaron a los campos prohibidos para el técnico en todo el sistema (`app/core/sensitive_fields.py`), así el test de contrato los frena en cualquier esquema.
 - Criterios 1 y 2, la parte de órdenes, llegan con E04-02, que elige el domicilio activo.
 - Criterio 3, la cantidad de equipos de cada domicilio, se suma con E03-03, cuando exista la tabla `equipment`. Decidido el 2026-10-26.
+- Web-admin (PR 2): sección "Domicilios" en la ficha del cliente con alta, edición, desactivar y reactivar y el enlace "Ver en el mapa". La dirección se valida también en el cliente. En el contacto se elige el domicilio entre los activos (uno inactivo solo aparece si el contacto ya estaba asociado) y la lista muestra la sede de cada contacto. Probado en el navegador contra el backend real.

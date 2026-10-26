@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { ClientContacts } from "./ClientContacts";
+import { ClientSites } from "./ClientSites";
 import { ClientForm } from "./ClientForm";
 import { EMPTY_CLIENT } from "./formValues";
 import { SEGMENT_LABELS } from "./labels";
@@ -47,6 +48,7 @@ function ClientDetail({ clientId, onClose }: { clientId: string; onClose: () => 
         error={updateClient.error}
         onSubmit={(values) => updateClient.mutate(values)}
       />
+      <ClientSites clientId={id} />
       <ClientContacts clientId={id} />
     </section>
   );
