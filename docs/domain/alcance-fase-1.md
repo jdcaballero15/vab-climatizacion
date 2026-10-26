@@ -58,4 +58,4 @@ La propuesta original usaba Power Apps, Power Automate y listas de SharePoint so
 | Sin costo de hosting | Hay costo recurrente de hosting (ver `D-006`) |
 | Límites de delegación y umbral de vista de listas | Ya no aplican |
 | Edición de listas SharePoint "de las dos formas" | Reemplazada por catálogos en la app (ver `D-003`) |
-| Offline no resuelto | Sigue pendiente y ahora define la arquitectura (ver `D-001`) |
+| Offline no resuelto | Resuelto en `D-001`: la app funciona con conexión y guarda el borrador del cierre (ADR 0009) |

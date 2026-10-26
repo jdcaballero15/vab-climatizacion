@@ -8,7 +8,7 @@ Idioma: español en historias, documentos, textos de interfaz y mensajes de comm
 
 - `backend/`: Python 3.12, FastAPI, SQLAlchemy 2 async, Alembic, PostgreSQL 16.
 - `web-admin/`: React, TypeScript, Vite (administración, PC o tablet).
-- `pwa-tecnico/`: React, TypeScript, Vite, service worker (técnico, celular Android, offline provisional).
+- `pwa-tecnico/`: React, TypeScript, Vite, service worker (técnico, celular Android, con conexión y borrador local del cierre, ADR 0009).
 - Hosting previsto: PaaS con Postgres administrado y bucket S3 compatible. Todo en Docker.
 
 ## Comandos

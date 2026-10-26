@@ -1,19 +1,19 @@
 ---
-id: E05-11
+id: E99-08
 title: "Ver el estado de sincronización y resolver conflictos"
-epic: E05
-phase: 1
-priority: must
-status: draft
+epic: E99
+phase: 2
+priority: could
+status: icebox
 roles: [technician, admin]
 size: M
 areas: [backend, pwa, web-admin]
-depends_on: [E05-10, E04-04]
-blocked_by: [D-001]
+depends_on: []
+blocked_by: []
 assumes: []
 ---
 
-# E05-11 Ver el estado de sincronización y resolver conflictos
+# E99-08 Ver el estado de sincronización y resolver conflictos
 
 ## Historia
 
@@ -29,3 +29,7 @@ assumes: []
 ## Notas técnicas
 
 - Reglas de conflicto del ADR 0003: el cierre del técnico se agrega, lo de la oficina gana el servidor.
+
+## Icebox
+
+- Venía de la épica E05. Pasa al icebox por `D-001` (2026-10-26): según el relevamiento las cuadrillas siempre tienen señal y la app del técnico funciona solo con conexión (ADR 0009). Lo mínimo para no perder un cierre si se corta la señal está en E05-13. Se retoma si en la práctica aparecen lugares sin señal.

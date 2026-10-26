@@ -23,7 +23,7 @@ assumes: []
 
 1. **Dado:** un entorno de práctica. **Cuando:** administración y técnicos lo usan. **Entonces:** tiene datos ficticios y no afecta producción.
 2. **Dado:** la guía de administración. **Cuando:** se entrega. **Entonces:** cubre crear, asignar, revisar, facturar, cobrar, catálogos y stock.
-3. **Dado:** la guía del técnico. **Cuando:** se entrega. **Entonces:** cubre ver órdenes, cerrar, repuestos, foto, firma y (si aplica) trabajo sin señal, en pasos cortos con capturas.
+3. **Dado:** la guía del técnico. **Cuando:** se entrega. **Entonces:** cubre ver órdenes, cerrar, repuestos, foto, firma y qué pasa si se corta la señal, en pasos cortos con capturas.
 4. **Dado:** las capturas de las guías. **Cuando:** se revisan. **Entonces:** no muestran datos reales.
 
 ## Notas técnicas

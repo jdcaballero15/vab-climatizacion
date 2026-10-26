@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 115 historias.** done: 13, draft: 97, icebox: 5
+**Total: 116 historias.** done: 13, draft: 95, icebox: 8
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -87,10 +87,8 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E05-06](E05-app-tecnico/E05-06-agregar-foto-y-observacion-al-cierre.md) | Agregar foto y observación al cierre | Debe | M | draft | technician | - | - | E05-04, E00-09 |
 | [E05-07](E05-app-tecnico/E05-07-firma-del-cliente-en-pantalla-con-nombre-y-dni.md) | Firma del cliente en pantalla con nombre y DNI | Debe | M | draft | technician | - | D-011 | E05-04, E00-09 |
 | [E05-08](E05-app-tecnico/E05-08-elegir-el-resultado-del-trabajo.md) | Elegir el resultado del trabajo | Debe | M | draft | technician | - | - | E05-04, E04-01 |
-| [E05-09](E05-app-tecnico/E05-09-guardar-mis-ordenes-en-el-celular-para-trabajar-sin-sen.md) | Guardar mis órdenes en el celular para trabajar sin señal | Debe | L | draft | technician | D-001 | - | E05-01, E00-03 |
-| [E05-10](E05-app-tecnico/E05-10-cola-de-cierres-pendientes-de-sincronizar.md) | Cola de cierres pendientes de sincronizar | Debe | L | draft | technician | D-001 | - | E05-09, E05-12 |
-| [E05-11](E05-app-tecnico/E05-11-ver-el-estado-de-sincronizacion-y-resolver-conflictos.md) | Ver el estado de sincronización y resolver conflictos | Debe | M | draft | technician, admin | D-001 | - | E05-10, E04-04 |
 | [E05-12](E05-app-tecnico/E05-12-cierre-de-orden-idempotente.md) | Cierre de orden idempotente | Debe | S | draft | technician | - | - | E05-04, E04-01 |
+| [E05-13](E05-app-tecnico/E05-13-no-perder-un-cierre-si-se-corta-la-conexion.md) | No perder un cierre si se corta la conexión | Debe | M | draft | technician | - | - | E05-04, E05-12 |
 
 ## E06 Órdenes de taller
 
@@ -190,12 +188,14 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E99-03](E99-icebox/E99-03-agentes-de-ia-dentro-del-producto.md) | Agentes de IA dentro del producto | Podría | L | icebox | admin | - | - | - |
 | [E99-04](E99-icebox/E99-04-portal-de-clientes.md) | Portal de clientes | Podría | L | icebox | admin | - | - | - |
 | [E99-05](E99-icebox/E99-05-emision-de-factura-electronica.md) | Emisión de factura electrónica | Podría | L | icebox | admin | - | - | - |
+| [E99-06](E99-icebox/E99-06-guardar-mis-ordenes-en-el-celular-para-trabajar-sin-senal.md) | Guardar mis órdenes en el celular para trabajar sin señal | Podría | L | icebox | technician | - | - | - |
+| [E99-07](E99-icebox/E99-07-cola-de-cierres-pendientes-de-sincronizar.md) | Cola de cierres pendientes de sincronizar | Podría | L | icebox | technician | - | - | - |
+| [E99-08](E99-icebox/E99-08-ver-el-estado-de-sincronizacion-y-resolver-conflictos.md) | Ver el estado de sincronización y resolver conflictos | Podría | M | icebox | technician, admin | - | - | - |
 
 ## Historias bloqueadas por decisión
 
 | Decisión | Estado | Historias bloqueadas |
 |---|---|---|
-| D-001 | Abierta | E05-09, E05-10, E05-11 |
 | D-006 | Abierta | E00-05 |
 | D-008 | Abierta | E12-04 |
 | D-009 | Abierta | E00-10 |

@@ -1,19 +1,19 @@
 ---
-id: E05-09
+id: E99-06
 title: "Guardar mis órdenes en el celular para trabajar sin señal"
-epic: E05
-phase: 1
-priority: must
-status: draft
+epic: E99
+phase: 2
+priority: could
+status: icebox
 roles: [technician]
 size: L
 areas: [pwa]
-depends_on: [E05-01, E00-03]
-blocked_by: [D-001]
+depends_on: []
+blocked_by: []
 assumes: []
 ---
 
-# E05-09 Guardar mis órdenes en el celular para trabajar sin señal
+# E99-06 Guardar mis órdenes en el celular para trabajar sin señal
 
 ## Historia
 
@@ -28,4 +28,8 @@ assumes: []
 
 ## Notas técnicas
 
-- IndexedDB. Ver ADR 0003. Si `D-001` resuelve que no hace falta offline, esta historia y E05-10 y E05-11 pasan a icebox.
+- IndexedDB. Ver ADR 0003 (reemplazado por ADR 0009).
+
+## Icebox
+
+- Venía de la épica E05. Pasa al icebox por `D-001` (2026-10-26): según el relevamiento las cuadrillas siempre tienen señal y la app del técnico funciona solo con conexión (ADR 0009). Lo mínimo para no perder un cierre si se corta la señal está en E05-13. Se retoma si en la práctica aparecen lugares sin señal.

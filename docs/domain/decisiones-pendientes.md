@@ -9,7 +9,7 @@ El índice [docs/stories/INDEX.md](../stories/INDEX.md) lista las historias bloq
 
 | ID | Decisión | Quién resuelve | Estado | Afecta |
 |---|---|---|---|---|
-| D-001 | Conectividad en campo: ¿hace falta modo offline? | Cliente | **Abierta** | E05-09 a E05-11, ADR 0003 |
+| D-001 | Conectividad en campo: ¿hace falta modo offline? | Cliente | Resuelta | E99-06 a E99-08, E05-13, ADR 0003, ADR 0009 |
 | D-002 | Identificación de equipos: código propio o por ubicación | Negocio | **Propuesta** | E03-03, E03-05, E04-12, E07-03, E07-09, E11-02, E11-06 |
 | D-003 | Edición de catálogos en el sistema nuevo | Negocio | **Propuesta** | E02-01 a E02-06, E02-08 |
 | D-004 | Datos exactos que necesita administración para facturar | Negocio | Pospuesta | E04-09 |
@@ -26,8 +26,9 @@ El índice [docs/stories/INDEX.md](../stories/INDEX.md) lista las historias bloq
 
 ### D-001 Conectividad en campo
 
-Los formularios del cliente se contradicen: "siempre hay señal" contra "a veces no, en cámaras frigoríficas, sótanos y zonas rurales". **Hay que preguntarle al cliente directamente.** No asumir ninguna respuesta.
-Mientras tanto, la PWA se diseña con soporte offline (ADR 0003, provisional). Es la decisión más cara de equivocar, por eso conviene resolverla primero.
+Los formularios del cliente se contradicen: "siempre hay señal" contra "a veces no, en cámaras frigoríficas, sótanos y zonas rurales". Mientras tanto, la PWA se diseñó con soporte offline (ADR 0003, provisional).
+
+**Resuelta** (Gonza, 2026-10-26, con el relevamiento del cliente): las cuadrillas siempre tienen señal, y por eso el diseño original ya había descartado el modo offline. Para la versión 1.0 la app del técnico funciona solo con conexión. Mínimo de seguridad: si se corta la conexión con un cierre a medio cargar, lo cargado no se pierde (borrador en el celular) y se envía al volver la señal (E05-13). El offline completo queda fuera de la 1.0: las tres historias de offline de la épica E05 pasan al icebox (E99-06, E99-07 y E99-08). Ver ADR 0009, que reemplaza al 0003.
 
 ### D-002 Identificación de equipos
 
