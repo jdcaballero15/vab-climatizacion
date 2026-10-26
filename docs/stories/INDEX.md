@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 115 historias.** done: 8, draft: 101, icebox: 5, ready: 1
+**Total: 115 historias.** done: 9, draft: 101, icebox: 5
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -168,7 +168,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E11-06](E11-migracion/E11-06-cargar-los-abonados-y-los-equipos-de-cada-abono.md) | Cargar los abonados y los equipos de cada abono | Debe | M | draft | admin | D-002 | - | E07-03, E11-02, E11-05 |
 | [E11-07](E11-migracion/E11-07-guia-de-uso-y-practica-con-datos-de-prueba.md) | Guía de uso y práctica con datos de prueba | Debe | M | draft | admin, technician | - | - | E11-09 |
 | [E11-08](E11-migracion/E11-08-criterios-de-salida-de-la-convivencia-con-persat.md) | Criterios de salida de la convivencia con Persat | Debería | S | draft | owner | - | - | E11-03 |
-| [E11-09](E11-migracion/E11-09-datos-de-prueba-ficticios.md) | Datos de prueba ficticios | Debe | S | ready | dev | - | - | E00-01 |
+| [E11-09](E11-migracion/E11-09-datos-de-prueba-ficticios.md) | Datos de prueba ficticios | Debe | S | done | dev | - | - | E00-01 |
 
 ## E12 Transversal: auditoría, privacidad y calidad
 
