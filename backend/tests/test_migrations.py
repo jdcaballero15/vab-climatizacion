@@ -27,6 +27,12 @@ def _reset_database() -> None:
     async def reset() -> None:
         engine = create_async_engine(TEST_DATABASE_URL)
         async with engine.begin() as conn:
+            await conn.execute(text("DROP TABLE IF EXISTS work_order_event CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS work_order CASCADE"))
+            await conn.execute(text("DROP SEQUENCE IF EXISTS work_order_number_seq"))
+            await conn.execute(text("DROP TYPE IF EXISTS order_status"))
+            await conn.execute(text("DROP TYPE IF EXISTS order_kind"))
+            await conn.execute(text("DROP TYPE IF EXISTS order_source"))
             await conn.execute(text("DROP TABLE IF EXISTS equipment CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS client_contact CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS client_site CASCADE"))
@@ -256,5 +262,34 @@ def test_migracion_de_equipos_carga_los_prefijos() -> None:
             )
             == []
         )
+    finally:
+        command.downgrade(cfg, "base")
+
+
+# E04-01: la migración crea las órdenes, sus eventos, la secuencia y los enums; el downgrade
+# los quita para poder volver a subir.
+def test_migracion_de_ordenes_es_reversible() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    objetos = (
+        "SELECT tablename FROM pg_tables WHERE tablename LIKE 'work_order%' "
+        "UNION ALL SELECT sequencename FROM pg_sequences "
+        "WHERE sequencename = 'work_order_number_seq' "
+        "UNION ALL SELECT typname FROM pg_type "
+        "WHERE typname IN ('order_status', 'order_kind', 'order_source')"
+    )
+    command.upgrade(cfg, "head")
+    try:
+        assert _names(objetos) == [
+            "order_kind",
+            "order_source",
+            "order_status",
+            "work_order",
+            "work_order_event",
+            "work_order_number_seq",
+        ]
+        command.downgrade(cfg, "2ecd8961c92f")
+        assert _names(objetos) == []
     finally:
         command.downgrade(cfg, "base")
