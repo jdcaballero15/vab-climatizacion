@@ -43,6 +43,12 @@ Enum order_source {
   manual
   maintenance
 }
+Enum order_channel {
+  whatsapp
+  email
+  phone
+  in_person    [note: 'Presencial: en la oficina o pedido al técnico en el lugar']
+}
 
 Enum client_segment {
   private_person [note: 'Particular']
@@ -218,6 +224,9 @@ Table work_order {
   equipment_id uuid [ref: > equipment.id]
   work_type_id uuid [ref: > work_type.id, not null]
   description text
+  channel order_channel [note: 'Por dónde llegó el pedido. Obligatorio en las manuales (E04-02)']
+  requester_name varchar [note: 'Quién pidió: nombre y cargo. Opcional, el técnico no lo ve']
+  requester_area varchar [note: 'Dónde: sector, piso o ala. Opcional, el técnico lo ve']
   requires_approval boolean [default: false, note: 'Órdenes generadas por mantenimiento hasta su aprobación en bloque. Pendiente D-005']
   maintenance_run_id uuid [ref: > maintenance_run.id]
 }
@@ -226,7 +235,7 @@ Table work_order_event {
   id uuid [pk]
   work_order_id uuid [ref: > work_order.id, not null]
   stage_id uuid [ref: > work_order_stage.id]
-  event_type varchar [not null, note: 'status_change, assigned, unassigned, review_approved, review_returned, converted_to_workshop, closure_in_review']
+  event_type varchar [not null, note: 'created, status_change, assigned, unassigned, reassigned, review_approved, review_returned, converted_to_workshop, closure_in_review']
   from_status order_status
   to_status order_status [note: 'Null en eventos que no cambian el estado']
   occurred_at timestamptz [not null, note: 'Fuente de todas las fechas de negocio de la orden']
