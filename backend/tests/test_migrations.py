@@ -1,6 +1,7 @@
 import asyncio
 from pathlib import Path
 
+import pytest
 from alembic import command
 from alembic.config import Config
 from alembic.script import ScriptDirectory
@@ -70,6 +71,19 @@ def _current_revision() -> str | None:
             await engine.dispose()
 
     return asyncio.run(query())
+
+
+def _execute(*statements: str) -> None:
+    async def run() -> None:
+        engine = create_async_engine(TEST_DATABASE_URL)
+        try:
+            async with engine.begin() as conn:
+                for statement in statements:
+                    await conn.execute(text(statement))
+        finally:
+            await engine.dispose()
+
+    asyncio.run(run())
 
 
 def _names(query_sql: str) -> list[str]:
@@ -349,4 +363,59 @@ def test_migracion_de_escuadrillas_es_reversible() -> None:
         command.downgrade(cfg, "c7d2f4e81a56")
         assert _names(tablas) == []
     finally:
+        command.downgrade(cfg, "base")
+
+
+# E04-03 (D-013): la asignación pasa de técnico a escuadrilla y vuelve; con asignaciones
+# cargadas la migración se niega a correr en lugar de borrarlas.
+def test_migracion_de_asignacion_a_escuadrilla() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    columnas = (
+        "SELECT column_name FROM information_schema.columns "
+        "WHERE table_name = 'work_order_assignment' "
+        "AND column_name IN ('technician_id', 'crew_id')"
+    )
+    command.upgrade(cfg, "head")
+    try:
+        assert _names(columnas) == ["crew_id"]
+        command.downgrade(cfg, "d3a9b6e2f417")
+        assert _names(columnas) == ["technician_id"]
+    finally:
+        command.downgrade(cfg, "base")
+
+
+def test_migracion_a_escuadrilla_no_corre_con_asignaciones() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    command.upgrade(cfg, "d3a9b6e2f417")
+    try:
+        _execute(
+            "INSERT INTO app_user (id, email, full_name, role, password_hash, is_active) "
+            "VALUES ('00000000-0000-0000-0000-000000000001', 't@ot-demo.com', 'T', "
+            "'technician', 'x', true)",
+            "INSERT INTO client (id, number, name, segment) "
+            "VALUES ('00000000-0000-0000-0000-000000000002', '1', 'C', 'unclassified')",
+            "INSERT INTO client_site (id, client_id, address, is_active) "
+            "VALUES ('00000000-0000-0000-0000-000000000003', "
+            "'00000000-0000-0000-0000-000000000002', 'Calle 1', true)",
+            "INSERT INTO work_order (id, kind, source, status, client_id, client_site_id, "
+            "work_type_id) SELECT '00000000-0000-0000-0000-000000000004', 'on_site', "
+            "'manual', 'assigned', '00000000-0000-0000-0000-000000000002', "
+            "'00000000-0000-0000-0000-000000000003', id FROM work_type LIMIT 1",
+            "INSERT INTO work_order_assignment (id, work_order_id, technician_id, "
+            "scheduled_for) VALUES ('00000000-0000-0000-0000-000000000005', "
+            "'00000000-0000-0000-0000-000000000004', "
+            "'00000000-0000-0000-0000-000000000001', '2099-01-01')",
+        )
+        with pytest.raises(RuntimeError, match="no se pueden convertir"):
+            command.upgrade(cfg, "head")
+        assert _current_revision() == "d3a9b6e2f417"
+        assert _names("SELECT id::text FROM work_order_assignment") == [
+            "00000000-0000-0000-0000-000000000005"
+        ]
+    finally:
+        # El downgrade de c7d2f4e81a56 quita la tabla con sus filas.
         command.downgrade(cfg, "base")

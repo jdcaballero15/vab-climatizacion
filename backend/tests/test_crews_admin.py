@@ -6,15 +6,32 @@ from httpx import ASGITransport, AsyncClient, Response
 from sqlalchemy import text
 
 from app.core.security import create_access_token
+from app.db.models.catalog import EquipmentType, WorkType
+from app.db.models.client import Client, ClientSite
 from app.db.models.crew import Crew, FieldTechnician
+from app.db.models.equipment import Equipment
 from app.db.models.user import User, UserRole
+from app.db.models.work_order import WorkOrder, WorkOrderAssignment, WorkOrderEvent
 from app.db.session import SessionLocal, engine
 from app.main import app
 from tests.factories import make_user
 
 # E02-09: escuadrillas (lista fija con nombre y el usuario de su celular, D-013).
 
-TABLES = [User.__table__, Crew.__table__, FieldTechnician.__table__]
+# Con las de órdenes: desactivar una escuadrilla revisa si tiene órdenes abiertas (E04-03).
+TABLES = [
+    User.__table__,
+    Crew.__table__,
+    FieldTechnician.__table__,
+    Client.__table__,
+    ClientSite.__table__,
+    EquipmentType.__table__,
+    Equipment.__table__,
+    WorkType.__table__,
+    WorkOrder.__table__,
+    WorkOrderEvent.__table__,
+    WorkOrderAssignment.__table__,
+]
 URL = "/admin/crews"
 
 
@@ -25,7 +42,17 @@ async def schema() -> AsyncGenerator[None, None]:
     yield
     async with engine.begin() as conn:
         await conn.run_sync(User.metadata.drop_all, tables=list(reversed(TABLES)))
-        await conn.execute(text("DROP TYPE IF EXISTS user_role"))
+        for enum_type in (
+            "user_role",
+            "client_segment",
+            "tax_condition",
+            "order_status",
+            "order_kind",
+            "order_source",
+            "order_channel",
+        ):
+            await conn.execute(text(f"DROP TYPE IF EXISTS {enum_type}"))
+        await conn.execute(text("DROP SEQUENCE IF EXISTS work_order_number_seq"))
 
 
 @pytest.fixture

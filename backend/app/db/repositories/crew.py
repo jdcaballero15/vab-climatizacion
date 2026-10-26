@@ -1,10 +1,12 @@
 import uuid
 from collections.abc import Sequence
 
-from sqlalchemy import func
+from sqlalchemy import exists, func, select
 
 from app.db.models.crew import Crew, FieldTechnician
+from app.db.models.work_order import WorkOrder, WorkOrderAssignment
 from app.db.repository import BaseRepository
+from app.domain.work_order import CREW_OPEN_STATUSES
 
 
 class CrewRepository(BaseRepository[Crew]):
@@ -27,6 +29,20 @@ class CrewRepository(BaseRepository[Crew]):
         stmt = self._select(include_deleted=True).where(self.model.app_user_id == user_id)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def has_open_orders(self, crew_id: uuid.UUID) -> bool:
+        """Si tiene alguna orden Asignada o En curso con su asignación vigente."""
+        stmt = select(
+            exists().where(
+                WorkOrderAssignment.crew_id == crew_id,
+                WorkOrderAssignment.unassigned_at.is_(None),
+                WorkOrderAssignment.deleted_at.is_(None),
+                WorkOrder.id == WorkOrderAssignment.work_order_id,
+                WorkOrder.status.in_(CREW_OPEN_STATUSES),
+                WorkOrder.deleted_at.is_(None),
+            )
+        )
+        return bool(await self.session.scalar(stmt))
 
 
 class FieldTechnicianRepository(BaseRepository[FieldTechnician]):

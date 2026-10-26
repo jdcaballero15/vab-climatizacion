@@ -621,10 +621,10 @@ export interface components {
              */
             work_order_id: string;
             /**
-             * Technician Id
+             * Crew Id
              * Format: uuid
              */
-            technician_id: string;
+            crew_id: string;
             /**
              * Scheduled For
              * Format: date
@@ -639,10 +639,10 @@ export interface components {
         /** AssignmentCreate */
         AssignmentCreate: {
             /**
-             * Technician Id
+             * Crew Id
              * Format: uuid
              */
-            technician_id: string;
+            crew_id: string;
             /**
              * Scheduled For
              * Format: date

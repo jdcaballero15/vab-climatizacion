@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ClientSummary, Site } from "../clients/types";
-import type { UserAdmin } from "../users/types";
+import type { Crew } from "../crews/types";
 import { OrdersPage } from "./OrdersPage";
 import type { PendingOrder, WorkOrder } from "./types";
 
@@ -51,35 +51,15 @@ const OTRA_PENDIENTE: PendingOrder = {
   work_type_name: "Service",
   created_at: "2026-10-20T13:00:00Z",
 };
-const USUARIOS: UserAdmin[] = [
+// La API devuelve solo las activas, ya ordenadas (E02-09).
+const ESCUADRILLAS: Crew[] = [
   {
-    id: "u1",
-    email: "zoe@ot-demo.com",
-    full_name: "Zoe Técnica",
-    role: "technician",
+    id: "c1",
+    name: "Escuadrilla 1",
     is_active: true,
+    app_user: { id: "u1", full_name: "Celular 1", email: "c1@ot-demo.com", is_active: true },
   },
-  {
-    id: "u2",
-    email: "ale@ot-demo.com",
-    full_name: "Ale Técnico",
-    role: "technician",
-    is_active: true,
-  },
-  {
-    id: "u3",
-    email: "baja@ot-demo.com",
-    full_name: "Técnico de Baja",
-    role: "technician",
-    is_active: false,
-  },
-  {
-    id: "u4",
-    email: "admin@ot-demo.com",
-    full_name: "Admin Ficticio",
-    role: "admin",
-    is_active: true,
-  },
+  { id: "c2", name: "Escuadrilla 2", is_active: true, app_user: null },
 ];
 const CREADA: WorkOrder = {
   id: "o9",
@@ -127,8 +107,8 @@ function mockApi(handler: Handler = () => undefined, sites: Site[] = [CENTRAL]) 
     if (url.pathname.endsWith("/admin/work-types")) {
       return json(TIPOS);
     }
-    if (url.pathname.endsWith("/admin/users")) {
-      return json(USUARIOS);
+    if (url.pathname.endsWith("/admin/crews")) {
+      return json(ESCUADRILLAS);
     }
     if (url.pathname.endsWith("/admin/orders") && request.method === "GET") {
       return json(pendingPage([]));
@@ -371,7 +351,7 @@ describe("OrdersPage", () => {
                 {
                   id: "a1",
                   work_order_id: "o1",
-                  technician_id: "u2",
+                  crew_id: "c2",
                   scheduled_for: "2099-01-15",
                   assigned_at: "2026-10-26T13:00:00Z",
                 },
@@ -392,38 +372,38 @@ describe("OrdersPage", () => {
       return screen.getByRole("form", { name: "Asignar la orden N° 7" });
     }
 
-    it("ofrece solo técnicos activos, ordenados por nombre", async () => {
+    it("ofrece las escuadrillas activas y marca las que no tienen celular", async () => {
       const user = userEvent.setup();
       conPendiente();
       renderOrders();
 
       const form = await abrirAsignar(user);
-      const tecnico = within(form).getByLabelText("Técnico");
+      const escuadrilla = within(form).getByLabelText("Escuadrilla");
       await waitFor(() =>
         expect(
-          within(tecnico)
+          within(escuadrilla)
             .getAllByRole("option")
             .map((o) => o.textContent),
-        ).toEqual(["Elegí un técnico", "Ale Técnico", "Zoe Técnica"]),
+        ).toEqual(["Elegí una escuadrilla", "Escuadrilla 1", "Escuadrilla 2 (sin celular)"]),
       );
       expect(within(form).getByLabelText("Fecha prevista")).toHaveAttribute("min");
     });
 
-    it("asigna con técnico y fecha y la orden sale del listado", async () => {
+    it("asigna con escuadrilla y fecha y la orden sale del listado", async () => {
       const user = userEvent.setup();
       const fetchMock = conPendiente();
       renderOrders();
 
       const form = await abrirAsignar(user);
-      await user.selectOptions(await within(form).findByLabelText("Técnico"), "u2");
+      await user.selectOptions(await within(form).findByLabelText("Escuadrilla"), "c2");
       await user.type(within(form).getByLabelText("Fecha prevista"), "2099-01-15");
       await user.click(within(form).getByRole("button", { name: "Confirmar asignación" }));
 
       expect(
-        await screen.findByText("Orden N° 7 asignada a Ale Técnico para el 15/01/2099."),
+        await screen.findByText("Orden N° 7 asignada a Escuadrilla 2 para el 15/01/2099."),
       ).toBeInTheDocument();
       const [post] = calls(fetchMock, "POST", "/admin/orders/o1/assignment");
-      expect(await post.json()).toEqual({ technician_id: "u2", scheduled_for: "2099-01-15" });
+      expect(await post.json()).toEqual({ crew_id: "c2", scheduled_for: "2099-01-15" });
       expect(await screen.findByText("No hay órdenes pendientes.")).toBeInTheDocument();
     });
 
@@ -436,7 +416,7 @@ describe("OrdersPage", () => {
       await user.click(within(form).getByRole("button", { name: "Confirmar asignación" }));
 
       expect(within(form).getByRole("alert")).toHaveTextContent(
-        "Falta el técnico y la fecha prevista.",
+        "Falta la escuadrilla y la fecha prevista.",
       );
       expect(calls(fetchMock, "POST", "/assignment")).toHaveLength(0);
     });
@@ -457,7 +437,7 @@ describe("OrdersPage", () => {
       renderOrders();
 
       const form = await abrirAsignar(user);
-      await user.selectOptions(await within(form).findByLabelText("Técnico"), "u1");
+      await user.selectOptions(await within(form).findByLabelText("Escuadrilla"), "c1");
       await user.type(within(form).getByLabelText("Fecha prevista"), "2099-01-15");
       await user.click(within(form).getByRole("button", { name: "Confirmar asignación" }));
 

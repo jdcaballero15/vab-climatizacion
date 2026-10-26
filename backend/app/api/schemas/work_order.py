@@ -68,7 +68,7 @@ class PendingOrderPage(BaseModel):
 class AssignmentCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    technician_id: uuid.UUID
+    crew_id: uuid.UUID
     # Solo el día, sin hora ni franja (decisión de E04-03).
     scheduled_for: date
 
@@ -78,6 +78,6 @@ class AssignmentAdminOut(BaseModel):
 
     id: uuid.UUID
     work_order_id: uuid.UUID
-    technician_id: uuid.UUID
+    crew_id: uuid.UUID
     scheduled_for: date
     assigned_at: datetime
