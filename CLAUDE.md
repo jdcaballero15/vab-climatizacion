@@ -97,3 +97,11 @@ Plan antes de codificar, verificación con salida real después, y PR solo cuand
 Subagentes en `.claude/agents/`: `backend-dev`, `frontend-dev`, `db-migrations`, `story-writer`, `qa-reviewer`.
 Comandos en `.claude/commands/`: `/implement-story`, `/new-story`, `/review-story`, `/new-migration`, `/resolve-decision`.
 Detalle en `docs/workflow/agentes-ia.md`.
+
+## Cómo retomar
+
+El estado del proyecto está en `docs/stories/INDEX.md` y en `HANDOFF.md` (si existe; es local y no se versiona). Para retomar:
+
+1. Leé ambos.
+2. Identificá la historia en curso (`in_progress`) o, si no hay, la próxima `ready`.
+3. Leé esa historia completa antes de tocar código.
