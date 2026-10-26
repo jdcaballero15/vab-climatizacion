@@ -67,3 +67,14 @@ Validadas con negocio el 2026-10-26:
 ## Preguntas abiertas
 
 - Para el cliente (ya en D-002): ¿quién asigna hoy los códigos?, ¿hay etiquetas físicas en los equipos? y ¿el técnico tiene que poder dar de alta un equipo que no encuentra en la lista?
+
+## Notas de implementación
+
+Se entrega en dos PR: backend primero, web-admin después.
+
+- Backend (PR 1): `/admin/clients/{id}/equipment` (listar con `site_id` opcional, crear) y `/admin/equipment/{id}` (consultar, editar), todos con `require_role(admin)`. No hay ruta de borrado. Migración `2ecd8961c92f`: crea `equipment` con índice único en `internal_code` y agrega `equipment_type.code_prefix`, cargado por nombre para los seis tipos iniciales.
+- Código: prefijo del tipo (o `EO`), dígitos de `client.number` y correlativo con mínimo 2 dígitos. El correlativo parte de la cantidad de equipos del cliente, contando los dados de baja, más uno. Si el código ya existe (por ejemplo, uno migrado de Persat), se saltea al siguiente; si dos altas simultáneas chocan en el índice, se reintenta y, si no hay suerte, 409 `equipment_code_unavailable`.
+- Al editar solo se valida lo que cambia: un equipo que ya está en un domicilio o tipo desactivado se sigue pudiendo editar, pero no se puede mover a uno desactivado. El código no se edita y cambiar el tipo no lo cambia.
+- Errores: 404 `client_not_found`, `site_not_found`, `equipment_type_not_found`, `equipment_not_found`; 422 `site_of_another_client`, `site_inactive`, `equipment_type_inactive`.
+- `equipment_count` en las respuestas de domicilios (E03-02), sin los equipos dados de baja.
+- Listado ordenado por ubicación y código, sin los dados de baja.

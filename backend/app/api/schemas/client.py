@@ -16,7 +16,7 @@ from app.api.schemas.catalog import CatalogName
 from app.db.models.client import ClientSegment, TaxCondition
 
 
-def _blank_to_none(value: Any) -> Any:
+def blank_to_none(value: Any) -> Any:
     # Recorta y colapsa espacios; un texto vacío es "sin dato".
     if isinstance(value, str):
         value = " ".join(value.split())
@@ -25,25 +25,25 @@ def _blank_to_none(value: Any) -> Any:
 
 
 TaxId = Annotated[
-    Annotated[str, StringConstraints(max_length=20)] | None, BeforeValidator(_blank_to_none)
+    Annotated[str, StringConstraints(max_length=20)] | None, BeforeValidator(blank_to_none)
 ]
 Notes = Annotated[
-    Annotated[str, StringConstraints(max_length=2000)] | None, BeforeValidator(_blank_to_none)
+    Annotated[str, StringConstraints(max_length=2000)] | None, BeforeValidator(blank_to_none)
 ]
 ContactName = Annotated[
-    Annotated[str, StringConstraints(max_length=255)] | None, BeforeValidator(_blank_to_none)
+    Annotated[str, StringConstraints(max_length=255)] | None, BeforeValidator(blank_to_none)
 ]
 Phone = Annotated[
-    Annotated[str, StringConstraints(max_length=50)] | None, BeforeValidator(_blank_to_none)
+    Annotated[str, StringConstraints(max_length=50)] | None, BeforeValidator(blank_to_none)
 ]
-OptionalEmail = Annotated[EmailStr | None, BeforeValidator(_blank_to_none)]
+OptionalEmail = Annotated[EmailStr | None, BeforeValidator(blank_to_none)]
 # Obligatoria: un texto vacío pasa a None y se rechaza con 422.
-Address = Annotated[str, BeforeValidator(_blank_to_none), StringConstraints(max_length=255)]
+Address = Annotated[str, BeforeValidator(blank_to_none), StringConstraints(max_length=255)]
 SiteLabel = Annotated[
-    Annotated[str, StringConstraints(max_length=255)] | None, BeforeValidator(_blank_to_none)
+    Annotated[str, StringConstraints(max_length=255)] | None, BeforeValidator(blank_to_none)
 ]
 SiteReference = Annotated[
-    Annotated[str, StringConstraints(max_length=500)] | None, BeforeValidator(_blank_to_none)
+    Annotated[str, StringConstraints(max_length=500)] | None, BeforeValidator(blank_to_none)
 ]
 
 _MAPS_SEARCH_URL = "https://www.google.com/maps/search/?api=1&query="
@@ -183,6 +183,8 @@ class SiteAdminOut(BaseModel):
     address: str
     reference: str | None
     is_active: bool
+    # Sin los equipos dados de baja (E03-03).
+    equipment_count: int
 
     @computed_field  # type: ignore[prop-decorator]
     @property

@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import (
     auth,
     clients,
+    equipment,
     equipment_types,
     failures,
     health,
@@ -33,6 +34,7 @@ def create_app() -> FastAPI:
     app.include_router(repairs.router)
     app.include_router(clients.router)
     app.include_router(clients.sites_router)
+    app.include_router(equipment.router)
     return app
 
 

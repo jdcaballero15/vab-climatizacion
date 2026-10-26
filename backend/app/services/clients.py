@@ -11,6 +11,7 @@ from app.api.schemas.client import (
     ClientUpdate,
     ContactCreate,
     ContactUpdate,
+    SiteAdminOut,
     SiteCreate,
     SiteUpdate,
     site_map_url,
@@ -21,6 +22,7 @@ from app.db.repositories.client import (
     ClientRepository,
     ClientSiteRepository,
 )
+from app.db.repositories.equipment import EquipmentRepository
 
 # Veces que se reintenta el alta si dos altas simultáneas toman el mismo número.
 _NUMBER_ATTEMPTS = 3
@@ -194,9 +196,11 @@ async def _check_site_of_client(
         raise SiteNotFoundError
 
 
-async def list_sites(session: AsyncSession, client_id: uuid.UUID) -> Sequence[ClientSite]:
+async def list_sites(session: AsyncSession, client_id: uuid.UUID) -> list[SiteAdminOut]:
     await get_client(session, client_id)
-    return await ClientSiteRepository(session).list_for_client(client_id)
+    return await _with_equipment_count(
+        session, await ClientSiteRepository(session).list_for_client(client_id)
+    )
 
 
 async def create_site(session: AsyncSession, client_id: uuid.UUID, data: SiteCreate) -> ClientSite:
@@ -206,6 +210,31 @@ async def create_site(session: AsyncSession, client_id: uuid.UUID, data: SiteCre
     await session.commit()
     await session.refresh(site)
     return site
+
+
+async def site_admin_out(session: AsyncSession, site: ClientSite) -> SiteAdminOut:
+    [out] = await _with_equipment_count(session, [site])
+    return out
+
+
+async def _with_equipment_count(
+    session: AsyncSession, sites: Sequence[ClientSite]
+) -> list[SiteAdminOut]:
+    counts = await EquipmentRepository(session).count_by_site([site.id for site in sites])
+    return [
+        SiteAdminOut.model_validate(
+            {
+                "id": site.id,
+                "client_id": site.client_id,
+                "label": site.label,
+                "address": site.address,
+                "reference": site.reference,
+                "is_active": site.is_active,
+                "equipment_count": counts.get(site.id, 0),
+            }
+        )
+        for site in sites
+    ]
 
 
 async def get_site(session: AsyncSession, site_id: uuid.UUID) -> ClientSite:

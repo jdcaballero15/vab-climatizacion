@@ -43,6 +43,8 @@ class EquipmentType(TimestampedBase):
     __table_args__ = (Index("uq_equipment_type_name", text("lower(name)"), unique=True),)
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Prefijo del código interno de sus equipos (D-002). Sin prefijo, el código usa "EO".
+    code_prefix: Mapped[str | None] = mapped_column(String(10), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 

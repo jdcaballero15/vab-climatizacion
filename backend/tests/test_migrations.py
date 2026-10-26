@@ -27,6 +27,7 @@ def _reset_database() -> None:
     async def reset() -> None:
         engine = create_async_engine(TEST_DATABASE_URL)
         async with engine.begin() as conn:
+            await conn.execute(text("DROP TABLE IF EXISTS equipment CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS client_contact CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS client_site CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS client CASCADE"))
@@ -224,5 +225,36 @@ def test_migracion_de_domicilios_es_reversible() -> None:
         assert _names(columnas) == ["client_contact.client_site_id", "client_site.address"]
         command.downgrade(cfg, "db29fc2db829")
         assert _names(columnas) == []
+    finally:
+        command.downgrade(cfg, "base")
+
+
+# E03-03: la migración crea equipment y carga el prefijo de código de los seis tipos iniciales.
+def test_migracion_de_equipos_carga_los_prefijos() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    command.upgrade(cfg, "head")
+    try:
+        assert _names("SELECT name || ' ' || code_prefix FROM equipment_type") == [
+            "Aire acondicionado EA",
+            "Cámara de frío EC",
+            "Freezer EF",
+            "Heladera comercial EH",
+            "Heladera familiar EH",
+            "Otros EO",
+        ]
+        assert _names("SELECT tablename FROM pg_tables WHERE tablename = 'equipment'") == [
+            "equipment"
+        ]
+        command.downgrade(cfg, "fab1063f3189")
+        assert _names("SELECT tablename FROM pg_tables WHERE tablename = 'equipment'") == []
+        assert (
+            _names(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = 'equipment_type' AND column_name = 'code_prefix'"
+            )
+            == []
+        )
     finally:
         command.downgrade(cfg, "base")
