@@ -9,8 +9,8 @@ roles: [admin, owner]
 size: M
 areas: [backend, web-admin]
 depends_on: [E07-07, E03-05]
-blocked_by: [D-002]
-assumes: []
+blocked_by: []
+assumes: [D-002]
 ---
 
 # E07-09 Ver la evolución de mediciones de un equipo

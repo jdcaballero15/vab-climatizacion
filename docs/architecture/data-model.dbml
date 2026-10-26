@@ -150,6 +150,7 @@ Table repair {
 
 Table client {
   id uuid [pk]
+  number varchar [unique, not null, note: 'Número de cliente, texto (Persat mezcla series). Forma parte del código de equipo (D-002)']
   name varchar [not null]
   tax_id varchar [note: 'CUIT o DNI. Dato personal, ver SECURITY.md']
   notes text
@@ -178,8 +179,8 @@ Table equipment {
   brand varchar
   model varchar
   serial_number varchar
-  internal_code varchar [note: 'Pendiente D-002: código propio vs. ubicación']
-  location_note varchar [note: 'Ubicación dentro del cliente. Pendiente D-002']
+  internal_code varchar [unique, not null, note: 'Código interno único en toda la empresa, lo genera el sistema. Texto sin largo fijo (D-002)']
+  location_note varchar [not null, note: 'Ubicación dentro del cliente, lo que se muestra primero (D-002)']
 }
 
 // ---------- Órdenes de trabajo ----------
