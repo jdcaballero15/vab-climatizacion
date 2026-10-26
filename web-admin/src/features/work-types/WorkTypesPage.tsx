@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import { CatalogItem } from "./CatalogItem";
-import { NewNameForm } from "./NewNameForm";
+import { CatalogItem } from "../catalogs/CatalogItem";
+import { NewNameForm } from "../catalogs/NewNameForm";
 import type { Task, WorkType } from "./types";
 import {
   useCreateTask,

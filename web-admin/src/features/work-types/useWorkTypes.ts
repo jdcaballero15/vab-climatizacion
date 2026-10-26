@@ -1,17 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../../api/client";
+import { catalogSaveError } from "../catalogs/errors";
 import type { Task, TaskUpdate, WorkType, WorkTypeUpdate } from "./types";
 
 // Prefijo común: cualquier cambio invalida tipos y subtareas, activos o no.
 const WORK_TYPES_KEY = ["work-types"] as const;
-
-/** El nombre ya existe (activo o desactivado): el backend responde 409. */
-export class NameTakenError extends Error {}
-
-function failure(status: number | undefined, message: string): Error {
-  return status === 409 ? new NameTakenError() : new Error(message);
-}
 
 export function useWorkTypes(includeInactive: boolean) {
   return useQuery<WorkType[]>({
@@ -34,7 +28,7 @@ export function useCreateWorkType() {
     mutationFn: async (name) => {
       const { data, error, response } = await api.POST("/admin/work-types", { body: { name } });
       if (error || !data) {
-        throw failure(response?.status, "no se pudo crear el tipo de trabajo");
+        throw catalogSaveError(response?.status, "no se pudo crear el tipo de trabajo");
       }
       return data;
     },
@@ -51,7 +45,7 @@ export function useUpdateWorkType(workTypeId: string) {
         body: changes,
       });
       if (error || !data) {
-        throw failure(response?.status, "no se pudo guardar el tipo de trabajo");
+        throw catalogSaveError(response?.status, "no se pudo guardar el tipo de trabajo");
       }
       return data;
     },
@@ -86,7 +80,7 @@ export function useCreateTask(workTypeId: string) {
         body: { name },
       });
       if (error || !data) {
-        throw failure(response?.status, "no se pudo crear la subtarea");
+        throw catalogSaveError(response?.status, "no se pudo crear la subtarea");
       }
       return data;
     },
@@ -103,7 +97,7 @@ export function useUpdateTask(workTypeId: string, taskId: string) {
         { params: { path: { work_type_id: workTypeId, task_id: taskId } }, body: changes },
       );
       if (error || !data) {
-        throw failure(response?.status, "no se pudo guardar la subtarea");
+        throw catalogSaveError(response?.status, "no se pudo guardar la subtarea");
       }
       return data;
     },

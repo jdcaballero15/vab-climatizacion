@@ -1,15 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../../api/client";
-import { NameTakenError } from "../work-types/useWorkTypes";
+import { catalogSaveError } from "../catalogs/errors";
 import type { EquipmentType, EquipmentTypeUpdate } from "./types";
 
 // Prefijo común: cualquier cambio invalida los listados, activos o no.
 const EQUIPMENT_TYPES_KEY = ["equipment-types"] as const;
-
-function failure(status: number | undefined, message: string): Error {
-  return status === 409 ? new NameTakenError() : new Error(message);
-}
 
 export function useEquipmentTypes(includeInactive: boolean) {
   return useQuery<EquipmentType[]>({
@@ -34,7 +30,7 @@ export function useCreateEquipmentType() {
         body: { name },
       });
       if (error || !data) {
-        throw failure(response?.status, "no se pudo crear el tipo de equipo");
+        throw catalogSaveError(response?.status, "no se pudo crear el tipo de equipo");
       }
       return data;
     },
@@ -51,7 +47,7 @@ export function useUpdateEquipmentType(equipmentTypeId: string) {
         { params: { path: { equipment_type_id: equipmentTypeId } }, body: changes },
       );
       if (error || !data) {
-        throw failure(response?.status, "no se pudo guardar el tipo de equipo");
+        throw catalogSaveError(response?.status, "no se pudo guardar el tipo de equipo");
       }
       return data;
     },

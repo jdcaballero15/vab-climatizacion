@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 
-import { NameTakenError } from "./useWorkTypes";
+import { NameTakenError } from "./errors";
 
 interface NewNameFormProps {
   label: string;

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import { CatalogItem } from "../work-types/CatalogItem";
-import { NewNameForm } from "../work-types/NewNameForm";
+import { CatalogItem } from "../catalogs/CatalogItem";
+import { NewNameForm } from "../catalogs/NewNameForm";
 import type { EquipmentType } from "./types";
 import {
   useCreateEquipmentType,
