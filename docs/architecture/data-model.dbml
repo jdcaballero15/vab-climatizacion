@@ -176,6 +176,7 @@ Table client {
 Table client_contact {
   id uuid [pk]
   client_id uuid [ref: > client.id, not null]
+  client_site_id uuid [ref: > client_site.id, note: 'Opcional: contacto de un domicilio. El técnico ve solo el nombre']
   name varchar
   phone varchar
   email varchar
@@ -185,8 +186,10 @@ Table client_contact {
 Table client_site {
   id uuid [pk]
   client_id uuid [ref: > client.id, not null]
-  label varchar [note: 'Sucursal, planta, domicilio']
-  address varchar [not null]
+  label varchar [note: 'Opcional: sede, sucursal, planta, depósito']
+  address varchar [not null, note: 'Incluye la localidad']
+  reference varchar [note: 'Piso, departamento, cómo llegar. Lo ve el técnico']
+  is_active boolean [not null, default: true]
 }
 
 Table equipment {
