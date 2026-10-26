@@ -27,6 +27,8 @@ def _reset_database() -> None:
     async def reset() -> None:
         engine = create_async_engine(TEST_DATABASE_URL)
         async with engine.begin() as conn:
+            await conn.execute(text("DROP TABLE IF EXISTS task CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS work_type CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS app_user CASCADE"))
             await conn.execute(text("DROP TYPE IF EXISTS user_role"))
             await conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
@@ -51,6 +53,19 @@ def _current_revision() -> str | None:
     return asyncio.run(query())
 
 
+def _work_type_names() -> list[str]:
+    async def query() -> list[str]:
+        engine = create_async_engine(TEST_DATABASE_URL)
+        try:
+            async with engine.connect() as conn:
+                result = await conn.execute(text("SELECT name FROM work_type WHERE is_active"))
+                return sorted(row[0] for row in result)
+        finally:
+            await engine.dispose()
+
+    return asyncio.run(query())
+
+
 def test_migrations_upgrade_and_downgrade_are_reversible() -> None:
     cfg = _alembic_config()
     _reset_database()
@@ -62,3 +77,22 @@ def test_migrations_upgrade_and_downgrade_are_reversible() -> None:
 
     command.downgrade(cfg, "base")
     assert _current_revision() is None
+
+
+# E02-01, criterio 9: una base recién migrada trae los seis tipos de trabajo iniciales.
+def test_migracion_carga_los_tipos_de_trabajo_iniciales() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    command.upgrade(cfg, "head")
+    try:
+        assert _work_type_names() == [
+            "Devolución",
+            "Instalación",
+            "Relevamiento",
+            "Reparación",
+            "Retiro",
+            "Service",
+        ]
+    finally:
+        command.downgrade(cfg, "base")

@@ -94,15 +94,23 @@ Table app_user {
 
 Table work_type {
   id uuid [pk]
-  name varchar [not null, note: 'Instalación, reparación, service, devolución, retiro, relevamiento']
-  is_active boolean [default: true]
+  name varchar [not null, note: 'Instalación, reparación, service, devolución, retiro, relevamiento. Se guarda sin espacios sobrantes']
+  is_active boolean [not null, default: true]
+
+  indexes {
+    `lower(name)` [unique, name: 'uq_work_type_name', note: 'Sin distinguir mayúsculas, también contra inactivos']
+  }
 }
 
 Table task {
   id uuid [pk]
-  work_type_id uuid [ref: > work_type.id]
-  name varchar [not null, note: 'Subtarea predefinida']
-  is_active boolean [default: true]
+  work_type_id uuid [ref: > work_type.id, not null]
+  name varchar [not null, note: 'Subtarea predefinida. Se guarda sin espacios sobrantes']
+  is_active boolean [not null, default: true]
+
+  indexes {
+    (work_type_id, `lower(name)`) [unique, name: 'uq_task_work_type_name', note: 'Única dentro de su tipo de trabajo']
+  }
 }
 
 Table equipment_type {

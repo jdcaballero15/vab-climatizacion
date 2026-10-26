@@ -4,7 +4,7 @@ title: "Gestionar tipos de trabajo y tareas"
 epic: E02
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -57,3 +57,16 @@ Validadas con negocio el 2026-10-26:
 - Endpoints bajo `/admin/work-types` y `/admin/work-types/{id}/tasks` con `require_role(admin)`. Los listados filtran por activos y permiten pedir también los inactivos para la pantalla de administración.
 - web-admin: pantalla de tipos de trabajo con sus subtareas, alta, edición del nombre, desactivar y reactivar.
 - Si el PR pasa de unas 400 líneas, se divide en backend y web-admin, como en E01-02.
+
+## Notas de implementación
+
+Se entrega en dos PR: backend primero, web-admin después.
+
+- Backend (PR 1): endpoints `/admin/work-types` y `/admin/work-types/{id}/tasks[/{task_id}]` (listar con `include_inactive`, crear, ver, editar), todos con `require_role(admin)`. Lógica en `services/catalog.py`, repositorios en `db/repositories/catalog.py`.
+  - Desactivar y reactivar es `PATCH` con `is_active`, no `DELETE`: en catálogos no hay baja (la baja con `deleted_at` es de E12-02).
+  - El esquema de entrada recorta y colapsa espacios; un nombre vacío da 422 con el formato por defecto de FastAPI (el formato uniforme es de E12-03).
+  - Duplicados: chequeo en el servicio y, como respaldo ante guardados simultáneos, índices únicos sobre `lower(name)`. Devuelven 409 con `work_type_name_already_exists` o `task_name_already_exists`.
+  - Una subtarea pedida bajo otro tipo de trabajo responde 404 (`task_not_found`).
+  - Migración `51d29e6b730e`: crea las tablas y carga los seis tipos iniciales; el `downgrade` las borra.
+  - Dirección recibe 403 también al leer, porque la matriz no le da acceso a catálogos.
+- web-admin (PR 2): pendiente.
