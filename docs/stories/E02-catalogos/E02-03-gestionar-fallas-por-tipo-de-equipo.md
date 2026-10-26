@@ -4,7 +4,7 @@ title: "Gestionar fallas por tipo de equipo"
 epic: E02
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -70,4 +70,8 @@ Se entrega en dos PR: backend primero, web-admin después.
   - Duplicados: el servicio busca choques (una genérica contra todas, una específica contra las de su tipo y las genéricas). Como respaldo, índice único `uq_failure_scope_name` sobre `(coalesce(equipment_type_id, uuid cero), lower(name))`, que hace chocar también a dos genéricas. 409 con `failure_name_already_exists`; inexistente, 404 con `failure_not_found`.
   - Riesgo aceptado: dos guardados simultáneos de una genérica y una específica con el mismo nombre pueden pasar ambos, porque ese cruce no está en el índice.
   - Migración `4094833fa904`: crea la tabla sin datos; el `downgrade` la borra.
-- web-admin (PR 2): pendiente.
+- web-admin (PR 2): pantalla "Fallas" en `features/failures/`, visible solo para administración.
+  - Selector de tipo de equipo con "Genéricas" (por defecto) y todos los tipos, también los desactivados marcados como tales, para poder administrar sus fallas.
+  - En "Genéricas" se piden todas las fallas y se muestran las que no tienen tipo. Con un tipo elegido se muestran las suyas y las genéricas, marcadas "Genérica".
+  - El alta crea la falla para el tipo elegido, o genérica. Renombrar, desactivar, reactivar y ver desactivadas, con `CatalogItem` y `NewNameForm` de `features/catalogs/`.
+  - Se regeneró `openapi.json` y `src/api/schema.d.ts` desde el backend.
