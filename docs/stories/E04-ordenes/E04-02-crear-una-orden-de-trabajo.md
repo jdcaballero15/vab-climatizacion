@@ -30,7 +30,8 @@ assumes: []
 ## Notas técnicas
 
 - `source = manual`. Las órdenes generadas por mantenimiento (E07-04) usan `source = maintenance`.
+- Domicilio (E03-02): si el cliente tiene un solo domicilio activo, se elige solo. Si tiene varios, administración elige, sin valor por defecto para evitar errores.
 
 ## Preguntas abiertas
 
-- ¿Hace falta registrar quién hizo el pedido y por qué canal, o alcanza con la descripción?
+- ¿Hace falta registrar quién hizo el pedido y por qué canal, o alcanza con la descripción? En Persat las órdenes registran el solicitante y su cargo, el sector u oficina y el piso o ala, sobre todo en sanatorios y organismos públicos.

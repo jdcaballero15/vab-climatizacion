@@ -44,6 +44,21 @@ Enum order_source {
   maintenance
 }
 
+Enum client_segment {
+  private_person [note: 'Particular']
+  business       [note: 'Comercio']
+  government     [note: 'Estado']
+  healthcare     [note: 'Sanatorio o clínica']
+  hotel
+  unclassified   [note: 'Sin clasificar']
+}
+
+Enum tax_condition {
+  final_consumer         [note: 'Consumidor final']
+  registered_taxpayer    [note: 'Responsable inscripto']
+  monotributo
+}
+
 Enum closure_outcome {
   done
   needs_pickup   [note: 'Requiere retiro: convierte la orden en orden de taller']
@@ -152,13 +167,16 @@ Table client {
   id uuid [pk]
   number varchar [unique, not null, note: 'Número de cliente, texto (Persat mezcla series). Forma parte del código de equipo (D-002)']
   name varchar [not null]
+  segment client_segment [not null, default: 'unclassified']
   tax_id varchar [note: 'CUIT o DNI. Dato personal, ver SECURITY.md']
+  tax_condition tax_condition [note: 'Opcional']
   notes text
 }
 
 Table client_contact {
   id uuid [pk]
   client_id uuid [ref: > client.id, not null]
+  client_site_id uuid [ref: > client_site.id, note: 'Opcional: contacto de un domicilio. El técnico ve solo el nombre']
   name varchar
   phone varchar
   email varchar
@@ -168,8 +186,10 @@ Table client_contact {
 Table client_site {
   id uuid [pk]
   client_id uuid [ref: > client.id, not null]
-  label varchar [note: 'Sucursal, planta, domicilio']
-  address varchar [not null]
+  label varchar [note: 'Opcional: sede, sucursal, planta, depósito']
+  address varchar [not null, note: 'Incluye la localidad']
+  reference varchar [note: 'Piso, departamento, cómo llegar. Lo ve el técnico']
+  is_active boolean [not null, default: true]
 }
 
 Table equipment {
