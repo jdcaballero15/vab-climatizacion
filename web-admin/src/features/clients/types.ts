@@ -13,3 +13,6 @@ export type ContactUpdate = components["schemas"]["ContactUpdate"];
 export type Site = components["schemas"]["SiteAdminOut"];
 export type SiteCreate = components["schemas"]["SiteCreate"];
 export type SiteUpdate = components["schemas"]["SiteUpdate"];
+export type Equipment = components["schemas"]["EquipmentAdminOut"];
+export type EquipmentCreate = components["schemas"]["EquipmentCreate"];
+export type EquipmentUpdate = components["schemas"]["EquipmentUpdate"];

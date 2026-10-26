@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 117 historias.** done: 15, draft: 93, icebox: 8, ready: 1
+**Total: 117 historias.** done: 16, draft: 93, icebox: 8
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -52,7 +52,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 |---|---|---|---|---|---|---|---|---|
 | [E03-01](E03-clientes-equipos/E03-01-alta-y-edicion-de-clientes.md) | Alta y edición de clientes | Debe | M | done | admin | - | D-002 | E01-04 |
 | [E03-02](E03-clientes-equipos/E03-02-domicilios-o-sitios-de-un-cliente.md) | Domicilios o sitios de un cliente | Debe | M | done | admin | - | - | E03-01 |
-| [E03-03](E03-clientes-equipos/E03-03-alta-y-edicion-de-equipos.md) | Alta y edición de equipos | Debe | M | ready | admin | - | D-002 | E03-02, E02-02 |
+| [E03-03](E03-clientes-equipos/E03-03-alta-y-edicion-de-equipos.md) | Alta y edición de equipos | Debe | M | done | admin | - | D-002 | E03-02, E02-02 |
 | [E03-04](E03-clientes-equipos/E03-04-ficha-de-cliente-con-historial.md) | Ficha de cliente con historial | Debe | M | draft | admin, owner | - | - | E03-01, E04-06 |
 | [E03-05](E03-clientes-equipos/E03-05-ficha-de-equipo-con-historial-y-mediciones.md) | Ficha de equipo con historial y mediciones | Debe | M | draft | admin, owner | - | D-002 | E03-03, E04-06 |
 | [E03-06](E03-clientes-equipos/E03-06-buscar-clientes-y-equipos.md) | Buscar clientes y equipos | Debe | S | draft | admin, owner | - | - | E03-01 |

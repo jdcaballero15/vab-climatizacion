@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { ClientContacts } from "./ClientContacts";
+import { ClientEquipment } from "./ClientEquipment";
 import { ClientSites } from "./ClientSites";
 import { ClientForm } from "./ClientForm";
 import { EMPTY_CLIENT } from "./formValues";
@@ -49,6 +50,7 @@ function ClientDetail({ clientId, onClose }: { clientId: string; onClose: () => 
         onSubmit={(values) => updateClient.mutate(values)}
       />
       <ClientSites clientId={id} />
+      <ClientEquipment clientId={id} />
       <ClientContacts clientId={id} />
     </section>
   );

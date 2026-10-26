@@ -11,6 +11,9 @@ import type {
   Contact,
   ContactCreate,
   ContactUpdate,
+  Equipment,
+  EquipmentCreate,
+  EquipmentUpdate,
   Site,
   SiteCreate,
   SiteUpdate,
@@ -202,5 +205,62 @@ export function useUpdateSite(clientId: string, siteId: string) {
     },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: [...CLIENTS_KEY, "sites", clientId] }),
+  });
+}
+
+export function useEquipment(clientId: string, siteId: string | null) {
+  return useQuery<Equipment[]>({
+    queryKey: [...CLIENTS_KEY, "equipment", clientId, { siteId }],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/admin/clients/{client_id}/equipment", {
+        params: { path: { client_id: clientId }, query: { site_id: siteId } },
+      });
+      if (error || !data) {
+        throw new Error("no se pudieron cargar los equipos");
+      }
+      return data;
+    },
+  });
+}
+
+/** Un alta o una mudanza cambia los equipos y la cantidad de cada domicilio. */
+function invalidateEquipment(queryClient: ReturnType<typeof useQueryClient>, clientId: string) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: [...CLIENTS_KEY, "equipment", clientId] }),
+    queryClient.invalidateQueries({ queryKey: [...CLIENTS_KEY, "sites", clientId] }),
+  ]);
+}
+
+export function useCreateEquipment(clientId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<Equipment, Error, EquipmentCreate>({
+    mutationFn: async (nuevo) => {
+      const { data, error } = await api.POST("/admin/clients/{client_id}/equipment", {
+        params: { path: { client_id: clientId } },
+        body: nuevo,
+      });
+      if (error || !data) {
+        throw saveError(error, "No se pudo agregar el equipo.");
+      }
+      return data;
+    },
+    onSuccess: () => invalidateEquipment(queryClient, clientId),
+  });
+}
+
+export function useUpdateEquipment(clientId: string, equipmentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<Equipment, Error, EquipmentUpdate>({
+    mutationFn: async (changes) => {
+      const { data, error } = await api.PATCH("/admin/equipment/{equipment_id}", {
+        params: { path: { equipment_id: equipmentId } },
+        body: changes,
+      });
+      if (error || !data) {
+        throw saveError(error, "No se pudo guardar el equipo.");
+      }
+      return data;
+    },
+    onSuccess: () => invalidateEquipment(queryClient, clientId),
   });
 }

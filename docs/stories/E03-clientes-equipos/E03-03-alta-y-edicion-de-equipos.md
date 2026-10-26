@@ -4,7 +4,7 @@ title: "Alta y edición de equipos"
 epic: E03
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -78,3 +78,4 @@ Se entrega en dos PR: backend primero, web-admin después.
 - Errores: 404 `client_not_found`, `site_not_found`, `equipment_type_not_found`, `equipment_not_found`; 422 `site_of_another_client`, `site_inactive`, `equipment_type_inactive`.
 - `equipment_count` en las respuestas de domicilios (E03-02), sin los equipos dados de baja.
 - Listado ordenado por ubicación y código, sin los dados de baja.
+- Web-admin (PR 2): sección "Equipos" en la ficha del cliente, con ubicación y tipo primero, después código, domicilio, marca y modelo; filtro por domicilio; alta y edición con mudanza. Se ofrecen solo domicilios y tipos activos (uno inactivo aparece si el equipo ya está ahí). Sin domicilio activo, el alta avisa que hace falta uno. Los domicilios muestran su cantidad de equipos. Probado en el navegador contra el backend real.
