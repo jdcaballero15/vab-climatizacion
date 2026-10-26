@@ -1,16 +1,20 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     Sequence,
     String,
     Text,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -71,6 +75,10 @@ class WorkOrder(TimestampedBase):
     # Quién pidió (nombre y cargo): el técnico no lo ve. Dónde (sector, piso o ala): sí.
     requester_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     requester_area: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Las generadas por mantenimiento no se asignan hasta aprobar el lote (R6, E07-05).
+    requires_approval: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
 
 
 class WorkOrderEvent(TimestampedBase):
@@ -91,3 +99,33 @@ class WorkOrderEvent(TimestampedBase):
     )
     actor_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("app_user.id"), nullable=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class WorkOrderAssignment(TimestampedBase):
+    """Técnico responsable de la orden y fecha prevista (solo el día, sin hora).
+
+    La vigente es la que no tiene unassigned_at; el índice parcial garantiza una sola
+    por orden (un solo técnico responsable, R7).
+    """
+
+    __tablename__ = "work_order_assignment"
+    __table_args__ = (
+        Index(
+            "uq_work_order_assignment_current",
+            "work_order_id",
+            unique=True,
+            postgresql_where=text("unassigned_at IS NULL AND deleted_at IS NULL"),
+        ),
+    )
+
+    work_order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("work_order.id"), nullable=False, index=True
+    )
+    technician_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app_user.id"), nullable=False, index=True
+    )
+    scheduled_for: Mapped[date] = mapped_column(Date, nullable=False)
+    assigned_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    unassigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

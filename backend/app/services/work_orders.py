@@ -2,9 +2,16 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.schemas.work_order import PendingOrderOut, WorkOrderAdminOut, WorkOrderCreate
-from app.db.models.user import User
-from app.db.models.work_order import WorkOrder, WorkOrderEvent
+from app.api.schemas.work_order import (
+    AssignmentCreate,
+    PendingOrderOut,
+    WorkOrderAdminOut,
+    WorkOrderCreate,
+)
+from app.core.dates import business_today, format_date
+from app.db.models.user import User, UserRole
+from app.db.models.work_order import WorkOrder, WorkOrderAssignment, WorkOrderEvent
+from app.db.repositories.user import UserRepository
 from app.db.repositories.work_order import WorkOrderRepository
 from app.domain.work_order import (
     STATUSLESS_EVENT_TYPES,
@@ -31,6 +38,18 @@ class OrderStatusConflictError(Exception):
 
 class WorkTypeInactiveError(Exception):
     """El tipo de trabajo elegido está desactivado."""
+
+
+class TechnicianNotAvailableError(Exception):
+    """El usuario elegido no existe, está inactivo o no es técnico."""
+
+
+class ScheduledDateInPastError(Exception):
+    """La fecha prevista es anterior a hoy."""
+
+
+class OrderRequiresApprovalError(Exception):
+    """La orden es de un lote de mantenimiento sin aprobar (R6)."""
 
 
 async def create_work_order(
@@ -105,6 +124,21 @@ async def apply_transition(
     El estado y el evento van en la misma transacción. El UPDATE exige que el estado
     siga siendo el leído: si otro lo cambió antes, no toca nada y da conflicto.
     """
+    event = await _stage_transition(session, order, action, actor, note)
+    await session.commit()
+    await session.refresh(order)
+    await session.refresh(event)
+    return event
+
+
+async def _stage_transition(
+    session: AsyncSession,
+    order: WorkOrder,
+    action: OrderAction,
+    actor: User,
+    note: str | None,
+) -> WorkOrderEvent:
+    """Cambia el estado y agrega el evento sin confirmar, para sumar más en la transacción."""
     current = order.status
     transition = resolve_transition(current, action, actor.role, note)
     repository = WorkOrderRepository(session)
@@ -123,9 +157,6 @@ async def apply_transition(
         note=note,
     )
     repository.add_event(event)
-    await session.commit()
-    await session.refresh(order)
-    await session.refresh(event)
     return event
 
 
@@ -146,3 +177,32 @@ async def record_event(
     await session.commit()
     await session.refresh(event)
     return event
+
+
+async def assign_work_order(
+    session: AsyncSession, order_id: uuid.UUID, data: AssignmentCreate, actor: User
+) -> WorkOrderAssignment:
+    """Asigna una orden Pendiente a un técnico activo para un día (de hoy en adelante).
+
+    Estado, evento y asignación van en la misma transacción.
+    """
+    order = await get_work_order(session, order_id)
+    technician = await UserRepository(session).get(data.technician_id)
+    if technician is None or not technician.is_active or technician.role != UserRole.technician:
+        raise TechnicianNotAvailableError
+    if data.scheduled_for < business_today():
+        raise ScheduledDateInPastError
+    if order.requires_approval:
+        raise OrderRequiresApprovalError
+
+    note = f"Técnico: {technician.full_name}. Fecha prevista: {format_date(data.scheduled_for)}."
+    await _stage_transition(session, order, OrderAction.assign, actor, note)
+    assignment = WorkOrderAssignment(
+        work_order_id=order.id,
+        technician_id=technician.id,
+        scheduled_for=data.scheduled_for,
+    )
+    session.add(assignment)
+    await session.commit()
+    await session.refresh(assignment)
+    return assignment

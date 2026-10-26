@@ -227,7 +227,7 @@ Table work_order {
   channel order_channel [note: 'Por dónde llegó el pedido. Obligatorio en las manuales (E04-02)']
   requester_name varchar [note: 'Quién pidió: nombre y cargo. Opcional, el técnico no lo ve']
   requester_area varchar [note: 'Dónde: sector, piso o ala. Opcional, el técnico lo ve']
-  requires_approval boolean [default: false, note: 'Órdenes generadas por mantenimiento hasta su aprobación en bloque. Pendiente D-005. Se agrega con E07']
+  requires_approval boolean [default: false, note: 'Órdenes generadas por mantenimiento hasta su aprobación en bloque. Pendiente D-005. Existe desde E04-03 (siempre false hasta E07-04)']
   maintenance_run_id uuid [ref: > maintenance_run.id, note: 'Se agrega con E07-04']
 }
 
@@ -254,11 +254,11 @@ Table work_order_stage {
 Table work_order_assignment {
   id uuid [pk]
   work_order_id uuid [ref: > work_order.id, not null]
-  stage_id uuid [ref: > work_order_stage.id]
+  stage_id uuid [ref: > work_order_stage.id, note: 'Se agrega con taller (E06)']
   technician_id uuid [ref: > app_user.id, not null]
-  scheduled_for date
+  scheduled_for date [not null, note: 'Solo el día, sin hora (E04-03)']
   assigned_at timestamptz [not null]
-  unassigned_at timestamptz
+  unassigned_at timestamptz [note: 'La vigente es la que no lo tiene: índice único parcial, una por orden']
 }
 
 Table work_order_closure {
