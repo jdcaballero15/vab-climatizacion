@@ -1,4 +1,5 @@
 import type { Session } from "../auth/types";
+import { ClientsPage } from "../clients/ClientsPage";
 import { EquipmentTypesPage } from "../equipment-types/EquipmentTypesPage";
 import { FailuresPage } from "../failures/FailuresPage";
 import { RepairsPage } from "../repairs/RepairsPage";
@@ -34,6 +35,8 @@ export function HomePage({ session, onLogout }: HomePageProps) {
       </header>
 
       {canManageUsers && <UsersPage />}
+      {/* Solo administración gestiona clientes; dirección los verá en la ficha (E03-04). */}
+      {canEditCatalogs && <ClientsPage />}
       {canEditCatalogs && <WorkTypesPage />}
       {canEditCatalogs && <EquipmentTypesPage />}
       {canEditCatalogs && <FailuresPage />}
