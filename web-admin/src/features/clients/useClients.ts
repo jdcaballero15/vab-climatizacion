@@ -157,7 +157,7 @@ export function useUpdateContact(clientId: string, contactId: string) {
   });
 }
 
-export function useSites(clientId: string) {
+export function useSites(clientId: string, { enabled = true }: { enabled?: boolean } = {}) {
   return useQuery<Site[]>({
     queryKey: [...CLIENTS_KEY, "sites", clientId],
     queryFn: async () => {
@@ -169,6 +169,7 @@ export function useSites(clientId: string) {
       }
       return data;
     },
+    enabled,
   });
 }
 

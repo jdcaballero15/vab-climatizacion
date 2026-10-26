@@ -255,6 +255,7 @@ body {
 
 .clients__filters,
 .clients__pager,
+.orders__client,
 .clients__detail-header,
 .clients__contact {
   display: flex;
@@ -263,7 +264,8 @@ body {
   margin: 0.75rem 0;
 }
 
-.clients__detail {
+.clients__detail,
+.orders__new {
   margin-top: 1.5rem;
   padding: 1rem;
   border: 1px solid #ddd;

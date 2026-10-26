@@ -2,6 +2,7 @@ import type { Session } from "../auth/types";
 import { ClientsPage } from "../clients/ClientsPage";
 import { EquipmentTypesPage } from "../equipment-types/EquipmentTypesPage";
 import { FailuresPage } from "../failures/FailuresPage";
+import { OrdersPage } from "../orders/OrdersPage";
 import { RepairsPage } from "../repairs/RepairsPage";
 import { UsersPage } from "../users/UsersPage";
 import { WorkTypesPage } from "../work-types/WorkTypesPage";
@@ -34,6 +35,8 @@ export function HomePage({ session, onLogout }: HomePageProps) {
         </button>
       </header>
 
+      {/* Solo administración crea órdenes; dirección las verá en el panel (E04-05). */}
+      {canEditCatalogs && <OrdersPage />}
       {canManageUsers && <UsersPage />}
       {/* Solo administración gestiona clientes; dirección los verá en la ficha (E03-04). */}
       {canEditCatalogs && <ClientsPage />}

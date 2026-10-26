@@ -4,7 +4,7 @@ title: "Crear una orden de trabajo"
 epic: E04
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -63,3 +63,4 @@ Se entrega en dos PR: backend primero, web-admin después.
 - Texto: la descripción es obligatoria; en blanco da 422. Quién y dónde se guardan recortados, y vacíos quedan sin dato.
 - Errores: 404 `client_not_found`, `site_not_found`, `work_type_not_found`; 422 `site_of_another_client`, `site_inactive`, `work_type_inactive`. La validación del domicilio pasa de `services/equipment.py` a `clients_service.check_active_site_of_client`, compartida con equipos.
 - Para elegir el cliente, el web-admin usa `/admin/clients/similar?name=` (sin mayúsculas ni acentos, contenido en el nombre). Esa búsqueda compara por contención desde 4 letras; buscar por número de cliente queda para E03-06.
+- Web-admin (PR 2): sección "Órdenes" con el alta y el listado de pendientes (número, cliente, domicilio, tipo de trabajo y fecha dd/mm/aaaa, paginado). El cliente se busca por nombre desde 4 letras y se elige de los resultados. Domicilio entre los activos: con uno se completa solo, con varios se elige sin valor por defecto y sin ninguno se agrega en el mismo lugar con los campos de la ficha del cliente (`SiteFields`, ahora en su propio archivo). Tipos de trabajo solo activos. Se indica en una frase todo lo que falta. Al crear, muestra el número y deja el formulario limpio. Probado en el navegador contra el backend real.

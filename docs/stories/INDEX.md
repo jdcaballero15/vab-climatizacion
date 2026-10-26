@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 117 historias.** done: 17, draft: 90, icebox: 8, ready: 2
+**Total: 117 historias.** done: 18, draft: 90, icebox: 8, ready: 1
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -64,7 +64,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
 | [E04-01](E04-ordenes/E04-01-maquina-de-estados-y-linea-de-tiempo-de-la-orden.md) | Máquina de estados y línea de tiempo de la orden | Debe | M | done | admin | - | - | E00-01, E03-02, E02-01 |
-| [E04-02](E04-ordenes/E04-02-crear-una-orden-de-trabajo.md) | Crear una orden de trabajo | Debe | M | ready | admin | - | - | E04-01, E03-02, E02-01 |
+| [E04-02](E04-ordenes/E04-02-crear-una-orden-de-trabajo.md) | Crear una orden de trabajo | Debe | M | done | admin | - | - | E04-01, E03-02, E02-01 |
 | [E04-03](E04-ordenes/E04-03-asignar-una-orden-a-un-tecnico.md) | Asignar una orden a un técnico | Debe | S | ready | admin | - | - | E04-02, E01-03 |
 | [E04-04](E04-ordenes/E04-04-reasignar-o-desasignar-una-orden.md) | Reasignar o desasignar una orden | Debe | S | draft | admin | - | - | E04-03 |
 | [E04-05](E04-ordenes/E04-05-panel-de-ordenes-por-estado.md) | Panel de órdenes por estado | Debe | M | draft | admin, owner | - | - | E04-01 |
