@@ -77,7 +77,9 @@ interface CrewItemProps {
 
 function CrewItem({ crew, users, taken }: CrewItemProps) {
   const update = useUpdateCrew(crew.id);
-  // Mutación aparte para el celular: su error (422) se muestra con el mensaje del backend.
+  // Mutaciones aparte para activar y para el celular: sus errores (409 con órdenes
+  // abiertas, 422 de usuario) se muestran con el mensaje del backend, no el genérico.
+  const updateStatus = useUpdateCrew(crew.id);
   const updateUser = useUpdateCrew(crew.id);
   const current = crew.app_user?.id ?? "";
   const options = users
@@ -93,10 +95,12 @@ function CrewItem({ crew, users, taken }: CrewItemProps) {
     <CatalogItem
       name={crew.name}
       isActive={crew.is_active}
-      isPending={update.isPending}
+      isPending={update.isPending || updateStatus.isPending}
       error={update.error}
       nameTakenMessage={CREW_NAME_TAKEN}
-      onSave={(changes) => update.mutate(changes)}
+      onSave={(changes) =>
+        changes.is_active === undefined ? update.mutate(changes) : updateStatus.mutate(changes)
+      }
     >
       <div className="catalog__row">
         <label htmlFor={selectId}>Celular de {crew.name}</label>
@@ -116,6 +120,11 @@ function CrewItem({ crew, users, taken }: CrewItemProps) {
       </div>
       {crew.app_user && !crew.app_user.is_active && (
         <p className="catalog__error">El usuario del celular está inactivo.</p>
+      )}
+      {updateStatus.isError && (
+        <p className="catalog__error" role="alert">
+          {updateStatus.error.message}
+        </p>
       )}
       {updateUser.isError && (
         <p className="catalog__error" role="alert">

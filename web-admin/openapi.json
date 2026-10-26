@@ -2909,10 +2909,10 @@
             "format": "uuid",
             "title": "Work Order Id"
           },
-          "technician_id": {
+          "crew_id": {
             "type": "string",
             "format": "uuid",
-            "title": "Technician Id"
+            "title": "Crew Id"
           },
           "scheduled_for": {
             "type": "string",
@@ -2929,7 +2929,7 @@
         "required": [
           "id",
           "work_order_id",
-          "technician_id",
+          "crew_id",
           "scheduled_for",
           "assigned_at"
         ],
@@ -2937,10 +2937,10 @@
       },
       "AssignmentCreate": {
         "properties": {
-          "technician_id": {
+          "crew_id": {
             "type": "string",
             "format": "uuid",
-            "title": "Technician Id"
+            "title": "Crew Id"
           },
           "scheduled_for": {
             "type": "string",
@@ -2951,7 +2951,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "technician_id",
+          "crew_id",
           "scheduled_for"
         ],
         "title": "AssignmentCreate"

@@ -5,7 +5,7 @@ import { formatDate, formatDay } from "./labels";
 import { OrderForm } from "./OrderForm";
 import { PAGE_SIZE, usePendingOrders } from "./useOrders";
 
-/** Alta de órdenes y listado de pendientes, desde donde se asignan (E04-03). */
+/** Alta de órdenes y listado de pendientes, desde donde se asignan a una escuadrilla (E04-03). */
 export function OrdersPage() {
   const [offset, setOffset] = useState(0);
   const [assigningId, setAssigningId] = useState<string | null>(null);
@@ -66,10 +66,10 @@ export function OrdersPage() {
                         <AssignOrderForm
                           order={order}
                           onCancel={() => setAssigningId(null)}
-                          onAssigned={(assignment, technician) => {
+                          onAssigned={(assignment, crew) => {
                             setAssigningId(null);
                             setAssigned(
-                              `Orden N° ${order.number} asignada a ${technician.full_name} ` +
+                              `Orden N° ${order.number} asignada a ${crew.name} ` +
                                 `para el ${formatDay(assignment.scheduled_for)}.`,
                             );
                           }}

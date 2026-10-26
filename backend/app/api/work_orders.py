@@ -61,10 +61,10 @@ _ASSIGNMENT_ERROR_DETAIL: dict[type[Exception], tuple[int, str, str]] = {
         "order_not_found",
         "No se encontró la orden.",
     ),
-    work_orders_service.TechnicianNotAvailableError: (
+    work_orders_service.CrewNotAvailableError: (
         422,
-        "technician_not_available",
-        "Elegí un técnico activo.",
+        "crew_not_available",
+        "Elegí una escuadrilla activa.",
     ),
     work_orders_service.ScheduledDateInPastError: (
         422,

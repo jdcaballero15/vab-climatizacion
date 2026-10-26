@@ -4,7 +4,7 @@ title: "Asignar una orden a una escuadrilla"
 epic: E04
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin]
 size: S
 areas: [backend, web-admin]
@@ -74,4 +74,14 @@ Se entrega en dos PR: backend primero, web-admin después.
 - Migración `c7d2f4e81a56`: tabla `work_order_assignment` con índice único parcial (una asignación vigente por orden) y `work_order.requires_approval` (`false` por defecto), que se adelantó de E07 para cubrir el criterio 5.
 - Para elegir técnico, el web-admin usa `GET /admin/users` (rol y activo ya vienen en la respuesta).
 - Web-admin (PR 2): botón "Asignar" en cada orden del listado de pendientes; abre debajo un formulario con técnico (solo activos con rol técnico, por nombre) y fecha prevista (mínimo hoy en Argentina). Indica lo que falta y muestra el error del backend. Al asignar, la orden sale del listado y se muestra "Orden N° X asignada a Nombre para el dd/mm/aaaa.". Las fechas sin hora se formatean sin pasar por `Date`, para que no se corran un día por UTC. Probado en el navegador contra el backend real.
+
+## Notas de implementación (versión a escuadrilla, D-013)
+
+Una sola PR (backend y web-admin juntos), porque cambia el cuerpo del endpoint.
+
+- `work_order_assignment.crew_id` reemplaza a `technician_id`. Migración `e5b8c1d4a903`: solo corre con la tabla vacía; si hay asignaciones, falla con un mensaje que explica cómo bajar una base de prueba, sin borrar nada en silencio. El downgrade tiene la misma condición.
+- `POST /admin/orders/{id}/assignment` con `crew_id`. 422 `crew_not_available` si la escuadrilla no existe o está desactivada. Se puede asignar a una escuadrilla sin celular. La nota del evento dice "Escuadrilla: Nombre. Fecha prevista: dd/mm/aaaa.".
+- Criterio 9: desactivar una escuadrilla con una asignación vigente en una orden `Asignada` o `En curso` da 409 `crew_has_open_orders`. Los estados están en `CREW_OPEN_STATUSES` (dominio), que también va a usar E05-01.
+- Web-admin: "Asignar" ofrece las escuadrillas activas; las que no tienen celular dicen "(sin celular)". En Escuadrillas y técnicos, desactivar y reactivar usan una mutación aparte para mostrar el mensaje del backend, y el "nombre repetido" se reconoce por el código del error y no por el 409.
+- Probado en el navegador contra el backend real: asignar a una escuadrilla e intentar desactivarla con la orden abierta.
 

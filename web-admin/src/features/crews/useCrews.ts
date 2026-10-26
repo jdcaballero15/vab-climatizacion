@@ -7,12 +7,15 @@ import type { Crew, CrewUpdate, FieldTechnician, FieldTechnicianUpdate } from ".
 const CREWS_KEY = ["crews"] as const;
 const FIELD_TECHNICIANS_KEY = ["field-technicians"] as const;
 
-/** 409 es nombre repetido; el resto lleva el mensaje en español del backend si lo hay. */
-function saveError(status: number | undefined, error: unknown, fallback: string): Error {
-  if (status === 409) {
+/**
+ * Nombre repetido (409 *_name_already_exists) para el mensaje del catálogo; el resto
+ * lleva el mensaje en español del backend si lo hay (por ejemplo, órdenes abiertas).
+ */
+function saveError(error: unknown, fallback: string): Error {
+  const detail = (error as { detail?: { code?: unknown; message?: unknown } } | undefined)?.detail;
+  if (typeof detail?.code === "string" && detail.code.endsWith("_name_already_exists")) {
     return new NameTakenError();
   }
-  const detail = (error as { detail?: { message?: unknown } } | undefined)?.detail;
   return new Error(typeof detail?.message === "string" ? detail.message : fallback);
 }
 
@@ -35,9 +38,9 @@ export function useCreateCrew() {
   const queryClient = useQueryClient();
   return useMutation<Crew, Error, string>({
     mutationFn: async (name) => {
-      const { data, error, response } = await api.POST("/admin/crews", { body: { name } });
+      const { data, error } = await api.POST("/admin/crews", { body: { name } });
       if (error || !data) {
-        throw saveError(response?.status, error, "No se pudo crear la escuadrilla.");
+        throw saveError(error, "No se pudo crear la escuadrilla.");
       }
       return data;
     },
@@ -49,12 +52,12 @@ export function useUpdateCrew(crewId: string) {
   const queryClient = useQueryClient();
   return useMutation<Crew, Error, CrewUpdate>({
     mutationFn: async (changes) => {
-      const { data, error, response } = await api.PATCH("/admin/crews/{crew_id}", {
+      const { data, error } = await api.PATCH("/admin/crews/{crew_id}", {
         params: { path: { crew_id: crewId } },
         body: changes,
       });
       if (error || !data) {
-        throw saveError(response?.status, error, "No se pudo guardar la escuadrilla.");
+        throw saveError(error, "No se pudo guardar la escuadrilla.");
       }
       return data;
     },
@@ -81,11 +84,11 @@ export function useCreateFieldTechnician() {
   const queryClient = useQueryClient();
   return useMutation<FieldTechnician, Error, string>({
     mutationFn: async (fullName) => {
-      const { data, error, response } = await api.POST("/admin/field-technicians", {
+      const { data, error } = await api.POST("/admin/field-technicians", {
         body: { full_name: fullName },
       });
       if (error || !data) {
-        throw saveError(response?.status, error, "No se pudo crear el técnico.");
+        throw saveError(error, "No se pudo crear el técnico.");
       }
       return data;
     },
@@ -97,12 +100,12 @@ export function useUpdateFieldTechnician(technicianId: string) {
   const queryClient = useQueryClient();
   return useMutation<FieldTechnician, Error, FieldTechnicianUpdate>({
     mutationFn: async (changes) => {
-      const { data, error, response } = await api.PATCH(
-        "/admin/field-technicians/{technician_id}",
-        { params: { path: { technician_id: technicianId } }, body: changes },
-      );
+      const { data, error } = await api.PATCH("/admin/field-technicians/{technician_id}", {
+        params: { path: { technician_id: technicianId } },
+        body: changes,
+      });
       if (error || !data) {
-        throw saveError(response?.status, error, "No se pudo guardar el técnico.");
+        throw saveError(error, "No se pudo guardar el técnico.");
       }
       return data;
     },

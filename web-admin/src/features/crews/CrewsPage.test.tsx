@@ -209,7 +209,15 @@ describe("CrewsPage", () => {
         intentos += 1;
         return intentos === 1
           ? json({ ...DOS, id: "c9", name: "Escuadrilla 4" }, 201)
-          : json({}, 409);
+          : json(
+              {
+                detail: {
+                  code: "crew_name_already_exists",
+                  message: "Ya existe una escuadrilla con ese nombre (puede estar desactivada).",
+                },
+              },
+              409,
+            );
       }
       return undefined;
     });
@@ -244,6 +252,36 @@ describe("CrewsPage", () => {
     await waitFor(() =>
       expect(calls.find((c) => c.method === "PATCH")?.body).toEqual({ is_active: false }),
     );
+  });
+
+  it("explica por qué no se puede desactivar una escuadrilla con órdenes abiertas", async () => {
+    const user = userEvent.setup();
+    stubApi((call) =>
+      call.method === "PATCH"
+        ? json(
+            {
+              detail: {
+                code: "crew_has_open_orders",
+                message: "Tiene órdenes asignadas o en curso. Reasignalas antes de desactivarla.",
+              },
+            },
+            409,
+          )
+        : undefined,
+    );
+    renderPage();
+
+    await user.click(
+      await within(seccion("Escuadrillas")).findByRole("button", {
+        name: "Desactivar Escuadrilla 1",
+      }),
+    );
+
+    const alerta = await within(seccion("Escuadrillas")).findByRole("alert");
+    expect(alerta).toHaveTextContent(
+      "Tiene órdenes asignadas o en curso. Reasignalas antes de desactivarla.",
+    );
+    expect(alerta).not.toHaveTextContent("Ya existe");
   });
 
   it("lista, crea y desactiva técnicos", async () => {
