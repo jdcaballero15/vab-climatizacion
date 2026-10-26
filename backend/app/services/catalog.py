@@ -7,14 +7,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.schemas.catalog import (
     EquipmentTypeCreate,
     EquipmentTypeUpdate,
+    FailureCreate,
+    FailureUpdate,
     TaskCreate,
     TaskUpdate,
     WorkTypeCreate,
     WorkTypeUpdate,
 )
-from app.db.models.catalog import EquipmentType, Task, WorkType
+from app.db.models.catalog import EquipmentType, Failure, Task, WorkType
 from app.db.repositories.catalog import (
     EquipmentTypeRepository,
+    FailureRepository,
     TaskRepository,
     WorkTypeRepository,
 )
@@ -42,6 +45,14 @@ class EquipmentTypeNotFoundError(Exception):
 
 class EquipmentTypeNameAlreadyExistsError(Exception):
     """Otro tipo de equipo, activo o inactivo, ya usa ese nombre."""
+
+
+class FailureNotFoundError(Exception):
+    """No existe una falla con ese id."""
+
+
+class FailureNameAlreadyExistsError(Exception):
+    """Otra falla del mismo tipo de equipo, o una genérica, ya usa ese nombre."""
 
 
 async def list_work_types(session: AsyncSession, *, include_inactive: bool) -> Sequence[WorkType]:
@@ -163,6 +174,59 @@ async def update_equipment_type(
     await _commit(session, EquipmentTypeNameAlreadyExistsError)
     await session.refresh(equipment_type)
     return equipment_type
+
+
+async def list_failures(
+    session: AsyncSession, *, equipment_type_id: uuid.UUID | None, include_inactive: bool
+) -> Sequence[Failure]:
+    include_specific = True
+    if equipment_type_id is not None:
+        equipment_type = await get_equipment_type(session, equipment_type_id)
+        # Criterio 5: un tipo desactivado no ofrece sus fallas propias; las genéricas siguen.
+        include_specific = include_inactive or equipment_type.is_active
+    return await FailureRepository(session).list_filtered(
+        equipment_type_id=equipment_type_id,
+        include_specific=include_specific,
+        include_inactive=include_inactive,
+    )
+
+
+async def get_failure(session: AsyncSession, failure_id: uuid.UUID) -> Failure:
+    failure = await FailureRepository(session).get(failure_id)
+    if failure is None:
+        raise FailureNotFoundError
+    return failure
+
+
+async def create_failure(session: AsyncSession, data: FailureCreate) -> Failure:
+    if data.equipment_type_id is not None:
+        await get_equipment_type(session, data.equipment_type_id)
+    if await FailureRepository(session).find_conflicting(data.name, data.equipment_type_id):
+        raise FailureNameAlreadyExistsError
+
+    failure = Failure(name=data.name, equipment_type_id=data.equipment_type_id, is_active=True)
+    session.add(failure)
+    await _commit(session, FailureNameAlreadyExistsError)
+    await session.refresh(failure)
+    return failure
+
+
+async def update_failure(
+    session: AsyncSession, failure_id: uuid.UUID, data: FailureUpdate
+) -> Failure:
+    failure = await get_failure(session, failure_id)
+    if data.name is not None:
+        conflicting = await FailureRepository(session).find_conflicting(
+            data.name, failure.equipment_type_id
+        )
+        if any(other.id != failure.id for other in conflicting):
+            raise FailureNameAlreadyExistsError
+        failure.name = data.name
+    if data.is_active is not None:
+        failure.is_active = data.is_active
+    await _commit(session, FailureNameAlreadyExistsError)
+    await session.refresh(failure)
+    return failure
 
 
 async def _commit(session: AsyncSession, duplicate_error: type[Exception]) -> None:

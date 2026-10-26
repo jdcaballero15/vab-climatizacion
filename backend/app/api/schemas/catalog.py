@@ -64,3 +64,23 @@ class EquipmentTypeAdminOut(BaseModel):
     id: uuid.UUID
     name: str
     is_active: bool
+
+
+class FailureCreate(BaseModel):
+    name: CatalogName
+    # Sin tipo de equipo, la falla es genérica y aplica a todos.
+    equipment_type_id: uuid.UUID | None = None
+
+
+class FailureUpdate(BaseModel):
+    name: CatalogName | None = None
+    is_active: bool | None = None
+
+
+class FailureAdminOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    equipment_type_id: uuid.UUID | None
+    name: str
+    is_active: bool

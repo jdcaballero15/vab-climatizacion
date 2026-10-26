@@ -59,3 +59,15 @@ Validadas con negocio el 2026-10-26:
 - Reusar el servicio, los repositorios y los componentes de catálogos de E02-01 y E02-02. Los componentes compartidos de web-admin (`CatalogItem`, `NewNameForm`, `NameTakenError`) se mueven antes a `web-admin/src/features/catalogs/`, en una PR de refactor aparte.
 - web-admin: pantalla "Fallas" con selector de tipo de equipo (o "Genéricas"), alta, edición del nombre, desactivar y reactivar.
 - Si el PR pasa de unas 400 líneas, se divide en backend y web-admin.
+
+## Notas de implementación
+
+Se entrega en dos PR: backend primero, web-admin después.
+
+- Backend (PR 1): endpoints `/admin/failures` y `/admin/failures/{id}` (listar, crear, ver, editar), todos con `require_role(admin)`. Lógica en `services/catalog.py`, repositorio `FailureRepository` en `db/repositories/catalog.py`.
+  - El listado sin `equipment_type_id` devuelve todas las fallas; con él, las de ese tipo más las genéricas (404 si el tipo no existe). Si el tipo está desactivado y no se piden inactivas, solo las genéricas.
+  - Desactivar y reactivar es `PATCH` con `is_active`. El tipo de equipo de una falla no se edita.
+  - Duplicados: el servicio busca choques (una genérica contra todas, una específica contra las de su tipo y las genéricas). Como respaldo, índice único `uq_failure_scope_name` sobre `(coalesce(equipment_type_id, uuid cero), lower(name))`, que hace chocar también a dos genéricas. 409 con `failure_name_already_exists`; inexistente, 404 con `failure_not_found`.
+  - Riesgo aceptado: dos guardados simultáneos de una genérica y una específica con el mismo nombre pueden pasar ambos, porque ese cruce no está en el índice.
+  - Migración `4094833fa904`: crea la tabla sin datos; el `downgrade` la borra.
+- web-admin (PR 2): pendiente.

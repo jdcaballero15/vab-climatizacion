@@ -27,6 +27,7 @@ def _reset_database() -> None:
     async def reset() -> None:
         engine = create_async_engine(TEST_DATABASE_URL)
         async with engine.begin() as conn:
+            await conn.execute(text("DROP TABLE IF EXISTS failure CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS equipment_type CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS task CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS work_type CASCADE"))
@@ -114,5 +115,17 @@ def test_migracion_carga_los_tipos_de_equipo_iniciales() -> None:
             "Heladera familiar",
             "Otros",
         ]
+    finally:
+        command.downgrade(cfg, "base")
+
+
+# E02-03, criterio 9: una base recién migrada trae el catálogo de fallas vacío.
+def test_migracion_deja_las_fallas_vacias() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    command.upgrade(cfg, "head")
+    try:
+        assert _names("SELECT name FROM failure") == []
     finally:
         command.downgrade(cfg, "base")
