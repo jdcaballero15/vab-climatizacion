@@ -15,7 +15,7 @@ stateDiagram-v2
   Asignada --> Pendiente: administración desasigna
   Asignada --> EnCurso: escuadrilla inicia
   EnCurso --> Terminada: escuadrilla cierra (resuelta)
-  EnCurso --> Pendiente: escuadrilla marca "requiere otra visita"
+  EnCurso --> Pendiente: escuadrilla marca "requiere otra visita" o "no se pudo hacer"
   EnCurso --> EnCurso: "requiere retiro" convierte en orden de taller
 
   Terminada --> Facturada: administración revisa y registra factura
@@ -65,6 +65,7 @@ Retiro y devolución exigen firma del cliente (nombre y DNI). La orden se factur
 | Resuelta | La orden pasa a `Terminada` |
 | Requiere retiro | La misma orden pasa a `workshop`, se crean las etapas y sigue `En curso` |
 | Requiere otra visita | Vuelve a `Pendiente` sin escuadrilla ni fecha, para reprogramarla (se puede asignar a otra), conservando lo registrado |
+| No se pudo hacer (con motivo) | Igual que "requiere otra visita": vuelve a `Pendiente` sin escuadrilla ni fecha, con el motivo visible para la oficina. Sin estado "No realizada" (E05-08) |
 
 ## Puntos sin resolver
 
