@@ -131,6 +131,7 @@ Table task {
 Table equipment_type {
   id uuid [pk]
   name varchar [not null, note: 'Aire acondicionado, cámara de frío, heladera comercial, heladera familiar, freezer, otros. Se guarda sin espacios sobrantes']
+  code_prefix varchar [note: 'Prefijo del código interno de sus equipos (EA, EH, EC, EF, EO). Sin prefijo se usa EO (D-002)']
   is_active boolean [not null, default: true]
 
   indexes {
@@ -201,6 +202,7 @@ Table equipment {
   serial_number varchar
   internal_code varchar [unique, not null, note: 'Código interno único en toda la empresa, lo genera el sistema. Texto sin largo fijo (D-002)']
   location_note varchar [not null, note: 'Ubicación dentro del cliente, lo que se muestra primero (D-002)']
+  notes text [note: 'Observaciones: potencia, subtipo, gas o lo que no tenga campo propio']
 }
 
 // ---------- Órdenes de trabajo ----------

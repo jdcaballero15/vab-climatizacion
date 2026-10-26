@@ -66,12 +66,17 @@ Consecuencias:
 - Que el técnico dé de alta un equipo desde la app no está en ninguna historia (E03-03 es de administración). Queda como pregunta abierta; si se confirma, va en una historia nueva. Según el relevamiento las cuadrillas siempre tienen señal (ver `D-001`), así que el código se puede generar en el momento.
 - El QR por equipo (E99-01) sigue en el icebox; si vuelve, se apoya en el código interno.
 
+Respondido por Gonza (2026-10-26, refinamiento de E03-03):
+
+- **Un prefijo por tipo de equipo**: `EA` aire acondicionado, `EH` heladera comercial y familiar, `EC` cámara de frío, `EF` freezer y `EO` otros. Un tipo nuevo usa `EO` hasta que se le asigne uno.
+- **Un equipo puede pasar a otro domicilio del mismo cliente**, además de cambiar de ubicación, y conserva código e historial.
+- Datos opcionales del equipo: marca, modelo, número de serie de fábrica y observaciones.
+
 Preguntas abiertas para el cliente:
 
 - ¿Quién asigna hoy los códigos? ¿Hay etiquetas físicas pegadas en los equipos?
 - ¿Un equipo puede pasar de un cliente a otro? Si pasa, la propuesta es que conserve el historial, pero hay que confirmarlo.
 - ¿Las siglas como `FAB` son sectores de la planta? ¿Hay que seguir usándolas en los equipos nuevos de ese cliente?
-- ¿Qué prefijo llevan los tipos de equipo que no son aire ni heladera (cámara de frío, freezer, otros)?
 - ¿El técnico tiene que poder dar de alta un equipo que no encuentra en la lista?
 
 ### D-003 Edición de catálogos
