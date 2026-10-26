@@ -51,3 +51,15 @@ Validadas con negocio el 2026-10-26:
 - Asignación, cambio de estado (`pending → assigned`) y evento `assigned` (con técnico y fecha en la nota o en columnas del evento) en la misma transacción, con el servicio de E04-01.
 - Endpoint `POST /admin/orders/{id}/assignment` con `require_role(admin)`. Errores: `order_not_found`, `invalid_transition`, `order_requires_approval`, `technician_not_available`.
 - Web-admin: acción "Asignar" en el listado de pendientes, con técnico y fecha.
+
+## Notas de implementación
+
+Se entrega en dos PR: backend primero, web-admin después.
+
+- Backend (PR 1): `POST /admin/orders/{id}/assignment` con `require_role(admin)`, cuerpo `technician_id` y `scheduled_for` (fecha sin hora). Devuelve la asignación (201). Estado `pending → assigned`, evento `assigned` y asignación en una transacción: `apply_transition` se separó en una parte que no confirma, para sumar la asignación.
+- El evento lleva en la nota el técnico y la fecha ("Técnico: Nombre. Fecha prevista: dd/mm/aaaa."); los datos estructurados quedan en `work_order_assignment`.
+- "Hoy" es el día en Argentina (`app/core/dates.py`), no el del servidor. La fecha de hoy se acepta.
+- Errores: 404 `order_not_found`; 409 `invalid_transition` si la orden no está Pendiente y `order_status_conflict` si otro la cambió antes; 422 `technician_not_available` (inexistente, inactivo o sin rol técnico), `scheduled_date_in_past`, `order_requires_approval` y fecha faltante.
+- Migración `c7d2f4e81a56`: tabla `work_order_assignment` con índice único parcial (una asignación vigente por orden) y `work_order.requires_approval` (`false` por defecto), que se adelantó de E07 para cubrir el criterio 5.
+- Para elegir técnico, el web-admin usa `GET /admin/users` (rol y activo ya vienen en la respuesta).
+

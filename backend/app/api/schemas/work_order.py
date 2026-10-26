@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, StringConstraints
@@ -63,3 +63,21 @@ class PendingOrderPage(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class AssignmentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    technician_id: uuid.UUID
+    # Solo el día, sin hora ni franja (decisión de E04-03).
+    scheduled_for: date
+
+
+class AssignmentAdminOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    work_order_id: uuid.UUID
+    technician_id: uuid.UUID
+    scheduled_for: date
+    assigned_at: datetime

@@ -27,6 +27,7 @@ def _reset_database() -> None:
     async def reset() -> None:
         engine = create_async_engine(TEST_DATABASE_URL)
         async with engine.begin() as conn:
+            await conn.execute(text("DROP TABLE IF EXISTS work_order_assignment CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS work_order_event CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS work_order CASCADE"))
             await conn.execute(text("DROP SEQUENCE IF EXISTS work_order_number_seq"))
@@ -274,7 +275,7 @@ def test_migracion_de_ordenes_es_reversible() -> None:
     _reset_database()
 
     objetos = (
-        "SELECT tablename FROM pg_tables WHERE tablename LIKE 'work_order%' "
+        "SELECT tablename FROM pg_tables WHERE tablename IN ('work_order', 'work_order_event') "
         "UNION ALL SELECT sequencename FROM pg_sequences "
         "WHERE sequencename = 'work_order_number_seq' "
         "UNION ALL SELECT typname FROM pg_type "
@@ -310,6 +311,25 @@ def test_migracion_de_canal_y_solicitante_es_reversible() -> None:
     try:
         assert _names(objetos) == ["channel", "order_channel", "requester_area", "requester_name"]
         command.downgrade(cfg, "9ded0ea86f52")
+        assert _names(objetos) == []
+    finally:
+        command.downgrade(cfg, "base")
+
+
+# E04-03: asignaciones y requires_approval; el downgrade los quita.
+def test_migracion_de_asignaciones_es_reversible() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    objetos = (
+        "SELECT tablename FROM pg_tables WHERE tablename = 'work_order_assignment' "
+        "UNION ALL SELECT column_name FROM information_schema.columns "
+        "WHERE table_name = 'work_order' AND column_name = 'requires_approval'"
+    )
+    command.upgrade(cfg, "head")
+    try:
+        assert _names(objetos) == ["requires_approval", "work_order_assignment"]
+        command.downgrade(cfg, "b4e1c7a20d93")
         assert _names(objetos) == []
     finally:
         command.downgrade(cfg, "base")

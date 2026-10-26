@@ -3,7 +3,7 @@ from app.db.models.client import Client, ClientContact, ClientSegment, ClientSit
 from app.db.models.equipment import Equipment
 from app.db.models.refresh_token import RefreshToken
 from app.db.models.user import User, UserRole
-from app.db.models.work_order import WorkOrder, WorkOrderEvent
+from app.db.models.work_order import WorkOrder, WorkOrderAssignment, WorkOrderEvent
 
 __all__ = [
     "Client",
@@ -20,6 +20,7 @@ __all__ = [
     "User",
     "UserRole",
     "WorkOrder",
+    "WorkOrderAssignment",
     "WorkOrderEvent",
     "WorkType",
 ]
