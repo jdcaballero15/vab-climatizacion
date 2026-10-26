@@ -20,6 +20,7 @@ El índice [docs/stories/INDEX.md](../stories/INDEX.md) lista las historias bloq
 | D-009 | Proveedor de mail transaccional | Desarrollo | **Abierta** | E00-10 |
 | D-010 | Formato y calidad de la exportación de Persat | Cliente y desarrollo | **Abierta** | E11-01 a E11-04 |
 | D-011 | ¿La firma del cliente es obligatoria en todo cierre? | Negocio | **Propuesta** | E05-07, E06-04, E06-06 |
+| D-012 | Cierre de los issues de historias terminadas | Desarrollo | **Propuesta** | `scripts/sync_stories.py`, plantilla de PR |
 
 ## Detalle
 
@@ -70,3 +71,14 @@ Los formularios del cliente dicen que la firma es obligatoria al cerrar una orde
 ### D-010 Exportación de Persat
 
 El cliente confirmó que es exportable. Falta ver el formato real (CSV, Excel), qué campos trae el historial de trabajos y la calidad de los datos (duplicados, equipos sin cliente, fechas). Pedir una muestra con datos anonimizados antes de diseñar la importación. **La muestra no se sube al repo.**
+
+### D-012 Cierre de los issues de historias terminadas
+
+Hoy ningún issue de historia se cierra solo. `sync_stories.py` actualiza la etiqueta `estado:hecha` pero, por diseño, nunca cierra issues. La plantilla de PR usa `Cierra #`, que GitHub no reconoce como palabra clave de cierre (solo acepta las de inglés, como `Closes` o `Fixes`). Resultado: E01-01 (#21), E01-02 (#22), E01-03 (#23) y E01-04 (#24) están terminadas y sus issues siguen abiertos, lo que ensucia la vista de issues abiertos como lista de trabajo pendiente.
+
+Opciones:
+
+1. **`Closes #` en la plantilla de PR**: el issue se cierra al mergear la PR en `main`. No sirve cuando una historia se entrega en varias PR (como E01-02): la primera PR cerraría el issue antes de tiempo, o hay que acordarse de ponerlo solo en la última.
+2. **Que `sync_stories.py` cierre el issue cuando la historia pasa a `done`** (y lo reabra si vuelve a otro estado): el cierre queda atado al archivo de la historia, que ya es la fuente de verdad, y funciona igual con una o varias PR. Al correr por primera vez cerraría los issues de las historias ya terminadas.
+
+*Propuesta*: opción 2. En la plantilla, cambiar `Cierra #` por `Relacionado #` para que no parezca que cierra algo. Si se aprueba, se implementa en una PR aparte que actualice el script, su docstring y la plantilla.
