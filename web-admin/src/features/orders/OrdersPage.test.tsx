@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ClientSummary, Site } from "../clients/types";
+import type { UserAdmin } from "../users/types";
 import { OrdersPage } from "./OrdersPage";
 import type { PendingOrder, WorkOrder } from "./types";
 
@@ -50,6 +51,36 @@ const OTRA_PENDIENTE: PendingOrder = {
   work_type_name: "Service",
   created_at: "2026-10-20T13:00:00Z",
 };
+const USUARIOS: UserAdmin[] = [
+  {
+    id: "u1",
+    email: "zoe@ot-demo.com",
+    full_name: "Zoe Técnica",
+    role: "technician",
+    is_active: true,
+  },
+  {
+    id: "u2",
+    email: "ale@ot-demo.com",
+    full_name: "Ale Técnico",
+    role: "technician",
+    is_active: true,
+  },
+  {
+    id: "u3",
+    email: "baja@ot-demo.com",
+    full_name: "Técnico de Baja",
+    role: "technician",
+    is_active: false,
+  },
+  {
+    id: "u4",
+    email: "admin@ot-demo.com",
+    full_name: "Admin Ficticio",
+    role: "admin",
+    is_active: true,
+  },
+];
 const CREADA: WorkOrder = {
   id: "o9",
   number: 9,
@@ -95,6 +126,9 @@ function mockApi(handler: Handler = () => undefined, sites: Site[] = [CENTRAL]) 
     }
     if (url.pathname.endsWith("/admin/work-types")) {
       return json(TIPOS);
+    }
+    if (url.pathname.endsWith("/admin/users")) {
+      return json(USUARIOS);
     }
     if (url.pathname.endsWith("/admin/orders") && request.method === "GET") {
       return json(pendingPage([]));
@@ -324,5 +358,123 @@ describe("OrdersPage", () => {
 
     expect(within(formulario()).getByLabelText("Cliente")).toHaveValue("");
     expect(within(formulario()).queryByText("Domicilio: Central")).not.toBeInTheDocument();
+  });
+
+  describe("asignar", () => {
+    function conPendiente(post?: (request: Request) => Response) {
+      let asignada = false;
+      return mockApi((request, url) => {
+        if (url.pathname.endsWith("/assignment") && request.method === "POST") {
+          const response = post
+            ? post(request)
+            : json(
+                {
+                  id: "a1",
+                  work_order_id: "o1",
+                  technician_id: "u2",
+                  scheduled_for: "2099-01-15",
+                  assigned_at: "2026-10-26T13:00:00Z",
+                },
+                201,
+              );
+          asignada = response.ok;
+          return response;
+        }
+        if (url.pathname.endsWith("/admin/orders") && request.method === "GET") {
+          return json(pendingPage(asignada ? [] : [PENDIENTE]));
+        }
+        return undefined;
+      });
+    }
+
+    async function abrirAsignar(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(await screen.findByRole("button", { name: "Asignar la orden N° 7" }));
+      return screen.getByRole("form", { name: "Asignar la orden N° 7" });
+    }
+
+    it("ofrece solo técnicos activos, ordenados por nombre", async () => {
+      const user = userEvent.setup();
+      conPendiente();
+      renderOrders();
+
+      const form = await abrirAsignar(user);
+      const tecnico = within(form).getByLabelText("Técnico");
+      await waitFor(() =>
+        expect(
+          within(tecnico)
+            .getAllByRole("option")
+            .map((o) => o.textContent),
+        ).toEqual(["Elegí un técnico", "Ale Técnico", "Zoe Técnica"]),
+      );
+      expect(within(form).getByLabelText("Fecha prevista")).toHaveAttribute("min");
+    });
+
+    it("asigna con técnico y fecha y la orden sale del listado", async () => {
+      const user = userEvent.setup();
+      const fetchMock = conPendiente();
+      renderOrders();
+
+      const form = await abrirAsignar(user);
+      await user.selectOptions(await within(form).findByLabelText("Técnico"), "u2");
+      await user.type(within(form).getByLabelText("Fecha prevista"), "2099-01-15");
+      await user.click(within(form).getByRole("button", { name: "Confirmar asignación" }));
+
+      expect(
+        await screen.findByText("Orden N° 7 asignada a Ale Técnico para el 15/01/2099."),
+      ).toBeInTheDocument();
+      const [post] = calls(fetchMock, "POST", "/admin/orders/o1/assignment");
+      expect(await post.json()).toEqual({ technician_id: "u2", scheduled_for: "2099-01-15" });
+      expect(await screen.findByText("No hay órdenes pendientes.")).toBeInTheDocument();
+    });
+
+    it("indica lo que falta sin llamar a la API", async () => {
+      const user = userEvent.setup();
+      const fetchMock = conPendiente();
+      renderOrders();
+
+      const form = await abrirAsignar(user);
+      await user.click(within(form).getByRole("button", { name: "Confirmar asignación" }));
+
+      expect(within(form).getByRole("alert")).toHaveTextContent(
+        "Falta el técnico y la fecha prevista.",
+      );
+      expect(calls(fetchMock, "POST", "/assignment")).toHaveLength(0);
+    });
+
+    it("muestra el error del backend", async () => {
+      const user = userEvent.setup();
+      conPendiente(() =>
+        json(
+          {
+            detail: {
+              code: "scheduled_date_in_past",
+              message: "La fecha prevista no puede ser anterior a hoy.",
+            },
+          },
+          422,
+        ),
+      );
+      renderOrders();
+
+      const form = await abrirAsignar(user);
+      await user.selectOptions(await within(form).findByLabelText("Técnico"), "u1");
+      await user.type(within(form).getByLabelText("Fecha prevista"), "2099-01-15");
+      await user.click(within(form).getByRole("button", { name: "Confirmar asignación" }));
+
+      expect(await within(form).findByRole("alert")).toHaveTextContent(
+        "La fecha prevista no puede ser anterior a hoy.",
+      );
+    });
+
+    it("se puede cancelar", async () => {
+      const user = userEvent.setup();
+      conPendiente();
+      renderOrders();
+
+      const form = await abrirAsignar(user);
+      await user.click(within(form).getByRole("button", { name: "Cancelar" }));
+
+      expect(screen.queryByRole("form", { name: "Asignar la orden N° 7" })).not.toBeInTheDocument();
+    });
   });
 });

@@ -2481,10 +2481,127 @@
           }
         }
       }
+    },
+    "/admin/orders/{order_id}/assignment": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Assign Work Order",
+        "operationId": "assign_work_order_admin_orders__order_id__assignment_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AssignmentAdminOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "work_order_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Work Order Id"
+          },
+          "technician_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Technician Id"
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date",
+            "title": "Scheduled For"
+          },
+          "assigned_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Assigned At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "work_order_id",
+          "technician_id",
+          "scheduled_for",
+          "assigned_at"
+        ],
+        "title": "AssignmentAdminOut"
+      },
+      "AssignmentCreate": {
+        "properties": {
+          "technician_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Technician Id"
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date",
+            "title": "Scheduled For"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "technician_id",
+          "scheduled_for"
+        ],
+        "title": "AssignmentCreate"
+      },
       "ClientAdminOut": {
         "properties": {
           "id": {

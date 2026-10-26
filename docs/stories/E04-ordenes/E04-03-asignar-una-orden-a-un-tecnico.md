@@ -4,7 +4,7 @@ title: "Asignar una orden a un técnico"
 epic: E04
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin]
 size: S
 areas: [backend, web-admin]
@@ -62,4 +62,5 @@ Se entrega en dos PR: backend primero, web-admin después.
 - Errores: 404 `order_not_found`; 409 `invalid_transition` si la orden no está Pendiente y `order_status_conflict` si otro la cambió antes; 422 `technician_not_available` (inexistente, inactivo o sin rol técnico), `scheduled_date_in_past`, `order_requires_approval` y fecha faltante.
 - Migración `c7d2f4e81a56`: tabla `work_order_assignment` con índice único parcial (una asignación vigente por orden) y `work_order.requires_approval` (`false` por defecto), que se adelantó de E07 para cubrir el criterio 5.
 - Para elegir técnico, el web-admin usa `GET /admin/users` (rol y activo ya vienen en la respuesta).
+- Web-admin (PR 2): botón "Asignar" en cada orden del listado de pendientes; abre debajo un formulario con técnico (solo activos con rol técnico, por nombre) y fecha prevista (mínimo hoy en Argentina). Indica lo que falta y muestra el error del backend. Al asignar, la orden sale del listado y se muestra "Orden N° X asignada a Nombre para el dd/mm/aaaa.". Las fechas sin hora se formatean sin pasar por `Date`, para que no se corran un día por UTC. Probado en el navegador contra el backend real.
 

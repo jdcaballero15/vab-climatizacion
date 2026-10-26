@@ -2,7 +2,13 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 
 import { api } from "../../api/client";
 import type { ClientSummary } from "../clients/types";
-import type { PendingOrderPage, WorkOrder, WorkOrderCreate } from "./types";
+import type {
+  Assignment,
+  AssignmentCreate,
+  PendingOrderPage,
+  WorkOrder,
+  WorkOrderCreate,
+} from "./types";
 
 const ORDERS_KEY = ["orders"] as const;
 export const PAGE_SIZE = 50;
@@ -41,6 +47,24 @@ export function useCreateOrder() {
       }
       return data;
     },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
+  });
+}
+
+export function useAssignOrder(orderId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<Assignment, Error, AssignmentCreate>({
+    mutationFn: async (asignacion) => {
+      const { data, error } = await api.POST("/admin/orders/{order_id}/assignment", {
+        params: { path: { order_id: orderId } },
+        body: asignacion,
+      });
+      if (error || !data) {
+        throw saveError(error, "No se pudo asignar la orden.");
+      }
+      return data;
+    },
+    // La orden deja de estar pendiente: se refresca el listado.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
   });
 }
