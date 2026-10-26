@@ -1,6 +1,6 @@
 # ADR 0003: App del técnico como PWA con modo offline
 
-**Estado:** Provisional. Depende de la decisión `D-001` (conectividad en campo).
+**Estado:** Reemplazado por [ADR 0009](0009-pwa-con-conexion-y-borrador-local.md). Dependía de la decisión `D-001` (conectividad en campo), ya resuelta.
 
 ## Contexto
 

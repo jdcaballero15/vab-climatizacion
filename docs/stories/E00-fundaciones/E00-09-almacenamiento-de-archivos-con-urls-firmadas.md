@@ -30,4 +30,4 @@ assumes: []
 ## Notas técnicas
 
 - Local: MinIO. Nube: bucket del proveedor elegido en E00-05. Límite y tipos permitidos configurables (imágenes JPEG, PNG y WebP; PDF).
-- La subida directa permite reintentos desde la PWA, necesarios para offline.
+- La subida directa permite reintentos desde la PWA, necesarios si se corta la conexión (E05-13).

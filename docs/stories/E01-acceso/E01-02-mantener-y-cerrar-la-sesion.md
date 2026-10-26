@@ -48,4 +48,4 @@ assumes: []
   - Se actualizó `openapi.json` con el snapshot actual del backend y se regeneró `src/api/schema.d.ts`.
   - Tests: interceptor (`api/client.test.ts`, criterios 1 y 4) y `app/AppRoot.test.tsx` (guardado de tokens, cierre de sesión aunque falle la llamada, vuelta al login cuando la sesión cae).
   - Deuda técnica: token store, aviso de sesión e interceptor quedan duplicados entre web-admin y pwa-tecnico. Unificarlos requiere un paquete compartido, que necesita un ADR.
-- **Criterio 3 (técnico offline):** diferido. Hoy cerrar sesión en la PWA ya limpia tokens y cache. El almacenamiento offline está bloqueado por **D-001**; hasta que exista no hay órdenes guardadas que borrar ni cambios sin sincronizar que avisar al cerrar sesión.
+- **Criterio 3 (técnico offline):** diferido. Hoy cerrar sesión en la PWA ya limpia tokens y cache. El almacenamiento offline estaba bloqueado por **D-001**, que se resolvió sin offline (ADR 0009): no hay órdenes guardadas que borrar. El aviso por un cierre pendiente de enviar al cerrar sesión se cubre en E05-13.

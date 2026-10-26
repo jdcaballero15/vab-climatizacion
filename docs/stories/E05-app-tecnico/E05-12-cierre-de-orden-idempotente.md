@@ -28,4 +28,4 @@ assumes: []
 
 ## Notas técnicas
 
-- La clave la genera la PWA (UUID) y se guarda en `work_order_closure.idempotency_key`. Sirve con o sin offline.
+- La clave la genera la PWA (UUID) y se guarda en `work_order_closure.idempotency_key`. Permite reintentar el envío de un cierre si se corta la conexión (E05-13).

@@ -17,7 +17,7 @@ Desarrollado por [MendoData](https://github.com/MendoData).
 ```
 backend/        API en Python (FastAPI) + PostgreSQL
 web-admin/      App de administración (React + TypeScript)
-pwa-tecnico/    App del técnico (React + TypeScript, PWA, modo offline)
+pwa-tecnico/    App del técnico (React + TypeScript, PWA, con conexión)
 docs/           Arquitectura, dominio, workflow e historias de usuario
 scripts/        Utilidades (validar y sincronizar historias, bootstrap de GitHub)
 .github/        CI, plantillas, automatizaciones con IA

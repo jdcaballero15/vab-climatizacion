@@ -1,19 +1,19 @@
 ---
-id: E05-10
+id: E99-07
 title: "Cola de cierres pendientes de sincronizar"
-epic: E05
-phase: 1
-priority: must
-status: draft
+epic: E99
+phase: 2
+priority: could
+status: icebox
 roles: [technician]
 size: L
 areas: [pwa]
-depends_on: [E05-09, E05-12]
-blocked_by: [D-001]
+depends_on: []
+blocked_by: []
 assumes: []
 ---
 
-# E05-10 Cola de cierres pendientes de sincronizar
+# E99-07 Cola de cierres pendientes de sincronizar
 
 ## Historia
 
@@ -26,3 +26,7 @@ assumes: []
 3. **Dado:** un envío reintentado por corte de red. **Cuando:** el servidor ya lo había recibido. **Entonces:** no se duplica el cierre.
 4. **Dado:** una foto o firma. **Cuando:** se sube con mala señal. **Entonces:** se reintenta hasta lograrlo.
 5. **Dado:** el técnico que cierra la app o apaga el celular. **Cuando:** lo vuelve a abrir. **Entonces:** la cola sigue intacta.
+
+## Icebox
+
+- Venía de la épica E05. Pasa al icebox por `D-001` (2026-10-26): según el relevamiento las cuadrillas siempre tienen señal y la app del técnico funciona solo con conexión (ADR 0009). Lo mínimo para no perder un cierre si se corta la señal está en E05-13. Se retoma si en la práctica aparecen lugares sin señal.
