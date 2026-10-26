@@ -16,7 +16,7 @@ down_revision: str | None = "891a93da0872"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-# Sin fallas iniciales: la lista la tiene que pasar el cliente (E02-03, criterio 9).
+# Crea la tabla vacía. La lista inicial del cliente se carga en 7a8a9559f9b4.
 
 
 def upgrade() -> None:

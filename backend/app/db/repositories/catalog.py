@@ -78,6 +78,7 @@ class EquipmentScopedRepository[ModelT: EquipmentScopedCatalog](BaseRepository[M
         equipment_type_id: uuid.UUID | None,
         include_specific: bool,
         include_inactive: bool,
+        extra_filters: Sequence[ColumnElement[bool]] = (),
     ) -> Sequence[ModelT]:
         """Sin tipo, todos los valores. Con tipo, los genéricos y, si se piden, los de ese tipo."""
         stmt = self._select()
@@ -88,6 +89,7 @@ class EquipmentScopedRepository[ModelT: EquipmentScopedCatalog](BaseRepository[M
             stmt = stmt.where(scope)
         if not include_inactive:
             stmt = stmt.where(self.model.is_active.is_(True))
+        stmt = stmt.where(*extra_filters)
         result = await self.session.execute(stmt.order_by(self.model.name))
         return result.scalars().all()
 

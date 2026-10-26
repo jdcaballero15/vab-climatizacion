@@ -29,7 +29,7 @@ assumes: [D-003]
 6. **Dado:** un nombre que ya existe, activo o inactivo, sin distinguir mayúsculas ni espacios al principio, al final o repetidos. **Cuando:** se intenta crear o renombrar una falla con ese nombre en el mismo tipo de equipo, o entre una genérica y una específica de cualquier tipo. **Entonces:** se rechaza con 409 y un mensaje claro. El mismo nombre en dos tipos distintos se acepta. Los acentos sí distinguen.
 7. **Dado:** un nombre vacío o de solo espacios. **Cuando:** se intenta guardar. **Entonces:** se rechaza con 422.
 8. **Dado:** un tipo de equipo inexistente. **Cuando:** se intenta crear una falla para él. **Entonces:** se rechaza con 404.
-9. **Dado:** una base recién migrada. **Cuando:** se consulta el catálogo. **Entonces:** está vacío. Administración carga las fallas.
+9. **Dado:** una base recién migrada. **Cuando:** se consulta el catálogo. **Entonces:** están las 3 fallas de la lista inicial del cliente (Falla del sistema de gas, Falla eléctrica o mecánica, Revisión y limpieza), genéricas, activas y editables.
 10. **Dado:** un técnico o dirección. **Cuando:** intenta listar, crear, editar, desactivar o reactivar fallas. **Entonces:** recibe acceso denegado (403).
 
 ## Fuera de alcance
@@ -48,7 +48,7 @@ Validadas con negocio el 2026-10-26:
 - **Mismas reglas que E02-01 y E02-02.** Renombrar se ve en todos lados (referencia por id), duplicados sin distinguir mayúsculas ni espacios y también contra inactivas, los acentos distinguen, solo administración edita, no hay borrado.
 - **Una falla aplica a un tipo de equipo o a todos** (genérica), como dice el modelo de datos. No hay asociación a varios tipos.
 - **Duplicados entre genéricas y específicas:** si existe la genérica "No enfría", no se puede crear "No enfría" para un tipo, y al revés. El técnico vería dos opciones iguales en la misma lista.
-- **Sin lista inicial.** La lista de fallas más comunes por tipo la tiene que pasar el cliente. Mientras tanto administración las carga desde la pantalla; si llega antes de implementar, se carga por migración como los tipos de equipo.
+- **Lista inicial** (actualizado el 2026-10-26, al refinar de nuevo E02-04): el cliente definió 3 fallas generales, todas genéricas, que agrupan a las reparaciones. Se cargan por migración. Si hacen falta fallas más finas para cámaras o heladeras, hay que pedírselas al cliente.
 - Los criterios originales 1 y 3 ("el técnico la ve al cerrar", "siempre incluye Otro") pasan a E05-04, que es donde el técnico usa la lista. El criterio original 4 ("una falla desactivada se conserva en las órdenes") se cumple porque no hay borrado y las referencias son por id.
 
 ## Notas técnicas
@@ -69,7 +69,7 @@ Se entrega en dos PR: backend primero, web-admin después.
   - Desactivar y reactivar es `PATCH` con `is_active`. El tipo de equipo de una falla no se edita.
   - Duplicados: el servicio busca choques (una genérica contra todas, una específica contra las de su tipo y las genéricas). Como respaldo, índice único `uq_failure_scope_name` sobre `(coalesce(equipment_type_id, uuid cero), lower(name))`, que hace chocar también a dos genéricas. 409 con `failure_name_already_exists`; inexistente, 404 con `failure_not_found`.
   - Riesgo aceptado: dos guardados simultáneos de una genérica y una específica con el mismo nombre pueden pasar ambos, porque ese cruce no está en el índice.
-  - Migración `4094833fa904`: crea la tabla sin datos; el `downgrade` la borra.
+  - Migración `4094833fa904`: crea la tabla; el `downgrade` la borra. Las 3 fallas iniciales se cargan después, en `7a8a9559f9b4` (con E02-04).
 - web-admin (PR 2): pantalla "Fallas" en `features/failures/`, visible solo para administración.
   - Selector de tipo de equipo con "Genéricas" (por defecto) y todos los tipos, también los desactivados marcados como tales, para poder administrar sus fallas.
   - En "Genéricas" se piden todas las fallas y se muestran las que no tienen tipo. Con un tipo elegido se muestran las suyas y las genéricas, marcadas "Genérica".

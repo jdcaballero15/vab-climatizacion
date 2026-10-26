@@ -100,7 +100,8 @@ class FailureAdminOut(EquipmentScopedAdminOut):
 
 
 class RepairCreate(EquipmentScopedCreate):
-    pass
+    # La falla a la que pertenece. Tiene que aplicar al tipo de la reparación.
+    failure_id: uuid.UUID
 
 
 class RepairUpdate(EquipmentScopedUpdate):
@@ -108,4 +109,4 @@ class RepairUpdate(EquipmentScopedUpdate):
 
 
 class RepairAdminOut(EquipmentScopedAdminOut):
-    pass
+    failure_id: uuid.UUID

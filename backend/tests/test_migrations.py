@@ -120,25 +120,66 @@ def test_migracion_carga_los_tipos_de_equipo_iniciales() -> None:
         command.downgrade(cfg, "base")
 
 
-# E02-03, criterio 9: una base recién migrada trae el catálogo de fallas vacío.
-def test_migracion_deja_las_fallas_vacias() -> None:
+# E02-03, criterio 9: una base recién migrada trae las 3 fallas genéricas del cliente.
+def test_migracion_carga_las_fallas_iniciales() -> None:
     cfg = _alembic_config()
     _reset_database()
 
     command.upgrade(cfg, "head")
     try:
-        assert _names("SELECT name FROM failure") == []
+        assert _names("SELECT name FROM failure WHERE is_active AND equipment_type_id IS NULL") == [
+            "Falla del sistema de gas",
+            "Falla eléctrica o mecánica",
+            "Revisión y limpieza",
+        ]
+        assert _names("SELECT name FROM failure WHERE equipment_type_id IS NOT NULL") == []
     finally:
         command.downgrade(cfg, "base")
 
 
-# E02-04, criterio 9: una base recién migrada trae el catálogo de reparaciones vacío.
-def test_migracion_deja_las_reparaciones_vacias() -> None:
+# E02-04, criterio 9: una base recién migrada trae las reparaciones del cliente, cada una con
+# su falla y su tipo (o genérica); las de varios tipos, una vez por tipo; sin "Otros".
+REPAIR_SCOPES_SQL = """
+    SELECT r.name || ' | ' || f.name || ' | ' || coalesce(t.name, 'genérica')
+    FROM repair r
+    JOIN failure f ON f.id = r.failure_id
+    LEFT JOIN equipment_type t ON t.id = r.equipment_type_id
+    WHERE r.is_active
+"""
+
+
+def test_migracion_carga_las_reparaciones_iniciales() -> None:
     cfg = _alembic_config()
     _reset_database()
 
     command.upgrade(cfg, "head")
     try:
+        filas = _names(REPAIR_SCOPES_SQL)
+        assert len(filas) == 48
+        assert len({fila.split(" | ")[0] for fila in filas}) == 36
+        assert not any(fila.startswith("Otros") for fila in filas)
+        gas = "Falla del sistema de gas"
+        assert f"Cambio de válvula inversora | {gas} | Aire acondicionado" in filas
+        assert [f for f in filas if f.startswith("Cambio de capilar")] == [
+            f"Cambio de capilar | {gas} | Cámara de frío",
+            f"Cambio de capilar | {gas} | Freezer",
+            f"Cambio de capilar | {gas} | Heladera comercial",
+            f"Cambio de capilar | {gas} | Heladera familiar",
+        ]
+        assert "Cambio de capacitor | Falla eléctrica o mecánica | genérica" in filas
+        assert "Limpieza de difusores | Revisión y limpieza | Aire acondicionado" in filas
+    finally:
+        command.downgrade(cfg, "base")
+
+
+def test_downgrade_de_los_datos_iniciales_deja_los_catalogos_vacios() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    command.upgrade(cfg, "head")
+    command.downgrade(cfg, "-1")
+    try:
         assert _names("SELECT name FROM repair") == []
+        assert _names("SELECT name FROM failure") == []
     finally:
         command.downgrade(cfg, "base")

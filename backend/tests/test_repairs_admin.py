@@ -2,19 +2,21 @@ from collections.abc import AsyncGenerator, Sequence
 
 import pytest
 from httpx import ASGITransport, AsyncClient, Response
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 
 from app.core.security import create_access_token
-from app.db.models.catalog import EquipmentType, Repair
+from app.db.models.catalog import EquipmentType, Failure, Repair
 from app.db.models.user import User, UserRole
 from app.db.session import SessionLocal, engine
 from app.main import app
 from tests.factories import make_user
 
-TABLES = [User.__table__, EquipmentType.__table__, Repair.__table__]
+TABLES = [User.__table__, EquipmentType.__table__, Failure.__table__, Repair.__table__]
 URL = "/admin/repairs"
 NO_EXISTE = "00000000-0000-0000-0000-000000000000"
+# Falla genérica que usan por defecto las reparaciones de los tests.
+GAS = "Falla del sistema de gas"
 
 
 @pytest.fixture
@@ -30,8 +32,22 @@ async def schema() -> AsyncGenerator[None, None]:
 @pytest.fixture
 async def admin(schema: None) -> User:
     user = make_user(email="admin@ot-demo.com", role=UserRole.admin)
-    await _seed([user])
+    await _seed([user, Failure(name=GAS, is_active=True)])
     return user
+
+
+async def _failure(name: str, equipment_type: EquipmentType | None = None) -> Failure:
+    failure = Failure(
+        name=name, equipment_type_id=equipment_type.id if equipment_type else None, is_active=True
+    )
+    await _seed([failure])
+    return failure
+
+
+async def _default_failure_id() -> str:
+    async with SessionLocal() as session:
+        result = await session.execute(select(Failure.id).where(Failure.name == GAS))
+        return str(result.scalar_one())
 
 
 @pytest.fixture
@@ -50,7 +66,7 @@ async def _equipment_type(name: str) -> EquipmentType:
     return equipment_type
 
 
-async def _seed(items: Sequence[User | EquipmentType]) -> None:
+async def _seed(items: Sequence[User | EquipmentType | Failure]) -> None:
     async with SessionLocal() as session:
         session.add_all(list(items))
         await session.commit()
@@ -66,16 +82,28 @@ def _client() -> AsyncClient:
 
 
 async def _crear(
-    client: AsyncClient, admin: User, name: str, equipment_type: EquipmentType | None = None
+    client: AsyncClient,
+    admin: User,
+    name: str,
+    equipment_type: EquipmentType | None = None,
+    failure: Failure | None = None,
 ) -> Response:
-    body = {"name": name, "equipment_type_id": str(equipment_type.id) if equipment_type else None}
+    body = {
+        "name": name,
+        "equipment_type_id": str(equipment_type.id) if equipment_type else None,
+        "failure_id": str(failure.id) if failure else await _default_failure_id(),
+    }
     return await client.post(URL, json=body, headers=_auth(admin))
 
 
 async def _crear_ok(
-    client: AsyncClient, admin: User, name: str, equipment_type: EquipmentType | None = None
+    client: AsyncClient,
+    admin: User,
+    name: str,
+    equipment_type: EquipmentType | None = None,
+    failure: Failure | None = None,
 ) -> dict[str, object]:
-    response = await _crear(client, admin, name, equipment_type)
+    response = await _crear(client, admin, name, equipment_type, failure)
     assert response.status_code == 201, response.text
     body: dict[str, object] = response.json()
     return body
@@ -86,11 +114,14 @@ async def _listar(
     admin: User,
     equipment_type: EquipmentType | None = None,
     *,
+    failure: Failure | None = None,
     include_inactive: bool = False,
 ) -> list[str]:
     params: dict[str, str] = {"include_inactive": str(include_inactive).lower()}
     if equipment_type is not None:
         params["equipment_type_id"] = str(equipment_type.id)
+    if failure is not None:
+        params["failure_id"] = str(failure.id)
     response = await client.get(URL, params=params, headers=_auth(admin))
     assert response.status_code == 200, response.text
     return [item["name"] for item in response.json()]
@@ -150,6 +181,7 @@ async def test_renombrar_reparacion_se_ve_por_id(admin: User, split: EquipmentTy
     assert consultada.json() == {
         "id": reparacion["id"],
         "equipment_type_id": str(split.id),
+        "failure_id": await _default_failure_id(),
         "name": "Carga de gas",
         "is_active": True,
     }
@@ -227,14 +259,16 @@ async def test_la_base_rechaza_genericas_duplicadas_aunque_no_pase_por_el_servic
     schema: None,
 ) -> None:
     # Respaldo ante dos guardados simultáneos: sin el coalesce del índice, dos NULL no chocan.
+    # Con una falla válida, para que el rechazo venga del índice y no de la falla faltante.
+    failure = await _failure(GAS)
     async with SessionLocal() as session:
         session.add_all(
             [
-                Repair(name="Ajuste de ventilador", is_active=True),
-                Repair(name="ajuste de ventilador", is_active=True),
+                Repair(name="Ajuste de ventilador", failure_id=failure.id, is_active=True),
+                Repair(name="ajuste de ventilador", failure_id=failure.id, is_active=True),
             ]
         )
-        with pytest.raises(IntegrityError):
+        with pytest.raises(IntegrityError, match="uq_repair_scope_name"):
             await session.commit()
 
 
@@ -332,7 +366,11 @@ async def test_crear_reparacion_para_tipo_inexistente_devuelve_404(admin: User) 
     async with _client() as client:
         response = await client.post(
             URL,
-            json={"name": "Ajuste de ventilador", "equipment_type_id": NO_EXISTE},
+            json={
+                "name": "Ajuste de ventilador",
+                "equipment_type_id": NO_EXISTE,
+                "failure_id": await _default_failure_id(),
+            },
             headers=_auth(admin),
         )
     assert response.status_code == 404
@@ -358,3 +396,72 @@ async def test_tecnico_y_direccion_reciben_403(
             await client.patch(reparacion_url, json={"is_active": False}, headers=_auth(otro)),
         ]
     assert [r.status_code for r in respuestas] == [403] * len(respuestas)
+
+
+# Criterio 11: el listado por falla solo trae las reparaciones de esa falla; si la falla está
+# desactivada, no ofrece ninguna.
+async def test_listar_por_falla(admin: User, split: EquipmentType) -> None:
+    electrica = await _failure("Falla eléctrica o mecánica")
+    gas = await _failure("Falla del sistema de gas 2")
+    async with _client() as client:
+        await _crear_ok(client, admin, "Cambio de capacitor", failure=electrica)
+        await _crear_ok(client, admin, "Reparación de interconexión", split, failure=electrica)
+        await _crear_ok(client, admin, "Cambio de filtro de gas", failure=gas)
+        de_electrica = await _listar(client, admin, failure=electrica)
+        de_electrica_y_split = await _listar(client, admin, split, failure=electrica)
+        de_gas_y_split = await _listar(client, admin, split, failure=gas)
+
+        await client.patch(
+            f"/admin/failures/{electrica.id}", json={"is_active": False}, headers=_auth(admin)
+        )
+        con_falla_desactivada = await _listar(client, admin, split, failure=electrica)
+        incluyendo_inactivas = await _listar(
+            client, admin, split, failure=electrica, include_inactive=True
+        )
+
+    assert de_electrica == ["Cambio de capacitor", "Reparación de interconexión"]
+    assert de_electrica_y_split == ["Cambio de capacitor", "Reparación de interconexión"]
+    assert de_gas_y_split == ["Cambio de filtro de gas"]
+    assert con_falla_desactivada == []
+    assert incluyendo_inactivas == ["Cambio de capacitor", "Reparación de interconexión"]
+
+
+async def test_la_reparacion_informa_su_falla(admin: User) -> None:
+    electrica = await _failure("Falla eléctrica o mecánica")
+    async with _client() as client:
+        creada = await _crear_ok(client, admin, "Cambio de capacitor", failure=electrica)
+    assert creada["failure_id"] == str(electrica.id)
+
+
+async def test_crear_sin_falla_se_rechaza_con_422(admin: User) -> None:
+    async with _client() as client:
+        response = await client.post(URL, json={"name": "Cambio de placa"}, headers=_auth(admin))
+    assert response.status_code == 422
+
+
+# Criterio 12: una falla inexistente da 404, al crear y al filtrar.
+async def test_falla_inexistente_devuelve_404(admin: User) -> None:
+    async with _client() as client:
+        crear = await client.post(
+            URL, json={"name": "Cambio de placa", "failure_id": NO_EXISTE}, headers=_auth(admin)
+        )
+        listar = await client.get(URL, params={"failure_id": NO_EXISTE}, headers=_auth(admin))
+    for response in (crear, listar):
+        assert response.status_code == 404
+        assert response.json()["detail"]["code"] == "failure_not_found"
+
+
+# Criterio 13: la falla tiene que aplicar al tipo de la reparación.
+async def test_falla_de_un_tipo_solo_admite_reparaciones_de_ese_tipo(
+    admin: User, split: EquipmentType, freezer: EquipmentType
+) -> None:
+    de_freezer = await _failure("No congela", freezer)
+    async with _client() as client:
+        generica = await _crear(client, admin, "Cambio de combistato", failure=de_freezer)
+        de_otro_tipo = await _crear(client, admin, "Cambio de combistato", split, de_freezer)
+        del_mismo_tipo = await _crear(client, admin, "Cambio de combistato", freezer, de_freezer)
+
+    for response in (generica, de_otro_tipo):
+        assert response.status_code == 422
+        assert response.json()["detail"]["code"] == "repair_failure_mismatch"
+    assert del_mismo_tipo.status_code == 201

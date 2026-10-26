@@ -126,7 +126,7 @@ Table equipment_type {
 Table failure {
   id uuid [pk]
   equipment_type_id uuid [ref: > equipment_type.id, note: 'Null = genérica, aplica a todos los tipos']
-  name varchar [not null, note: 'Sin lista inicial. Se guarda sin espacios sobrantes']
+  name varchar [not null, note: 'Lista inicial del cliente: 3 genéricas (migración 7a8a9559f9b4). Se guarda sin espacios sobrantes']
   is_active boolean [not null, default: true]
 
   indexes {
@@ -136,8 +136,9 @@ Table failure {
 
 Table repair {
   id uuid [pk]
+  failure_id uuid [ref: > failure.id, not null, note: 'Falla a la que pertenece. Si la falla es de un tipo, la reparación tiene que ser de ese tipo']
   equipment_type_id uuid [ref: > equipment_type.id, note: 'Null = genérica, aplica a todos los tipos. Mismas reglas que failure']
-  name varchar [not null, note: 'Sin lista inicial. Se guarda sin espacios sobrantes']
+  name varchar [not null, note: 'Lista inicial del cliente (migración 7a8a9559f9b4). Se guarda sin espacios sobrantes']
   is_active boolean [not null, default: true]
 
   indexes {

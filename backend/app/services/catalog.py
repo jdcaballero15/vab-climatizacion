@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from sqlalchemy import ColumnElement
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -75,6 +76,10 @@ class RepairNotFoundError(Exception):
 
 class RepairNameAlreadyExistsError(Exception):
     """Otra reparación del mismo tipo de equipo, o una genérica, ya usa ese nombre."""
+
+
+class RepairFailureMismatchError(Exception):
+    """La falla es de un tipo de equipo y la reparación es genérica o de otro tipo."""
 
 
 async def list_work_types(session: AsyncSession, *, include_inactive: bool) -> Sequence[WorkType]:
@@ -237,9 +242,20 @@ async def update_failure(
 
 
 async def list_repairs(
-    session: AsyncSession, *, equipment_type_id: uuid.UUID | None, include_inactive: bool
+    session: AsyncSession,
+    *,
+    equipment_type_id: uuid.UUID | None,
+    failure_id: uuid.UUID | None,
+    include_inactive: bool,
 ) -> Sequence[Repair]:
-    return await _list_scoped(session, _REPAIRS, equipment_type_id, include_inactive)
+    extra_filters: list[ColumnElement[bool]] = []
+    if failure_id is not None:
+        failure = await get_failure(session, failure_id)
+        # Una falla desactivada no ofrece sus reparaciones, como un tipo desactivado.
+        if not include_inactive and not failure.is_active:
+            return []
+        extra_filters.append(Repair.failure_id == failure_id)
+    return await _list_scoped(session, _REPAIRS, equipment_type_id, include_inactive, extra_filters)
 
 
 async def get_repair(session: AsyncSession, repair_id: uuid.UUID) -> Repair:
@@ -247,7 +263,14 @@ async def get_repair(session: AsyncSession, repair_id: uuid.UUID) -> Repair:
 
 
 async def create_repair(session: AsyncSession, data: RepairCreate) -> Repair:
-    return await _create_scoped(session, _REPAIRS, data)
+    failure = await get_failure(session, data.failure_id)
+    # Una falla genérica sirve para cualquier reparación; una de un tipo, solo para ese tipo.
+    if (
+        failure.equipment_type_id is not None
+        and failure.equipment_type_id != data.equipment_type_id
+    ):
+        raise RepairFailureMismatchError
+    return await _create_scoped(session, _REPAIRS, data, failure_id=data.failure_id)
 
 
 async def update_repair(session: AsyncSession, repair_id: uuid.UUID, data: RepairUpdate) -> Repair:
@@ -259,6 +282,7 @@ async def _list_scoped[ModelT: EquipmentScopedCatalog](
     catalog: _ScopedCatalog[ModelT],
     equipment_type_id: uuid.UUID | None,
     include_inactive: bool,
+    extra_filters: Sequence[ColumnElement[bool]] = (),
 ) -> Sequence[ModelT]:
     include_specific = True
     if equipment_type_id is not None:
@@ -269,6 +293,7 @@ async def _list_scoped[ModelT: EquipmentScopedCatalog](
         equipment_type_id=equipment_type_id,
         include_specific=include_specific,
         include_inactive=include_inactive,
+        extra_filters=extra_filters,
     )
 
 
@@ -282,14 +307,20 @@ async def _get_scoped[ModelT: EquipmentScopedCatalog](
 
 
 async def _create_scoped[ModelT: EquipmentScopedCatalog](
-    session: AsyncSession, catalog: _ScopedCatalog[ModelT], data: EquipmentScopedCreate
+    session: AsyncSession,
+    catalog: _ScopedCatalog[ModelT],
+    data: EquipmentScopedCreate,
+    **fields: object,
 ) -> ModelT:
+    """`fields` son las columnas propias del catálogo (por ejemplo, la falla de una reparación)."""
     if data.equipment_type_id is not None:
         await get_equipment_type(session, data.equipment_type_id)
     if await catalog.repository(session).find_conflicting(data.name, data.equipment_type_id):
         raise catalog.name_taken
 
-    item = catalog.model(name=data.name, equipment_type_id=data.equipment_type_id, is_active=True)
+    item = catalog.model(
+        name=data.name, equipment_type_id=data.equipment_type_id, is_active=True, **fields
+    )
     session.add(item)
     await _commit(session, catalog.name_taken)
     await session.refresh(item)
