@@ -4,7 +4,7 @@ title: "Iniciar una orden"
 epic: E05
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [technician]
 size: S
 areas: [backend, pwa]
@@ -49,6 +49,13 @@ Validadas con negocio el 2026-10-26 al refinar:
 ## Notas técnicas
 
 - Endpoint `POST /tech/orders/{id}/start` con `require_role(technician)`. Usa el mismo filtro que E05-02 (orden abierta con la asignación vigente de la escuadrilla del usuario); si no cumple, 404 `order_not_found`.
-- Si está `Asignada`, aplica la acción `start` de la máquina de estados (`apply_transition`, evento `status_change` con el usuario). Si ya está `En curso`, devuelve la orden sin tocar nada. Si otro la cambió al mismo tiempo, 409 `order_status_conflict`.
+- Si está `Asignada`, aplica la acción `start` de la máquina de estados (`apply_transition`, evento `status_change` con el usuario). Si ya está `En curso`, devuelve la orden sin tocar nada. Si otro la cambió al mismo tiempo, se vuelve a leer: si quedó `En curso` (doble toque simultáneo) responde bien; si ya no es una orden abierta de la escuadrilla (por ejemplo, la cancelaron), 404 como en el detalle; en otro caso, 409 `order_status_conflict`.
 - Es idempotente por estado (criterio 3), así que no necesita una clave de idempotencia aparte; la clave queda para el cierre (E05-12).
 - Responde el detalle actualizado (`OrderDetailTechnicianOut`). La PWA lo guarda en la caché del detalle e invalida la lista.
+
+## Notas de implementación
+
+Se entrega en dos PR: backend primero, PWA después.
+
+- Backend (PR 1): `POST /tech/orders/{id}/start` llama a `start_for_crew_user`, que lee el detalle con el filtro de E05-02, aplica `start` con `apply_transition` si está `Asignada` y devuelve el detalle actualizado.
+- Carrera entre dos pedidos: el conflicto de `apply_transition` hace rollback; se recarga el usuario de la sesión y se vuelve a leer el detalle. Probado contra la base real simulando el cambio de estado entre la lectura y la transición.

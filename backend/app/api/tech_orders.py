@@ -26,7 +26,29 @@ async def get_my_order(
     try:
         return await work_orders_service.get_for_crew_user(session, user, order_id)
     except work_orders_service.WorkOrderNotFoundError:
+        raise _order_not_found() from None
+
+
+@router.post("/{order_id}/start", response_model=OrderDetailTechnicianOut)
+async def start_my_order(
+    order_id: uuid.UUID, session: SessionDep, user: CrewUser
+) -> OrderDetailTechnicianOut:
+    try:
+        return await work_orders_service.start_for_crew_user(session, user, order_id)
+    except work_orders_service.WorkOrderNotFoundError:
+        raise _order_not_found() from None
+    except work_orders_service.OrderStatusConflictError:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "order_not_found", "message": "No se encontró la orden."},
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": work_orders_service.OrderStatusConflictError.code,
+                "message": work_orders_service.OrderStatusConflictError.message,
+            },
         ) from None
+
+
+def _order_not_found() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail={"code": "order_not_found", "message": "No se encontró la orden."},
+    )

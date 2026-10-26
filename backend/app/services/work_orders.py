@@ -153,6 +153,31 @@ async def get_for_crew_user(
     )
 
 
+async def start_for_crew_user(
+    session: AsyncSession, user: User, order_id: uuid.UUID
+) -> OrderDetailTechnicianOut:
+    """La escuadrilla inicia una orden suya: Asignada pasa a En curso (E05-03).
+
+    Idempotente por estado: si ya está En curso, la devuelve sin otro evento. Mismo
+    filtro que el detalle, así que otra escuadrilla o una orden cerrada dan 404.
+    """
+    detail = await get_for_crew_user(session, user, order_id)
+    if detail.status == OrderStatus.in_progress:
+        return detail
+    order = await get_work_order(session, order_id)
+    try:
+        await apply_transition(session, order, OrderAction.start, user, None)
+    except OrderStatusConflictError:
+        # Un doble toque que llegó a la vez: si la otra ya la inició, es el mismo resultado.
+        # El conflicto hizo rollback y venció los objetos de la sesión, el usuario incluido.
+        await session.refresh(user)
+        detail = await get_for_crew_user(session, user, order_id)
+        if detail.status != OrderStatus.in_progress:
+            raise
+        return detail
+    return await get_for_crew_user(session, user, order_id)
+
+
 async def _active_crew_of(session: AsyncSession, user: User) -> Crew | None:
     crew = await CrewRepository(session).get_by_app_user(user.id)
     if crew is None or not crew.is_active or crew.deleted_at is not None:
