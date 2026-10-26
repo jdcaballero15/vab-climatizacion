@@ -2366,6 +2366,121 @@
           }
         }
       }
+    },
+    "/admin/orders": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Create Work Order",
+        "operationId": "create_work_order_admin_orders_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkOrderCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkOrderAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "List Work Orders",
+        "operationId": "list_work_orders_admin_orders_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "const": "pending",
+              "type": "string",
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingOrderPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3283,6 +3398,146 @@
         ],
         "title": "LogoutRequest"
       },
+      "OrderChannel": {
+        "type": "string",
+        "enum": [
+          "whatsapp",
+          "email",
+          "phone",
+          "in_person"
+        ],
+        "title": "OrderChannel"
+      },
+      "OrderKind": {
+        "type": "string",
+        "enum": [
+          "on_site",
+          "workshop"
+        ],
+        "title": "OrderKind"
+      },
+      "OrderSource": {
+        "type": "string",
+        "enum": [
+          "manual",
+          "maintenance"
+        ],
+        "title": "OrderSource"
+      },
+      "OrderStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "assigned",
+          "in_progress",
+          "done",
+          "invoiced",
+          "paid",
+          "cancelled"
+        ],
+        "title": "OrderStatus"
+      },
+      "PendingOrderOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "client_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Id"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "site_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Label"
+          },
+          "site_address": {
+            "type": "string",
+            "title": "Site Address"
+          },
+          "work_type_name": {
+            "type": "string",
+            "title": "Work Type Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "client_id",
+          "client_name",
+          "site_label",
+          "site_address",
+          "work_type_name",
+          "description",
+          "created_at"
+        ],
+        "title": "PendingOrderOut"
+      },
+      "PendingOrderPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PendingOrderOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "PendingOrderPage"
+      },
       "RefreshRequest": {
         "properties": {
           "refresh_token": {
@@ -3867,6 +4122,169 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WorkOrderAdminOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/OrderKind"
+          },
+          "source": {
+            "$ref": "#/components/schemas/OrderSource"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "client_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Id"
+          },
+          "client_site_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Site Id"
+          },
+          "work_type_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Work Type Id"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderChannel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "requester_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requester Name"
+          },
+          "requester_area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requester Area"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "kind",
+          "source",
+          "status",
+          "client_id",
+          "client_site_id",
+          "work_type_id",
+          "channel",
+          "description",
+          "requester_name",
+          "requester_area",
+          "created_at"
+        ],
+        "title": "WorkOrderAdminOut"
+      },
+      "WorkOrderCreate": {
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Id"
+          },
+          "client_site_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Site Id"
+          },
+          "work_type_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Work Type Id"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/OrderChannel"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Description"
+          },
+          "requester_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requester Name"
+          },
+          "requester_area": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requester Area"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "client_id",
+          "client_site_id",
+          "work_type_id",
+          "channel",
+          "description"
+        ],
+        "title": "WorkOrderCreate"
       },
       "WorkTypeAdminOut": {
         "properties": {

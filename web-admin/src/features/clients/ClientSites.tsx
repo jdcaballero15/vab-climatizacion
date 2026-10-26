@@ -1,53 +1,10 @@
 import { useState, type FormEvent } from "react";
 
 import { equipmentCountLabel, siteName } from "./labels";
+import { EMPTY_SITE, missingAddress } from "./formValues";
+import { SiteFields } from "./SiteFields";
 import type { Site, SiteCreate } from "./types";
 import { useCreateSite, useSites, useUpdateSite } from "./useClients";
-
-const EMPTY_SITE: SiteCreate = { label: null, address: "", reference: null };
-
-interface SiteFieldsProps {
-  idPrefix: string;
-  values: SiteCreate;
-  onChange: (values: SiteCreate) => void;
-}
-
-function SiteFields({ idPrefix, values, onChange }: SiteFieldsProps) {
-  const id = (field: string) => `${idPrefix}-${field}`;
-  return (
-    <>
-      <label htmlFor={id("label")}>Etiqueta</label>
-      <input
-        id={id("label")}
-        value={values.label ?? ""}
-        onChange={(event) => onChange({ ...values, label: event.target.value || null })}
-        placeholder="Sede central, depósito"
-        maxLength={255}
-      />
-      <label htmlFor={id("address")}>Dirección</label>
-      <input
-        id={id("address")}
-        value={values.address}
-        onChange={(event) => onChange({ ...values, address: event.target.value })}
-        placeholder="Calle y número, localidad"
-        maxLength={255}
-      />
-      <label htmlFor={id("reference")}>Referencia</label>
-      <input
-        id={id("reference")}
-        value={values.reference ?? ""}
-        onChange={(event) => onChange({ ...values, reference: event.target.value || null })}
-        placeholder="Piso, departamento, cómo llegar"
-        maxLength={500}
-      />
-    </>
-  );
-}
-
-// El backend también la rechaza; acá se evita el viaje y se avisa en el formulario.
-function missingAddress(values: SiteCreate): boolean {
-  return values.address.trim() === "";
-}
 
 // Solo los campos editables: el backend rechaza campos de más (id, client_id, map_url).
 function editable({ label, address, reference }: Site): SiteCreate {
