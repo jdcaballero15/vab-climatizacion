@@ -16,12 +16,12 @@ router = APIRouter(tags=["equipos"])
 # Errores del domicilio o el tipo elegidos, al crear o al editar.
 _CHOICE_ERROR_DETAIL: dict[type[Exception], tuple[int, str, str]] = {
     clients_service.SiteNotFoundError: (404, "site_not_found", "No se encontró el domicilio."),
-    equipment_service.SiteOfAnotherClientError: (
+    clients_service.SiteOfAnotherClientError: (
         422,
         "site_of_another_client",
         "El domicilio es de otro cliente.",
     ),
-    equipment_service.SiteInactiveError: (422, "site_inactive", "El domicilio está desactivado."),
+    clients_service.SiteInactiveError: (422, "site_inactive", "El domicilio está desactivado."),
     equipment_service.EquipmentTypeNotFoundError: (
         404,
         "equipment_type_not_found",

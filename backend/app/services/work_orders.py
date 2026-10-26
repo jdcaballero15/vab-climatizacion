@@ -2,15 +2,20 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.schemas.work_order import PendingOrderOut, WorkOrderAdminOut, WorkOrderCreate
 from app.db.models.user import User
 from app.db.models.work_order import WorkOrder, WorkOrderEvent
 from app.db.repositories.work_order import WorkOrderRepository
 from app.domain.work_order import (
     STATUSLESS_EVENT_TYPES,
     OrderAction,
+    OrderSource,
+    OrderStatus,
     WorkOrderEventType,
     resolve_transition,
 )
+from app.services import catalog as catalog_service
+from app.services import clients as clients_service
 
 
 class WorkOrderNotFoundError(Exception):
@@ -22,6 +27,63 @@ class OrderStatusConflictError(Exception):
 
     code = "order_status_conflict"
     message = "La orden cambió mientras la mirabas. Volvé a cargarla e intentá de nuevo."
+
+
+class WorkTypeInactiveError(Exception):
+    """El tipo de trabajo elegido está desactivado."""
+
+
+async def create_work_order(
+    session: AsyncSession, data: WorkOrderCreate, actor: User
+) -> WorkOrderAdminOut:
+    """Alta manual desde administración: queda Pendiente, con su evento de creación."""
+    await clients_service.get_client(session, data.client_id)
+    await clients_service.check_active_site_of_client(session, data.client_id, data.client_site_id)
+    work_type = await catalog_service.get_work_type(session, data.work_type_id)
+    if not work_type.is_active:
+        raise WorkTypeInactiveError
+
+    order = WorkOrder(status=OrderStatus.pending, source=OrderSource.manual, **data.model_dump())
+    session.add(order)
+    await session.flush()
+    event = WorkOrderEvent(
+        work_order_id=order.id,
+        event_type=WorkOrderEventType.created,
+        to_status=OrderStatus.pending,
+        actor_id=actor.id,
+    )
+    WorkOrderRepository(session).add_event(event)
+    await session.commit()
+    await session.refresh(order)
+    await session.refresh(event)
+    return WorkOrderAdminOut.model_validate({**_columns(order), "created_at": event.occurred_at})
+
+
+async def list_pending(
+    session: AsyncSession, *, limit: int, offset: int
+) -> tuple[list[PendingOrderOut], int]:
+    rows, total = await WorkOrderRepository(session).list_by_status_page(
+        OrderStatus.pending, limit=limit, offset=offset
+    )
+    items = [
+        PendingOrderOut(
+            id=order.id,
+            number=order.number,
+            client_id=order.client_id,
+            client_name=client_name,
+            site_label=site_label,
+            site_address=site_address,
+            work_type_name=work_type_name,
+            description=order.description,
+            created_at=created_at,
+        )
+        for order, created_at, client_name, site_label, site_address, work_type_name in rows
+    ]
+    return items, total
+
+
+def _columns(order: WorkOrder) -> dict[str, object]:
+    return {column.key: getattr(order, column.key) for column in WorkOrder.__table__.columns}
 
 
 async def get_work_order(session: AsyncSession, order_id: uuid.UUID) -> WorkOrder:

@@ -227,15 +227,15 @@ Table work_order {
   channel order_channel [note: 'Por dónde llegó el pedido. Obligatorio en las manuales (E04-02)']
   requester_name varchar [note: 'Quién pidió: nombre y cargo. Opcional, el técnico no lo ve']
   requester_area varchar [note: 'Dónde: sector, piso o ala. Opcional, el técnico lo ve']
-  requires_approval boolean [default: false, note: 'Órdenes generadas por mantenimiento hasta su aprobación en bloque. Pendiente D-005']
-  maintenance_run_id uuid [ref: > maintenance_run.id]
+  requires_approval boolean [default: false, note: 'Órdenes generadas por mantenimiento hasta su aprobación en bloque. Pendiente D-005. Se agrega con E07']
+  maintenance_run_id uuid [ref: > maintenance_run.id, note: 'Se agrega con E07-04']
 }
 
 Table work_order_event {
   id uuid [pk]
   work_order_id uuid [ref: > work_order.id, not null]
   stage_id uuid [ref: > work_order_stage.id]
-  event_type varchar [not null, note: 'created, status_change, assigned, unassigned, reassigned, review_approved, review_returned, converted_to_workshop, closure_in_review']
+  event_type varchar [not null, note: 'Con CHECK sobre los valores válidos: created, status_change, assigned, unassigned, reassigned, review_approved, review_returned, converted_to_workshop. closure_in_review se suma con la historia que lo use']
   from_status order_status
   to_status order_status [note: 'Null en eventos que no cambian el estado']
   occurred_at timestamptz [not null, note: 'Fuente de todas las fechas de negocio de la orden']

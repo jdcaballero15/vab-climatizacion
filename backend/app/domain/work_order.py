@@ -30,6 +30,14 @@ class OrderSource(StrEnum):
     maintenance = "maintenance"
 
 
+class OrderChannel(StrEnum):
+    whatsapp = "whatsapp"
+    email = "email"
+    phone = "phone"
+    # En la oficina o pedido al técnico en el lugar.
+    in_person = "in_person"
+
+
 class WorkOrderEventType(StrEnum):
     created = "created"
     status_change = "status_change"

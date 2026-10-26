@@ -33,6 +33,7 @@ def _reset_database() -> None:
             await conn.execute(text("DROP TYPE IF EXISTS order_status"))
             await conn.execute(text("DROP TYPE IF EXISTS order_kind"))
             await conn.execute(text("DROP TYPE IF EXISTS order_source"))
+            await conn.execute(text("DROP TYPE IF EXISTS order_channel"))
             await conn.execute(text("DROP TABLE IF EXISTS equipment CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS client_contact CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS client_site CASCADE"))
@@ -290,6 +291,25 @@ def test_migracion_de_ordenes_es_reversible() -> None:
             "work_order_number_seq",
         ]
         command.downgrade(cfg, "2ecd8961c92f")
+        assert _names(objetos) == []
+    finally:
+        command.downgrade(cfg, "base")
+
+
+# E04-02: canal y solicitante en work_order; el downgrade los quita junto con el enum.
+def test_migracion_de_canal_y_solicitante_es_reversible() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    objetos = (
+        "SELECT column_name FROM information_schema.columns WHERE table_name = 'work_order' "
+        "AND column_name IN ('channel', 'requester_name', 'requester_area') "
+        "UNION ALL SELECT typname FROM pg_type WHERE typname = 'order_channel'"
+    )
+    command.upgrade(cfg, "head")
+    try:
+        assert _names(objetos) == ["channel", "order_channel", "requester_area", "requester_name"]
+        command.downgrade(cfg, "9ded0ea86f52")
         assert _names(objetos) == []
     finally:
         command.downgrade(cfg, "base")

@@ -47,6 +47,14 @@ class SiteNotFoundError(Exception):
     """No existe un domicilio con ese id (o no es del cliente indicado)."""
 
 
+class SiteOfAnotherClientError(Exception):
+    """El domicilio elegido es de otro cliente."""
+
+
+class SiteInactiveError(Exception):
+    """El domicilio elegido está desactivado."""
+
+
 class ContactWithoutDataError(Exception):
     """El contacto no tiene nombre, teléfono ni email."""
 
@@ -194,6 +202,20 @@ async def _check_site_of_client(
     site = await ClientSiteRepository(session).get(site_id)
     if site is None or site.client_id != client_id:
         raise SiteNotFoundError
+
+
+async def check_active_site_of_client(
+    session: AsyncSession, client_id: uuid.UUID, site_id: uuid.UUID
+) -> ClientSite:
+    """Domicilio elegido para un equipo o una orden: existe, es del cliente y está activo."""
+    site = await ClientSiteRepository(session).get(site_id)
+    if site is None:
+        raise SiteNotFoundError
+    if site.client_id != client_id:
+        raise SiteOfAnotherClientError
+    if not site.is_active:
+        raise SiteInactiveError
+    return site
 
 
 async def list_sites(session: AsyncSession, client_id: uuid.UUID) -> list[SiteAdminOut]:
