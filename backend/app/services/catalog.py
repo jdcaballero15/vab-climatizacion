@@ -1,23 +1,37 @@
 import uuid
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.catalog import (
+    EquipmentScopedCreate,
+    EquipmentScopedUpdate,
     EquipmentTypeCreate,
     EquipmentTypeUpdate,
     FailureCreate,
     FailureUpdate,
+    RepairCreate,
+    RepairUpdate,
     TaskCreate,
     TaskUpdate,
     WorkTypeCreate,
     WorkTypeUpdate,
 )
-from app.db.models.catalog import EquipmentType, Failure, Task, WorkType
+from app.db.models.catalog import (
+    EquipmentScopedCatalog,
+    EquipmentType,
+    Failure,
+    Repair,
+    Task,
+    WorkType,
+)
 from app.db.repositories.catalog import (
+    EquipmentScopedRepository,
     EquipmentTypeRepository,
     FailureRepository,
+    RepairRepository,
     TaskRepository,
     WorkTypeRepository,
 )
@@ -53,6 +67,14 @@ class FailureNotFoundError(Exception):
 
 class FailureNameAlreadyExistsError(Exception):
     """Otra falla del mismo tipo de equipo, o una genérica, ya usa ese nombre."""
+
+
+class RepairNotFoundError(Exception):
+    """No existe una reparación con ese id."""
+
+
+class RepairNameAlreadyExistsError(Exception):
+    """Otra reparación del mismo tipo de equipo, o una genérica, ya usa ese nombre."""
 
 
 async def list_work_types(session: AsyncSession, *, include_inactive: bool) -> Sequence[WorkType]:
@@ -176,57 +198,123 @@ async def update_equipment_type(
     return equipment_type
 
 
+@dataclass(frozen=True)
+class _ScopedCatalog[ModelT: EquipmentScopedCatalog]:
+    """Lo que cambia entre fallas y reparaciones: el modelo, su repositorio y sus errores."""
+
+    model: type[ModelT]
+    repository: type[EquipmentScopedRepository[ModelT]]
+    not_found: type[Exception]
+    name_taken: type[Exception]
+
+
+_FAILURES = _ScopedCatalog(
+    Failure, FailureRepository, FailureNotFoundError, FailureNameAlreadyExistsError
+)
+_REPAIRS = _ScopedCatalog(
+    Repair, RepairRepository, RepairNotFoundError, RepairNameAlreadyExistsError
+)
+
+
 async def list_failures(
     session: AsyncSession, *, equipment_type_id: uuid.UUID | None, include_inactive: bool
 ) -> Sequence[Failure]:
+    return await _list_scoped(session, _FAILURES, equipment_type_id, include_inactive)
+
+
+async def get_failure(session: AsyncSession, failure_id: uuid.UUID) -> Failure:
+    return await _get_scoped(session, _FAILURES, failure_id)
+
+
+async def create_failure(session: AsyncSession, data: FailureCreate) -> Failure:
+    return await _create_scoped(session, _FAILURES, data)
+
+
+async def update_failure(
+    session: AsyncSession, failure_id: uuid.UUID, data: FailureUpdate
+) -> Failure:
+    return await _update_scoped(session, _FAILURES, failure_id, data)
+
+
+async def list_repairs(
+    session: AsyncSession, *, equipment_type_id: uuid.UUID | None, include_inactive: bool
+) -> Sequence[Repair]:
+    return await _list_scoped(session, _REPAIRS, equipment_type_id, include_inactive)
+
+
+async def get_repair(session: AsyncSession, repair_id: uuid.UUID) -> Repair:
+    return await _get_scoped(session, _REPAIRS, repair_id)
+
+
+async def create_repair(session: AsyncSession, data: RepairCreate) -> Repair:
+    return await _create_scoped(session, _REPAIRS, data)
+
+
+async def update_repair(session: AsyncSession, repair_id: uuid.UUID, data: RepairUpdate) -> Repair:
+    return await _update_scoped(session, _REPAIRS, repair_id, data)
+
+
+async def _list_scoped[ModelT: EquipmentScopedCatalog](
+    session: AsyncSession,
+    catalog: _ScopedCatalog[ModelT],
+    equipment_type_id: uuid.UUID | None,
+    include_inactive: bool,
+) -> Sequence[ModelT]:
     include_specific = True
     if equipment_type_id is not None:
         equipment_type = await get_equipment_type(session, equipment_type_id)
-        # Criterio 5: un tipo desactivado no ofrece sus fallas propias; las genéricas siguen.
+        # Un tipo desactivado no ofrece sus valores propios; los genéricos siguen.
         include_specific = include_inactive or equipment_type.is_active
-    return await FailureRepository(session).list_filtered(
+    return await catalog.repository(session).list_filtered(
         equipment_type_id=equipment_type_id,
         include_specific=include_specific,
         include_inactive=include_inactive,
     )
 
 
-async def get_failure(session: AsyncSession, failure_id: uuid.UUID) -> Failure:
-    failure = await FailureRepository(session).get(failure_id)
-    if failure is None:
-        raise FailureNotFoundError
-    return failure
+async def _get_scoped[ModelT: EquipmentScopedCatalog](
+    session: AsyncSession, catalog: _ScopedCatalog[ModelT], item_id: uuid.UUID
+) -> ModelT:
+    item = await catalog.repository(session).get(item_id)
+    if item is None:
+        raise catalog.not_found
+    return item
 
 
-async def create_failure(session: AsyncSession, data: FailureCreate) -> Failure:
+async def _create_scoped[ModelT: EquipmentScopedCatalog](
+    session: AsyncSession, catalog: _ScopedCatalog[ModelT], data: EquipmentScopedCreate
+) -> ModelT:
     if data.equipment_type_id is not None:
         await get_equipment_type(session, data.equipment_type_id)
-    if await FailureRepository(session).find_conflicting(data.name, data.equipment_type_id):
-        raise FailureNameAlreadyExistsError
+    if await catalog.repository(session).find_conflicting(data.name, data.equipment_type_id):
+        raise catalog.name_taken
 
-    failure = Failure(name=data.name, equipment_type_id=data.equipment_type_id, is_active=True)
-    session.add(failure)
-    await _commit(session, FailureNameAlreadyExistsError)
-    await session.refresh(failure)
-    return failure
+    item = catalog.model(name=data.name, equipment_type_id=data.equipment_type_id, is_active=True)
+    session.add(item)
+    await _commit(session, catalog.name_taken)
+    await session.refresh(item)
+    return item
 
 
-async def update_failure(
-    session: AsyncSession, failure_id: uuid.UUID, data: FailureUpdate
-) -> Failure:
-    failure = await get_failure(session, failure_id)
+async def _update_scoped[ModelT: EquipmentScopedCatalog](
+    session: AsyncSession,
+    catalog: _ScopedCatalog[ModelT],
+    item_id: uuid.UUID,
+    data: EquipmentScopedUpdate,
+) -> ModelT:
+    item = await _get_scoped(session, catalog, item_id)
     if data.name is not None:
-        conflicting = await FailureRepository(session).find_conflicting(
-            data.name, failure.equipment_type_id
+        conflicting = await catalog.repository(session).find_conflicting(
+            data.name, item.equipment_type_id
         )
-        if any(other.id != failure.id for other in conflicting):
-            raise FailureNameAlreadyExistsError
-        failure.name = data.name
+        if any(other.id != item.id for other in conflicting):
+            raise catalog.name_taken
+        item.name = data.name
     if data.is_active is not None:
-        failure.is_active = data.is_active
-    await _commit(session, FailureNameAlreadyExistsError)
-    await session.refresh(failure)
-    return failure
+        item.is_active = data.is_active
+    await _commit(session, catalog.name_taken)
+    await session.refresh(item)
+    return item
 
 
 async def _commit(session: AsyncSession, duplicate_error: type[Exception]) -> None:

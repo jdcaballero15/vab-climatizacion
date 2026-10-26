@@ -66,21 +66,46 @@ class EquipmentTypeAdminOut(BaseModel):
     is_active: bool
 
 
-class FailureCreate(BaseModel):
+class EquipmentScopedCreate(BaseModel):
     name: CatalogName
-    # Sin tipo de equipo, la falla es genérica y aplica a todos.
+    # Sin tipo de equipo, el valor es genérico y aplica a todos.
     equipment_type_id: uuid.UUID | None = None
 
 
-class FailureUpdate(BaseModel):
+class EquipmentScopedUpdate(BaseModel):
     name: CatalogName | None = None
     is_active: bool | None = None
 
 
-class FailureAdminOut(BaseModel):
+class EquipmentScopedAdminOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     equipment_type_id: uuid.UUID | None
     name: str
     is_active: bool
+
+
+# Una clase por catálogo para que la API (y el cliente generado) los nombre por separado.
+class FailureCreate(EquipmentScopedCreate):
+    pass
+
+
+class FailureUpdate(EquipmentScopedUpdate):
+    pass
+
+
+class FailureAdminOut(EquipmentScopedAdminOut):
+    pass
+
+
+class RepairCreate(EquipmentScopedCreate):
+    pass
+
+
+class RepairUpdate(EquipmentScopedUpdate):
+    pass
+
+
+class RepairAdminOut(EquipmentScopedAdminOut):
+    pass

@@ -1,11 +1,11 @@
 import uuid
 
 from sqlalchemy import Boolean, ForeignKey, Index, String, text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column
 
 from app.db.base import TimestampedBase
 
-# Valor que ocupa el lugar de "sin tipo de equipo" en el índice único de fallas.
+# Valor que ocupa el lugar de "sin tipo de equipo" en los índices únicos de fallas y reparaciones.
 GENERIC_SCOPE = "00000000-0000-0000-0000-000000000000"
 
 
@@ -46,23 +46,39 @@ class EquipmentType(TimestampedBase):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
-class Failure(TimestampedBase):
-    """Falla predefinida que el técnico elige al cerrar. Sin tipo de equipo es genérica."""
+class EquipmentScopedCatalog(TimestampedBase):
+    """Valor de catálogo de un tipo de equipo, o genérico (sin tipo) que aplica a todos."""
 
-    __tablename__ = "failure"
-    # Mismo nombre dentro del mismo alcance (un tipo, o las genéricas entre sí). El cruce
-    # entre genéricas y específicas no entra en un índice y lo chequea el servicio.
-    __table_args__ = (
-        Index(
-            "uq_failure_scope_name",
-            text(f"coalesce(equipment_type_id, '{GENERIC_SCOPE}'::uuid)"),
-            text("lower(name)"),
-            unique=True,
-        ),
-    )
+    __abstract__ = True
+
+    @declared_attr.directive
+    @classmethod
+    def __table_args__(cls) -> tuple[Index]:
+        # Mismo nombre dentro del mismo alcance (un tipo, o las genéricas entre sí). El cruce
+        # entre genéricas y específicas no entra en un índice y lo chequea el servicio.
+        return (
+            Index(
+                f"uq_{cls.__tablename__}_scope_name",
+                text(f"coalesce(equipment_type_id, '{GENERIC_SCOPE}'::uuid)"),
+                text("lower(name)"),
+                unique=True,
+            ),
+        )
 
     equipment_type_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("equipment_type.id"), nullable=True, index=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
+class Failure(EquipmentScopedCatalog):
+    """Falla predefinida que el técnico elige al cerrar."""
+
+    __tablename__ = "failure"
+
+
+class Repair(EquipmentScopedCatalog):
+    """Reparación predefinida que el técnico elige al cerrar."""
+
+    __tablename__ = "repair"

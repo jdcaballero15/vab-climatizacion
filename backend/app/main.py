@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, equipment_types, failures, health, users, work_types
+from app.api import auth, equipment_types, failures, health, repairs, users, work_types
 from app.core.config import get_settings
 
 
@@ -21,6 +21,7 @@ def create_app() -> FastAPI:
     app.include_router(work_types.router)
     app.include_router(equipment_types.router)
     app.include_router(failures.router)
+    app.include_router(repairs.router)
     return app
 
 
