@@ -4,7 +4,7 @@ title: "Gestionar escuadrillas y técnicos"
 epic: E02
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -61,4 +61,5 @@ Se entrega en dos PR: backend primero, web-admin después.
 - Usuario del celular: al crear o editar, `app_user_id` tiene que ser un usuario activo con rol técnico que no esté en otra escuadrilla (si no, 422 `crew_user_not_available`). En la edición, `null` lo desasocia y no mandarlo lo deja como está. La respuesta trae el usuario (id, nombre, email y si está activo).
 - Si después desactivan o cambian de rol al usuario desde Usuarios, la escuadrilla conserva el vínculo y la respuesta lo muestra inactivo.
 - Listados: primero los activos, después por nombre.
+- Web-admin (PR 2): sección "Escuadrillas y técnicos" debajo de Usuarios, solo para administración. Escuadrillas y técnicos con alta, renombrar y desactivar (componentes de `features/catalogs/`) y "Mostrar desactivadas". Cada escuadrilla tiene el selector "Celular de …", que ofrece "Sin celular", los técnicos activos que no están en otra escuadrilla y el actual; el error del backend se muestra con su mensaje, y si el usuario asociado quedó inactivo se avisa. Probado en el navegador contra el backend real.
 
