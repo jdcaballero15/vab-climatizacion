@@ -4,7 +4,7 @@ title: "Alta y edición de clientes"
 epic: E03
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -73,4 +73,6 @@ Se entrega en dos PR: backend primero, web-admin después.
 - Parecidos (criterio 7): iguales sin distinguir mayúsculas, acentos ni espacios de más, o uno contenido en el otro si el más corto tiene al menos 4 caracteres. Se compara en Python sobre los clientes activos. `exclude_id` excluye al cliente que se está editando.
 - Listado paginado con `limit` (1 a 200, por defecto 50) y `offset`; la respuesta trae `items`, `total`, `limit` y `offset`. Ordenado por nombre. Es el formato a adoptar en E12-05.
 - Reglas de contacto en el servicio, chequeadas sobre el contacto ya modificado: 422 `contact_without_data` y `monthly_report_requires_email`. Los textos vacíos se guardan como nulos.
-- Fuera de esta PR: dar de baja un contacto (no está en los criterios; llega con E03-07) y el esquema del técnico (llega con E03-02).
+- web-admin (PR 2): sección "Clientes" en la página de inicio, solo para administración. Listado de a 50 con número, nombre y segmento, filtro por segmento y páginas. Formulario de alta y ficha de edición con el mismo componente (`ClientForm`): al guardar un nombre nuevo o cambiado consulta `/similar` y, si hay parecidos, los muestra con "Guardar igual" o "Cancelar". Contactos en la ficha (alta y edición); los errores del backend se muestran con su mensaje. Al crear un cliente se abre su ficha para cargarle contactos.
+- Probado en el navegador contra el backend real (2026-10-26): alta con número asignado, aviso de parecido con otro acento y otras mayúsculas, contacto del informe sin email rechazado con el mensaje del backend y después aceptado con email, cambio de segmento reflejado en el listado.
+- Fuera de alcance: dar de baja un contacto (no está en los criterios; llega con E03-07) y el esquema del técnico (llega con E03-02).
