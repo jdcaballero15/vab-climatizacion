@@ -533,6 +533,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/crews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Crews */
+        get: operations["list_crews_admin_crews_get"];
+        put?: never;
+        /** Create Crew */
+        post: operations["create_crew_admin_crews_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/crews/{crew_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Crew */
+        get: operations["get_crew_admin_crews__crew_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Crew */
+        patch: operations["update_crew_admin_crews__crew_id__patch"];
+        trace?: never;
+    };
+    "/admin/field-technicians": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Field Technicians */
+        get: operations["list_field_technicians_admin_field_technicians_get"];
+        put?: never;
+        /** Create Field Technician */
+        post: operations["create_field_technician_admin_field_technicians_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/field-technicians/{technician_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Field Technician */
+        patch: operations["update_field_technician_admin_field_technicians__technician_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -706,6 +777,55 @@ export interface components {
             /** Receives Monthly Report */
             receives_monthly_report?: boolean | null;
         };
+        /** CrewAdminOut */
+        CrewAdminOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Is Active */
+            is_active: boolean;
+            app_user: components["schemas"]["CrewUserOut"] | null;
+        };
+        /** CrewCreate */
+        CrewCreate: {
+            /** Name */
+            name: string;
+            /** App User Id */
+            app_user_id?: string | null;
+        };
+        /**
+         * CrewUpdate
+         * @description Solo se cambian los campos enviados; app_user_id en null desasocia el usuario.
+         */
+        CrewUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** App User Id */
+            app_user_id?: string | null;
+        };
+        /** CrewUserOut */
+        CrewUserOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Full Name */
+            full_name: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Is Active */
+            is_active: boolean;
+        };
         /** EquipmentAdminOut */
         EquipmentAdminOut: {
             /**
@@ -828,6 +948,30 @@ export interface components {
         FailureUpdate: {
             /** Name */
             name?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
+        /** FieldTechnicianAdminOut */
+        FieldTechnicianAdminOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Full Name */
+            full_name: string;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** FieldTechnicianCreate */
+        FieldTechnicianCreate: {
+            /** Full Name */
+            full_name: string;
+        };
+        /** FieldTechnicianUpdate */
+        FieldTechnicianUpdate: {
+            /** Full Name */
+            full_name?: string | null;
             /** Is Active */
             is_active?: boolean | null;
         };
@@ -2787,6 +2931,235 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssignmentAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_crews_admin_crews_get: {
+        parameters: {
+            query?: {
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrewAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_crew_admin_crews_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrewCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrewAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_crew_admin_crews__crew_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                crew_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrewAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_crew_admin_crews__crew_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                crew_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrewUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrewAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_field_technicians_admin_field_technicians_get: {
+        parameters: {
+            query?: {
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldTechnicianAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_field_technician_admin_field_technicians_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FieldTechnicianCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldTechnicianAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_field_technician_admin_field_technicians__technician_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                technician_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FieldTechnicianUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldTechnicianAdminOut"];
                 };
             };
             /** @description Validation Error */

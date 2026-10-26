@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 118 historias.** done: 18, draft: 90, icebox: 8, ready: 2
+**Total: 118 historias.** done: 19, draft: 90, icebox: 8, ready: 1
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -45,7 +45,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E02-06](E02-catalogos/E02-06-gestionar-la-lista-de-precios-de-repuestos.md) | Gestionar la lista de precios de repuestos | Debe | M | draft | admin | - | - | E02-05 |
 | [E02-07](E02-catalogos/E02-07-promover-un-texto-de-otro-a-la-lista.md) | Promover un texto de "Otro" a la lista | Debería | M | draft | admin | - | - | E02-03, E02-04, E05-04 |
 | [E02-08](E02-catalogos/E02-08-importar-y-exportar-catalogos-por-csv.md) | Importar y exportar catálogos por CSV | Podría | M | draft | admin | - | D-003 | E02-01, E02-05 |
-| [E02-09](E02-catalogos/E02-09-gestionar-escuadrillas-y-tecnicos.md) | Gestionar escuadrillas y técnicos | Debe | M | ready | admin | - | - | E01-03, E01-04 |
+| [E02-09](E02-catalogos/E02-09-gestionar-escuadrillas-y-tecnicos.md) | Gestionar escuadrillas y técnicos | Debe | M | done | admin | - | - | E01-03, E01-04 |
 
 ## E03 Clientes y equipos
 

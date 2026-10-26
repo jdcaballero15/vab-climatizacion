@@ -1,5 +1,6 @@
 import type { Session } from "../auth/types";
 import { ClientsPage } from "../clients/ClientsPage";
+import { CrewsPage } from "../crews/CrewsPage";
 import { EquipmentTypesPage } from "../equipment-types/EquipmentTypesPage";
 import { FailuresPage } from "../failures/FailuresPage";
 import { OrdersPage } from "../orders/OrdersPage";
@@ -38,6 +39,8 @@ export function HomePage({ session, onLogout }: HomePageProps) {
       {/* Solo administración crea órdenes; dirección las verá en el panel (E04-05). */}
       {canEditCatalogs && <OrdersPage />}
       {canManageUsers && <UsersPage />}
+      {/* Se usan juntas: primero el usuario del celular, después se asocia a la escuadrilla. */}
+      {canEditCatalogs && <CrewsPage />}
       {/* Solo administración gestiona clientes; dirección los verá en la ficha (E03-04). */}
       {canEditCatalogs && <ClientsPage />}
       {canEditCatalogs && <WorkTypesPage />}
