@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../../api/client";
 import { catalogSaveError } from "../catalogs/errors";
-import { FAILURES_KEY } from "../failures/useFailures";
+import { FAILURES_KEY, REPAIRS_KEY } from "../catalogs/queryKeys";
 import type { EquipmentType, EquipmentTypeUpdate } from "./types";
 
 // Prefijo común: cualquier cambio invalida los listados, activos o no.
@@ -54,8 +54,10 @@ export function useUpdateEquipmentType(equipmentTypeId: string) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: EQUIPMENT_TYPES_KEY });
-      // Desactivar o reactivar un tipo cambia qué fallas ofrece (E02-03, criterio 5).
+      // Desactivar o reactivar un tipo cambia qué fallas y reparaciones ofrece (criterio 5
+      // de E02-03 y E02-04).
       await queryClient.invalidateQueries({ queryKey: FAILURES_KEY });
+      await queryClient.invalidateQueries({ queryKey: REPAIRS_KEY });
     },
   });
 }

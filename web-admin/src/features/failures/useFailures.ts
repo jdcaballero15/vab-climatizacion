@@ -2,10 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../../api/client";
 import { catalogSaveError } from "../catalogs/errors";
+import { FAILURES_KEY, REPAIRS_KEY } from "../catalogs/queryKeys";
 import type { Failure, FailureUpdate } from "./types";
-
-// Prefijo común: cualquier cambio invalida todos los listados de fallas.
-export const FAILURES_KEY = ["failures"] as const;
 
 /**
  * Sin tipo de equipo, la API devuelve todas las fallas; con un tipo, las suyas más las
@@ -58,6 +56,10 @@ export function useUpdateFailure(failureId: string) {
       }
       return data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: FAILURES_KEY }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: FAILURES_KEY });
+      // Desactivar una falla deja de ofrecer sus reparaciones (E02-04, criterio 11).
+      await queryClient.invalidateQueries({ queryKey: REPAIRS_KEY });
+    },
   });
 }

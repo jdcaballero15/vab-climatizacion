@@ -203,6 +203,12 @@ body {
   font-size: 0.875rem;
 }
 
+.catalog__hint {
+  margin: 0.5rem 0;
+  color: #6b6b6b;
+  font-size: 0.875rem;
+}
+
 .catalog__expand {
   margin-top: 0.5rem;
 }

@@ -298,6 +298,46 @@ export interface paths {
         patch: operations["update_failure_admin_failures__failure_id__patch"];
         trace?: never;
     };
+    "/admin/repairs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Repairs
+         * @description Sin `equipment_type_id`, todas las reparaciones. Con él, las de ese tipo y las genéricas.
+         *     Con `failure_id`, solo las de esa falla.
+         */
+        get: operations["list_repairs_admin_repairs_get"];
+        put?: never;
+        /** Create Repair */
+        post: operations["create_repair_admin_repairs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/repairs/{repair_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Repair */
+        get: operations["get_repair_admin_repairs__repair_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Repair */
+        patch: operations["update_repair_admin_repairs__repair_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -390,6 +430,44 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /** RepairAdminOut */
+        RepairAdminOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Equipment Type Id */
+            equipment_type_id: string | null;
+            /** Name */
+            name: string;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Failure Id
+             * Format: uuid
+             */
+            failure_id: string;
+        };
+        /** RepairCreate */
+        RepairCreate: {
+            /** Name */
+            name: string;
+            /** Equipment Type Id */
+            equipment_type_id?: string | null;
+            /**
+             * Failure Id
+             * Format: uuid
+             */
+            failure_id: string;
+        };
+        /** RepairUpdate */
+        RepairUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /** TaskAdminOut */
         TaskAdminOut: {
@@ -1328,6 +1406,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FailureAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_repairs_admin_repairs_get: {
+        parameters: {
+            query?: {
+                equipment_type_id?: string | null;
+                failure_id?: string | null;
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepairAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_repair_admin_repairs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RepairCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepairAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_repair_admin_repairs__repair_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                repair_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepairAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_repair_admin_repairs__repair_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                repair_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RepairUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepairAdminOut"];
                 };
             };
             /** @description Validation Error */
