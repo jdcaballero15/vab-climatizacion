@@ -63,3 +63,14 @@ Validadas con negocio el 2026-10-26, con los datos de los 637 clientes de la exp
 - Endpoints bajo `/admin/clients` y `/admin/clients/{id}/contacts`, con `require_role(admin)`. Errores con `{code, message}` en español (`client_number_already_exists`, `client_not_found`). La advertencia de duplicado es una respuesta aparte que no impide guardar (por ejemplo, un endpoint de verificación o un campo `possible_duplicates` en la respuesta).
 - Paginación según E12-05 si ya existe; si no, el mismo formato que los listados actuales.
 - Si el PR pasa de unas 400 líneas, se divide en backend y web-admin.
+
+## Notas de implementación
+
+Se entrega en dos PR: backend primero, web-admin después.
+
+- Backend (PR 1): `/admin/clients` (listar, crear, consultar, editar), `/admin/clients/similar` y `/admin/clients/{id}/contacts` (listar, crear, editar), todos con `require_role(admin)`. Migración `db29fc2db829` crea `client` y `client_contact` con los enums `client_segment` y `tax_condition`; el downgrade también borra los enums.
+- El número se asigna en el servicio: el mayor de los números solo dígitos más uno, contando los dados de baja (los números no se reusan). Con la base vacía arranca en `1`. El índice único resuelve dos altas simultáneas: se reintenta con el siguiente. El número explícito solo lo acepta el servicio, para la importación (E11-01); la API lo rechaza con 422 (`extra="forbid"`).
+- Parecidos (criterio 7): iguales sin distinguir mayúsculas, acentos ni espacios de más, o uno contenido en el otro si el más corto tiene al menos 4 caracteres. Se compara en Python sobre los clientes activos. `exclude_id` excluye al cliente que se está editando.
+- Listado paginado con `limit` (1 a 200, por defecto 50) y `offset`; la respuesta trae `items`, `total`, `limit` y `offset`. Ordenado por nombre. Es el formato a adoptar en E12-05.
+- Reglas de contacto en el servicio, chequeadas sobre el contacto ya modificado: 422 `contact_without_data` y `monthly_report_requires_email`. Los textos vacíos se guardan como nulos.
+- Fuera de esta PR: dar de baja un contacto (no está en los criterios; llega con E03-07) y el esquema del técnico (llega con E03-02).
