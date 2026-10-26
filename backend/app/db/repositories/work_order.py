@@ -1,10 +1,14 @@
 import uuid
+from collections.abc import Sequence
+from datetime import datetime
 
-from sqlalchemy import update
+from sqlalchemy import Row, func, select, update
 
+from app.db.models.catalog import WorkType
+from app.db.models.client import Client, ClientSite
 from app.db.models.work_order import WorkOrder, WorkOrderEvent
 from app.db.repository import BaseRepository
-from app.domain.work_order import OrderStatus
+from app.domain.work_order import OrderStatus, WorkOrderEventType
 
 
 class WorkOrderRepository(BaseRepository[WorkOrder]):
@@ -29,3 +33,38 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
 
     def add_event(self, event: WorkOrderEvent) -> None:
         self.session.add(event)
+
+    async def list_by_status_page(
+        self, status: OrderStatus, *, limit: int, offset: int
+    ) -> tuple[Sequence[Row[WorkOrder, datetime, str, str | None, str, str]], int]:
+        """Órdenes en un estado, de la más vieja a la más nueva según su evento de creación.
+
+        Cada fila trae la orden, su fecha de creación, el nombre del cliente, el rótulo y
+        la dirección del domicilio y el nombre del tipo de trabajo.
+        """
+        filtered = self._select().where(self.model.status == status)
+        total = await self.session.scalar(select(func.count()).select_from(filtered.subquery()))
+        stmt = (
+            select(
+                self.model,
+                WorkOrderEvent.occurred_at,
+                Client.name,
+                ClientSite.label,
+                ClientSite.address,
+                WorkType.name,
+            )
+            .join(
+                WorkOrderEvent,
+                (WorkOrderEvent.work_order_id == self.model.id)
+                & (WorkOrderEvent.event_type == WorkOrderEventType.created),
+            )
+            .join(Client, Client.id == self.model.client_id)
+            .join(ClientSite, ClientSite.id == self.model.client_site_id)
+            .join(WorkType, WorkType.id == self.model.work_type_id)
+            .where(self.model.status == status, self.model.deleted_at.is_(None))
+            .order_by(WorkOrderEvent.occurred_at, self.model.number)
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self.session.execute(stmt)
+        return result.all(), total or 0

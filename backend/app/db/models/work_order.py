@@ -15,7 +15,13 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import TimestampedBase
-from app.domain.work_order import OrderKind, OrderSource, OrderStatus, WorkOrderEventType
+from app.domain.work_order import (
+    OrderChannel,
+    OrderKind,
+    OrderSource,
+    OrderStatus,
+    WorkOrderEventType,
+)
 
 ORDER_STATUS = Enum(OrderStatus, name="order_status")
 WORK_ORDER_NUMBER_SEQ = Sequence("work_order_number_seq")
@@ -58,6 +64,13 @@ class WorkOrder(TimestampedBase):
     )
     work_type_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("work_type.id"), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Obligatorio en las manuales (lo exige la API); las de mantenimiento no tienen canal.
+    channel: Mapped[OrderChannel | None] = mapped_column(
+        Enum(OrderChannel, name="order_channel"), nullable=True
+    )
+    # Quién pidió (nombre y cargo): el técnico no lo ve. Dónde (sector, piso o ala): sí.
+    requester_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    requester_area: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
 
 class WorkOrderEvent(TimestampedBase):

@@ -10,6 +10,7 @@ from app.api import (
     health,
     repairs,
     users,
+    work_orders,
     work_types,
 )
 from app.core.config import get_settings
@@ -35,6 +36,7 @@ def create_app() -> FastAPI:
     app.include_router(clients.router)
     app.include_router(clients.sites_router)
     app.include_router(equipment.router)
+    app.include_router(work_orders.router)
     return app
 
 

@@ -7,10 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.equipment import EquipmentCreate, EquipmentUpdate
 from app.db.models.catalog import EquipmentType
-from app.db.models.client import Client, ClientSite
+from app.db.models.client import Client
 from app.db.models.equipment import Equipment
 from app.db.repositories.catalog import EquipmentTypeRepository
-from app.db.repositories.client import ClientSiteRepository
 from app.db.repositories.equipment import EquipmentRepository
 from app.services import clients as clients_service
 
@@ -22,14 +21,6 @@ _CODE_ATTEMPTS = 3
 
 class EquipmentNotFoundError(Exception):
     """No existe un equipo activo con ese id."""
-
-
-class SiteOfAnotherClientError(Exception):
-    """El domicilio elegido es de otro cliente."""
-
-
-class SiteInactiveError(Exception):
-    """El domicilio elegido está desactivado."""
 
 
 class EquipmentTypeNotFoundError(Exception):
@@ -62,7 +53,7 @@ async def create_equipment(
     session: AsyncSession, client_id: uuid.UUID, data: EquipmentCreate
 ) -> Equipment:
     client = await clients_service.get_client(session, client_id)
-    await _check_site(session, client_id, data.client_site_id)
+    await clients_service.check_active_site_of_client(session, client_id, data.client_site_id)
     equipment_type = await _check_type(session, data.equipment_type_id)
 
     for _ in range(_CODE_ATTEMPTS):
@@ -89,7 +80,7 @@ async def update_equipment(
     new_site = changes.get("client_site_id")
     if new_site is not None and new_site != equipment.client_site_id:
         current_site = await clients_service.get_site(session, equipment.client_site_id)
-        await _check_site(session, current_site.client_id, new_site)
+        await clients_service.check_active_site_of_client(session, current_site.client_id, new_site)
     new_type = changes.get("equipment_type_id")
     if new_type is not None and new_type != equipment.equipment_type_id:
         await _check_type(session, new_type)
@@ -98,16 +89,6 @@ async def update_equipment(
     await session.commit()
     await session.refresh(equipment)
     return equipment
-
-
-async def _check_site(session: AsyncSession, client_id: uuid.UUID, site_id: uuid.UUID) -> None:
-    site: ClientSite | None = await ClientSiteRepository(session).get(site_id)
-    if site is None:
-        raise clients_service.SiteNotFoundError
-    if site.client_id != client_id:
-        raise SiteOfAnotherClientError
-    if not site.is_active:
-        raise SiteInactiveError
 
 
 async def _check_type(session: AsyncSession, type_id: uuid.UUID) -> EquipmentType:
