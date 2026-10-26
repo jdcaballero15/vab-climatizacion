@@ -1,5 +1,6 @@
 import type { Session } from "../auth/types";
 import { UsersPage } from "../users/UsersPage";
+import { WorkTypesPage } from "../work-types/WorkTypesPage";
 
 const ROLE_LABELS: Record<Session["user"]["role"], string> = {
   admin: "Administración",
@@ -14,6 +15,8 @@ interface HomePageProps {
 
 export function HomePage({ session, onLogout }: HomePageProps) {
   const canManageUsers = session.user.role === "admin" || session.user.role === "owner";
+  // Solo administración edita catálogos (roles-permisos.md); la API lo exige igual.
+  const canEditCatalogs = session.user.role === "admin";
 
   return (
     <main className="home">
@@ -28,6 +31,7 @@ export function HomePage({ session, onLogout }: HomePageProps) {
       </header>
 
       {canManageUsers && <UsersPage />}
+      {canEditCatalogs && <WorkTypesPage />}
     </main>
   );
 }

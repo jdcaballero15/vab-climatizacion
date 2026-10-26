@@ -43,7 +43,7 @@ describe("AppRoot", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (request: Request) =>
-        request.url.includes("/admin/users") ? json([]) : json(session),
+        request.url.includes("/admin/") ? json([]) : json(session),
       ),
     );
     renderApp();
@@ -64,7 +64,7 @@ describe("AppRoot", () => {
         logoutBody = await request.clone().json();
         return new Response(null, { status: 204 });
       }
-      if (path.endsWith("/admin/users")) {
+      if (path.includes("/admin/")) {
         return json([]);
       }
       return json(session);
