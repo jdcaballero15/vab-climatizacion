@@ -116,7 +116,7 @@ async def list_for_crew_user(session: AsyncSession, user: User) -> CrewOrdersTec
     La escuadrilla sale del usuario de la sesión. Sin una activa, no ve órdenes.
     """
     today = business_today()
-    crew = await _active_crew_of(session, user)
+    crew = await active_crew_of(session, user)
     if crew is None:
         return CrewOrdersTechnicianOut(crew=None, today=today, orders=[])
 
@@ -134,7 +134,7 @@ async def get_for_crew_user(
 
     Otra escuadrilla, otro estado, desasignada o inexistente: no se distingue (404).
     """
-    crew = await _active_crew_of(session, user)
+    crew = await active_crew_of(session, user)
     rows = (
         await WorkOrderRepository(session).list_open_for_crew(crew.id, order_id=order_id)
         if crew is not None
@@ -178,7 +178,7 @@ async def start_for_crew_user(
     return await get_for_crew_user(session, user, order_id)
 
 
-async def _active_crew_of(session: AsyncSession, user: User) -> Crew | None:
+async def active_crew_of(session: AsyncSession, user: User) -> Crew | None:
     crew = await CrewRepository(session).get_by_app_user(user.id)
     if crew is None or not crew.is_active or crew.deleted_at is not None:
         return None
@@ -257,14 +257,14 @@ async def apply_transition(
     El estado y el evento van en la misma transacción. El UPDATE exige que el estado
     siga siendo el leído: si otro lo cambió antes, no toca nada y da conflicto.
     """
-    event = await _stage_transition(session, order, action, actor, note)
+    event = await stage_transition(session, order, action, actor, note)
     await session.commit()
     await session.refresh(order)
     await session.refresh(event)
     return event
 
 
-async def _stage_transition(
+async def stage_transition(
     session: AsyncSession,
     order: WorkOrder,
     action: OrderAction,
@@ -329,7 +329,7 @@ async def assign_work_order(
         raise OrderRequiresApprovalError
 
     note = f"Escuadrilla: {crew.name}. Fecha prevista: {format_date(data.scheduled_for)}."
-    await _stage_transition(session, order, OrderAction.assign, actor, note)
+    await stage_transition(session, order, OrderAction.assign, actor, note)
     assignment = WorkOrderAssignment(
         work_order_id=order.id,
         crew_id=crew.id,

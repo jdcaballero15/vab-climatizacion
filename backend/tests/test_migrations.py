@@ -28,6 +28,12 @@ def _reset_database() -> None:
     async def reset() -> None:
         engine = create_async_engine(TEST_DATABASE_URL)
         async with engine.begin() as conn:
+            await conn.execute(text("DROP TABLE IF EXISTS work_order_closure_task CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS work_order_closure_technician CASCADE"))
+            await conn.execute(text("DROP TABLE IF EXISTS work_order_closure CASCADE"))
+            await conn.execute(text("DROP TYPE IF EXISTS closure_outcome"))
+            await conn.execute(text("DROP TYPE IF EXISTS equipment_condition"))
+            await conn.execute(text("DROP TYPE IF EXISTS not_done_reason"))
             await conn.execute(text("DROP TABLE IF EXISTS field_technician CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS crew CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS work_order_assignment CASCADE"))
@@ -438,5 +444,31 @@ def test_migracion_marca_los_tipos_que_piden_falla_y_reparacion() -> None:
         ]
         command.downgrade(cfg, "e5b8c1d4a903")
         assert _names(columna) == []
+    finally:
+        command.downgrade(cfg, "base")
+
+
+# E05-04, E05-08 y E05-12: tablas y enums del cierre; el downgrade los quita.
+def test_migracion_del_cierre_es_reversible() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    objetos = (
+        "SELECT tablename FROM pg_tables WHERE tablename LIKE 'work_order_closure%' "
+        "UNION ALL SELECT typname FROM pg_type "
+        "WHERE typname IN ('closure_outcome', 'equipment_condition', 'not_done_reason')"
+    )
+    command.upgrade(cfg, "head")
+    try:
+        assert _names(objetos) == [
+            "closure_outcome",
+            "equipment_condition",
+            "not_done_reason",
+            "work_order_closure",
+            "work_order_closure_task",
+            "work_order_closure_technician",
+        ]
+        command.downgrade(cfg, "a1f3c5e7b902")
+        assert _names(objetos) == []
     finally:
         command.downgrade(cfg, "base")

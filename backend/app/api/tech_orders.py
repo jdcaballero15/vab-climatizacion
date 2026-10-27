@@ -1,11 +1,13 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.api.deps import SessionDep, require_role
+from app.api.schemas.closure import ClosureCreate, ClosureOptionsTechnicianOut, ClosureTechnicianOut
 from app.api.schemas.work_order import CrewOrdersTechnicianOut, OrderDetailTechnicianOut
 from app.db.models.user import User, UserRole
+from app.services import closures as closures_service
 from app.services import work_orders as work_orders_service
 
 router = APIRouter(prefix="/tech/orders", tags=["app del técnico"])
@@ -45,6 +47,52 @@ async def start_my_order(
                 "message": work_orders_service.OrderStatusConflictError.message,
             },
         ) from None
+
+
+@router.get("/{order_id}/closure-options", response_model=ClosureOptionsTechnicianOut)
+async def get_closure_options(
+    order_id: uuid.UUID, session: SessionDep, user: CrewUser
+) -> ClosureOptionsTechnicianOut:
+    try:
+        return await closures_service.get_closure_options(session, user, order_id)
+    except work_orders_service.WorkOrderNotFoundError:
+        raise _order_not_found() from None
+
+
+# 201 al cerrar; 200 si es el reenvío del mismo cierre (misma clave, E05-12).
+@router.post(
+    "/{order_id}/closure",
+    response_model=ClosureTechnicianOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def close_my_order(
+    order_id: uuid.UUID,
+    payload: ClosureCreate,
+    session: SessionDep,
+    user: CrewUser,
+    response: Response,
+) -> ClosureTechnicianOut:
+    try:
+        closure, created = await closures_service.close_order(session, user, order_id, payload)
+    except work_orders_service.WorkOrderNotFoundError:
+        raise _order_not_found() from None
+    except closures_service.ClosureValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": exc.code, "message": exc.message, "field": exc.field},
+        ) from None
+    except closures_service.IdempotencyKeyReusedError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "idempotency_key_reused",
+                "message": "Este cierre ya se usó en otra orden. Volvé a abrir el cierre.",
+                "field": "idempotency_key",
+            },
+        ) from None
+    if not created:
+        response.status_code = status.HTTP_200_OK
+    return closure
 
 
 def _order_not_found() -> HTTPException:

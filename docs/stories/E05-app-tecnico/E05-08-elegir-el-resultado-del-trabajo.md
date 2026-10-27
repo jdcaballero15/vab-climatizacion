@@ -4,7 +4,7 @@ title: "Elegir el resultado del trabajo"
 epic: E05
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [technician]
 size: M
 areas: [backend, pwa]
@@ -46,3 +46,7 @@ Validadas con negocio el 2026-10-26, con el prototipo del cliente:
 - `closure_outcome`: `done`, `needs_revisit`, `not_done` (y `needs_pickup` cuando llegue E06-02). Motivo en `not_done_reason`.
 - "Requiere otra visita" y "No se pudo hacer" usan la transición `request_revisit` (`En curso` a `Pendiente`); en la misma transacción se cierra la asignación vigente (`unassigned_at`).
 - El listado de pendientes suma el último cierre de la orden (resultado y motivo u observación) para el criterio 5.
+
+## Notas de implementación
+
+- Se implementa con E05-04: ver sus notas de implementación.

@@ -7,7 +7,12 @@ from sqlalchemy import Row, func, select, update
 from app.db.models.catalog import EquipmentType, WorkType
 from app.db.models.client import Client, ClientSite
 from app.db.models.equipment import Equipment
-from app.db.models.work_order import WorkOrder, WorkOrderAssignment, WorkOrderEvent
+from app.db.models.work_order import (
+    WorkOrder,
+    WorkOrderAssignment,
+    WorkOrderClosure,
+    WorkOrderEvent,
+)
 from app.db.repository import BaseRepository
 from app.domain.work_order import CREW_OPEN_STATUSES, OrderStatus, WorkOrderEventType
 
@@ -113,3 +118,26 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             stmt = stmt.where(self.model.id == order_id)
         result = await self.session.execute(stmt)
         return result.all()
+
+    async def end_current_assignment(self, order_id: uuid.UUID) -> None:
+        """Deja la orden sin escuadrilla: la asignación vigente pasa a histórica."""
+        stmt = (
+            update(WorkOrderAssignment)
+            .where(
+                WorkOrderAssignment.work_order_id == order_id,
+                WorkOrderAssignment.unassigned_at.is_(None),
+                WorkOrderAssignment.deleted_at.is_(None),
+            )
+            .values(unassigned_at=func.now())
+            .execution_options(synchronize_session=False)
+        )
+        await self.session.execute(stmt)
+
+
+class WorkOrderClosureRepository(BaseRepository[WorkOrderClosure]):
+    model = WorkOrderClosure
+
+    async def get_by_idempotency_key(self, key: uuid.UUID) -> WorkOrderClosure | None:
+        stmt = self._select().where(self.model.idempotency_key == key)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
