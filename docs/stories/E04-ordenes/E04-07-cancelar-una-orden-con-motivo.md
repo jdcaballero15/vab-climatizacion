@@ -4,7 +4,7 @@ title: "Cancelar una orden con motivo"
 epic: E04
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [admin]
 size: S
 areas: [backend, web-admin]
@@ -52,4 +52,4 @@ Validadas con negocio el 2026-10-27, con el prototipo del cliente y lo que se us
 - Endpoint: `POST /admin/orders/{id}/cancellation` con `{reason, reason_text}`. 201 con motivo, quién y cuándo; 404 si no existe; 409 si el estado no lo permite (`invalid_transition`) o si otro la cambió a la vez (`order_status_conflict`); 422 con `field` si falta el motivo, si "Otro" no trae texto o si el texto viene con otro motivo.
 - Tabla `work_order_cancellation` (una por orden) con migración `c4e8a2f6d915`.
 - `GET /admin/orders?status=` acepta `pending`, `assigned`, `in_progress` y `cancelled`. Cada fila trae `assignment` (escuadrilla y fecha, en Asignadas y En curso) y `cancellation` (en canceladas, la última primero). Terminadas en adelante llegan con E04-05.
-- Web-admin: acción "Cancelar" en el listado y en la orden, con un diálogo propio de la app (motivo y confirmación). Filtro o pestaña de canceladas en el listado.
+- Web-admin: selector de estado en Órdenes (Pendientes, Asignadas, En curso, Canceladas). Botón "Cancelar" en la fila, que abre un formulario propio de la app debajo (motivo, texto si es "Otro", aviso de que la escuadrilla la está trabajando si está `En curso`). Las canceladas muestran motivo, quién y cuándo, sin acciones. La acción en el detalle de la orden llega con E04-06, que todavía no tiene pantalla.

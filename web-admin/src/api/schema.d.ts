@@ -533,6 +533,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/orders/{order_id}/cancellation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Work Order */
+        post: operations["cancel_work_order_admin_orders__order_id__cancellation_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/crews": {
         parameters: {
             query?: never;
@@ -733,6 +750,34 @@ export interface components {
              * Format: date
              */
             scheduled_for: string;
+        };
+        /**
+         * CancelReason
+         * @description Por qué administración cancela una orden (E04-07). Lista a validar con la oficina.
+         * @enum {string}
+         */
+        CancelReason: "entered_by_mistake" | "duplicate" | "client_cancelled" | "other";
+        /**
+         * CancellationAdminOut
+         * @description Motivo, quién y cuándo se canceló (E04-07, criterio 6).
+         */
+        CancellationAdminOut: {
+            reason: components["schemas"]["CancelReason"];
+            /** Reason Text */
+            reason_text: string | null;
+            /** Cancelled By Name */
+            cancelled_by_name: string;
+            /**
+             * Cancelled At
+             * Format: date-time
+             */
+            cancelled_at: string;
+        };
+        /** CancellationCreate */
+        CancellationCreate: {
+            reason: components["schemas"]["CancelReason"];
+            /** Reason Text */
+            reason_text?: string | null;
         };
         /** ClientAdminOut */
         ClientAdminOut: {
@@ -1016,6 +1061,19 @@ export interface components {
             /** Is Active */
             is_active: boolean;
         };
+        /**
+         * CurrentAssignmentOut
+         * @description Escuadrilla y fecha prevista de una orden Asignada o En curso.
+         */
+        CurrentAssignmentOut: {
+            /** Crew Name */
+            crew_name: string;
+            /**
+             * Scheduled For
+             * Format: date
+             */
+            scheduled_for: string;
+        };
         /** EquipmentAdminOut */
         EquipmentAdminOut: {
             /**
@@ -1266,6 +1324,51 @@ export interface components {
          * @enum {string}
          */
         OrderKind: "on_site" | "workshop";
+        /** OrderListItemOut */
+        OrderListItemOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            status: components["schemas"]["OrderStatus"];
+            /**
+             * Client Id
+             * Format: uuid
+             */
+            client_id: string;
+            /** Client Name */
+            client_name: string;
+            /** Site Label */
+            site_label: string | null;
+            /** Site Address */
+            site_address: string;
+            /** Work Type Name */
+            work_type_name: string;
+            /** Description */
+            description: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            returned: components["schemas"]["ReturnedFromCrewOut"] | null;
+            assignment: components["schemas"]["CurrentAssignmentOut"] | null;
+            cancellation: components["schemas"]["CancellationAdminOut"] | null;
+        };
+        /** OrderListPage */
+        OrderListPage: {
+            /** Items */
+            items: components["schemas"]["OrderListItemOut"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
         /**
          * OrderSource
          * @enum {string}
@@ -1299,48 +1402,6 @@ export interface components {
             scheduled_for: string;
             site: components["schemas"]["ClientSiteTechnicianOut"];
             equipment: components["schemas"]["EquipmentTechnicianOut"] | null;
-        };
-        /** PendingOrderOut */
-        PendingOrderOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Number */
-            number: number;
-            /**
-             * Client Id
-             * Format: uuid
-             */
-            client_id: string;
-            /** Client Name */
-            client_name: string;
-            /** Site Label */
-            site_label: string | null;
-            /** Site Address */
-            site_address: string;
-            /** Work Type Name */
-            work_type_name: string;
-            /** Description */
-            description: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            returned: components["schemas"]["ReturnedFromCrewOut"] | null;
-        };
-        /** PendingOrderPage */
-        PendingOrderPage: {
-            /** Items */
-            items: components["schemas"]["PendingOrderOut"][];
-            /** Total */
-            total: number;
-            /** Limit */
-            limit: number;
-            /** Offset */
-            offset: number;
         };
         /** RefreshRequest */
         RefreshRequest: {
@@ -3153,7 +3214,7 @@ export interface operations {
     list_work_orders_admin_orders_get: {
         parameters: {
             query: {
-                status: "pending";
+                status: "pending" | "assigned" | "in_progress" | "cancelled";
                 limit?: number;
                 offset?: number;
             };
@@ -3169,7 +3230,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PendingOrderPage"];
+                    "application/json": components["schemas"]["OrderListPage"];
                 };
             };
             /** @description Validation Error */
@@ -3238,6 +3299,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssignmentAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_work_order_admin_orders__order_id__cancellation_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancellationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CancellationAdminOut"];
                 };
             };
             /** @description Validation Error */

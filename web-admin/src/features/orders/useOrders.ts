@@ -5,7 +5,10 @@ import type { ClientSummary } from "../clients/types";
 import type {
   Assignment,
   AssignmentCreate,
-  PendingOrderPage,
+  Cancellation,
+  CancellationCreate,
+  ListableStatus,
+  OrderListPage,
   WorkOrder,
   WorkOrderCreate,
 } from "./types";
@@ -21,15 +24,15 @@ function saveError(error: unknown, fallback: string): Error {
   return new Error(typeof detail?.message === "string" ? detail.message : fallback);
 }
 
-export function usePendingOrders(offset: number) {
-  return useQuery<PendingOrderPage>({
-    queryKey: [...ORDERS_KEY, "pending", { offset }],
+export function useOrderList(status: ListableStatus, offset: number) {
+  return useQuery<OrderListPage>({
+    queryKey: [...ORDERS_KEY, status, { offset }],
     queryFn: async () => {
       const { data, error } = await api.GET("/admin/orders", {
-        params: { query: { status: "pending", limit: PAGE_SIZE, offset } },
+        params: { query: { status, limit: PAGE_SIZE, offset } },
       });
       if (error || !data) {
-        throw new Error("no se pudieron cargar las órdenes pendientes");
+        throw new Error("no se pudieron cargar las órdenes");
       }
       return data;
     },
@@ -65,6 +68,24 @@ export function useAssignOrder(orderId: string) {
       return data;
     },
     // La orden deja de estar pendiente: se refresca el listado.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
+  });
+}
+
+export function useCancelOrder(orderId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<Cancellation, Error, CancellationCreate>({
+    mutationFn: async (cancelacion) => {
+      const { data, error } = await api.POST("/admin/orders/{order_id}/cancellation", {
+        params: { path: { order_id: orderId } },
+        body: cancelacion,
+      });
+      if (error || !data) {
+        throw saveError(error, "No se pudo cancelar la orden.");
+      }
+      return data;
+    },
+    // La orden pasa a Canceladas: se refrescan todos los listados.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
   });
 }

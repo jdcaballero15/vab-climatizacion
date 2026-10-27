@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClientSummary, Site } from "../clients/types";
 import type { Crew } from "../crews/types";
 import { OrdersPage } from "./OrdersPage";
-import type { PendingOrder, WorkOrder } from "./types";
+import type { OrderListItem, WorkOrder } from "./types";
 
 const SANATORIO: ClientSummary = {
   id: "c1",
@@ -31,9 +31,10 @@ const TIPOS = [
   { id: "w1", name: "Reparación", is_active: true },
   { id: "w2", name: "Service", is_active: true },
 ];
-const PENDIENTE: PendingOrder = {
+const PENDIENTE: OrderListItem = {
   id: "o1",
   number: 7,
+  status: "pending",
   client_id: "c1",
   client_name: "Sanatorio Ficticio",
   site_label: "Central",
@@ -42,8 +43,10 @@ const PENDIENTE: PendingOrder = {
   description: "No enfría",
   created_at: "2026-10-05T13:00:00Z",
   returned: null,
+  assignment: null,
+  cancellation: null,
 };
-const OTRA_PENDIENTE: PendingOrder = {
+const OTRA_PENDIENTE: OrderListItem = {
   ...PENDIENTE,
   id: "o2",
   number: 8,
@@ -85,7 +88,34 @@ function json(body: unknown, status = 200) {
   });
 }
 
-function pendingPage(items: PendingOrder[], total = items.length, offset = 0) {
+const EN_CURSO: OrderListItem = {
+  ...PENDIENTE,
+  id: "o4",
+  number: 4,
+  status: "in_progress",
+  assignment: { crew_name: "Escuadrilla 1", scheduled_for: "2026-10-27" },
+};
+const ASIGNADA: OrderListItem = {
+  ...EN_CURSO,
+  id: "o5",
+  number: 5,
+  status: "assigned",
+  assignment: { crew_name: "Escuadrilla 2", scheduled_for: "2026-10-29" },
+};
+const CANCELADA: OrderListItem = {
+  ...PENDIENTE,
+  id: "o6",
+  number: 6,
+  status: "cancelled",
+  cancellation: {
+    reason: "other",
+    reason_text: "Se mudó el local",
+    cancelled_by_name: "Admin Ficticia",
+    cancelled_at: "2026-10-26T15:00:00Z",
+  },
+};
+
+function pendingPage(items: OrderListItem[], total = items.length, offset = 0) {
   return { items, total, limit: 50, offset };
 }
 
@@ -180,7 +210,7 @@ describe("OrdersPage", () => {
   });
 
   it("indica por qué volvió de la escuadrilla", async () => {
-    const otraVisita: PendingOrder = {
+    const otraVisita: OrderListItem = {
       ...PENDIENTE,
       returned: {
         crew_name: "Escuadrilla 1",
@@ -190,7 +220,7 @@ describe("OrdersPage", () => {
         observation: "Falta el capacitor.",
       },
     };
-    const noSePudo: PendingOrder = {
+    const noSePudo: OrderListItem = {
       ...OTRA_PENDIENTE,
       returned: {
         crew_name: "Escuadrilla 2",
@@ -499,6 +529,213 @@ describe("OrdersPage", () => {
       await user.click(within(form).getByRole("button", { name: "Cancelar" }));
 
       expect(screen.queryByRole("form", { name: "Asignar la orden N° 7" })).not.toBeInTheDocument();
+    });
+  });
+  describe("listado por estado", () => {
+    function porEstado() {
+      return mockApi((request, url) => {
+        if (!(url.pathname.endsWith("/admin/orders") && request.method === "GET")) {
+          return undefined;
+        }
+        const items: Record<string, OrderListItem[]> = {
+          pending: [PENDIENTE],
+          assigned: [ASIGNADA],
+          in_progress: [EN_CURSO],
+          cancelled: [CANCELADA],
+        };
+        return json(pendingPage(items[url.searchParams.get("status") ?? ""] ?? []));
+      });
+    }
+
+    it("muestra asignadas y en curso con escuadrilla y fecha, y solo se pueden cancelar", async () => {
+      const user = userEvent.setup();
+      const fetchMock = porEstado();
+      renderOrders();
+
+      await screen.findByRole("table", { name: "Órdenes pendientes" });
+      await user.selectOptions(screen.getByLabelText("Estado"), "assigned");
+
+      const tabla = await screen.findByRole("table", { name: "Órdenes asignadas" });
+      const [fila] = within(tabla).getAllByRole("row").slice(1);
+      expect(within(fila).getByText("Escuadrilla 2")).toBeInTheDocument();
+      expect(within(fila).getByText("29/10/2026")).toBeInTheDocument();
+      expect(within(fila).getByRole("button", { name: "Cancelar la orden N° 5" })).toBeVisible();
+      expect(within(fila).queryByRole("button", { name: /Asignar/ })).not.toBeInTheDocument();
+      const [ultima] = calls(fetchMock, "GET", "/admin/orders").slice(-1);
+      expect(new URL(ultima.url).searchParams.get("status")).toBe("assigned");
+
+      await user.selectOptions(screen.getByLabelText("Estado"), "in_progress");
+      const enCurso = await screen.findByRole("table", { name: "Órdenes en curso" });
+      expect(within(enCurso).getByText("Escuadrilla 1")).toBeInTheDocument();
+    });
+
+    it("muestra las canceladas con motivo, quién y cuándo, sin acciones", async () => {
+      const user = userEvent.setup();
+      porEstado();
+      renderOrders();
+
+      await screen.findByRole("table", { name: "Órdenes pendientes" });
+      await user.selectOptions(screen.getByLabelText("Estado"), "cancelled");
+
+      const tabla = await screen.findByRole("table", { name: "Órdenes canceladas" });
+      const [fila] = within(tabla).getAllByRole("row").slice(1);
+      expect(within(fila).getByText("Se mudó el local")).toBeInTheDocument();
+      expect(within(fila).getByText("Admin Ficticia")).toBeInTheDocument();
+      expect(within(fila).getByText("26/10/2026")).toBeInTheDocument();
+      expect(within(tabla).queryByRole("button")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("cancelar", () => {
+    function conOrden(orden: OrderListItem, post?: (request: Request) => Response) {
+      let cancelada = false;
+      return mockApi((request, url) => {
+        if (url.pathname.endsWith("/cancellation") && request.method === "POST") {
+          const response = post
+            ? post(request)
+            : json(
+                {
+                  reason: "duplicate",
+                  reason_text: null,
+                  cancelled_by_name: "Admin Ficticia",
+                  cancelled_at: "2026-10-27T13:00:00Z",
+                },
+                201,
+              );
+          cancelada = response.ok;
+          return response;
+        }
+        if (url.pathname.endsWith("/admin/orders") && request.method === "GET") {
+          const status = url.searchParams.get("status");
+          return json(pendingPage(!cancelada && status === orden.status ? [orden] : []));
+        }
+        return undefined;
+      });
+    }
+
+    async function abrirCancelar(user: ReturnType<typeof userEvent.setup>, numero = 7) {
+      await user.click(
+        await screen.findByRole("button", { name: `Cancelar la orden N° ${numero}` }),
+      );
+      return screen.getByRole("form", { name: `Cancelar la orden N° ${numero}` });
+    }
+
+    it("cancela con un motivo de la lista y la orden sale del listado", async () => {
+      const user = userEvent.setup();
+      const fetchMock = conOrden(PENDIENTE);
+      renderOrders();
+
+      const form = await abrirCancelar(user);
+      expect(
+        within(within(form).getByLabelText("Motivo"))
+          .getAllByRole("option")
+          .map((o) => o.textContent),
+      ).toEqual([
+        "Elegí el motivo",
+        "Cargada por error",
+        "Duplicada",
+        "El cliente la canceló",
+        "Otro",
+      ]);
+      await user.selectOptions(within(form).getByLabelText("Motivo"), "duplicate");
+      await user.click(within(form).getByRole("button", { name: "Confirmar cancelación" }));
+
+      expect(await screen.findByText("Orden N° 7 cancelada.")).toBeInTheDocument();
+      const [post] = calls(fetchMock, "POST", "/admin/orders/o1/cancellation");
+      expect(await post.json()).toEqual({ reason: "duplicate", reason_text: null });
+      expect(await screen.findByText("No hay órdenes pendientes.")).toBeInTheDocument();
+    });
+
+    it("sin motivo, o con Otro sin texto, no llama a la API", async () => {
+      const user = userEvent.setup();
+      const fetchMock = conOrden(PENDIENTE);
+      renderOrders();
+
+      const form = await abrirCancelar(user);
+      await user.click(within(form).getByRole("button", { name: "Confirmar cancelación" }));
+      expect(within(form).getByRole("alert")).toHaveTextContent("Falta el motivo.");
+
+      await user.selectOptions(within(form).getByLabelText("Motivo"), "other");
+      await user.type(within(form).getByLabelText("Cuál es el motivo"), "   ");
+      await user.click(within(form).getByRole("button", { name: "Confirmar cancelación" }));
+      expect(within(form).getByRole("alert")).toHaveTextContent("Falta escribir el motivo.");
+      expect(calls(fetchMock, "POST", "/cancellation")).toHaveLength(0);
+    });
+
+    it("con Otro manda el texto escrito", async () => {
+      const user = userEvent.setup();
+      const fetchMock = conOrden(PENDIENTE);
+      renderOrders();
+
+      const form = await abrirCancelar(user);
+      await user.selectOptions(within(form).getByLabelText("Motivo"), "other");
+      await user.type(within(form).getByLabelText("Cuál es el motivo"), " Se mudó el local ");
+      await user.click(within(form).getByRole("button", { name: "Confirmar cancelación" }));
+
+      await screen.findByText("Orden N° 7 cancelada.");
+      const [post] = calls(fetchMock, "POST", "/cancellation");
+      expect(await post.json()).toEqual({ reason: "other", reason_text: "Se mudó el local" });
+    });
+
+    it("en curso avisa que la escuadrilla la está trabajando", async () => {
+      const user = userEvent.setup();
+      conOrden(EN_CURSO);
+      renderOrders();
+
+      await screen.findByText("No hay órdenes pendientes.");
+      await user.selectOptions(screen.getByLabelText("Estado"), "in_progress");
+      const form = await abrirCancelar(user, 4);
+
+      expect(within(form).getByRole("alert")).toHaveTextContent(
+        "Escuadrilla 1 la está trabajando.",
+      );
+    });
+
+    it("una pendiente no muestra el aviso de en curso", async () => {
+      const user = userEvent.setup();
+      conOrden(PENDIENTE);
+      renderOrders();
+
+      const form = await abrirCancelar(user);
+      expect(within(form).queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("muestra el error del backend", async () => {
+      const user = userEvent.setup();
+      conOrden(PENDIENTE, () =>
+        json(
+          {
+            detail: {
+              code: "order_status_conflict",
+              message: "Otra persona cambió la orden recién. Actualizá y probá de nuevo.",
+            },
+          },
+          409,
+        ),
+      );
+      renderOrders();
+
+      const form = await abrirCancelar(user);
+      await user.selectOptions(within(form).getByLabelText("Motivo"), "duplicate");
+      await user.click(within(form).getByRole("button", { name: "Confirmar cancelación" }));
+
+      expect(await within(form).findByRole("alert")).toHaveTextContent(
+        "Otra persona cambió la orden recién.",
+      );
+    });
+
+    it("se puede volver sin cancelar", async () => {
+      const user = userEvent.setup();
+      const fetchMock = conOrden(PENDIENTE);
+      renderOrders();
+
+      const form = await abrirCancelar(user);
+      await user.click(within(form).getByRole("button", { name: "Volver" }));
+
+      expect(
+        screen.queryByRole("form", { name: "Cancelar la orden N° 7" }),
+      ).not.toBeInTheDocument();
+      expect(calls(fetchMock, "POST", "/cancellation")).toHaveLength(0);
     });
   });
 });

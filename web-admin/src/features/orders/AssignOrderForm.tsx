@@ -3,11 +3,11 @@ import { useState, type FormEvent } from "react";
 import type { Crew } from "../crews/types";
 import { useCrews } from "../crews/useCrews";
 import { businessToday } from "./labels";
-import type { Assignment, PendingOrder } from "./types";
+import type { Assignment, OrderListItem } from "./types";
 import { useAssignOrder } from "./useOrders";
 
 interface AssignOrderFormProps {
-  order: PendingOrder;
+  order: OrderListItem;
   onAssigned: (assignment: Assignment, crew: Crew) => void;
   onCancel: () => void;
 }
