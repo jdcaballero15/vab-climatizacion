@@ -533,6 +533,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/orders/{order_id}/reassignment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reassign Work Order */
+        post: operations["reassign_work_order_admin_orders__order_id__reassignment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/unassignment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unassign Work Order */
+        post: operations["unassign_work_order_admin_orders__order_id__unassignment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/orders/{order_id}/cancellation": {
         parameters: {
             query?: never;
@@ -767,6 +801,8 @@ export interface components {
              * Format: date
              */
             scheduled_for: string;
+            /** Reason */
+            reason?: string | null;
         };
         /**
          * CancelReason
@@ -1524,6 +1560,11 @@ export interface components {
          * @description Por qué volvió a Pendiente desde una escuadrilla (E05-08, criterio 5).
          */
         ReturnedFromCrewOut: {
+            /**
+             * Crew Id
+             * Format: uuid
+             */
+            crew_id: string;
             /** Crew Name */
             crew_name: string;
             /**
@@ -1630,6 +1671,11 @@ export interface components {
              */
             token_type: string;
             user: components["schemas"]["UserOut"];
+        };
+        /** UnassignmentCreate */
+        UnassignmentCreate: {
+            /** Reason */
+            reason?: string | null;
         };
         /** UserAdminOut */
         UserAdminOut: {
@@ -3361,6 +3407,74 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AssignmentAdminOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reassign_work_order_admin_orders__order_id__reassignment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unassign_work_order_admin_orders__order_id__unassignment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnassignmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
 
-import { AssignOrderForm } from "./AssignOrderForm";
+import { AssignOrderForm, type AssignMode } from "./AssignOrderForm";
 import { CancelOrderForm } from "./CancelOrderForm";
 import { ClosureDetail } from "./ClosureDetail";
 import {
@@ -11,10 +11,20 @@ import {
   returnedText,
 } from "./labels";
 import { OrderForm } from "./OrderForm";
+import { UnassignOrderForm } from "./UnassignOrderForm";
 import type { ListableStatus, OrderListItem } from "./types";
 import { PAGE_SIZE, useOrderList } from "./useOrders";
 
-type RowAction = { orderId: string; kind: "assign" | "cancel" | "closure" };
+type RowAction = {
+  orderId: string;
+  kind: AssignMode | "unassign" | "cancel" | "closure";
+};
+
+const ASSIGNED_WORD: Record<AssignMode, string> = {
+  assign: "asignada",
+  reprogram: "reprogramada",
+  reassign: "reasignada",
+};
 
 /** Las columnas propias de cada estado, después de número, cliente, domicilio y tipo. */
 function statusColumns(status: ListableStatus): string[] {
@@ -61,7 +71,8 @@ function statusCells(order: OrderListItem, status: ListableStatus) {
 }
 
 /**
- * Alta de órdenes y listado por estado: desde Pendientes se asignan (E04-03) y hasta En curso
+ * Alta de órdenes y listado por estado: desde Pendientes se asignan (E04-03) o reprograman,
+ * Asignadas y En curso se reasignan, y las Asignadas se desasignan (E04-04). Hasta En curso
  * se cancelan (E04-07). De las terminadas se ve el cierre (E04-08); las canceladas se
  * consultan sin acciones.
  */
@@ -151,13 +162,40 @@ export function OrdersPage() {
                     )}
                     {withActions && status !== "done" && (
                       <td>
-                        {order.status === "pending" && (
+                        {order.status === "pending" && !order.returned && (
                           <button
                             type="button"
                             aria-label={`Asignar la orden N° ${order.number}`}
                             onClick={() => open(order.id, "assign")}
                           >
                             Asignar
+                          </button>
+                        )}
+                        {order.status === "pending" && order.returned && (
+                          <button
+                            type="button"
+                            aria-label={`Reprogramar la orden N° ${order.number}`}
+                            onClick={() => open(order.id, "reprogram")}
+                          >
+                            Reprogramar
+                          </button>
+                        )}
+                        {(order.status === "assigned" || order.status === "in_progress") && (
+                          <button
+                            type="button"
+                            aria-label={`Reasignar la orden N° ${order.number}`}
+                            onClick={() => open(order.id, "reassign")}
+                          >
+                            Reasignar
+                          </button>
+                        )}{" "}
+                        {order.status === "assigned" && (
+                          <button
+                            type="button"
+                            aria-label={`Desasignar la orden N° ${order.number}`}
+                            onClick={() => open(order.id, "unassign")}
+                          >
+                            Desasignar
                           </button>
                         )}{" "}
                         <button
@@ -180,15 +218,30 @@ export function OrdersPage() {
                       <td colSpan={colSpan}>
                         {action.kind === "closure" ? (
                           <ClosureDetail order={order} />
-                        ) : action.kind === "assign" ? (
+                        ) : action.kind === "assign" ||
+                          action.kind === "reprogram" ||
+                          action.kind === "reassign" ? (
                           <AssignOrderForm
                             order={order}
+                            mode={action.kind}
                             onCancel={() => setAction(null)}
                             onAssigned={(assignment, crew) => {
+                              const word = ASSIGNED_WORD[action.kind as AssignMode];
                               setAction(null);
                               setNotice(
-                                `Orden N° ${order.number} asignada a ${crew.name} ` +
+                                `Orden N° ${order.number} ${word} a ${crew.name} ` +
                                   `para el ${formatDay(assignment.scheduled_for)}.`,
+                              );
+                            }}
+                          />
+                        ) : action.kind === "unassign" ? (
+                          <UnassignOrderForm
+                            order={order}
+                            onClose={() => setAction(null)}
+                            onUnassigned={() => {
+                              setAction(null);
+                              setNotice(
+                                `Orden N° ${order.number} desasignada: volvió a Pendientes.`,
                               );
                             }}
                           />
