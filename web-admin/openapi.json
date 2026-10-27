@@ -2546,6 +2546,115 @@
         }
       }
     },
+    "/admin/orders/{order_id}/reassignment": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Reassign Work Order",
+        "operationId": "reassign_work_order_admin_orders__order_id__reassignment_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/unassignment": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Unassign Work Order",
+        "operationId": "unassign_work_order_admin_orders__order_id__unassignment_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnassignmentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/orders/{order_id}/cancellation": {
       "post": {
         "tags": [
@@ -3286,6 +3395,18 @@
             "type": "string",
             "format": "date",
             "title": "Scheduled For"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
           }
         },
         "additionalProperties": false,
@@ -5530,6 +5651,11 @@
       },
       "ReturnedFromCrewOut": {
         "properties": {
+          "crew_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Crew Id"
+          },
           "crew_name": {
             "type": "string",
             "title": "Crew Name"
@@ -5566,6 +5692,7 @@
         },
         "type": "object",
         "required": [
+          "crew_id",
           "crew_name",
           "closed_at",
           "outcome",
@@ -5844,6 +5971,25 @@
           "user"
         ],
         "title": "TokenResponse"
+      },
+      "UnassignmentCreate": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UnassignmentCreate"
       },
       "UserAdminOut": {
         "properties": {

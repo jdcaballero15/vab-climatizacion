@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ClientSummary, Site } from "../clients/types";
 import type { Crew } from "../crews/types";
+import { businessToday, nextDay } from "./labels";
 import { OrdersPage } from "./OrdersPage";
 import type { ClosureDetail, OrderListItem, WorkOrder } from "./types";
 
@@ -234,6 +235,7 @@ describe("OrdersPage", () => {
     const otraVisita: OrderListItem = {
       ...PENDIENTE,
       returned: {
+        crew_id: "c1",
         crew_name: "Escuadrilla 1",
         closed_at: "2026-10-27T14:00:00Z",
         outcome: "needs_revisit",
@@ -244,6 +246,7 @@ describe("OrdersPage", () => {
     const noSePudo: OrderListItem = {
       ...OTRA_PENDIENTE,
       returned: {
+        crew_id: "c2",
         crew_name: "Escuadrilla 2",
         closed_at: "2026-10-26T14:00:00Z",
         outcome: "not_done",
@@ -807,6 +810,161 @@ describe("OrdersPage", () => {
         screen.queryByRole("form", { name: "Cancelar la orden N° 7" }),
       ).not.toBeInTheDocument();
       expect(calls(fetchMock, "POST", "/cancellation")).toHaveLength(0);
+    });
+  });
+  describe("reasignar, desasignar y reprogramar", () => {
+    const ASIGNACION = {
+      id: "a2",
+      work_order_id: "o5",
+      crew_id: "c1",
+      scheduled_for: "2099-01-20",
+      assigned_at: "2026-10-28T13:00:00Z",
+    };
+    const VOLVIO: OrderListItem = {
+      ...PENDIENTE,
+      returned: {
+        crew_id: "c2",
+        crew_name: "Escuadrilla 2",
+        closed_at: "2026-10-27T14:00:00Z",
+        outcome: "not_done",
+        not_done_reason: "client_absent",
+        observation: null,
+      },
+    };
+
+    function conOrden(orden: OrderListItem, post?: (request: Request) => Response) {
+      return mockApi((request, url) => {
+        if (request.method === "POST" && /\/(re|un)?assignment$/.test(url.pathname)) {
+          return post
+            ? post(request)
+            : url.pathname.endsWith("/unassignment")
+              ? new Response(null, { status: 204 })
+              : json({ ...ASIGNACION, work_order_id: orden.id }, 201);
+        }
+        if (url.pathname.endsWith("/admin/orders") && request.method === "GET") {
+          return json(pendingPage(url.searchParams.get("status") === orden.status ? [orden] : []));
+        }
+        return undefined;
+      });
+    }
+
+    async function verEstado(user: ReturnType<typeof userEvent.setup>, status: string) {
+      await screen.findByRole("heading", { name: "Órdenes pendientes" });
+      if (status !== "pending") {
+        await user.selectOptions(screen.getByLabelText("Estado"), status);
+      }
+    }
+
+    it("una asignada se reasigna a otra escuadrilla con motivo", async () => {
+      const user = userEvent.setup();
+      const fetchMock = conOrden(ASIGNADA);
+      renderOrders();
+
+      await verEstado(user, "assigned");
+      await user.click(await screen.findByRole("button", { name: "Reasignar la orden N° 5" }));
+      const form = screen.getByRole("form", { name: "Reasignar la orden N° 5" });
+      expect(within(form).getByText("Ahora: Escuadrilla 2, 29/10/2026.")).toBeInTheDocument();
+      expect(within(form).queryByRole("alert")).not.toBeInTheDocument();
+      await user.selectOptions(await within(form).findByLabelText("Escuadrilla"), "c1");
+      await user.type(within(form).getByLabelText("Fecha prevista"), "2099-01-20");
+      await user.type(within(form).getByLabelText("Motivo (opcional)"), "Se rompió la camioneta");
+      await user.click(within(form).getByRole("button", { name: "Confirmar reasignación" }));
+
+      expect(
+        await screen.findByText("Orden N° 5 reasignada a Escuadrilla 1 para el 20/01/2099."),
+      ).toBeInTheDocument();
+      const [post] = calls(fetchMock, "POST", "/admin/orders/o5/reassignment");
+      expect(await post.json()).toEqual({
+        crew_id: "c1",
+        scheduled_for: "2099-01-20",
+        reason: "Se rompió la camioneta",
+      });
+    });
+
+    it("una en curso se reasigna con aviso y no se puede desasignar", async () => {
+      const user = userEvent.setup();
+      conOrden(EN_CURSO);
+      renderOrders();
+
+      await verEstado(user, "in_progress");
+      await user.click(await screen.findByRole("button", { name: "Reasignar la orden N° 4" }));
+
+      const form = screen.getByRole("form", { name: "Reasignar la orden N° 4" });
+      expect(within(form).getByRole("alert")).toHaveTextContent(
+        "Escuadrilla 1 la está trabajando.",
+      );
+      expect(
+        screen.queryByRole("button", { name: "Desasignar la orden N° 4" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("muestra el error de la API", async () => {
+      const user = userEvent.setup();
+      conOrden(ASIGNADA, () =>
+        json(
+          {
+            detail: {
+              code: "same_assignment",
+              message: "Ya está asignada a esa escuadrilla para ese día.",
+              field: "crew_id",
+            },
+          },
+          422,
+        ),
+      );
+      renderOrders();
+
+      await verEstado(user, "assigned");
+      await user.click(await screen.findByRole("button", { name: "Reasignar la orden N° 5" }));
+      const form = screen.getByRole("form", { name: "Reasignar la orden N° 5" });
+      await user.selectOptions(await within(form).findByLabelText("Escuadrilla"), "c2");
+      await user.type(within(form).getByLabelText("Fecha prevista"), "2099-01-20");
+      await user.click(within(form).getByRole("button", { name: "Confirmar reasignación" }));
+
+      expect(await within(form).findByRole("alert")).toHaveTextContent(
+        "Ya está asignada a esa escuadrilla para ese día.",
+      );
+    });
+
+    it("una asignada se desasigna y vuelve a pendientes", async () => {
+      const user = userEvent.setup();
+      const fetchMock = conOrden(ASIGNADA);
+      renderOrders();
+
+      await verEstado(user, "assigned");
+      await user.click(await screen.findByRole("button", { name: "Desasignar la orden N° 5" }));
+      const form = screen.getByRole("form", { name: "Desasignar la orden N° 5" });
+      expect(form).toHaveTextContent("desaparece del celular de Escuadrilla 2");
+      await user.type(within(form).getByLabelText("Motivo (opcional)"), "Lo resolvió el cliente");
+      await user.click(within(form).getByRole("button", { name: "Confirmar desasignación" }));
+
+      expect(
+        await screen.findByText("Orden N° 5 desasignada: volvió a Pendientes."),
+      ).toBeInTheDocument();
+      const [post] = calls(fetchMock, "POST", "/admin/orders/o5/unassignment");
+      expect(await post.json()).toEqual({ reason: "Lo resolvió el cliente" });
+    });
+
+    it("una que volvió se reprograma con la misma escuadrilla y mañana", async () => {
+      const user = userEvent.setup();
+      const fetchMock = conOrden(VOLVIO);
+      renderOrders();
+
+      await user.click(await screen.findByRole("button", { name: "Reprogramar la orden N° 7" }));
+      expect(
+        screen.queryByRole("button", { name: "Asignar la orden N° 7" }),
+      ).not.toBeInTheDocument();
+      const form = screen.getByRole("form", { name: "Reprogramar la orden N° 7" });
+      await waitFor(() => expect(within(form).getByLabelText("Escuadrilla")).toHaveValue("c2"));
+      const manana = nextDay(businessToday());
+      expect(within(form).getByLabelText("Fecha prevista")).toHaveValue(manana);
+      await user.click(within(form).getByRole("button", { name: "Confirmar asignación" }));
+
+      expect(
+        await screen.findByText(/Orden N° 7 reprogramada a Escuadrilla 2/),
+      ).toBeInTheDocument();
+      const [post] = calls(fetchMock, "POST", "/admin/orders/o1/assignment");
+      expect(await post.json()).toEqual({ crew_id: "c2", scheduled_for: manana });
     });
   });
 });

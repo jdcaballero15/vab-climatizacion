@@ -21,6 +21,8 @@ TECH = UserRole.technician
 PERMITIDAS = [
     (OrderStatus.pending, OrderAction.assign, ADMIN, OrderStatus.assigned),
     (OrderStatus.assigned, OrderAction.unassign, ADMIN, OrderStatus.pending),
+    (OrderStatus.assigned, OrderAction.reassign, ADMIN, OrderStatus.assigned),
+    (OrderStatus.in_progress, OrderAction.reassign, ADMIN, OrderStatus.assigned),
     (OrderStatus.assigned, OrderAction.start, TECH, OrderStatus.in_progress),
     (OrderStatus.in_progress, OrderAction.close_done, TECH, OrderStatus.done),
     (OrderStatus.in_progress, OrderAction.request_revisit, TECH, OrderStatus.pending),
@@ -113,5 +115,6 @@ def test_tipo_de_evento_de_cada_transicion() -> None:
     by_action = {t.action: t.event_type for t in TRANSITIONS}
     assert by_action[OrderAction.assign] == WorkOrderEventType.assigned
     assert by_action[OrderAction.unassign] == WorkOrderEventType.unassigned
+    assert by_action[OrderAction.reassign] == WorkOrderEventType.reassigned
     assert by_action[OrderAction.return_to_technician] == WorkOrderEventType.review_returned
     assert by_action[OrderAction.start] == WorkOrderEventType.status_change

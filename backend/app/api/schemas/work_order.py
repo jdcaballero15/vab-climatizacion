@@ -20,6 +20,10 @@ Description = Annotated[str, BeforeValidator(blank_to_none), StringConstraints(m
 RequesterText = Annotated[
     Annotated[str, StringConstraints(max_length=255)] | None, BeforeValidator(blank_to_none)
 ]
+# Motivo opcional de una asignación, reasignación o desasignación (E04-04, criterio 5).
+ChangeReason = Annotated[
+    Annotated[str, StringConstraints(max_length=255)] | None, BeforeValidator(blank_to_none)
+]
 # El texto de "Otro" al cancelar: vacío o solo espacios cuenta como no cargado.
 CancelReasonText = Annotated[
     Annotated[str, StringConstraints(max_length=255)] | None, BeforeValidator(blank_to_none)
@@ -61,6 +65,8 @@ class WorkOrderAdminOut(BaseModel):
 class ReturnedFromCrewOut(BaseModel):
     """Por qué volvió a Pendiente desde una escuadrilla (E05-08, criterio 5)."""
 
+    # Para preelegirla al reprogramar (E04-04, criterio 4).
+    crew_id: uuid.UUID
     crew_name: str
     closed_at: datetime
     outcome: ClosureOutcome
@@ -134,6 +140,13 @@ class AssignmentCreate(BaseModel):
     crew_id: uuid.UUID
     # Solo el día, sin hora ni franja (decisión de E04-03).
     scheduled_for: date
+    reason: ChangeReason = None
+
+
+class UnassignmentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: ChangeReason = None
 
 
 class AssignmentAdminOut(BaseModel):

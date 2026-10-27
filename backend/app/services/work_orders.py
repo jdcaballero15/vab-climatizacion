@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import datetime
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.client import ClientSiteTechnicianOut, site_map_url
@@ -18,6 +19,7 @@ from app.api.schemas.work_order import (
     OrderListItemOut,
     OrderTechnicianOut,
     ReturnedFromCrewOut,
+    UnassignmentCreate,
     WorkOrderAdminOut,
     WorkOrderCreate,
 )
@@ -71,6 +73,10 @@ class CrewNotAvailableError(Exception):
 
 class ScheduledDateInPastError(Exception):
     """La fecha prevista es anterior a hoy."""
+
+
+class SameAssignmentError(Exception):
+    """La reasignación deja la misma escuadrilla y la misma fecha (E04-04, criterio 6)."""
 
 
 class OrderRequiresApprovalError(Exception):
@@ -132,7 +138,7 @@ async def list_by_status(
             description=order.description,
             created_at=created_at,
             returned=(
-                _returned(closure, assigned_at, crew_name)
+                _returned(closure, assigned_at, crew_name, crew_id)
                 if status == OrderStatus.pending
                 else None
             ),
@@ -164,6 +170,7 @@ async def list_by_status(
             closure,
             assigned_at,
             crew_name,
+            crew_id,
             scheduled_for,
             cancellation,
             cancelled_by_name,
@@ -173,19 +180,23 @@ async def list_by_status(
 
 
 def _returned(
-    closure: WorkOrderClosure | None, assigned_at: datetime | None, crew_name: str | None
+    closure: WorkOrderClosure | None,
+    assigned_at: datetime | None,
+    crew_name: str | None,
+    crew_id: uuid.UUID | None,
 ) -> ReturnedFromCrewOut | None:
     """El último cierre explica por qué está Pendiente solo si no se la reasignó después.
 
     La escuadrilla es la de la última asignación, que es la que terminó ese cierre.
     """
-    if closure is None or assigned_at is None or crew_name is None:
+    if closure is None or assigned_at is None or crew_name is None or crew_id is None:
         return None
     if closure.outcome == ClosureOutcome.done:
         return None
     if assigned_at > closure.closed_at:
         return None
     return ReturnedFromCrewOut(
+        crew_id=crew_id,
         crew_name=crew_name,
         closed_at=closure.closed_at,
         outcome=closure.outcome,
@@ -450,22 +461,77 @@ async def assign_work_order(
     Estado, evento y asignación van en la misma transacción.
     """
     order = await get_work_order(session, order_id)
+    crew = await _available_crew(session, data)
+    if order.requires_approval:
+        raise OrderRequiresApprovalError
+
+    await stage_transition(session, order, OrderAction.assign, actor, _assignment_note(crew, data))
+    return await _add_assignment(session, order, crew, data)
+
+
+async def reassign_work_order(
+    session: AsyncSession, order_id: uuid.UUID, data: AssignmentCreate, actor: User
+) -> WorkOrderAssignment:
+    """Pasa una orden Asignada o En curso a otra escuadrilla o fecha (E04-04, R9).
+
+    La nueva escuadrilla la recibe Asignada. Lo ya registrado (cierres anteriores) se
+    conserva. Estado, evento, fin de la asignación vigente y la nueva, en una transacción.
+    """
+    order = await get_work_order(session, order_id)
+    crew = await _available_crew(session, data)
+    current = await WorkOrderRepository(session).current_assignment(order.id)
+    if (
+        current is not None
+        and current.crew_id == crew.id
+        and current.scheduled_for == data.scheduled_for
+    ):
+        raise SameAssignmentError
+
+    note = _assignment_note(crew, data)
+    await stage_transition(session, order, OrderAction.reassign, actor, note)
+    await WorkOrderRepository(session).end_current_assignment(order.id)
+    return await _add_assignment(session, order, crew, data)
+
+
+async def unassign_work_order(
+    session: AsyncSession, order_id: uuid.UUID, data: UnassignmentCreate, actor: User
+) -> None:
+    """Devuelve una orden Asignada a Pendiente, sin escuadrilla ni fecha (E04-04)."""
+    order = await get_work_order(session, order_id)
+    note = f"Motivo: {data.reason}." if data.reason else None
+    await stage_transition(session, order, OrderAction.unassign, actor, note)
+    await WorkOrderRepository(session).end_current_assignment(order.id)
+    await session.commit()
+
+
+async def _available_crew(session: AsyncSession, data: AssignmentCreate) -> Crew:
     crew = await CrewRepository(session).get(data.crew_id)
     if crew is None or not crew.is_active:
         raise CrewNotAvailableError
     if data.scheduled_for < business_today():
         raise ScheduledDateInPastError
-    if order.requires_approval:
-        raise OrderRequiresApprovalError
+    return crew
 
+
+def _assignment_note(crew: Crew, data: AssignmentCreate) -> str:
     note = f"Escuadrilla: {crew.name}. Fecha prevista: {format_date(data.scheduled_for)}."
-    await stage_transition(session, order, OrderAction.assign, actor, note)
+    return f"{note} Motivo: {data.reason}." if data.reason else note
+
+
+async def _add_assignment(
+    session: AsyncSession, order: WorkOrder, crew: Crew, data: AssignmentCreate
+) -> WorkOrderAssignment:
     assignment = WorkOrderAssignment(
         work_order_id=order.id,
         crew_id=crew.id,
         scheduled_for=data.scheduled_for,
     )
     session.add(assignment)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError:
+        # Otra asignación vigente apareció a la vez (índice de una sola vigente por orden).
+        await session.rollback()
+        raise OrderStatusConflictError from None
     await session.refresh(assignment)
     return assignment

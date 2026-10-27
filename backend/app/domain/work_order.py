@@ -118,6 +118,7 @@ STATUSLESS_EVENT_TYPES = frozenset(
 class OrderAction(StrEnum):
     assign = "assign"
     unassign = "unassign"
+    reassign = "reassign"
     start = "start"
     close_done = "close_done"
     request_revisit = "request_revisit"
@@ -146,6 +147,9 @@ _TECH = UserRole.technician
 TRANSITIONS: tuple[Transition, ...] = (
     Transition(_A.assign, _S.pending, _S.assigned, _ADMIN, _E.assigned),
     Transition(_A.unassign, _S.assigned, _S.pending, _ADMIN, _E.unassigned),
+    # R9: la nueva escuadrilla la recibe Asignada, también si estaba En curso (E04-04).
+    Transition(_A.reassign, _S.assigned, _S.assigned, _ADMIN, _E.reassigned),
+    Transition(_A.reassign, _S.in_progress, _S.assigned, _ADMIN, _E.reassigned),
     Transition(_A.start, _S.assigned, _S.in_progress, _TECH, _E.status_change),
     Transition(_A.close_done, _S.in_progress, _S.done, _TECH, _E.status_change),
     Transition(_A.request_revisit, _S.in_progress, _S.pending, _TECH, _E.status_change),
@@ -180,6 +184,7 @@ STATUS_LABELS = {
 ACTION_LABELS = {
     _A.assign: "asignar",
     _A.unassign: "desasignar",
+    _A.reassign: "reasignar",
     _A.start: "iniciar",
     _A.close_done: "cerrar",
     _A.request_revisit: "pedir otra visita",

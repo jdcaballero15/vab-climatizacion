@@ -8,6 +8,7 @@ export type WorkOrderCreate = components["schemas"]["WorkOrderCreate"];
 export type OrderChannel = WorkOrderCreate["channel"];
 export type Assignment = components["schemas"]["AssignmentAdminOut"];
 export type AssignmentCreate = components["schemas"]["AssignmentCreate"];
+export type UnassignmentCreate = components["schemas"]["UnassignmentCreate"];
 export type Cancellation = components["schemas"]["CancellationAdminOut"];
 export type CancellationCreate = components["schemas"]["CancellationCreate"];
 export type CancelReason = components["schemas"]["CancelReason"];

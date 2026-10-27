@@ -27,8 +27,8 @@ from app.domain.work_order import CREW_OPEN_STATUSES, OrderStatus, WorkOrderEven
 # trabajo, equipo y nombre de su tipo (estos dos, nulos sin equipo).
 type OpenCrewOrderRow = Row[WorkOrder, date, str, ClientSite, str, Equipment | None, str | None]
 # Orden en un estado: orden, fecha de creación, cliente, rótulo y dirección del domicilio,
-# tipo de trabajo, su último cierre; fecha, escuadrilla y fecha prevista de su última
-# asignación; su cancelación y quién canceló (nulos si no tiene).
+# tipo de trabajo, su último cierre; fecha, escuadrilla (nombre e id) y fecha prevista de
+# su última asignación; su cancelación y quién canceló (nulos si no tiene).
 type StatusOrderRow = Row[
     WorkOrder,
     datetime,
@@ -39,6 +39,7 @@ type StatusOrderRow = Row[
     WorkOrderClosure | None,
     datetime | None,
     str | None,
+    uuid.UUID | None,
     date | None,
     WorkOrderCancellation | None,
     str | None,
@@ -122,6 +123,7 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
                 closure,
                 last_assignment.c.assigned_at,
                 Crew.name,
+                last_assignment.c.crew_id,
                 last_assignment.c.scheduled_for,
                 WorkOrderCancellation,
                 cancelled_by.full_name,
@@ -190,6 +192,14 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             stmt = stmt.where(self.model.id == order_id)
         result = await self.session.execute(stmt)
         return result.all()
+
+    async def current_assignment(self, order_id: uuid.UUID) -> WorkOrderAssignment | None:
+        stmt = select(WorkOrderAssignment).where(
+            WorkOrderAssignment.work_order_id == order_id,
+            WorkOrderAssignment.unassigned_at.is_(None),
+            WorkOrderAssignment.deleted_at.is_(None),
+        )
+        return await self.session.scalar(stmt)
 
     async def end_current_assignment(self, order_id: uuid.UUID) -> None:
         """Deja la orden sin escuadrilla: la asignación vigente pasa a histórica."""
