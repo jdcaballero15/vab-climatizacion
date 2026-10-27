@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 120 historias.** done: 27, draft: 85, icebox: 8
+**Total: 120 historias.** done: 27, draft: 83, icebox: 8, ready: 2
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -68,10 +68,10 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E04-01](E04-ordenes/E04-01-maquina-de-estados-y-linea-de-tiempo-de-la-orden.md) | Máquina de estados y línea de tiempo de la orden | Debe | M | done | admin | - | - | E00-01, E03-02, E02-01 |
 | [E04-02](E04-ordenes/E04-02-crear-una-orden-de-trabajo.md) | Crear una orden de trabajo | Debe | M | done | admin | - | - | E04-01, E03-02, E02-01 |
 | [E04-03](E04-ordenes/E04-03-asignar-una-orden-a-un-tecnico.md) | Asignar una orden a una escuadrilla | Debe | S | done | admin | - | - | E04-02, E02-09 |
-| [E04-04](E04-ordenes/E04-04-reasignar-o-desasignar-una-orden.md) | Reasignar o desasignar una orden | Debe | S | draft | admin | - | - | E04-03 |
+| [E04-04](E04-ordenes/E04-04-reasignar-o-desasignar-una-orden.md) | Reasignar o desasignar una orden | Debe | S | ready | admin | - | - | E04-03 |
 | [E04-05](E04-ordenes/E04-05-panel-de-ordenes-por-estado.md) | Panel de órdenes por estado | Debe | M | draft | admin, owner | - | - | E04-01 |
 | [E04-06](E04-ordenes/E04-06-detalle-de-la-orden-con-linea-de-tiempo.md) | Detalle de la orden con línea de tiempo | Debe | M | draft | admin, owner | - | - | E04-01, E00-09 |
-| [E04-07](E04-ordenes/E04-07-cancelar-una-orden-con-motivo.md) | Cancelar una orden con motivo | Debe | S | draft | admin | - | - | E04-01 |
+| [E04-07](E04-ordenes/E04-07-cancelar-una-orden-con-motivo.md) | Cancelar una orden con motivo | Debe | S | ready | admin | - | - | E04-01 |
 | [E04-08](E04-ordenes/E04-08-revisar-una-orden-terminada.md) | Revisar una orden terminada | Debe | M | draft | admin | - | D-005 | E04-06 |
 | [E04-09](E04-ordenes/E04-09-registrar-la-factura-de-una-orden.md) | Registrar la factura de una orden | Debe | S | draft | admin | - | D-004 | E04-08 |
 | [E04-10](E04-ordenes/E04-10-registrar-el-cobro-de-una-orden.md) | Registrar el cobro de una orden | Debe | S | draft | admin | - | - | E04-09 |
