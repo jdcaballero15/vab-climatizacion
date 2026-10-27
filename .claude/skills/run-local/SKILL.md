@@ -1,27 +1,70 @@
 ---
 name: run-local
-description: Levanta el entorno local de OT Platform (base, bucket, mail de prueba y API) y comprueba que funciona. Usar cuando se pida correr, arrancar o probar la app localmente.
+description: Levanta el entorno local completo de OT Platform (base, bucket, mail de prueba, API con migraciones y datos de prueba, app de administración y app del técnico) y comprueba que funciona. Usar cuando se pida correr, arrancar o probar la app localmente.
 ---
 
 # Correr OT Platform en local
 
-Todo corre en Docker Compose: `db` (Postgres 16), `minio` (bucket S3 compatible), `mailpit` (mail de prueba) y `backend`.
+Servicios en Docker Compose: `db` (Postgres 16), `minio` (bucket S3 compatible), `mailpit` (mail de prueba) y `backend`. Las dos apps web (`web-admin` y `pwa-tecnico`) corren fuera de Docker con Vite.
 
 ## Pasos
 
+### 1. Backend y servicios
+
 1. Copiar variables: `cp .env.example .env` (el `.env` no se commitea ni se lee desde los agentes).
-2. Levantar: `make up`.
-3. Ver logs: `make logs`.
-4. Comprobar la API: `curl -s http://localhost:8000/health` debe responder `{"status":"ok"}`.
-5. Documentación interactiva de la API: `http://localhost:8000/docs`.
-6. Mail de prueba: `http://localhost:8025` (Mailpit). Bucket: consola de MinIO en `http://localhost:9001`.
-7. Bajar: `make down`.
+2. Levantar: `make up` (sin `make`: `docker compose up -d --build`).
+3. Aplicar migraciones (la base arranca vacía y el backend no las corre solo):
+   `docker compose exec backend alembic upgrade head`
+4. Cargar datos de prueba ficticios (solo en una base vacía; la contraseña se pasa por variable y vale para todos los usuarios):
+   `docker compose exec -e SEED_PASSWORD=<contraseña> backend python -m app.demo_data`
+   Crea `admin@ot-demo.com`, `direccion@ot-demo.com` y `tecnico1@ot-demo.com` a `tecnico4@ot-demo.com`.
+5. Comprobar la API: `curl -s http://localhost:8000/health` debe responder `{"status":"ok"}`.
+
+### 2. Apps web
+
+En dos terminales distintas:
+
+```bash
+cd web-admin   && npm ci && VITE_API_URL=http://localhost:8000 npm run dev -- --port 5173 --strictPort
+cd pwa-tecnico && npm ci && VITE_API_URL=http://localhost:8000 npm run dev -- --port 5174 --strictPort
+```
+
+### 3. Dónde mirar
+
+| Qué | URL |
+|---|---|
+| App de administración | http://localhost:5173 |
+| App del técnico | http://localhost:5174 |
+| Documentación de la API | http://localhost:8000/docs |
+| Mail de prueba (Mailpit) | http://localhost:8025 |
+| Consola de MinIO | http://localhost:9001 |
+
+Comprobación mínima: iniciar sesión con un usuario de prueba en cada app. Desde la terminal:
+`curl -s -X POST http://localhost:8000/auth/login -H 'Content-Type: application/json' -H 'Origin: http://localhost:5173' -d '{"email":"admin@ot-demo.com","password":"<contraseña>"}' -D -` debe dar `200` y `access-control-allow-origin: http://localhost:5173`.
+
+### 4. Bajar
+
+`make down` (o `docker compose down`). Los datos quedan en el volumen `db-data`; para empezar de cero: `docker compose down -v`.
 
 ## Trampas conocidas
 
 - **La base local usa el puerto 5433** (no el 5432) a propósito: así un Postgres instalado en la máquina no se confunde con el de Docker, un error difícil de detectar porque `localhost` responde igual. Desde el host: `postgresql+asyncpg://ot:ot@localhost:5433/ot`.
+- **Las apps web necesitan `VITE_API_URL`.** Sin esa variable el cliente llama a `/api` y Vite no tiene proxy configurado, así que todas las llamadas fallan.
+- **Puertos ocupados por otros proyectos** (5433, 5173, 5174): `--strictPort` hace que Vite falle en lugar de saltar a otro puerto en silencio. Ojo: si el puerto está ocupado, `curl` igual responde 200, pero con la app de otro proyecto. Para usar otros puertos sin tocar el repo, crear un `docker-compose.override.yml` (anotarlo en `.git/info/exclude`):
+  ```yaml
+  services:
+    db:
+      ports: !override
+        - "5436:5432"
+    backend:
+      environment:
+        CORS_ORIGINS: http://localhost:5180,http://localhost:5181
+  ```
+  y levantar las apps con `--port 5180` y `--port 5181`. Si cambian los puertos de las apps, hay que cambiar `CORS_ORIGINS` o el login falla por CORS.
+- **En Windows no viene `make`.** Usar los comandos de `docker compose` directamente (están al lado de cada paso).
 - **El `.env` no se carga solo** fuera de Docker. Si corrés `uvicorn` a mano: `set -a && source .env && set +a`.
 - **Cambios en dependencias** (`pyproject.toml`) requieren `docker compose build backend`.
+- **`make seed` corre fuera de Docker** y apunta a `db:5432`, que no existe desde el host. Es más simple correr el generador dentro del contenedor (paso 4).
 - Datos de prueba siempre ficticios. Nunca cargar una exportación real de Persat.
 
 Si algo de esto falla distinto, anotarlo acá: este archivo se actualiza con cada trampa nueva.
