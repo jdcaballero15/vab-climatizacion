@@ -4,7 +4,7 @@ title: "Mantener la sesión al recargar o reabrir"
 epic: E01
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [admin, technician, owner]
 size: M
 areas: [backend, web-admin, pwa]
@@ -42,3 +42,11 @@ Decisión técnica en el [ADR 0010](../../architecture/adr/0010-sesion-persisten
 - **Render:** en cada sitio, regla `rewrite` de `/api/*` a `https://vab-ot-api.onrender.com/*`, antes de la regla de `index.html`. Hay que confirmar al desplegar que deja pasar POST y `Set-Cookie`; si no, plan B del ADR 0010.
 - **Local:** `server.proxy` de Vite reenvía `/api` a `http://localhost:8000` sacando el prefijo.
 - Se entrega en cuatro PR: backend (cookie, cuerpo todavía compatible), pwa-tecnico (con su regla en `render.yaml`), web-admin (ídem) y backend otra vez para sacar `refresh_token` de las respuestas y de los cuerpos (criterio 5).
+
+## Notas de implementación
+
+- Se entregó en cuatro PR: backend con la cookie (#206), pwa-tecnico (#208), web-admin (#209) y backend sin el token en respuestas ni cuerpos (este).
+- **Backend:** cookie `ot_refresh` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/api/auth` configurable, `Max-Age` de 30 días). `/auth/login` y `/auth/refresh` ya no devuelven `refresh_token`; `/auth/refresh` y `/auth/logout` solo leen la cookie (un token en el cuerpo se ignora). Un 401 de refresh borra la cookie en la misma respuesta.
+- **Clientes:** llaman a la API por `/api` del mismo sitio; en local, el proxy de Vite la reenvía a `http://localhost:8000` sin el prefijo (`API_PROXY_TARGET` para otro puerto). Al abrir, `POST /api/auth/refresh` con la cookie recupera el access token y el usuario; mientras tanto se ve "Cargando". El refresh token no se guarda en el navegador.
+- **Render:** regla `/api/*` en cada sitio, antes de la de `index.html`. Falta confirmar en el despliegue que deja pasar `POST` y `Set-Cookie` (paso 6 de `docs/workflow/despliegue.md`); si no, plan B del ADR 0010.
+- Probado en el navegador: recargar entra directo; cerrar sesión y recargar muestra el login.

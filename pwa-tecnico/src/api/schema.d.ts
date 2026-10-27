@@ -1363,11 +1363,6 @@ export interface components {
             /** Password */
             password: string;
         };
-        /** LogoutRequest */
-        LogoutRequest: {
-            /** Refresh Token */
-            refresh_token: string;
-        };
         /**
          * NotDoneReason
          * @description Por qué no se pudo hacer el trabajo (E05-08). Lista fija, como el prototipo.
@@ -1500,17 +1495,10 @@ export interface components {
             site: components["schemas"]["ClientSiteTechnicianOut"];
             equipment: components["schemas"]["EquipmentTechnicianOut"] | null;
         };
-        /** RefreshRequest */
-        RefreshRequest: {
-            /** Refresh Token */
-            refresh_token: string;
-        };
         /** RefreshResponse */
         RefreshResponse: {
             /** Access Token */
             access_token: string;
-            /** Refresh Token */
-            refresh_token: string;
             /**
              * Token Type
              * @default bearer
@@ -1664,8 +1652,6 @@ export interface components {
         TokenResponse: {
             /** Access Token */
             access_token: string;
-            /** Refresh Token */
-            refresh_token: string;
             /**
              * Token Type
              * @default bearer
@@ -1937,11 +1923,7 @@ export interface operations {
                 ot_refresh?: string | null;
             };
         };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["RefreshRequest"] | null;
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -1972,11 +1954,7 @@ export interface operations {
                 ot_refresh?: string | null;
             };
         };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["LogoutRequest"] | null;
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             204: {

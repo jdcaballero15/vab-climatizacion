@@ -98,7 +98,7 @@ describe("AppRoot", () => {
       vi.fn(async (input: Request | string, init?: RequestInit) => {
         const request = toRequest(input, init);
         if (pathOf(request).endsWith("/auth/refresh")) {
-          return json({ access_token: "a2", refresh_token: "r2", user: session.user });
+          return json({ access_token: "a2", user: session.user });
         }
         return respond(request);
       }),
@@ -133,7 +133,7 @@ describe("AppRoot", () => {
         const request = toRequest(input, init);
         if (pathOf(request).endsWith("/auth/refresh")) {
           refreshCalls += 1;
-          return json({ access_token: "a2", refresh_token: "r2", user: session.user });
+          return json({ access_token: "a2", user: session.user });
         }
         return respond(request);
       }),

@@ -145,3 +145,31 @@ async def test_cookie_de_usuario_dado_de_baja_da_401(schema: None) -> None:
         response = await client.post("/auth/refresh", headers=_with_cookie(token))
 
     assert response.status_code == 401
+
+
+# Criterio 5: el refresh token no aparece en ninguna respuesta de la API.
+async def test_login_y_refresh_no_devuelven_el_refresh_token(schema: None) -> None:
+    await _seed([make_user(email="ana@ot-demo.com")])
+    async with _client() as client:
+        login = await _login(client)
+        token = _set_cookie(login)[COOKIE].value
+        refresh = await client.post("/auth/refresh", headers=_with_cookie(token))
+
+    assert refresh.status_code == 200
+    for response in (login, refresh):
+        assert "refresh_token" not in response.json()
+        assert token not in response.text
+
+
+# Criterio 5: el token en el cuerpo ya no se acepta; solo cuenta la cookie.
+async def test_refresh_y_logout_ignoran_el_token_en_el_cuerpo(schema: None) -> None:
+    await _seed([make_user(email="ana@ot-demo.com")])
+    async with _client() as client:
+        token = _set_cookie(await _login(client))[COOKIE].value
+        por_cuerpo = await client.post("/auth/refresh", json={"refresh_token": token})
+        await client.post("/auth/logout", json={"refresh_token": token})
+        # El logout por cuerpo no lo revocó: con la cookie todavía sirve.
+        con_cookie = await client.post("/auth/refresh", headers=_with_cookie(token))
+
+    assert por_cuerpo.status_code == 401
+    assert con_cookie.status_code == 200
