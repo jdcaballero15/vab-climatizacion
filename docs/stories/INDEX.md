@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 120 historias.** done: 30, draft: 81, icebox: 8, ready: 1
+**Total: 120 historias.** done: 30, draft: 80, icebox: 8, in_progress: 1, ready: 1
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -14,7 +14,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E00-02](E00-fundaciones/E00-02-base-de-la-app-de-administracion.md) | Base de la app de administración | Debe | S | done | dev | - | - | - |
 | [E00-03](E00-fundaciones/E00-03-base-de-la-app-del-tecnico-como-pwa-instalable.md) | Base de la app del técnico como PWA instalable | Debe | M | done | dev | - | - | - |
 | [E00-04](E00-fundaciones/E00-04-test-de-contrato-el-tecnico-no-ve-precios.md) | Test de contrato: el técnico no ve precios | Debe | S | done | dev | - | - | E00-01 |
-| [E00-05](E00-fundaciones/E00-05-elegir-proveedor-de-hosting-y-desplegar-staging.md) | Elegir proveedor de hosting y desplegar staging | Debe | M | draft | dev | D-006 | - | E00-01 |
+| [E00-05](E00-fundaciones/E00-05-elegir-proveedor-de-hosting-y-desplegar-staging.md) | Elegir proveedor de hosting y desplegar staging | Debe | M | in_progress | dev | - | D-006 | E00-01 |
 | [E00-06](E00-fundaciones/E00-06-despliegue-a-produccion-por-tag-con-aprobacion.md) | Despliegue a producción por tag con aprobación | Debe | S | draft | dev | - | - | E00-05 |
 | [E00-07](E00-fundaciones/E00-07-backups-y-prueba-de-restauracion.md) | Backups y prueba de restauración | Debe | S | draft | dev | - | - | E00-05 |
 | [E00-08](E00-fundaciones/E00-08-observabilidad-minima.md) | Observabilidad mínima | Debería | S | draft | dev | - | - | E00-05 |
@@ -200,6 +200,5 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 
 | Decisión | Estado | Historias bloqueadas |
 |---|---|---|
-| D-006 | Abierta | E00-05 |
 | D-008 | Abierta | E12-04 |
 | D-009 | Abierta | E00-10 |

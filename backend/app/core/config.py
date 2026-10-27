@@ -1,15 +1,23 @@
 from functools import lru_cache
+from typing import Self
 
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEV_SECRET_KEY = "cambiar-en-cada-entorno"  # noqa: S105 (valor de desarrollo, se pisa por entorno)
+MIN_SECRET_KEY_LENGTH = 32
+_ASYNC_SCHEME = "postgresql+asyncpg://"
 
 
 class Settings(BaseSettings):
     """Configuración leída del entorno. Nunca poner valores reales acá."""
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # Los errores no muestran los valores: tienen la clave y la contraseña de la base, y
+    # en el hosting quedan en los logs.
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", hide_input_in_errors=True)
 
     app_env: str = "local"
-    app_secret_key: str = "cambiar-en-cada-entorno"  # noqa: S105 (valor de desarrollo, se pisa por entorno)
+    app_secret_key: str = DEV_SECRET_KEY
     database_url: str = "postgresql+asyncpg://ot:ot@localhost:5433/ot"
     cors_origins: str = "http://localhost:5173,http://localhost:5174"
 
@@ -19,6 +27,30 @@ class Settings(BaseSettings):
 
     # Contraseña de los usuarios del generador de datos de prueba. Sin valor por defecto.
     seed_password: str | None = None
+
+    @field_validator("database_url")
+    @classmethod
+    def _async_database_url(cls, value: str) -> str:
+        """Acepta la dirección como la da el proveedor (`postgres://`, `sslmode=`).
+
+        El driver asyncpg necesita su esquema y recibe el modo SSL como `ssl=`.
+        """
+        for scheme in ("postgres://", "postgresql://"):
+            if value.startswith(scheme):
+                value = _ASYNC_SCHEME + value.removeprefix(scheme)
+        return value.replace("sslmode=", "ssl=")
+
+    @model_validator(mode="after")
+    def _real_secret_in_production(self) -> Self:
+        if self.app_env == "production" and (
+            self.app_secret_key == DEV_SECRET_KEY
+            or len(self.app_secret_key) < MIN_SECRET_KEY_LENGTH
+        ):
+            raise ValueError(
+                "APP_SECRET_KEY: en producción hace falta una clave aleatoria de "
+                f"{MIN_SECRET_KEY_LENGTH} caracteres o más."
+            )
+        return self
 
     @property
     def cors_origin_list(self) -> list[str]:
