@@ -31,3 +31,8 @@ assumes: [D-011]
 
 - Los formularios del cliente dicen que la firma es obligatoria al cerrar. La propuesta técnica dice "firma del cliente, si corresponde". Ver `D-011`.
 - ¿Qué pasa si el cliente no está presente? No se inventa una excepción hasta que negocio la defina.
+- ¿Se pide el DNI de quien firma? Depende de `D-008` (retención y texto legal). Si no se pide, se sacan los criterios 3 y 5.
+
+## Notas técnicas
+
+- La imagen de la firma se guarda con el servicio de archivos de E00-09 (PNG, bucket R2) igual que las fotos de E05-06, y viaja en el borrador del celular hasta enviarse (E05-13).

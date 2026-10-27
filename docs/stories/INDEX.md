@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 121 historias.** done: 32, draft: 79, icebox: 8, in_progress: 2
+**Total: 121 historias.** done: 32, draft: 75, icebox: 8, in_progress: 2, ready: 4
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -18,7 +18,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E00-06](E00-fundaciones/E00-06-despliegue-a-produccion-por-tag-con-aprobacion.md) | Despliegue a producción por tag con aprobación | Debe | S | draft | dev | - | - | E00-05 |
 | [E00-07](E00-fundaciones/E00-07-backups-y-prueba-de-restauracion.md) | Backups y prueba de restauración | Debe | S | draft | dev | - | - | E00-05 |
 | [E00-08](E00-fundaciones/E00-08-observabilidad-minima.md) | Observabilidad mínima | Debería | S | draft | dev | - | - | E00-05 |
-| [E00-09](E00-fundaciones/E00-09-almacenamiento-de-archivos-con-urls-firmadas.md) | Almacenamiento de archivos con URLs firmadas | Debe | M | draft | dev | - | - | E00-01 |
+| [E00-09](E00-fundaciones/E00-09-almacenamiento-de-archivos-con-urls-firmadas.md) | Almacenamiento de archivos con URLs firmadas | Debe | M | ready | dev | - | - | E00-01 |
 | [E00-10](E00-fundaciones/E00-10-envio-de-mail-transaccional.md) | Envío de mail transaccional | Debe | S | draft | dev | D-009 | - | E00-01 |
 | [E00-11](E00-fundaciones/E00-11-jobs-programados.md) | Jobs programados | Debe | S | draft | dev | - | - | E00-01 |
 
@@ -30,7 +30,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E01-02](E01-acceso/E01-02-mantener-y-cerrar-la-sesion.md) | Mantener y cerrar la sesión | Debe | S | done | admin, technician, owner | - | - | E01-01 |
 | [E01-03](E01-acceso/E01-03-gestionar-usuarios.md) | Gestionar usuarios | Debe | M | done | admin, owner | - | - | E01-04 |
 | [E01-04](E01-acceso/E01-04-autorizacion-por-rol-en-la-api.md) | Autorización por rol en la API | Debe | M | done | admin, technician, owner | - | - | E01-01, E00-04 |
-| [E01-05](E01-acceso/E01-05-restablecer-la-contrasena-de-un-usuario.md) | Restablecer la contraseña de un usuario | Debería | S | draft | admin | - | - | E01-03 |
+| [E01-05](E01-acceso/E01-05-restablecer-la-contrasena-de-un-usuario.md) | Restablecer la contraseña de un usuario | Debería | M | ready | admin, technician, owner | - | - | E01-03, E01-07 |
 | [E01-06](E01-acceso/E01-06-bloqueo-temporal-por-intentos-fallidos.md) | Bloqueo temporal por intentos fallidos | Debería | S | draft | admin, technician, owner | - | - | E01-01 |
 | [E01-07](E01-acceso/E01-07-mantener-la-sesion-al-recargar-o-reabrir.md) | Mantener la sesión al recargar o reabrir | Debe | M | done | admin, technician, owner | - | - | E01-02 |
 
@@ -88,11 +88,11 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E05-03](E05-app-tecnico/E05-03-iniciar-una-orden.md) | Iniciar una orden | Debe | S | done | technician | - | - | E05-02, E04-01 |
 | [E05-04](E05-app-tecnico/E05-04-cerrar-una-orden-con-falla-y-reparacion-de-listas.md) | Cerrar una orden con falla y reparación de listas | Debe | M | done | technician | - | - | E05-03, E02-03, E02-04, E02-09, E02-10 |
 | [E05-05](E05-app-tecnico/E05-05-registrar-repuestos-usados-con-cantidades-sin-precios.md) | Registrar repuestos usados con cantidades, sin precios | Debe | M | draft | technician | - | - | E05-04, E02-06, E08-04 |
-| [E05-06](E05-app-tecnico/E05-06-agregar-foto-y-observacion-al-cierre.md) | Agregar foto y observación al cierre | Debe | M | draft | technician | - | - | E05-04, E00-09 |
+| [E05-06](E05-app-tecnico/E05-06-agregar-foto-y-observacion-al-cierre.md) | Agregar foto y observación al cierre | Debe | M | ready | technician, admin | - | - | E05-04, E00-09 |
 | [E05-07](E05-app-tecnico/E05-07-firma-del-cliente-en-pantalla-con-nombre-y-dni.md) | Firma del cliente en pantalla con nombre y DNI | Debe | M | draft | technician | - | D-011 | E05-04, E00-09 |
 | [E05-08](E05-app-tecnico/E05-08-elegir-el-resultado-del-trabajo.md) | Elegir el resultado del trabajo | Debe | M | done | technician | - | - | E05-04, E04-01 |
 | [E05-12](E05-app-tecnico/E05-12-cierre-de-orden-idempotente.md) | Cierre de orden idempotente | Debe | S | done | technician | - | - | E05-04, E04-01 |
-| [E05-13](E05-app-tecnico/E05-13-no-perder-un-cierre-si-se-corta-la-conexion.md) | No perder un cierre si se corta la conexión | Debe | M | draft | technician | - | - | E05-04, E05-12 |
+| [E05-13](E05-app-tecnico/E05-13-no-perder-un-cierre-si-se-corta-la-conexion.md) | No perder un cierre si se corta la conexión | Debe | M | ready | technician | - | - | E05-04, E05-12, E05-06 |
 | [E05-14](E05-app-tecnico/E05-14-ver-las-ordenes-hechas-esta-semana.md) | Ver las órdenes hechas esta semana | Debería | S | draft | technician | - | - | E05-01, E05-04 |
 
 ## E06 Órdenes de taller
