@@ -4,7 +4,7 @@ title: "Agregar foto y observación al cierre"
 epic: E05
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [technician, admin]
 size: M
 areas: [backend, pwa, web-admin]
@@ -48,3 +48,4 @@ assumes: []
 
 - Se entrega en tres PR: backend (este), pwa-tecnico (sacar o elegir, comprimir, subir y enviar) y web-admin (ver las fotos en la Terminada).
 - **Backend (hecho):** `ClosureCreate.photo_ids` (hasta 5, en orden), tabla `work_order_closure_photo` (migración `f4b8d2a6c731`, `file_id` único). Al cerrar se valida que cada foto sea del mismo usuario, de uso `closure_photo`, confirmada y no usada en otro cierre (422 en `photo_ids`: `too_many_photos`, `photo_repeated`, `photo_not_available`, `photo_already_used`). Un reenvío con la misma clave no vuelve a validar ni duplica (E05-12). `GET /admin/orders/{id}/closure` suma `photos` con URL firmada de 5 minutos; la respuesta al celular no trae fotos.
+- **web-admin (hecho):** en "Ver el cierre" de una Terminada, fila "Fotos" con miniaturas que abren la foto grande en otra pestaña. La consulta del cierre se renueva cada 4 minutos para que las URLs firmadas (5 minutos) no venzan con la pantalla abierta. Probado en el navegador con la foto subida desde la PWA.

@@ -154,6 +154,8 @@ export function useCancelOrder(orderId: string) {
   });
 }
 
+const PHOTO_URL_REFRESH_MS = 4 * 60 * 1000;
+
 /** Lo que cargó la escuadrilla en el último cierre (E04-08, criterio 1). */
 export function useOrderClosure(orderId: string) {
   return useQuery<ClosureDetail>({
@@ -167,6 +169,9 @@ export function useOrderClosure(orderId: string) {
       }
       return data;
     },
+    // Las URLs de las fotos vencen a los 5 minutos (E00-09): se renuevan antes.
+    staleTime: PHOTO_URL_REFRESH_MS,
+    refetchInterval: PHOTO_URL_REFRESH_MS,
   });
 }
 
