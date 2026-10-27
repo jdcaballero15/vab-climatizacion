@@ -4,6 +4,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import type { Session } from "../features/auth/types";
 import { ROLE_LABELS, sectionsFor, type NavSection } from "./navigation";
+import { ThemePicker } from "./ThemePicker";
 
 interface AppLayoutProps {
   session: Session;
@@ -125,6 +126,7 @@ export function AppLayout({ session, onLogout }: AppLayoutProps) {
         <main className="layout__content">
           <Outlet context={session} />
         </main>
+        <ThemePicker />
       </div>
     </div>
   );

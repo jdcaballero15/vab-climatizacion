@@ -209,7 +209,9 @@ export function OrdersPage() {
         {KPI_STATUSES.map(({ status: kpi, hint }) => (
           <div
             key={kpi}
-            className={kpi === "pending" ? "card kpi kpi--accent" : "card kpi"}
+            className={
+              kpi === "pending" ? `card kpi kpi--${kpi} kpi--accent` : `card kpi kpi--${kpi}`
+            }
             aria-label={`${LIST_STATUS_LABELS[kpi]}: ${counts[kpi] ?? "cargando"}`}
           >
             <p className="eyebrow">{LIST_STATUS_LABELS[kpi]}</p>
@@ -233,7 +235,7 @@ export function OrdersPage() {
                 aria-pressed={item === status}
                 onClick={() => choose(item)}
               >
-                <span className="icon-box" aria-hidden="true">
+                <span className={`icon-box icon-box--${item}`} aria-hidden="true">
                   <Icon size={16} strokeWidth={1.75} />
                 </span>
                 <span className="status-nav__text">

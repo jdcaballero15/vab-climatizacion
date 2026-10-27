@@ -113,7 +113,7 @@ export function OrderCard({ order, primary, more, children }: OrderCardProps) {
     <li className={children ? "order-card-wrap order-card-wrap--open" : "order-card-wrap"}>
       <article className="card order-card" aria-label={title}>
         <div className="order-card__top">
-          <span className="icon-box" aria-hidden="true">
+          <span className={`icon-box icon-box--${order.status}`} aria-hidden="true">
             <ClipboardList size={18} strokeWidth={1.75} />
           </span>
           <div className="order-card__heading">
