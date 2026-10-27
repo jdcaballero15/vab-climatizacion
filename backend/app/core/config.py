@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 30
+    # Cookie del refresh token (ADR 0010). La ruta es la que ve el navegador: los sitios
+    # llaman a la API por /api, que Render (o Vite en local) reenvía sin el prefijo.
+    refresh_cookie_path: str = "/api/auth"
+    refresh_cookie_secure: bool = True
 
     # Contraseña de los usuarios del generador de datos de prueba. Sin valor por defecto.
     seed_password: str | None = None

@@ -31,8 +31,8 @@ async def issue_refresh_token(session: AsyncSession, user: User) -> str:
     return raw
 
 
-async def rotate_refresh_token(session: AsyncSession, raw_token: str) -> tuple[str, str]:
-    """Valida y rota el token de refresco. Devuelve (access_token, nuevo refresh).
+async def rotate_refresh_token(session: AsyncSession, raw_token: str) -> tuple[str, str, User]:
+    """Valida y rota el token de refresco. Devuelve (access, nuevo refresh, usuario).
 
     Revoca el token presentado y emite uno nuevo. Falla si el token no es válido
     o si el usuario ya no está activo (criterio 4: las sesiones dejan de andar).
@@ -53,7 +53,7 @@ async def rotate_refresh_token(session: AsyncSession, raw_token: str) -> tuple[s
     await session.commit()
 
     access = create_access_token(subject=str(user.id), role=user.role.value)
-    return access, new_raw
+    return access, new_raw, user
 
 
 async def revoke_refresh_token(session: AsyncSession, raw_token: str) -> None:
