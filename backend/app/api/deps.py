@@ -8,11 +8,13 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import decode_access_token
+from app.core.storage import ObjectStorage, get_storage
 from app.db.models.user import User, UserRole
 from app.db.repositories.user import UserRepository
 from app.db.session import get_session
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+StorageDep = Annotated[ObjectStorage, Depends(get_storage)]
 
 _bearer = HTTPBearer(auto_error=False)
 

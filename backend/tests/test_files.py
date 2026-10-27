@@ -13,7 +13,7 @@ from sqlalchemy import text
 
 from app.core.config import get_settings
 from app.core.security import create_access_token
-from app.core.storage import build_storage, get_storage
+from app.core.storage import build_storage
 from app.db.models.stored_file import StoredFile
 from app.db.models.user import User, UserRole
 from app.db.session import SessionLocal, engine
@@ -24,9 +24,7 @@ TABLES = [User.__table__, StoredFile.__table__]
 JPEG = b"\xff\xd8\xff\xe0" + b"foto-ficticia" * 50
 
 
-@pytest.fixture(scope="session", autouse=True)
-def bucket() -> None:
-    get_storage().ensure_bucket()
+pytestmark = pytest.mark.usefixtures("bucket")
 
 
 @pytest.fixture

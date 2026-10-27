@@ -999,6 +999,8 @@ export interface components {
             not_done_reason: components["schemas"]["NotDoneReason"] | null;
             /** Observation */
             observation: string | null;
+            /** Photos */
+            photos: components["schemas"]["ClosurePhotoAdminOut"][];
         };
         /** ClosureChoiceTechnicianOut */
         ClosureChoiceTechnicianOut: {
@@ -1041,6 +1043,11 @@ export interface components {
             not_done_reason?: components["schemas"]["NotDoneReason"] | null;
             /** Observation */
             observation?: string | null;
+            /**
+             * Photo Ids
+             * @default []
+             */
+            photo_ids: string[];
         };
         /** ClosureOptionsTechnicianOut */
         ClosureOptionsTechnicianOut: {
@@ -1059,6 +1066,18 @@ export interface components {
          * @enum {string}
          */
         ClosureOutcome: "done" | "needs_pickup" | "needs_revisit" | "not_done";
+        /** ClosurePhotoAdminOut */
+        ClosurePhotoAdminOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Content Type */
+            content_type: string;
+            /** Url */
+            url: string;
+        };
         /** ClosureTechnicianOut */
         ClosureTechnicianOut: {
             /**

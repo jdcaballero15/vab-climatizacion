@@ -4030,6 +4030,13 @@
               }
             ],
             "title": "Observation"
+          },
+          "photos": {
+            "items": {
+              "$ref": "#/components/schemas/ClosurePhotoAdminOut"
+            },
+            "type": "array",
+            "title": "Photos"
           }
         },
         "type": "object",
@@ -4044,7 +4051,8 @@
           "repair",
           "equipment_condition",
           "not_done_reason",
-          "observation"
+          "observation",
+          "photos"
         ],
         "title": "ClosureAdminOut",
         "description": "Lo que cargó la escuadrilla al cerrar, para que administración lo revise (E04-08).\n\nFalla y reparación vienen como texto: el nombre del catálogo o lo escrito en \"Otro\"."
@@ -4180,6 +4188,15 @@
               }
             ],
             "title": "Observation"
+          },
+          "photo_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Photo Ids",
+            "default": []
           }
         },
         "additionalProperties": false,
@@ -4238,6 +4255,30 @@
         ],
         "title": "ClosureOutcome",
         "description": "Resultado del cierre de la escuadrilla (E05-08)."
+      },
+      "ClosurePhotoAdminOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "content_type": {
+            "type": "string",
+            "title": "Content Type"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "content_type",
+          "url"
+        ],
+        "title": "ClosurePhotoAdminOut"
       },
       "ClosureTechnicianOut": {
         "properties": {

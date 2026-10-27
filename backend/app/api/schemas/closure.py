@@ -50,6 +50,8 @@ class ClosureCreate(BaseModel):
     equipment_condition: EquipmentCondition | None = None
     not_done_reason: NotDoneReason | None = None
     observation: Observation = None
+    # Fotos ya subidas y confirmadas (E00-09), en el orden en que se muestran (E05-06).
+    photo_ids: list[uuid.UUID] = []
 
 
 class ClosureTechnicianOut(BaseModel):
@@ -58,6 +60,13 @@ class ClosureTechnicianOut(BaseModel):
     # Estado de la orden después del cierre: Terminada o Pendiente.
     order_status: OrderStatus
     closed_at: datetime
+
+
+class ClosurePhotoAdminOut(BaseModel):
+    id: uuid.UUID
+    content_type: str
+    # URL firmada de corta duración (E00-09): se pide de nuevo si vence.
+    url: str
 
 
 class ClosureAdminOut(BaseModel):
@@ -77,3 +86,4 @@ class ClosureAdminOut(BaseModel):
     equipment_condition: EquipmentCondition | None
     not_done_reason: NotDoneReason | None
     observation: str | None
+    photos: list[ClosurePhotoAdminOut]
