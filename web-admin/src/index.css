@@ -787,13 +787,44 @@ label {
   border-bottom: none;
 }
 
-.catalog__row > span:first-child {
+.catalog__name {
   flex: 1 1 auto;
-  font-weight: 500;
+  color: var(--text);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.catalog__initial {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgb(14 165 233 / 16%), rgb(79 70 229 / 16%));
+  color: #1d4ed8;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.catalog__item {
+  transition: background 0.15s;
+}
+
+/* Lo que va debajo del nombre (opciones, subtareas) queda alineado con el nombre. */
+.catalog__item > :not(.catalog__row) {
+  margin-left: 2.5rem;
+}
+
+.catalog__item:hover {
+  background: rgb(255 255 255 / 55%);
 }
 
 .catalog__inactive {
   color: var(--text-muted);
+  font-weight: 500;
 }
 
 .catalog__badge {
