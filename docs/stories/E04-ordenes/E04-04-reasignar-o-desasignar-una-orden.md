@@ -4,7 +4,7 @@ title: "Reasignar o desasignar una orden"
 epic: E04
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin]
 size: S
 areas: [backend, web-admin]
@@ -47,3 +47,5 @@ Validadas con negocio el 2026-10-27, con el prototipo del cliente:
 - Transiciones nuevas en la máquina de estados: `reassign` (`Asignada` a `Asignada` y `En curso` a `Asignada`). `unassign` ya existe. Cada una cierra la asignación vigente (`unassigned_at`) y, si corresponde, abre la nueva, en una transacción.
 - "Reprogramar" no es una transición nueva: es la asignación de E04-03 (`Pendiente` a `Asignada`) con valores sugeridos. La escuadrilla sugerida es la de la última asignación, la misma que muestra el listado de pendientes; `returned` suma el `crew_id` para preelegirla.
 - Sin modo offline (ADR 0009) no hay datos sin sincronizar. Si la escuadrilla anterior envía un cierre después del cambio, el servidor lo rechaza con 404 (ver E05-13).
+- Implementado (2026-10-28): `POST /admin/orders/{id}/reassignment` (mismo cuerpo que la asignación: escuadrilla, fecha y `reason` opcional; 201) y `POST /admin/orders/{id}/unassignment` (`reason` opcional; 204). La asignación de E04-03 suma `reason` para "Reprogramar". Los 422 de asignación traen `field` (`crew_id` o `scheduled_for`); misma escuadrilla y fecha es `same_assignment`. El evento guarda escuadrilla, fecha y "Motivo: ..." si se cargó.
+- Web-admin: "Reasignar" en Asignadas y En curso (con aviso en En curso), "Desasignar" en Asignadas y "Reprogramar" en lugar de "Asignar" en las pendientes que volvieron de la escuadrilla, con la misma escuadrilla y mañana ya elegidas.

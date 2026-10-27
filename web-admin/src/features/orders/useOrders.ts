@@ -5,6 +5,7 @@ import type { ClientSummary } from "../clients/types";
 import type {
   Assignment,
   AssignmentCreate,
+  UnassignmentCreate,
   Cancellation,
   CancellationCreate,
   ClosureDetail,
@@ -69,6 +70,41 @@ export function useAssignOrder(orderId: string) {
       return data;
     },
     // La orden deja de estar pendiente: se refresca el listado.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
+  });
+}
+
+/** Otra escuadrilla o fecha para una orden Asignada o En curso (E04-04). */
+export function useReassignOrder(orderId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<Assignment, Error, AssignmentCreate>({
+    mutationFn: async (asignacion) => {
+      const { data, error } = await api.POST("/admin/orders/{order_id}/reassignment", {
+        params: { path: { order_id: orderId } },
+        body: asignacion,
+      });
+      if (error || !data) {
+        throw saveError(error, "No se pudo reasignar la orden.");
+      }
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
+  });
+}
+
+/** Devuelve una orden Asignada a Pendientes (E04-04). */
+export function useUnassignOrder(orderId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, UnassignmentCreate>({
+    mutationFn: async (desasignacion) => {
+      const { error } = await api.POST("/admin/orders/{order_id}/unassignment", {
+        params: { path: { order_id: orderId } },
+        body: desasignacion,
+      });
+      if (error) {
+        throw saveError(error, "No se pudo desasignar la orden.");
+      }
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
   });
 }

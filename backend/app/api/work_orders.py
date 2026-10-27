@@ -11,6 +11,7 @@ from app.api.schemas.work_order import (
     CancellationAdminOut,
     CancellationCreate,
     OrderListPage,
+    UnassignmentCreate,
     WorkOrderAdminOut,
     WorkOrderCreate,
 )
@@ -76,6 +77,11 @@ _ASSIGNMENT_ERROR_DETAIL: dict[type[Exception], tuple[int, str, str]] = {
         "scheduled_date_in_past",
         "La fecha prevista no puede ser anterior a hoy.",
     ),
+    work_orders_service.SameAssignmentError: (
+        422,
+        "same_assignment",
+        "Ya está asignada a esa escuadrilla para ese día.",
+    ),
     work_orders_service.OrderRequiresApprovalError: (
         422,
         "order_requires_approval",
@@ -88,6 +94,12 @@ _ASSIGNMENT_ERROR_DETAIL: dict[type[Exception], tuple[int, str, str]] = {
     ),
 }
 _ASSIGNMENT_ERRORS = tuple(_ASSIGNMENT_ERROR_DETAIL)
+# El campo que falla, para que la app lo marque (E04-04, criterio 6).
+_ASSIGNMENT_ERROR_FIELD: dict[type[Exception], str] = {
+    work_orders_service.CrewNotAvailableError: "crew_id",
+    work_orders_service.SameAssignmentError: "crew_id",
+    work_orders_service.ScheduledDateInPastError: "scheduled_for",
+}
 
 # Solo administración crea órdenes; dirección las ve en el panel (E04-05).
 AdminOnly = Annotated[User, Depends(require_role(UserRole.admin))]
@@ -134,10 +146,45 @@ async def assign_work_order(
     try:
         return await work_orders_service.assign_work_order(session, order_id, payload, admin)
     except _ASSIGNMENT_ERRORS as exc:
-        status_code, code, message = _ASSIGNMENT_ERROR_DETAIL[type(exc)]
-        raise _error(status_code, code, message) from None
+        raise _assignment_error(exc) from None
     except WorkOrderRuleError as exc:
         raise _error(_RULE_STATUS[type(exc)], exc.code, exc.message) from None
+
+
+@router.post(
+    "/{order_id}/reassignment",
+    response_model=AssignmentAdminOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def reassign_work_order(
+    order_id: uuid.UUID, payload: AssignmentCreate, session: SessionDep, admin: AdminOnly
+) -> WorkOrderAssignment:
+    try:
+        return await work_orders_service.reassign_work_order(session, order_id, payload, admin)
+    except _ASSIGNMENT_ERRORS as exc:
+        raise _assignment_error(exc) from None
+    except WorkOrderRuleError as exc:
+        raise _error(_RULE_STATUS[type(exc)], exc.code, exc.message) from None
+
+
+@router.post("/{order_id}/unassignment", status_code=status.HTTP_204_NO_CONTENT)
+async def unassign_work_order(
+    order_id: uuid.UUID, payload: UnassignmentCreate, session: SessionDep, admin: AdminOnly
+) -> None:
+    try:
+        await work_orders_service.unassign_work_order(session, order_id, payload, admin)
+    except _ASSIGNMENT_ERRORS as exc:
+        raise _assignment_error(exc) from None
+    except WorkOrderRuleError as exc:
+        raise _error(_RULE_STATUS[type(exc)], exc.code, exc.message) from None
+
+
+def _assignment_error(exc: Exception) -> HTTPException:
+    status_code, code, message = _ASSIGNMENT_ERROR_DETAIL[type(exc)]
+    detail = {"code": code, "message": message}
+    if type(exc) in _ASSIGNMENT_ERROR_FIELD:
+        detail["field"] = _ASSIGNMENT_ERROR_FIELD[type(exc)]
+    return HTTPException(status_code=status_code, detail=detail)
 
 
 @router.post(

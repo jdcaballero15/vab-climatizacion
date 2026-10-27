@@ -82,6 +82,13 @@ export function businessToday(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: BUSINESS_TZ }).format(new Date());
 }
 
+/** El día siguiente a uno dado (aaaa-mm-dd), sin depender del huso de la PC. */
+export function nextDay(isoDay: string): string {
+  const day = new Date(`${isoDay}T12:00:00Z`);
+  day.setUTCDate(day.getUTCDate() + 1);
+  return day.toISOString().slice(0, 10);
+}
+
 /** Por qué volvió de la escuadrilla, en una línea (E05-08, criterio 5). */
 export function returnedText(returned: ReturnedFromCrew): string {
   const detail = [
