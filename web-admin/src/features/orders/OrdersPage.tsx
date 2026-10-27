@@ -1,7 +1,7 @@
 import { Fragment, useState } from "react";
 
 import { AssignOrderForm } from "./AssignOrderForm";
-import { formatDate, formatDay } from "./labels";
+import { formatDate, formatDay, returnedText } from "./labels";
 import { OrderForm } from "./OrderForm";
 import { PAGE_SIZE, usePendingOrders } from "./useOrders";
 
@@ -60,6 +60,11 @@ export function OrdersPage() {
                       </button>
                     </td>
                   </tr>
+                  {order.returned && (
+                    <tr className="orders__returned">
+                      <td colSpan={6}>{returnedText(order.returned)}</td>
+                    </tr>
+                  )}
                   {assigningId === order.id && (
                     <tr>
                       <td colSpan={6}>

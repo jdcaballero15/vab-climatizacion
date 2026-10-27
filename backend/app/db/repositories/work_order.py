@@ -2,10 +2,12 @@ import uuid
 from collections.abc import Sequence
 from datetime import date, datetime
 
-from sqlalchemy import Row, func, select, update
+from sqlalchemy import Row, func, select, true, update
+from sqlalchemy.orm import aliased
 
 from app.db.models.catalog import EquipmentType, WorkType
 from app.db.models.client import Client, ClientSite
+from app.db.models.crew import Crew
 from app.db.models.equipment import Equipment
 from app.db.models.work_order import (
     WorkOrder,
@@ -19,6 +21,20 @@ from app.domain.work_order import CREW_OPEN_STATUSES, OrderStatus, WorkOrderEven
 # Orden abierta de una escuadrilla: orden, fecha prevista, cliente, domicilio, tipo de
 # trabajo, equipo y nombre de su tipo (estos dos, nulos sin equipo).
 type OpenCrewOrderRow = Row[WorkOrder, date, str, ClientSite, str, Equipment | None, str | None]
+# Orden en un estado: orden, fecha de creación, cliente, rótulo y dirección del domicilio,
+# tipo de trabajo, su último cierre, y fecha y escuadrilla de su última asignación
+# (estos tres, nulos si no tiene).
+type StatusOrderRow = Row[
+    WorkOrder,
+    datetime,
+    str,
+    str | None,
+    str,
+    str,
+    WorkOrderClosure | None,
+    datetime | None,
+    str | None,
+]
 
 
 class WorkOrderRepository(BaseRepository[WorkOrder]):
@@ -46,14 +62,29 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
 
     async def list_by_status_page(
         self, status: OrderStatus, *, limit: int, offset: int
-    ) -> tuple[Sequence[Row[WorkOrder, datetime, str, str | None, str, str]], int]:
+    ) -> tuple[Sequence[StatusOrderRow], int]:
         """Órdenes en un estado, de la más vieja a la más nueva según su evento de creación.
 
-        Cada fila trae la orden, su fecha de creación, el nombre del cliente, el rótulo y
-        la dirección del domicilio y el nombre del tipo de trabajo.
+        Cada fila trae además el último cierre de la orden y su última asignación, para
+        saber si volvió de una escuadrilla (E05-08).
         """
         filtered = self._select().where(self.model.status == status)
         total = await self.session.scalar(select(func.count()).select_from(filtered.subquery()))
+        last_closure = (
+            select(WorkOrderClosure)
+            .where(WorkOrderClosure.work_order_id == self.model.id)
+            .order_by(WorkOrderClosure.closed_at.desc())
+            .limit(1)
+            .lateral()
+        )
+        closure = aliased(WorkOrderClosure, last_closure)
+        last_assignment = (
+            select(WorkOrderAssignment.assigned_at, WorkOrderAssignment.crew_id)
+            .where(WorkOrderAssignment.work_order_id == self.model.id)
+            .order_by(WorkOrderAssignment.assigned_at.desc())
+            .limit(1)
+            .lateral()
+        )
         stmt = (
             select(
                 self.model,
@@ -62,6 +93,9 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
                 ClientSite.label,
                 ClientSite.address,
                 WorkType.name,
+                closure,
+                last_assignment.c.assigned_at,
+                Crew.name,
             )
             .join(
                 WorkOrderEvent,
@@ -71,6 +105,9 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             .join(Client, Client.id == self.model.client_id)
             .join(ClientSite, ClientSite.id == self.model.client_site_id)
             .join(WorkType, WorkType.id == self.model.work_type_id)
+            .outerjoin(closure, true())
+            .outerjoin(last_assignment, true())
+            .outerjoin(Crew, Crew.id == last_assignment.c.crew_id)
             .where(self.model.status == status, self.model.deleted_at.is_(None))
             .order_by(WorkOrderEvent.occurred_at, self.model.number)
             .limit(limit)

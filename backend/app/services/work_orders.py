@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Sequence
+from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,18 +13,25 @@ from app.api.schemas.work_order import (
     OrderDetailTechnicianOut,
     OrderTechnicianOut,
     PendingOrderOut,
+    ReturnedFromCrewOut,
     WorkOrderAdminOut,
     WorkOrderCreate,
 )
 from app.core.dates import business_today, format_date
 from app.db.models.crew import Crew
 from app.db.models.user import User
-from app.db.models.work_order import WorkOrder, WorkOrderAssignment, WorkOrderEvent
+from app.db.models.work_order import (
+    WorkOrder,
+    WorkOrderAssignment,
+    WorkOrderClosure,
+    WorkOrderEvent,
+)
 from app.db.repositories.client import ClientContactRepository
 from app.db.repositories.crew import CrewRepository
 from app.db.repositories.work_order import OpenCrewOrderRow, WorkOrderRepository
 from app.domain.work_order import (
     STATUSLESS_EVENT_TYPES,
+    ClosureOutcome,
     OrderAction,
     OrderSource,
     OrderStatus,
@@ -104,10 +112,43 @@ async def list_pending(
             work_type_name=work_type_name,
             description=order.description,
             created_at=created_at,
+            returned=_returned(closure, assigned_at, crew_name),
         )
-        for order, created_at, client_name, site_label, site_address, work_type_name in rows
+        for (
+            order,
+            created_at,
+            client_name,
+            site_label,
+            site_address,
+            work_type_name,
+            closure,
+            assigned_at,
+            crew_name,
+        ) in rows
     ]
     return items, total
+
+
+def _returned(
+    closure: WorkOrderClosure | None, assigned_at: datetime | None, crew_name: str | None
+) -> ReturnedFromCrewOut | None:
+    """El último cierre explica por qué está Pendiente solo si no se la reasignó después.
+
+    La escuadrilla es la de la última asignación, que es la que terminó ese cierre.
+    """
+    if closure is None or assigned_at is None or crew_name is None:
+        return None
+    if closure.outcome == ClosureOutcome.done:
+        return None
+    if assigned_at > closure.closed_at:
+        return None
+    return ReturnedFromCrewOut(
+        crew_name=crew_name,
+        closed_at=closure.closed_at,
+        outcome=closure.outcome,
+        not_done_reason=closure.not_done_reason,
+        observation=closure.observation,
+    )
 
 
 async def list_for_crew_user(session: AsyncSession, user: User) -> CrewOrdersTechnicianOut:

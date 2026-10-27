@@ -50,3 +50,4 @@ Validadas con negocio el 2026-10-26, con el prototipo del cliente:
 ## Notas de implementación
 
 - Se implementa con E05-04: ver sus notas de implementación.
+- Criterio 5 (PR 2): `GET /admin/orders?status=pending` suma `returned` con la escuadrilla, la fecha, el resultado, el motivo y la observación del último cierre. Solo si no hubo otra asignación después: una orden que volvió, se reasignó y la oficina desasignó no muestra el motivo viejo. La escuadrilla es la de la última asignación, que es la que terminó ese cierre. El web-admin lo muestra en una línea debajo de la orden.

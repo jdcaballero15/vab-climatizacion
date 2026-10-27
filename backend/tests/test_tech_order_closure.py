@@ -24,7 +24,7 @@ from app.db.models.work_order import (
     WorkOrderEvent,
 )
 from app.db.session import SessionLocal, engine
-from app.domain.work_order import OrderStatus
+from app.domain.work_order import OrderStatus, WorkOrderEventType
 from app.main import app
 from tests.factories import make_user, make_work_order
 
@@ -441,6 +441,98 @@ async def test_no_se_pudo_hacer_vuelve_a_pendiente_con_motivo(mundo: Mundo) -> N
         asignacion = await session.scalar(select(WorkOrderAssignment))
         assert asignacion is not None
         assert asignacion.unassigned_at is not None
+
+
+# ---- Motivo en el listado de pendientes (E05-08, criterio 5) ----
+
+
+async def _pendientes(*ordenes: WorkOrder) -> dict[int, dict[str, Any] | None]:
+    """El campo returned de cada orden pendiente, por número.
+
+    El listado ordena por el evento de creación, que las órdenes de prueba no traen.
+    """
+    await _seed(
+        [
+            WorkOrderEvent(
+                work_order_id=orden.id,
+                event_type=WorkOrderEventType.created,
+                to_status=OrderStatus.pending,
+            )
+            for orden in ordenes
+        ]
+    )
+    admin = make_user(email="admin@ot-demo.com", role=UserRole.admin, full_name="Admin")
+    await _seed([admin])
+    async with _client() as client:
+        response = await client.get("/admin/orders?status=pending", headers=_auth(admin))
+    assert response.status_code == 200, response.text
+    return {item["number"]: item["returned"] for item in response.json()["items"]}
+
+
+async def test_pendientes_muestran_por_que_volvio_de_la_escuadrilla(mundo: Mundo) -> None:
+    m = mundo
+    otra_visita = await _orden(m)
+    no_se_pudo = await _orden(m)
+    nueva = make_work_order(client_site=m.sede, work_type=m.reparacion)
+    await _seed([nueva])
+    await _cerrar(
+        m.celular,
+        otra_visita.id,
+        _resuelta(m, outcome="needs_revisit", observation="Falta el capacitor."),
+    )
+    await _cerrar(
+        m.celular,
+        no_se_pudo.id,
+        _resuelta(
+            m,
+            outcome="not_done",
+            not_done_reason="client_absent",
+            failure_id=None,
+            repair_id=None,
+            equipment_condition=None,
+            task_ids=[],
+        ),
+    )
+
+    pendientes = await _pendientes(otra_visita, no_se_pudo, nueva)
+
+    assert pendientes[nueva.number] is None
+    vuelta = pendientes[otra_visita.number]
+    assert vuelta is not None
+    assert vuelta["crew_name"] == "Escuadrilla 1"
+    assert vuelta["outcome"] == "needs_revisit"
+    assert vuelta["not_done_reason"] is None
+    assert vuelta["observation"] == "Falta el capacitor."
+    assert vuelta["closed_at"]
+    vuelta = pendientes[no_se_pudo.number]
+    assert vuelta is not None
+    assert vuelta["outcome"] == "not_done"
+    assert vuelta["not_done_reason"] == "client_absent"
+
+
+async def test_pendiente_reasignada_y_desasignada_no_muestra_el_cierre_viejo(
+    mundo: Mundo,
+) -> None:
+    m = mundo
+    orden = await _orden(m)
+    await _cerrar(
+        m.celular,
+        orden.id,
+        _resuelta(m, outcome="needs_revisit", observation="Falta el capacitor."),
+    )
+    # La oficina la asigna a otra escuadrilla y después la desasigna (vuelve a Pendiente).
+    async with SessionLocal() as session:
+        session.add(
+            WorkOrderAssignment(
+                work_order_id=orden.id,
+                crew_id=m.otra_escuadrilla.id,
+                scheduled_for=HOY,
+                unassigned_at=func.now(),
+            )
+        )
+        await session.commit()
+
+    assert (await _pendientes(orden))[orden.number] is None
 
 
 # E05-04, criterio 4: un tipo que no pide falla se cierra como resuelta sin ella.
