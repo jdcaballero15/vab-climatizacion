@@ -1,6 +1,6 @@
 # ADR 0004: Hosting en PaaS con PostgreSQL administrado
 
-**Estado:** Aceptado. El proveedor concreto se elige en la historia E00-05.
+**Estado:** Aceptado. Proveedor elegido el 2026-10-27: **Render** (E00-05).
 
 ## Contexto
 
@@ -21,6 +21,16 @@ La carga es mínima, pero perder órdenes o cobros es el peor escenario, y el si
 3. Costo mensual en dólares estable y predecible. Se informa al cliente como referencia con cotización y fecha.
 4. Cron jobs o scheduler nativo para los jobs mensuales.
 5. Facilidad para migrar a otro proveedor o a un VPS (solo Docker y variables de entorno).
+
+## Proveedor elegido
+
+**Render**, decidido el 2026-10-27 para la prueba del cliente del 2026-10-30 y el uso real desde el 2026-11-06:
+
+- Postgres administrado con backups, API en Docker y los dos frontends como sitios estáticos, todo descrito en `render.yaml` (Blueprint). Paso a paso en `docs/workflow/despliegue.md`.
+- Región Virginia: Render no tiene región en Sudamérica (criterio 2 sin cumplir; la carga es baja).
+- Planes pagos desde el inicio: la base gratuita se borra a los 30 días y el servicio gratuito se suspende sin uso.
+- Por ahora un solo entorno (producción). Staging y la publicación por tag llegan después (E00-05, E00-06).
+- Cumple el criterio 5: solo Docker y variables de entorno; `render.yaml` es lo único propio de Render.
 
 ## Alternativas descartadas
 

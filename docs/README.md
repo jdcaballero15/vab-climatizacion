@@ -5,7 +5,7 @@
 | [architecture/](architecture/overview.md) | Arquitectura, modelo de datos, máquina de estados, ADR | Desarrollo |
 | [domain/](domain/alcance-fase-1.md) | Alcance, glosario, roles y permisos, decisiones pendientes | Negocio y desarrollo |
 | [stories/](stories/README.md) | Historias de usuario por épica (fuente de verdad) | Negocio valida, desarrollo implementa |
-| [workflow/](workflow/definition-of-done.md) | Definición de terminado, ciclo de una historia con tres puertas y trabajo con agentes de IA | Desarrollo |
+| [workflow/](workflow/definition-of-done.md) | Definición de terminado, ciclo de una historia con tres puertas, trabajo con agentes de IA y [despliegue en Render](workflow/despliegue.md) | Desarrollo |
 | [code-standards.md](code-standards.md) | Estándares de código normativos y cómo se hace cumplir cada uno | Desarrollo |
 | [architecture/adr/](architecture/adr/README.md) | Registros de decisiones (plantilla `0000` e índice) | Desarrollo |
 

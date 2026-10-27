@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.user import UserCreate, UserUpdate
 from app.core.security import hash_password
-from app.db.models.user import User
+from app.db.models.user import User, UserRole
 from app.db.repositories.user import UserRepository
 
 
@@ -16,6 +16,10 @@ class EmailAlreadyExistsError(Exception):
 
 class UserNotFoundError(Exception):
     """No existe un usuario activo con ese id."""
+
+
+class AdminAlreadyExistsError(Exception):
+    """Ya hay un administrador: los demás usuarios se crean desde la administración."""
 
 
 async def create_user(session: AsyncSession, data: UserCreate) -> User:
@@ -35,6 +39,14 @@ async def create_user(session: AsyncSession, data: UserCreate) -> User:
     await session.commit()
     await session.refresh(user)
     return user
+
+
+async def create_first_admin(session: AsyncSession, data: UserCreate) -> User:
+    """Primer administrador de una instalación nueva, para poder entrar a crear los demás."""
+    users = await UserRepository(session).list()
+    if any(user.role == UserRole.admin for user in users):
+        raise AdminAlreadyExistsError
+    return await create_user(session, data.model_copy(update={"role": UserRole.admin}))
 
 
 async def list_users(session: AsyncSession) -> Sequence[User]:
