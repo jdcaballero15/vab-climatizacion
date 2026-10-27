@@ -20,8 +20,11 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
   return (
     <main className="login">
       <form className="login__form" onSubmit={handleSubmit} aria-label="Iniciar sesión">
+        <span className="login__mark" aria-hidden="true">
+          OT
+        </span>
         <h1 className="login__title">OT Platform</h1>
-        <p className="login__subtitle">Administración</p>
+        <p className="login__subtitle">Administración. Ingresá con tu correo.</p>
 
         <label htmlFor="email">Correo electrónico</label>
         <input

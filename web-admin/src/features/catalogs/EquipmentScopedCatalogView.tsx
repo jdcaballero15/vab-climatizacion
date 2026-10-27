@@ -4,6 +4,7 @@ import { useId, type ReactNode } from "react";
 import { useEquipmentTypes } from "../equipment-types/useEquipmentTypes";
 import { CatalogItem } from "./CatalogItem";
 import { NewNameForm } from "./NewNameForm";
+import { PageHeader } from "../../app/PageHeader";
 
 /** Valor de un catálogo de un tipo de equipo, o genérico (sin tipo): fallas y reparaciones. */
 interface ScopedItem {
@@ -73,7 +74,7 @@ export function EquipmentScopedCatalogView<T extends ScopedItem>({
 
   return (
     <section className="catalog" aria-labelledby={titleId}>
-      <h2 id={titleId}>{texts.title}</h2>
+      <PageHeader eyebrow="Catálogos" title={texts.title} titleId={titleId} />
 
       <label className="catalog__toggle">
         Tipo de equipo

@@ -13,6 +13,7 @@ import {
   useUpdateCrew,
   useUpdateFieldTechnician,
 } from "./useCrews";
+import { PageHeader } from "../../app/PageHeader";
 
 const CREW_NAME_TAKEN = "Ya existe una escuadrilla con ese nombre (puede estar desactivada).";
 const TECHNICIAN_NAME_TAKEN = "Ya existe un técnico con ese nombre (puede estar desactivado).";
@@ -21,11 +22,14 @@ const TECHNICIAN_NAME_TAKEN = "Ya existe un técnico con ese nombre (puede estar
 export function CrewsPage() {
   return (
     <section className="catalog">
-      <h2>Escuadrillas y técnicos</h2>
-      <p>
-        Cada escuadrilla entra a la app con el usuario de su celular. Las personas que van en cada
-        una cambian: al cerrar una orden se tilda qué técnicos fueron.
-      </p>
+      <PageHeader
+        eyebrow="Equipo"
+        title="Escuadrillas y técnicos"
+        subtitle={
+          "Cada escuadrilla entra a la app con el usuario de su celular. Las personas que van " +
+          "en cada una cambian: al cerrar una orden se tilda qué técnicos fueron."
+        }
+      />
       <CrewsSection />
       <FieldTechniciansSection />
     </section>

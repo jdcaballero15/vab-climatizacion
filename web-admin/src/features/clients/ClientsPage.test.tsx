@@ -141,6 +141,10 @@ function nuevoCliente() {
   return within(screen.getByRole("form", { name: "Nuevo cliente" }));
 }
 
+async function abrirAlta() {
+  await userEvent.click(screen.getByRole("button", { name: "Nuevo cliente" }));
+}
+
 afterEach(() => vi.restoreAllMocks());
 
 describe("ClientsPage", () => {
@@ -198,6 +202,7 @@ describe("ClientsPage", () => {
     });
     renderClients();
 
+    await abrirAlta();
     await userEvent.type(nuevoCliente().getByLabelText("Nombre o razón social"), "Cliente Nuevo");
     await userEvent.click(nuevoCliente().getByRole("button", { name: "Crear cliente" }));
 
@@ -212,7 +217,8 @@ describe("ClientsPage", () => {
     });
     // El cliente recién creado se abre para cargarle contactos.
     expect(await screen.findByText("Cliente N° 1: Cliente Nuevo")).toBeInTheDocument();
-    expect(nuevoCliente().getByLabelText("Nombre o razón social")).toHaveValue("");
+    // El alta se cierra hasta que se pida otro.
+    expect(screen.queryByRole("form", { name: "Nuevo cliente" })).not.toBeInTheDocument();
   });
 
   // Criterio 7: un nombre parecido se advierte; se puede guardar igual o cancelar.
@@ -228,6 +234,7 @@ describe("ClientsPage", () => {
     });
     renderClients();
 
+    await abrirAlta();
     const nombre = nuevoCliente().getByLabelText("Nombre o razón social");
     await userEvent.type(nombre, "Farmacia del Sol Termas");
     await userEvent.click(nuevoCliente().getByRole("button", { name: "Crear cliente" }));
