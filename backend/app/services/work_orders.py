@@ -9,6 +9,7 @@ from app.api.schemas.work_order import (
     AssignmentCreate,
     CancellationAdminOut,
     CancellationCreate,
+    CompletedOut,
     CrewOrdersTechnicianOut,
     CrewTechnicianOut,
     CurrentAssignmentOut,
@@ -144,6 +145,12 @@ async def list_by_status(
             cancellation=(
                 _cancellation_out(cancellation, cancelled_by_name)
                 if cancellation is not None and cancelled_by_name is not None
+                else None
+            ),
+            # La última asignación de una Terminada es la de la escuadrilla que la cerró.
+            completed=(
+                CompletedOut(crew_name=crew_name, closed_at=closure.closed_at)
+                if status == OrderStatus.done and closure is not None
                 else None
             ),
         )

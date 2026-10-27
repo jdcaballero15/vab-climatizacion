@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.deps import SessionDep, require_role
+from app.api.schemas.closure import ClosureAdminOut
 from app.api.schemas.work_order import (
     AssignmentAdminOut,
     AssignmentCreate,
@@ -24,6 +25,7 @@ from app.domain.work_order import (
 )
 from app.services import catalog as catalog_service
 from app.services import clients as clients_service
+from app.services import closures as closures_service
 from app.services import work_orders as work_orders_service
 
 router = APIRouter(prefix="/admin/orders", tags=["órdenes"])
@@ -102,9 +104,9 @@ async def create_work_order(
         raise _error(status_code, code, message) from None
 
 
-# Los estados desde los que se asigna (E04-03) o se cancela (E04-07), y las canceladas;
-# el panel completo con filtros llega con E04-05.
-ListableStatus = Literal["pending", "assigned", "in_progress", "cancelled"]
+# Los estados desde los que se asigna (E04-03) o se cancela (E04-07), las terminadas para
+# revisarlas (E04-08) y las canceladas; el panel completo con filtros llega con E04-05.
+ListableStatus = Literal["pending", "assigned", "in_progress", "done", "cancelled"]
 
 
 @router.get("", response_model=OrderListPage)
@@ -161,6 +163,20 @@ async def cancel_work_order(
         raise _error(status_code, code, message) from None
     except WorkOrderRuleError as exc:
         raise _error(_RULE_STATUS[type(exc)], exc.code, exc.message) from None
+
+
+@router.get("/{order_id}/closure", response_model=ClosureAdminOut)
+async def get_work_order_closure(
+    order_id: uuid.UUID, session: SessionDep, _: AdminOnly
+) -> ClosureAdminOut:
+    try:
+        return await closures_service.get_last_closure(session, order_id)
+    except work_orders_service.WorkOrderNotFoundError:
+        raise _error(404, "order_not_found", "No se encontró la orden.") from None
+    except closures_service.ClosureNotFoundError:
+        raise _error(
+            404, "closure_not_found", "La orden todavía no tiene un cierre de la escuadrilla."
+        ) from None
 
 
 def _error(status_code: int, code: str, message: str) -> HTTPException:

@@ -2,6 +2,7 @@ import { Fragment, useState } from "react";
 
 import { AssignOrderForm } from "./AssignOrderForm";
 import { CancelOrderForm } from "./CancelOrderForm";
+import { ClosureDetail } from "./ClosureDetail";
 import {
   cancelReasonText,
   formatDate,
@@ -13,7 +14,7 @@ import { OrderForm } from "./OrderForm";
 import type { ListableStatus, OrderListItem } from "./types";
 import { PAGE_SIZE, useOrderList } from "./useOrders";
 
-type RowAction = { orderId: string; kind: "assign" | "cancel" };
+type RowAction = { orderId: string; kind: "assign" | "cancel" | "closure" };
 
 /** Las columnas propias de cada estado, después de número, cliente, domicilio y tipo. */
 function statusColumns(status: ListableStatus): string[] {
@@ -23,12 +24,23 @@ function statusColumns(status: ListableStatus): string[] {
   if (status === "cancelled") {
     return ["Motivo", "Cancelada por", "Cancelada el"];
   }
+  if (status === "done") {
+    return ["Escuadrilla", "Cerrada el"];
+  }
   return ["Escuadrilla", "Fecha prevista"];
 }
 
 function statusCells(order: OrderListItem, status: ListableStatus) {
   if (status === "pending") {
     return <td>{formatDate(order.created_at)}</td>;
+  }
+  if (status === "done") {
+    return (
+      <>
+        <td>{order.completed?.crew_name}</td>
+        <td>{order.completed && formatDate(order.completed.closed_at)}</td>
+      </>
+    );
   }
   if (status === "cancelled") {
     const cancellation = order.cancellation;
@@ -50,7 +62,8 @@ function statusCells(order: OrderListItem, status: ListableStatus) {
 
 /**
  * Alta de órdenes y listado por estado: desde Pendientes se asignan (E04-03) y hasta En curso
- * se cancelan (E04-07). Las canceladas se consultan sin acciones.
+ * se cancelan (E04-07). De las terminadas se ve el cierre (E04-08); las canceladas se
+ * consultan sin acciones.
  */
 export function OrdersPage() {
   const [status, setStatus] = useState<ListableStatus>("pending");
@@ -120,7 +133,23 @@ export function OrdersPage() {
                     <td>{order.site_label ?? order.site_address}</td>
                     <td>{order.work_type_name}</td>
                     {statusCells(order, status)}
-                    {withActions && (
+                    {withActions && status === "done" && (
+                      <td>
+                        <button
+                          type="button"
+                          aria-label={`Ver el cierre de la orden N° ${order.number}`}
+                          aria-expanded={action?.orderId === order.id}
+                          onClick={() =>
+                            action?.orderId === order.id
+                              ? setAction(null)
+                              : open(order.id, "closure")
+                          }
+                        >
+                          {action?.orderId === order.id ? "Ocultar cierre" : "Ver cierre"}
+                        </button>
+                      </td>
+                    )}
+                    {withActions && status !== "done" && (
                       <td>
                         {order.status === "pending" && (
                           <button
@@ -149,7 +178,9 @@ export function OrdersPage() {
                   {action?.orderId === order.id && (
                     <tr>
                       <td colSpan={colSpan}>
-                        {action.kind === "assign" ? (
+                        {action.kind === "closure" ? (
+                          <ClosureDetail order={order} />
+                        ) : action.kind === "assign" ? (
                           <AssignOrderForm
                             order={order}
                             onCancel={() => setAction(null)}

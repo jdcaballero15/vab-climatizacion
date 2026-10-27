@@ -7,6 +7,7 @@ import type {
   AssignmentCreate,
   Cancellation,
   CancellationCreate,
+  ClosureDetail,
   ListableStatus,
   OrderListPage,
   WorkOrder,
@@ -87,6 +88,22 @@ export function useCancelOrder(orderId: string) {
     },
     // La orden pasa a Canceladas: se refrescan todos los listados.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
+  });
+}
+
+/** Lo que cargó la escuadrilla en el último cierre (E04-08, criterio 1). */
+export function useOrderClosure(orderId: string) {
+  return useQuery<ClosureDetail>({
+    queryKey: [...ORDERS_KEY, orderId, "closure"],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/admin/orders/{order_id}/closure", {
+        params: { path: { order_id: orderId } },
+      });
+      if (error || !data) {
+        throw new Error("no se pudo cargar el cierre");
+      }
+      return data;
+    },
   });
 }
 

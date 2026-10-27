@@ -420,11 +420,11 @@ async def test_listado_paginado(
     assert [item["id"] for item in body["items"]] == [creadas[1]["id"], creadas[2]["id"]]
 
 
-# Terminadas en adelante llegan con el panel por estado (E04-05).
+# Facturadas y cobradas llegan con el panel por estado (E04-05).
 async def test_listado_exige_un_estado_admitido(admin: User) -> None:
     async with _client() as client:
         sin_filtro = await client.get(ORDERS_URL, headers=_auth(admin))
-        otro = await client.get(f"{ORDERS_URL}?status=done", headers=_auth(admin))
+        otro = await client.get(f"{ORDERS_URL}?status=invoiced", headers=_auth(admin))
 
     assert sin_filtro.status_code == 422
     assert otro.status_code == 422

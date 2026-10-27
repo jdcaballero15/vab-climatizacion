@@ -2433,6 +2433,7 @@
                 "pending",
                 "assigned",
                 "in_progress",
+                "done",
                 "cancelled"
               ],
               "type": "string",
@@ -2586,6 +2587,54 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CancellationAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/closure": {
+      "get": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Get Work Order Closure",
+        "operationId": "get_work_order_closure_admin_orders__order_id__closure_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureAdminOut"
                 }
               }
             }
@@ -3611,6 +3660,116 @@
         "title": "ClientUpdate",
         "description": "Solo se cambian los campos enviados; un campo opcional en null se borra."
       },
+      "ClosureAdminOut": {
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/ClosureOutcome"
+          },
+          "closed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Closed At"
+          },
+          "closed_by_name": {
+            "type": "string",
+            "title": "Closed By Name"
+          },
+          "crew_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Name"
+          },
+          "technicians": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Technicians"
+          },
+          "tasks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tasks"
+          },
+          "failure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure"
+          },
+          "repair": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repair"
+          },
+          "equipment_condition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentCondition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "not_done_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NotDoneReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "outcome",
+          "closed_at",
+          "closed_by_name",
+          "crew_name",
+          "technicians",
+          "tasks",
+          "failure",
+          "repair",
+          "equipment_condition",
+          "not_done_reason",
+          "observation"
+        ],
+        "title": "ClosureAdminOut",
+        "description": "Lo que cargó la escuadrilla al cerrar, para que administración lo revise (E04-08).\n\nFalla y reparación vienen como texto: el nombre del catálogo o lo escrito en \"Otro\"."
+      },
       "ClosureChoiceTechnicianOut": {
         "properties": {
           "id": {
@@ -3829,6 +3988,33 @@
           "closed_at"
         ],
         "title": "ClosureTechnicianOut"
+      },
+      "CompletedOut": {
+        "properties": {
+          "crew_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Name"
+          },
+          "closed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Closed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "crew_name",
+          "closed_at"
+        ],
+        "title": "CompletedOut",
+        "description": "Qué escuadrilla la terminó y cuándo (E04-08, criterio 1)."
       },
       "ContactAdminOut": {
         "properties": {
@@ -5051,6 +5237,16 @@
                 "type": "null"
               }
             ]
+          },
+          "completed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompletedOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -5067,7 +5263,8 @@
           "created_at",
           "returned",
           "assignment",
-          "cancellation"
+          "cancellation",
+          "completed"
         ],
         "title": "OrderListItemOut"
       },

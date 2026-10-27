@@ -408,3 +408,23 @@ body {
   padding: 0;
   list-style: none;
 }
+
+.orders__closure {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+}
+
+.orders__closure div {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.orders__closure dt {
+  min-width: 9rem;
+  color: #555;
+}
+
+.orders__closure dd {
+  margin: 0;
+}

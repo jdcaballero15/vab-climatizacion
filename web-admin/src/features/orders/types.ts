@@ -11,5 +11,6 @@ export type AssignmentCreate = components["schemas"]["AssignmentCreate"];
 export type Cancellation = components["schemas"]["CancellationAdminOut"];
 export type CancellationCreate = components["schemas"]["CancellationCreate"];
 export type CancelReason = components["schemas"]["CancelReason"];
-/** Los estados que lista hoy la API; Terminadas en adelante llegan con E04-05. */
-export type ListableStatus = "pending" | "assigned" | "in_progress" | "cancelled";
+export type ClosureDetail = components["schemas"]["ClosureAdminOut"];
+/** Los estados que lista hoy la API; Facturadas y Cobradas llegan con E04-05. */
+export type ListableStatus = "pending" | "assigned" | "in_progress" | "done" | "cancelled";

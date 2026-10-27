@@ -455,8 +455,11 @@ async def test_pendientes_sin_asignacion_ni_cancelacion(mundo: Mundo) -> None:
     assert item["cancellation"] is None
 
 
-@pytest.mark.parametrize("status", ["done", "invoiced", "paid"])
-async def test_el_listado_todavia_no_admite_terminadas(mundo: Mundo, status: str) -> None:
+# Las terminadas se listan desde E04-08; facturadas y cobradas llegan con E04-05.
+@pytest.mark.parametrize("status", ["invoiced", "paid"])
+async def test_el_listado_todavia_no_admite_facturadas_ni_cobradas(
+    mundo: Mundo, status: str
+) -> None:
     response = await _get(mundo.admin, f"{ORDERS_URL}?status={status}")
 
     assert response.status_code == 422
