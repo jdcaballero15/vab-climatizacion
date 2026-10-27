@@ -5,7 +5,14 @@ from typing import Annotated
 from pydantic import BaseModel, BeforeValidator, ConfigDict, StringConstraints
 
 from app.api.schemas.client import ClientSiteTechnicianOut, blank_to_none
-from app.domain.work_order import OrderChannel, OrderKind, OrderSource, OrderStatus
+from app.domain.work_order import (
+    ClosureOutcome,
+    NotDoneReason,
+    OrderChannel,
+    OrderKind,
+    OrderSource,
+    OrderStatus,
+)
 
 # Obligatoria: un texto vacío pasa a None y se rechaza con 422.
 Description = Annotated[str, BeforeValidator(blank_to_none), StringConstraints(max_length=2000)]
@@ -46,6 +53,16 @@ class WorkOrderAdminOut(BaseModel):
     created_at: datetime
 
 
+class ReturnedFromCrewOut(BaseModel):
+    """Por qué volvió a Pendiente desde una escuadrilla (E05-08, criterio 5)."""
+
+    crew_name: str
+    closed_at: datetime
+    outcome: ClosureOutcome
+    not_done_reason: NotDoneReason | None
+    observation: str | None
+
+
 class PendingOrderOut(BaseModel):
     id: uuid.UUID
     number: int
@@ -56,6 +73,8 @@ class PendingOrderOut(BaseModel):
     work_type_name: str
     description: str | None
     created_at: datetime
+    # Nulo si no volvió de una escuadrilla o si después se la volvió a asignar.
+    returned: ReturnedFromCrewOut | None
 
 
 class PendingOrderPage(BaseModel):

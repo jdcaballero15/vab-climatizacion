@@ -655,6 +655,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tech/orders/{order_id}/closure-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Closure Options */
+        get: operations["get_closure_options_tech_orders__order_id__closure_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tech/orders/{order_id}/closure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close My Order */
+        post: operations["close_my_order_tech_orders__order_id__closure_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -786,6 +820,81 @@ export interface components {
             tax_condition?: components["schemas"]["TaxCondition"] | null;
             /** Notes */
             notes?: string | null;
+        };
+        /** ClosureChoiceTechnicianOut */
+        ClosureChoiceTechnicianOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** ClosureCreate */
+        ClosureCreate: {
+            /**
+             * Idempotency Key
+             * Format: uuid
+             */
+            idempotency_key: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "done" | "needs_revisit" | "not_done";
+            /** Technician Ids */
+            technician_ids: string[];
+            /**
+             * Task Ids
+             * @default []
+             */
+            task_ids: string[];
+            /** Failure Id */
+            failure_id?: string | null;
+            /** Failure Other Text */
+            failure_other_text?: string | null;
+            /** Repair Id */
+            repair_id?: string | null;
+            /** Repair Other Text */
+            repair_other_text?: string | null;
+            equipment_condition?: components["schemas"]["EquipmentCondition"] | null;
+            not_done_reason?: components["schemas"]["NotDoneReason"] | null;
+            /** Observation */
+            observation?: string | null;
+        };
+        /** ClosureOptionsTechnicianOut */
+        ClosureOptionsTechnicianOut: {
+            /** Technicians */
+            technicians: components["schemas"]["ClosureChoiceTechnicianOut"][];
+            /** Tasks */
+            tasks: components["schemas"]["ClosureChoiceTechnicianOut"][];
+            /** Requires Failure Repair */
+            requires_failure_repair: boolean;
+            /** Failures */
+            failures: components["schemas"]["FailureChoiceTechnicianOut"][];
+        };
+        /**
+         * ClosureOutcome
+         * @description Resultado del cierre de la escuadrilla (E05-08).
+         * @enum {string}
+         */
+        ClosureOutcome: "done" | "needs_pickup" | "needs_revisit" | "not_done";
+        /** ClosureTechnicianOut */
+        ClosureTechnicianOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Outcome */
+            outcome: string;
+            order_status: components["schemas"]["OrderStatus"];
+            /**
+             * Closed At
+             * Format: date-time
+             */
+            closed_at: string;
         };
         /** ContactAdminOut */
         ContactAdminOut: {
@@ -937,6 +1046,12 @@ export interface components {
             /** Notes */
             notes: string | null;
         };
+        /**
+         * EquipmentCondition
+         * @description Cómo quedó el equipo al cerrar (E05-04).
+         * @enum {string}
+         */
+        EquipmentCondition: "working" | "working_with_notes" | "not_working";
         /** EquipmentCreate */
         EquipmentCreate: {
             /**
@@ -1029,6 +1144,18 @@ export interface components {
             /** Is Active */
             is_active: boolean;
         };
+        /** FailureChoiceTechnicianOut */
+        FailureChoiceTechnicianOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Repairs */
+            repairs: components["schemas"]["ClosureChoiceTechnicianOut"][];
+        };
         /** FailureCreate */
         FailureCreate: {
             /** Name */
@@ -1087,6 +1214,12 @@ export interface components {
             /** Refresh Token */
             refresh_token: string;
         };
+        /**
+         * NotDoneReason
+         * @description Por qué no se pudo hacer el trabajo (E05-08). Lista fija, como el prototipo.
+         * @enum {string}
+         */
+        NotDoneReason: "client_absent" | "missing_part" | "beyond_repair";
         /**
          * OrderChannel
          * @enum {string}
@@ -1196,6 +1329,7 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            returned: components["schemas"]["ReturnedFromCrewOut"] | null;
         };
         /** PendingOrderPage */
         PendingOrderPage: {
@@ -1262,6 +1396,23 @@ export interface components {
             name?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+        };
+        /**
+         * ReturnedFromCrewOut
+         * @description Por qué volvió a Pendiente desde una escuadrilla (E05-08, criterio 5).
+         */
+        ReturnedFromCrewOut: {
+            /** Crew Name */
+            crew_name: string;
+            /**
+             * Closed At
+             * Format: date-time
+             */
+            closed_at: string;
+            outcome: components["schemas"]["ClosureOutcome"];
+            not_done_reason: components["schemas"]["NotDoneReason"] | null;
+            /** Observation */
+            observation: string | null;
         };
         /** SiteAdminOut */
         SiteAdminOut: {
@@ -3398,6 +3549,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderDetailTechnicianOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_closure_options_tech_orders__order_id__closure_options_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosureOptionsTechnicianOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    close_my_order_tech_orders__order_id__closure_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClosureCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosureTechnicianOut"];
                 };
             };
             /** @description Validation Error */

@@ -6,11 +6,17 @@ from httpx import ASGITransport, AsyncClient, Response
 from sqlalchemy import select, text
 
 from app.core.security import create_access_token
-from app.db.models.catalog import EquipmentType, WorkType
+from app.db.models.catalog import EquipmentType, Failure, Repair, WorkType
 from app.db.models.client import Client, ClientSite
+from app.db.models.crew import Crew
 from app.db.models.equipment import Equipment
 from app.db.models.user import User, UserRole
-from app.db.models.work_order import WorkOrder, WorkOrderEvent
+from app.db.models.work_order import (
+    WorkOrder,
+    WorkOrderAssignment,
+    WorkOrderClosure,
+    WorkOrderEvent,
+)
 from app.db.session import SessionLocal, engine
 from app.domain.work_order import OrderStatus, WorkOrderEventType
 from app.main import app
@@ -23,8 +29,13 @@ TABLES = [
     EquipmentType.__table__,
     Equipment.__table__,
     WorkType.__table__,
+    Failure.__table__,
+    Repair.__table__,
+    Crew.__table__,
     WorkOrder.__table__,
     WorkOrderEvent.__table__,
+    WorkOrderAssignment.__table__,
+    WorkOrderClosure.__table__,
 ]
 ORDERS_URL = "/admin/orders"
 PENDING_URL = f"{ORDERS_URL}?status=pending"
@@ -45,6 +56,9 @@ async def schema() -> AsyncGenerator[None, None]:
             "order_kind",
             "order_source",
             "order_channel",
+            "closure_outcome",
+            "equipment_condition",
+            "not_done_reason",
         ):
             await conn.execute(text(f"DROP TYPE IF EXISTS {enum_type}"))
         await conn.execute(text("DROP SEQUENCE IF EXISTS work_order_number_seq"))

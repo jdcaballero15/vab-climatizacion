@@ -3015,6 +3015,112 @@
           }
         }
       }
+    },
+    "/tech/orders/{order_id}/closure-options": {
+      "get": {
+        "tags": [
+          "app del técnico"
+        ],
+        "summary": "Get Closure Options",
+        "operationId": "get_closure_options_tech_orders__order_id__closure_options_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureOptionsTechnicianOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tech/orders/{order_id}/closure": {
+      "post": {
+        "tags": [
+          "app del técnico"
+        ],
+        "summary": "Close My Order",
+        "operationId": "close_my_order_tech_orders__order_id__closure_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosureCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureTechnicianOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3369,6 +3475,225 @@
         "type": "object",
         "title": "ClientUpdate",
         "description": "Solo se cambian los campos enviados; un campo opcional en null se borra."
+      },
+      "ClosureChoiceTechnicianOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ClosureChoiceTechnicianOut"
+      },
+      "ClosureCreate": {
+        "properties": {
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Idempotency Key"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "done",
+              "needs_revisit",
+              "not_done"
+            ],
+            "title": "Outcome"
+          },
+          "technician_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Technician Ids"
+          },
+          "task_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Task Ids",
+            "default": []
+          },
+          "failure_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Id"
+          },
+          "failure_other_text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Other Text"
+          },
+          "repair_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repair Id"
+          },
+          "repair_other_text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repair Other Text"
+          },
+          "equipment_condition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentCondition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "not_done_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NotDoneReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "idempotency_key",
+          "outcome",
+          "technician_ids"
+        ],
+        "title": "ClosureCreate"
+      },
+      "ClosureOptionsTechnicianOut": {
+        "properties": {
+          "technicians": {
+            "items": {
+              "$ref": "#/components/schemas/ClosureChoiceTechnicianOut"
+            },
+            "type": "array",
+            "title": "Technicians"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/ClosureChoiceTechnicianOut"
+            },
+            "type": "array",
+            "title": "Tasks"
+          },
+          "requires_failure_repair": {
+            "type": "boolean",
+            "title": "Requires Failure Repair"
+          },
+          "failures": {
+            "items": {
+              "$ref": "#/components/schemas/FailureChoiceTechnicianOut"
+            },
+            "type": "array",
+            "title": "Failures"
+          }
+        },
+        "type": "object",
+        "required": [
+          "technicians",
+          "tasks",
+          "requires_failure_repair",
+          "failures"
+        ],
+        "title": "ClosureOptionsTechnicianOut"
+      },
+      "ClosureOutcome": {
+        "type": "string",
+        "enum": [
+          "done",
+          "needs_pickup",
+          "needs_revisit",
+          "not_done"
+        ],
+        "title": "ClosureOutcome",
+        "description": "Resultado del cierre de la escuadrilla (E05-08)."
+      },
+      "ClosureTechnicianOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "outcome": {
+            "type": "string",
+            "title": "Outcome"
+          },
+          "order_status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "closed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Closed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "outcome",
+          "order_status",
+          "closed_at"
+        ],
+        "title": "ClosureTechnicianOut"
       },
       "ContactAdminOut": {
         "properties": {
@@ -3838,6 +4163,16 @@
         ],
         "title": "EquipmentAdminOut"
       },
+      "EquipmentCondition": {
+        "type": "string",
+        "enum": [
+          "working",
+          "working_with_notes",
+          "not_working"
+        ],
+        "title": "EquipmentCondition",
+        "description": "Cómo quedó el equipo al cerrar (E05-04)."
+      },
       "EquipmentCreate": {
         "properties": {
           "client_site_id": {
@@ -4153,6 +4488,33 @@
         ],
         "title": "FailureAdminOut"
       },
+      "FailureChoiceTechnicianOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "repairs": {
+            "items": {
+              "$ref": "#/components/schemas/ClosureChoiceTechnicianOut"
+            },
+            "type": "array",
+            "title": "Repairs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "repairs"
+        ],
+        "title": "FailureChoiceTechnicianOut"
+      },
       "FailureCreate": {
         "properties": {
           "name": {
@@ -4325,6 +4687,16 @@
           "refresh_token"
         ],
         "title": "LogoutRequest"
+      },
+      "NotDoneReason": {
+        "type": "string",
+        "enum": [
+          "client_absent",
+          "missing_part",
+          "beyond_repair"
+        ],
+        "title": "NotDoneReason",
+        "description": "Por qué no se pudo hacer el trabajo (E05-08). Lista fija, como el prototipo."
       },
       "OrderChannel": {
         "type": "string",
@@ -4578,6 +4950,16 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "returned": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReturnedFromCrewOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -4590,7 +4972,8 @@
           "site_address",
           "work_type_name",
           "description",
-          "created_at"
+          "created_at",
+          "returned"
         ],
         "title": "PendingOrderOut"
       },
@@ -4766,6 +5149,53 @@
         },
         "type": "object",
         "title": "RepairUpdate"
+      },
+      "ReturnedFromCrewOut": {
+        "properties": {
+          "crew_name": {
+            "type": "string",
+            "title": "Crew Name"
+          },
+          "closed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Closed At"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/ClosureOutcome"
+          },
+          "not_done_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NotDoneReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "crew_name",
+          "closed_at",
+          "outcome",
+          "not_done_reason",
+          "observation"
+        ],
+        "title": "ReturnedFromCrewOut",
+        "description": "Por qué volvió a Pendiente desde una escuadrilla (E05-08, criterio 5)."
       },
       "SiteAdminOut": {
         "properties": {
@@ -5384,6 +5814,10 @@
             "type": "string",
             "title": "Name"
           },
+          "requires_failure_repair": {
+            "type": "boolean",
+            "title": "Requires Failure Repair"
+          },
           "is_active": {
             "type": "boolean",
             "title": "Is Active"
@@ -5393,6 +5827,7 @@
         "required": [
           "id",
           "name",
+          "requires_failure_repair",
           "is_active"
         ],
         "title": "WorkTypeAdminOut"
@@ -5437,6 +5872,17 @@
               }
             ],
             "title": "Is Active"
+          },
+          "requires_failure_repair": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requires Failure Repair"
           }
         },
         "type": "object",

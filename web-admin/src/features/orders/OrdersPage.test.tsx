@@ -41,6 +41,7 @@ const PENDIENTE: PendingOrder = {
   work_type_name: "Reparación",
   description: "No enfría",
   created_at: "2026-10-05T13:00:00Z",
+  returned: null,
 };
 const OTRA_PENDIENTE: PendingOrder = {
   ...PENDIENTE,
@@ -176,6 +177,49 @@ describe("OrdersPage", () => {
     expect(within(filas[0]).getByText("Reparación")).toBeInTheDocument();
     expect(within(filas[0]).getByText("05/10/2026")).toBeInTheDocument();
     expect(within(filas[1]).getByText("Ruta 9")).toBeInTheDocument();
+  });
+
+  it("indica por qué volvió de la escuadrilla", async () => {
+    const otraVisita: PendingOrder = {
+      ...PENDIENTE,
+      returned: {
+        crew_name: "Escuadrilla 1",
+        closed_at: "2026-10-27T14:00:00Z",
+        outcome: "needs_revisit",
+        not_done_reason: null,
+        observation: "Falta el capacitor.",
+      },
+    };
+    const noSePudo: PendingOrder = {
+      ...OTRA_PENDIENTE,
+      returned: {
+        crew_name: "Escuadrilla 2",
+        closed_at: "2026-10-26T14:00:00Z",
+        outcome: "not_done",
+        not_done_reason: "client_absent",
+        observation: null,
+      },
+    };
+    mockApi((request, url) =>
+      url.pathname.endsWith("/admin/orders") && request.method === "GET"
+        ? json(pendingPage([otraVisita, noSePudo, { ...PENDIENTE, id: "o3", number: 9 }]))
+        : undefined,
+    );
+    renderOrders();
+
+    const tabla = await screen.findByRole("table", { name: "Órdenes pendientes" });
+    expect(
+      within(tabla).getByText(
+        "Volvió de Escuadrilla 1 el 27/10/2026: Requiere otra visita. Falta el capacitor.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(tabla).getByText(
+        "Volvió de Escuadrilla 2 el 26/10/2026: No se pudo hacer. Cliente ausente o sin acceso",
+      ),
+    ).toBeInTheDocument();
+    // Tres órdenes y dos líneas de motivo: la que nunca salió no tiene.
+    expect(within(tabla).getAllByRole("row").slice(1)).toHaveLength(5);
   });
 
   it("avisa cuando no hay pendientes", async () => {

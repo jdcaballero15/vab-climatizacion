@@ -370,6 +370,16 @@ body {
   color: #b00020;
 }
 
+.users__table tr:has(+ .orders__returned) td {
+  border-bottom: none;
+}
+
+.users__table .orders__returned td {
+  padding-top: 0;
+  color: #8a5300;
+  font-size: 0.875rem;
+}
+
 .clients__warning {
   padding: 0.75rem;
   border: 1px solid #c77700;
