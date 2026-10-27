@@ -45,9 +45,14 @@ services:
     staticPublishPath: dist
     autoDeploy: true
     envVars:
+      # La API por /api del mismo sitio: la cookie del refresh token es del mismo sitio (ADR 0010).
       - key: VITE_API_URL
-        value: https://vab-ot-api.onrender.com
+        value: /api
     routes:
+      # Antes que la de index.html: reenvía las llamadas a la API sin el prefijo /api.
+      - type: rewrite
+        source: /api/*
+        destination: https://vab-ot-api.onrender.com/*
       # Las rutas de la app (/ordenes, /clientes) las resuelve React.
       - type: rewrite
         source: /*

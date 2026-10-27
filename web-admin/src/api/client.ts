@@ -1,14 +1,12 @@
 import createClient from "openapi-fetch";
 
 import { notifySessionExpired } from "../features/auth/session";
-import {
-  getAccessToken,
-  getRefreshToken,
-  setAccessToken,
-  setRefreshToken,
-} from "../features/auth/token";
+import { getAccessToken, setAccessToken } from "../features/auth/token";
+import type { Session } from "../features/auth/types";
 import type { paths } from "./schema";
 
+// En los sitios desplegados y en local la API está en /api del mismo sitio (Render o
+// Vite la reenvían): así la cookie del refresh token es del mismo sitio (ADR 0010).
 const baseUrl = import.meta.env.VITE_API_URL ?? "/api";
 
 // Cliente tipado contra el OpenAPI del backend. Los tipos salen de schema.d.ts
@@ -22,27 +20,34 @@ export const api = createClient<paths>({
 // Rutas de sesión que no deben disparar el reintento con refresh (evita bucles).
 const AUTH_PATHS = ["/auth/login", "/auth/refresh", "/auth/logout"];
 
-// Un único refresh en vuelo: varias requests que reciben 401 a la vez comparten
-// la misma renovación en lugar de pedir una cada una.
-let refreshInFlight: Promise<boolean> | null = null;
+// Un único refresh en vuelo: varias requests que reciben 401 a la vez (o los dos montajes
+// de StrictMode al abrir) comparten la misma renovación. Pedir dos con la misma cookie
+// haría fallar la segunda, porque cada renovación revoca el token anterior.
+let refreshInFlight: Promise<Session | null> | null = null;
 
-async function refreshSession(): Promise<boolean> {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) {
-    return false;
+async function requestRefresh(): Promise<Session | null> {
+  try {
+    const response = await globalThis.fetch(`${baseUrl}/auth/refresh`, {
+      method: "POST",
+      credentials: "same-origin",
+    });
+    if (!response.ok) {
+      return null;
+    }
+    const data = (await response.json()) as Session;
+    setAccessToken(data.access_token);
+    return data;
+  } catch {
+    return null;
   }
-  const response = await globalThis.fetch(`${baseUrl}/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refreshToken }),
+}
+
+/** Renueva la sesión con la cookie. Devuelve la sesión, o null si no hay una válida. */
+export function refreshSession(): Promise<Session | null> {
+  refreshInFlight ??= requestRefresh().finally(() => {
+    refreshInFlight = null;
   });
-  if (!response.ok) {
-    return false;
-  }
-  const data = (await response.json()) as { access_token: string; refresh_token: string };
-  setAccessToken(data.access_token);
-  setRefreshToken(data.refresh_token);
-  return true;
+  return refreshInFlight;
 }
 
 api.use({
@@ -60,17 +65,13 @@ api.use({
       return undefined;
     }
     const path = new URL(request.url).pathname;
-    if (AUTH_PATHS.some((authPath) => path.endsWith(authPath)) || !getRefreshToken()) {
+    if (AUTH_PATHS.some((authPath) => path.endsWith(authPath)) || !getAccessToken()) {
       return undefined;
     }
 
-    refreshInFlight ??= refreshSession().finally(() => {
-      refreshInFlight = null;
-    });
-    const renovado = await refreshInFlight;
-    if (!renovado) {
+    const renovada = await refreshSession();
+    if (!renovada) {
       setAccessToken(null);
-      setRefreshToken(null);
       notifySessionExpired();
       return undefined;
     }

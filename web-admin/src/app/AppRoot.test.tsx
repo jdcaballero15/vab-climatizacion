@@ -17,8 +17,6 @@ const NAMES: Record<Role, string> = {
 function sessionFor(role: Role) {
   return {
     access_token: "token",
-    refresh_token: "refresh",
-    token_type: "bearer",
     user: { id: "u1", email: "ana@ot-demo.com", full_name: NAMES[role], role },
   };
 }
@@ -30,13 +28,31 @@ function json(body: unknown, status = 200) {
   });
 }
 
-/** Simula la API: el login devuelve la sesión del rol y los listados vienen vacíos. */
-function stubApi(role: Role) {
+// Normaliza las dos formas en que se llama a fetch: con un Request (cliente de API)
+// o con (url, init) (la renovación con la cookie).
+function toRequest(input: Request | string, init?: RequestInit): Request {
+  return input instanceof Request ? input : new Request(input, init);
+}
+
+/**
+ * Simula la API: el login devuelve la sesión del rol y los listados vienen vacíos. Sin
+ * `cookie`, la renovación al abrir da 401 y hay que ingresar; con `cookie`, recupera la sesión.
+ */
+function apiFor(role: Role, { cookie = false } = {}) {
+  return async (request: Request) => {
+    const path = new URL(request.url).pathname;
+    if (path.endsWith("/auth/refresh")) {
+      return cookie ? json(sessionFor(role)) : json({ detail: "sin sesión" }, 401);
+    }
+    return path.includes("/admin/") ? json([]) : json(sessionFor(role));
+  };
+}
+
+function stubApi(role: Role, options: { cookie?: boolean } = {}) {
+  const respond = apiFor(role, options);
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (request: Request) =>
-      request.url.includes("/admin/") ? json([]) : json(sessionFor(role)),
-    ),
+    vi.fn(async (input: Request | string, init?: RequestInit) => respond(toRequest(input, init))),
   );
 }
 
@@ -65,7 +81,7 @@ function renderApp(initialPath = "/") {
 }
 
 async function iniciarSesion() {
-  await userEvent.type(screen.getByLabelText("Correo electrónico"), "ana@ot-demo.com");
+  await userEvent.type(await screen.findByLabelText("Correo electrónico"), "ana@ot-demo.com");
   await userEvent.type(screen.getByLabelText("Contraseña"), "Secreta123");
   await userEvent.click(screen.getByRole("button", { name: "Iniciar sesión" }));
 }
@@ -189,20 +205,37 @@ describe("AppRoot", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "false");
   });
 
-  // Criterio 2 de E01-02: al cerrar sesión se invalida el refresh token en el servidor y
-  // se vuelve al login.
-  it("al cerrar sesión llama a /auth/logout con el refresh token y vuelve al login", async () => {
-    let logoutBody: unknown = null;
-    const fetchMock = vi.fn(async (request: Request) => {
-      const path = new URL(request.url).pathname;
-      if (path.endsWith("/auth/logout")) {
-        logoutBody = await request.clone().json();
+  // E01-07, criterio 1: con la cookie vigente, recargar deja en la misma pantalla.
+  it("al recargar con la cookie vigente entra directo a la misma pantalla", async () => {
+    stubApi("admin", { cookie: true });
+    renderApp("/clientes");
+
+    expect(screen.getByText("Cargando…")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Clientes" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Contraseña")).not.toBeInTheDocument();
+    expect(currentPath()).toBe("/clientes");
+  });
+
+  // E01-07, criterio 2: sin cookie válida, muestra el login.
+  it("al abrir sin cookie válida muestra el login", async () => {
+    stubApi("admin");
+    renderApp("/clientes");
+
+    expect(await screen.findByLabelText("Correo electrónico")).toBeInTheDocument();
+  });
+
+  // Criterio 2 de E01-02 (E01-07, criterio 3): al cerrar sesión el servidor revoca la
+  // cookie (no se manda ningún token) y se vuelve al login.
+  it("al cerrar sesión llama a /auth/logout sin token y vuelve al login", async () => {
+    let logoutBody: string | null = null;
+    const respond = apiFor("admin");
+    const fetchMock = vi.fn(async (input: Request | string, init?: RequestInit) => {
+      const request = toRequest(input, init);
+      if (new URL(request.url).pathname.endsWith("/auth/logout")) {
+        logoutBody = await request.text();
         return new Response(null, { status: 204 });
       }
-      if (path.includes("/admin/")) {
-        return json([]);
-      }
-      return json(sessionFor("admin"));
+      return respond(request);
     });
     vi.stubGlobal("fetch", fetchMock);
     renderApp("/clientes");
@@ -213,7 +246,7 @@ describe("AppRoot", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
     expect(await screen.findByLabelText("Correo electrónico")).toBeInTheDocument();
-    await waitFor(() => expect(logoutBody).toEqual({ refresh_token: "refresh" }));
+    await waitFor(() => expect(logoutBody).toBe(""));
     // El próximo usuario entra a su pantalla de inicio, no a la del anterior.
     expect(currentPath()).toBe("/");
   });

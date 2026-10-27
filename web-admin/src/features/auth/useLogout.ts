@@ -1,22 +1,18 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../../api/client";
-import { getRefreshToken, setAccessToken, setRefreshToken } from "./token";
+import { setAccessToken } from "./token";
 
-// Cierra la sesión: invalida el refresh token en el servidor y, pase lo que pase con
-// esa llamada, limpia los datos locales (tokens en memoria y cache de TanStack Query).
+// Cierra la sesión: el servidor revoca el refresh token de la cookie y la borra. Pase lo
+// que pase con esa llamada, se limpian los datos locales (token y cache de TanStack Query).
 export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation<void, Error, void>({
     mutationFn: async () => {
-      const refreshToken = getRefreshToken();
-      if (refreshToken) {
-        await api.POST("/auth/logout", { body: { refresh_token: refreshToken } });
-      }
+      await api.POST("/auth/logout");
     },
     onSettled: () => {
       setAccessToken(null);
-      setRefreshToken(null);
       queryClient.clear();
     },
   });
