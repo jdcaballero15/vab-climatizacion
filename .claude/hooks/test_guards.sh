@@ -24,6 +24,17 @@ expect_allow guard_bash.py "rama valida" "$(bash_cmd 'git checkout -b feat/E04-0
 expect_allow guard_bash.py "push de rama" "$(bash_cmd 'git push -u origin feat/E04-03-asignar-orden')"
 
 edit() { printf '{"tool_input":{"file_path":"%s","content":"%s"}}' "$1" "$2"; }
+
+# En main (el CI de cada push) guard_edit bloquea toda escritura: se comprueba, y el resto
+# se prueba en un worktree temporal sin rama, como en un PR.
+if [ "$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" = "main" ]; then
+  expect_deny guard_edit.py "escribir en main" "$(edit "$PWD/docs/x.md" 'a - b')"
+  tmp="$(mktemp -d)"
+  git worktree add --quiet --detach "$tmp/repo" HEAD
+  trap 'git worktree remove --force "$tmp/repo"; rm -rf "$tmp"' EXIT
+  cd "$tmp/repo"
+fi
+
 expect_deny guard_edit.py ".env real" "$(edit "$PWD/backend/.env" 'A=1')"
 expect_deny guard_edit.py "clave privada" "$(edit "$PWD/backend/x.pem" 'A')"
 expect_deny guard_edit.py "raya en doc" "$(edit "$PWD/docs/x.md" "a $(python3 -c 'print(chr(0x2014))') b")"
