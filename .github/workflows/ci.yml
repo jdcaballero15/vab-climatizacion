@@ -82,6 +82,7 @@ jobs:
       # imágenes y binarios; queda el paquete de Homebrew (deshabilitado desde 2027-02-17).
       - name: Levantar MinIO
         run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew install minio
           mkdir -p "$RUNNER_TEMP/minio"
           MINIO_ROOT_USER=minio MINIO_ROOT_PASSWORD=minio12345 \
