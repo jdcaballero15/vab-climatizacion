@@ -1,4 +1,10 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { api } from "../../api/client";
 import type { ClientSummary } from "../clients/types";
@@ -40,6 +46,27 @@ export function useOrderList(status: ListableStatus, offset: number) {
     },
     placeholderData: keepPreviousData,
   });
+}
+
+/** Cuántas órdenes hay en cada estado: el total de una página de una sola orden. */
+export function useOrderCounts(statuses: ListableStatus[]) {
+  const results = useQueries({
+    queries: statuses.map((status) => ({
+      queryKey: [...ORDERS_KEY, status, "count"],
+      queryFn: async () => {
+        const { data, error } = await api.GET("/admin/orders", {
+          params: { query: { status, limit: 1, offset: 0 } },
+        });
+        if (error || !data) {
+          throw new Error("no se pudo contar las órdenes");
+        }
+        return data.total;
+      },
+    })),
+  });
+  return Object.fromEntries(
+    statuses.map((status, index) => [status, results[index]?.data]),
+  ) as Partial<Record<ListableStatus, number>>;
 }
 
 export function useCreateOrder() {
