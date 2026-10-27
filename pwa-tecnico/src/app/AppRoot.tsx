@@ -7,6 +7,7 @@ import { onSessionExpired } from "../features/auth/session";
 import { setAccessToken, setRefreshToken } from "../features/auth/token";
 import type { Session } from "../features/auth/types";
 import { useLogout } from "../features/auth/useLogout";
+import { ClosurePage } from "../features/orders/ClosurePage";
 import { MyOrdersPage } from "../features/orders/MyOrdersPage";
 import { OrderDetailPage } from "../features/orders/OrderDetailPage";
 
@@ -47,6 +48,7 @@ export function AppRoot() {
     <Routes>
       <Route path="/" element={<MyOrdersPage onLogout={onLogout} />} />
       <Route path="/ordenes/:orderId" element={<OrderDetailPage />} />
+      <Route path="/ordenes/:orderId/cerrar" element={<ClosurePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

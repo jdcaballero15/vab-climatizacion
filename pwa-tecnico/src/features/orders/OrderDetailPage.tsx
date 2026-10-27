@@ -68,6 +68,11 @@ function OrderDetail({ order }: { order: OrderDetail }) {
       </div>
       <h1 className="order-detail__client">{order.client_name}</h1>
       {order.status === "assigned" && <StartOrder order={order} />}
+      {order.status === "in_progress" && (
+        <Link to={`/ordenes/${order.id}/cerrar`} className="order-close">
+          Cerrar orden
+        </Link>
+      )}
 
       <dl className="order-detail__facts">
         <dt>Dirección</dt>

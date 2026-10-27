@@ -4,7 +4,7 @@ title: "Cerrar una orden con falla y reparación de listas"
 epic: E05
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [technician]
 size: M
 areas: [backend, pwa]
@@ -63,3 +63,8 @@ Se entrega junto con E05-04, E05-08 y E05-12, en PR separados: backend, listado 
 - `GET /tech/orders/{id}/closure-options`: técnicos activos, tareas activas con id, si el tipo pide falla y reparación, y las fallas activas con sus reparaciones (genéricas y, si la orden tiene equipo, las de su tipo).
 - `POST /tech/orders/{id}/closure` (`app/services/closures.py`): valida en orden fijo (lo cargado primero, lo que falta después) y responde 422 con `code`, `message` y `field`. Cierre, transición (`close_done` o `request_revisit`), fin de la asignación y evento en una transacción. 201 al cerrar y 200 al reenviar con la misma clave; una clave usada en otra orden, 422 `idempotency_key_reused`. Una orden que no está En curso de la escuadrilla, 404.
 - Con datos reales: "No enciende" es genérica pero todas sus reparaciones son de un tipo de equipo; sin equipo en la orden, la reparación solo puede ser "Otro".
+- PWA (PR 3): en el detalle de una orden `En curso`, botón "Cerrar orden" que lleva a `/ordenes/{id}/cerrar`. Pantalla aparte del detalle (el prototipo lo tiene debajo) para que el botón atrás del celular funcione bien. Tarjetas numeradas como en el prototipo: quiénes fueron, tareas, resultado, falla, reparación, cómo quedó el equipo y observación.
+- El resultado va antes que la falla y el equipo (en el prototipo, después): es el que decide qué se pide. Las reparaciones son las de la falla elegida; cambiar la falla borra la reparación. "Otro" abre un campo de texto. Falla y reparación dicen "(obligatoria)" u "(opcional)" según el tipo de trabajo y el resultado.
+- Las reglas de qué falta están en `pwa-tecnico/src/features/orders/closure.ts`, iguales a las de `services/closures.py`. El botón queda siempre habilitado (el prototipo lo deshabilita): al tocarlo marca cada campo que falta, lista los faltantes arriba del botón y lleva la pantalla al primero. Un 422 de la API marca el mismo campo con su mensaje.
+- Al cerrar vuelve a la lista con el aviso "Orden N° X cerrada." o "devuelta a la oficina.". Un 404 muestra que la orden ya no está en curso para la escuadrilla.
+- Probado en el navegador contra el backend real con los tres resultados: faltantes marcados, reparaciones filtradas por falla, "Otro" con observación, el cierre guardado en la base y el aviso en pendientes del web-admin.

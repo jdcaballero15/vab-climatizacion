@@ -4,7 +4,7 @@ title: "Elegir el resultado del trabajo"
 epic: E05
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [technician]
 size: M
 areas: [backend, pwa]
@@ -51,3 +51,4 @@ Validadas con negocio el 2026-10-26, con el prototipo del cliente:
 
 - Se implementa con E05-04: ver sus notas de implementación.
 - Criterio 5 (PR 2): `GET /admin/orders?status=pending` suma `returned` con la escuadrilla, la fecha, el resultado, el motivo y la observación del último cierre. Solo si no hubo otra asignación después: una orden que volvió, se reasignó y la oficina desasignó no muestra el motivo viejo. La escuadrilla es la de la última asignación, que es la que terminó ese cierre. El web-admin lo muestra en una línea debajo de la orden.
+- PWA (PR 3): el resultado se elige en dos grupos, como en el prototipo. En "Se hizo": "Resuelta" y "Requiere otra visita". En "No se pudo hacer": un botón por motivo, que envía `not_done` con su `not_done_reason`. Con "No se pudo hacer" no se pregunta cómo quedó el equipo y el botón dice "Cerrar como no realizada". Con "Requiere otra visita" la observación es obligatoria, con la pista "Contá qué falta para terminar el trabajo.".
