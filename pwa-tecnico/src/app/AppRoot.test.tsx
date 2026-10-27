@@ -1,23 +1,17 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { StrictMode } from "react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { notifySessionExpired } from "../features/auth/session";
-import {
-  getAccessToken,
-  getRefreshToken,
-  setAccessToken,
-  setRefreshToken,
-} from "../features/auth/token";
+import { getAccessToken, setAccessToken } from "../features/auth/token";
 import type { Session } from "../features/auth/types";
 import { AppRoot } from "./AppRoot";
 
 const session: Session = {
   access_token: "a1",
-  refresh_token: "r1",
-  token_type: "bearer",
   user: {
     id: "u1",
     email: "tecnico@ot-demo.com",
@@ -35,26 +29,43 @@ function json(body: unknown, status = 200) {
   });
 }
 
-function renderApp() {
+function renderApp({ strict = false } = {}) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  render(
+  const app = (
     <QueryClientProvider client={client}>
       <MemoryRouter>
         <AppRoot />
       </MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  render(strict ? <StrictMode>{app}</StrictMode> : app);
   return client;
 }
 
-// Login y sesión devuelven la sesión; la lista del técnico, una escuadrilla sin órdenes.
+// Normaliza las dos formas en que se llama a fetch: con un Request (cliente de API)
+// o con (url, init) (la renovación con la cookie).
+function toRequest(input: Request | string, init?: RequestInit): Request {
+  return input instanceof Request ? input : new Request(input, init);
+}
+
+function pathOf(request: Request) {
+  return new URL(request.url).pathname;
+}
+
+// Sin cookie (la renovación da 401) hay que ingresar; el login devuelve la sesión y la
+// lista del técnico es una escuadrilla sin órdenes.
 function respond(request: Request) {
-  return new URL(request.url).pathname.endsWith("/tech/orders") ? json(noOrders) : json(session);
+  const path = pathOf(request);
+  if (path.endsWith("/auth/refresh")) {
+    return json({ detail: { code: "invalid_refresh_token" } }, 401);
+  }
+  return path.endsWith("/tech/orders") ? json(noOrders) : json(session);
 }
 
 async function login() {
+  await screen.findByRole("heading", { name: "OT Técnico" });
   await userEvent.type(screen.getByLabelText("Correo electrónico"), "tecnico@ot-demo.com");
   await userEvent.type(screen.getByLabelText("Contraseña"), "Secreta123");
   await userEvent.click(screen.getByRole("button", { name: "Iniciar sesión" }));
@@ -63,33 +74,86 @@ async function login() {
 
 beforeEach(() => {
   setAccessToken(null);
-  setRefreshToken(null);
 });
 
 afterEach(() => vi.restoreAllMocks());
 
 describe("AppRoot", () => {
-  it("guarda los tokens en memoria al iniciar sesión", async () => {
+  it("guarda el access token en memoria al iniciar sesión", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (request: Request) => respond(request)),
+      vi.fn(async (input: Request | string, init?: RequestInit) => respond(toRequest(input, init))),
     );
     renderApp();
 
     await login();
 
     expect(getAccessToken()).toBe("a1");
-    expect(getRefreshToken()).toBe("r1");
   });
 
-  // Criterio 2: cerrar sesión invalida el refresh token y limpia los datos locales.
-  it("al cerrar sesión invalida el refresh token y limpia los datos locales", async () => {
-    const logoutBodies: unknown[] = [];
+  // E01-07, criterio 1: con la cookie vigente, al abrir entra directo.
+  it("al abrir recupera la sesión con la cookie y entra sin login", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (request: Request) => {
-        if (new URL(request.url).pathname.endsWith("/auth/logout")) {
-          logoutBodies.push(await request.json());
+      vi.fn(async (input: Request | string, init?: RequestInit) => {
+        const request = toRequest(input, init);
+        if (pathOf(request).endsWith("/auth/refresh")) {
+          return json({ access_token: "a2", refresh_token: "r2", user: session.user });
+        }
+        return respond(request);
+      }),
+    );
+    renderApp();
+
+    expect(screen.getByRole("status")).toHaveTextContent("Cargando");
+    expect(await screen.findByRole("heading", { name: "Escuadrilla 1" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Contraseña")).not.toBeInTheDocument();
+    expect(getAccessToken()).toBe("a2");
+  });
+
+  // E01-07, criterio 2: sin cookie válida, muestra el login.
+  it("al abrir sin cookie válida muestra el login", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: Request | string, init?: RequestInit) => respond(toRequest(input, init))),
+    );
+    renderApp();
+
+    expect(await screen.findByRole("heading", { name: "OT Técnico" })).toBeInTheDocument();
+    expect(getAccessToken()).toBeNull();
+  });
+
+  // Con StrictMode el efecto corre dos veces: una segunda renovación con la misma cookie
+  // fallaría (el token ya rotó), así que tiene que pedirse una sola.
+  it("al abrir pide una sola renovación aunque el efecto corra dos veces", async () => {
+    let refreshCalls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: Request | string, init?: RequestInit) => {
+        const request = toRequest(input, init);
+        if (pathOf(request).endsWith("/auth/refresh")) {
+          refreshCalls += 1;
+          return json({ access_token: "a2", refresh_token: "r2", user: session.user });
+        }
+        return respond(request);
+      }),
+    );
+    renderApp({ strict: true });
+
+    await screen.findByRole("heading", { name: "Escuadrilla 1" });
+    expect(refreshCalls).toBe(1);
+  });
+
+  // Criterio 2 (E01-07, criterio 3): cerrar sesión le pide al servidor que revoque la
+  // cookie, sin mandar el token, y limpia los datos locales.
+  it("al cerrar sesión pide revocar la cookie y limpia los datos locales", async () => {
+    const logoutBodies: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: Request | string, init?: RequestInit) => {
+        const request = toRequest(input, init);
+        if (pathOf(request).endsWith("/auth/logout")) {
+          logoutBodies.push(await request.text());
           return new Response(null, { status: 204 });
         }
         return respond(request);
@@ -102,17 +166,17 @@ describe("AppRoot", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
     expect(await screen.findByRole("heading", { name: "OT Técnico" })).toBeInTheDocument();
-    await waitFor(() => expect(logoutBodies).toEqual([{ refresh_token: "r1" }]));
-    await waitFor(() => expect(getRefreshToken()).toBeNull());
-    expect(getAccessToken()).toBeNull();
+    await waitFor(() => expect(logoutBodies).toEqual([""]));
+    await waitFor(() => expect(getAccessToken()).toBeNull());
     expect(client.getQueryData(["datos"])).toBeUndefined();
   });
 
   it("limpia los datos locales aunque falle la llamada de cierre", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (request: Request) => {
-        if (new URL(request.url).pathname.endsWith("/auth/logout")) {
+      vi.fn(async (input: Request | string, init?: RequestInit) => {
+        const request = toRequest(input, init);
+        if (pathOf(request).endsWith("/auth/logout")) {
           throw new TypeError("sin conexión");
         }
         return respond(request);
@@ -124,21 +188,20 @@ describe("AppRoot", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
     expect(await screen.findByRole("heading", { name: "OT Técnico" })).toBeInTheDocument();
-    await waitFor(() => expect(getRefreshToken()).toBeNull());
-    expect(getAccessToken()).toBeNull();
+    await waitFor(() => expect(getAccessToken()).toBeNull());
   });
 
   // Criterio 4: si el cliente no logra renovar la sesión, vuelve al login.
   it("vuelve al login cuando la sesión cae", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (request: Request) => respond(request)),
+      vi.fn(async (input: Request | string, init?: RequestInit) => respond(toRequest(input, init))),
     );
     const client = renderApp();
     await login();
     client.setQueryData(["datos"], { algo: 1 });
 
-    notifySessionExpired();
+    act(() => notifySessionExpired());
 
     expect(await screen.findByRole("heading", { name: "OT Técnico" })).toBeInTheDocument();
     expect(client.getQueryData(["datos"])).toBeUndefined();

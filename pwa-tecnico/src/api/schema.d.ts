@@ -533,6 +533,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/orders/{order_id}/reassignment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reassign Work Order */
+        post: operations["reassign_work_order_admin_orders__order_id__reassignment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/unassignment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unassign Work Order */
+        post: operations["unassign_work_order_admin_orders__order_id__unassignment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/cancellation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Work Order */
+        post: operations["cancel_work_order_admin_orders__order_id__cancellation_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/closure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Work Order Closure */
+        get: operations["get_work_order_closure_admin_orders__order_id__closure_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/crews": {
         parameters: {
             query?: never;
@@ -733,6 +801,36 @@ export interface components {
              * Format: date
              */
             scheduled_for: string;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * CancelReason
+         * @description Por qué administración cancela una orden (E04-07). Lista a validar con la oficina.
+         * @enum {string}
+         */
+        CancelReason: "entered_by_mistake" | "duplicate" | "client_cancelled" | "other";
+        /**
+         * CancellationAdminOut
+         * @description Motivo, quién y cuándo se canceló (E04-07, criterio 6).
+         */
+        CancellationAdminOut: {
+            reason: components["schemas"]["CancelReason"];
+            /** Reason Text */
+            reason_text: string | null;
+            /** Cancelled By Name */
+            cancelled_by_name: string;
+            /**
+             * Cancelled At
+             * Format: date-time
+             */
+            cancelled_at: string;
+        };
+        /** CancellationCreate */
+        CancellationCreate: {
+            reason: components["schemas"]["CancelReason"];
+            /** Reason Text */
+            reason_text?: string | null;
         };
         /** ClientAdminOut */
         ClientAdminOut: {
@@ -821,6 +919,36 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /**
+         * ClosureAdminOut
+         * @description Lo que cargó la escuadrilla al cerrar, para que administración lo revise (E04-08).
+         *
+         *     Falla y reparación vienen como texto: el nombre del catálogo o lo escrito en "Otro".
+         */
+        ClosureAdminOut: {
+            outcome: components["schemas"]["ClosureOutcome"];
+            /**
+             * Closed At
+             * Format: date-time
+             */
+            closed_at: string;
+            /** Closed By Name */
+            closed_by_name: string;
+            /** Crew Name */
+            crew_name: string | null;
+            /** Technicians */
+            technicians: string[];
+            /** Tasks */
+            tasks: string[];
+            /** Failure */
+            failure: string | null;
+            /** Repair */
+            repair: string | null;
+            equipment_condition: components["schemas"]["EquipmentCondition"] | null;
+            not_done_reason: components["schemas"]["NotDoneReason"] | null;
+            /** Observation */
+            observation: string | null;
+        };
         /** ClosureChoiceTechnicianOut */
         ClosureChoiceTechnicianOut: {
             /**
@@ -890,6 +1018,19 @@ export interface components {
             /** Outcome */
             outcome: string;
             order_status: components["schemas"]["OrderStatus"];
+            /**
+             * Closed At
+             * Format: date-time
+             */
+            closed_at: string;
+        };
+        /**
+         * CompletedOut
+         * @description Qué escuadrilla la terminó y cuándo (E04-08, criterio 1).
+         */
+        CompletedOut: {
+            /** Crew Name */
+            crew_name: string | null;
             /**
              * Closed At
              * Format: date-time
@@ -1015,6 +1156,19 @@ export interface components {
             email: string;
             /** Is Active */
             is_active: boolean;
+        };
+        /**
+         * CurrentAssignmentOut
+         * @description Escuadrilla y fecha prevista de una orden Asignada o En curso.
+         */
+        CurrentAssignmentOut: {
+            /** Crew Name */
+            crew_name: string;
+            /**
+             * Scheduled For
+             * Format: date
+             */
+            scheduled_for: string;
         };
         /** EquipmentAdminOut */
         EquipmentAdminOut: {
@@ -1266,6 +1420,52 @@ export interface components {
          * @enum {string}
          */
         OrderKind: "on_site" | "workshop";
+        /** OrderListItemOut */
+        OrderListItemOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            status: components["schemas"]["OrderStatus"];
+            /**
+             * Client Id
+             * Format: uuid
+             */
+            client_id: string;
+            /** Client Name */
+            client_name: string;
+            /** Site Label */
+            site_label: string | null;
+            /** Site Address */
+            site_address: string;
+            /** Work Type Name */
+            work_type_name: string;
+            /** Description */
+            description: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            returned: components["schemas"]["ReturnedFromCrewOut"] | null;
+            assignment: components["schemas"]["CurrentAssignmentOut"] | null;
+            cancellation: components["schemas"]["CancellationAdminOut"] | null;
+            completed: components["schemas"]["CompletedOut"] | null;
+        };
+        /** OrderListPage */
+        OrderListPage: {
+            /** Items */
+            items: components["schemas"]["OrderListItemOut"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
         /**
          * OrderSource
          * @enum {string}
@@ -1300,48 +1500,6 @@ export interface components {
             site: components["schemas"]["ClientSiteTechnicianOut"];
             equipment: components["schemas"]["EquipmentTechnicianOut"] | null;
         };
-        /** PendingOrderOut */
-        PendingOrderOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Number */
-            number: number;
-            /**
-             * Client Id
-             * Format: uuid
-             */
-            client_id: string;
-            /** Client Name */
-            client_name: string;
-            /** Site Label */
-            site_label: string | null;
-            /** Site Address */
-            site_address: string;
-            /** Work Type Name */
-            work_type_name: string;
-            /** Description */
-            description: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            returned: components["schemas"]["ReturnedFromCrewOut"] | null;
-        };
-        /** PendingOrderPage */
-        PendingOrderPage: {
-            /** Items */
-            items: components["schemas"]["PendingOrderOut"][];
-            /** Total */
-            total: number;
-            /** Limit */
-            limit: number;
-            /** Offset */
-            offset: number;
-        };
         /** RefreshRequest */
         RefreshRequest: {
             /** Refresh Token */
@@ -1358,6 +1516,7 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+            user: components["schemas"]["UserOut"];
         };
         /** RepairAdminOut */
         RepairAdminOut: {
@@ -1402,6 +1561,11 @@ export interface components {
          * @description Por qué volvió a Pendiente desde una escuadrilla (E05-08, criterio 5).
          */
         ReturnedFromCrewOut: {
+            /**
+             * Crew Id
+             * Format: uuid
+             */
+            crew_id: string;
             /** Crew Name */
             crew_name: string;
             /**
@@ -1508,6 +1672,11 @@ export interface components {
              */
             token_type: string;
             user: components["schemas"]["UserOut"];
+        };
+        /** UnassignmentCreate */
+        UnassignmentCreate: {
+            /** Reason */
+            reason?: string | null;
         };
         /** UserAdminOut */
         UserAdminOut: {
@@ -1764,11 +1933,13 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                ot_refresh?: string | null;
+            };
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["RefreshRequest"];
+                "application/json": components["schemas"]["RefreshRequest"] | null;
             };
         };
         responses: {
@@ -1797,11 +1968,13 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                ot_refresh?: string | null;
+            };
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["LogoutRequest"];
+                "application/json": components["schemas"]["LogoutRequest"] | null;
             };
         };
         responses: {
@@ -3153,7 +3326,7 @@ export interface operations {
     list_work_orders_admin_orders_get: {
         parameters: {
             query: {
-                status: "pending";
+                status: "pending" | "assigned" | "in_progress" | "done" | "cancelled";
                 limit?: number;
                 offset?: number;
             };
@@ -3169,7 +3342,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PendingOrderPage"];
+                    "application/json": components["schemas"]["OrderListPage"];
                 };
             };
             /** @description Validation Error */
@@ -3238,6 +3411,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssignmentAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reassign_work_order_admin_orders__order_id__reassignment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unassign_work_order_admin_orders__order_id__unassignment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnassignmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_work_order_admin_orders__order_id__cancellation_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancellationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CancellationAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_work_order_closure_admin_orders__order_id__closure_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosureAdminOut"];
                 };
             };
             /** @description Validation Error */

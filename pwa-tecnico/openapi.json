@@ -105,15 +105,40 @@
         ],
         "summary": "Refresh",
         "operationId": "refresh_auth_refresh_post",
+        "parameters": [
+          {
+            "name": "ot_refresh",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ot Refresh"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshRequest"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RefreshRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -146,15 +171,40 @@
         ],
         "summary": "Logout",
         "operationId": "logout_auth_logout_post",
+        "parameters": [
+          {
+            "name": "ot_refresh",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ot Refresh"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LogoutRequest"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/LogoutRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "204": {
@@ -2429,7 +2479,13 @@
             "in": "query",
             "required": true,
             "schema": {
-              "const": "pending",
+              "enum": [
+                "pending",
+                "assigned",
+                "in_progress",
+                "done",
+                "cancelled"
+              ],
               "type": "string",
               "title": "Status"
             }
@@ -2464,7 +2520,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PendingOrderPage"
+                  "$ref": "#/components/schemas/OrderListPage"
                 }
               }
             }
@@ -2523,6 +2579,221 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AssignmentAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/reassignment": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Reassign Work Order",
+        "operationId": "reassign_work_order_admin_orders__order_id__reassignment_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/unassignment": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Unassign Work Order",
+        "operationId": "unassign_work_order_admin_orders__order_id__unassignment_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnassignmentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/cancellation": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Cancel Work Order",
+        "operationId": "cancel_work_order_admin_orders__order_id__cancellation_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancellationCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancellationAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/closure": {
+      "get": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Get Work Order Closure",
+        "operationId": "get_work_order_closure_admin_orders__order_id__closure_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureAdminOut"
                 }
               }
             }
@@ -3174,6 +3445,18 @@
             "type": "string",
             "format": "date",
             "title": "Scheduled For"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
           }
         },
         "additionalProperties": false,
@@ -3183,6 +3466,78 @@
           "scheduled_for"
         ],
         "title": "AssignmentCreate"
+      },
+      "CancelReason": {
+        "type": "string",
+        "enum": [
+          "entered_by_mistake",
+          "duplicate",
+          "client_cancelled",
+          "other"
+        ],
+        "title": "CancelReason",
+        "description": "Por qué administración cancela una orden (E04-07). Lista a validar con la oficina."
+      },
+      "CancellationAdminOut": {
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/CancelReason"
+          },
+          "reason_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Text"
+          },
+          "cancelled_by_name": {
+            "type": "string",
+            "title": "Cancelled By Name"
+          },
+          "cancelled_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Cancelled At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason",
+          "reason_text",
+          "cancelled_by_name",
+          "cancelled_at"
+        ],
+        "title": "CancellationAdminOut",
+        "description": "Motivo, quién y cuándo se canceló (E04-07, criterio 6)."
+      },
+      "CancellationCreate": {
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/CancelReason"
+          },
+          "reason_text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "CancellationCreate"
       },
       "ClientAdminOut": {
         "properties": {
@@ -3476,6 +3831,116 @@
         "title": "ClientUpdate",
         "description": "Solo se cambian los campos enviados; un campo opcional en null se borra."
       },
+      "ClosureAdminOut": {
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/ClosureOutcome"
+          },
+          "closed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Closed At"
+          },
+          "closed_by_name": {
+            "type": "string",
+            "title": "Closed By Name"
+          },
+          "crew_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Name"
+          },
+          "technicians": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Technicians"
+          },
+          "tasks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tasks"
+          },
+          "failure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure"
+          },
+          "repair": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repair"
+          },
+          "equipment_condition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentCondition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "not_done_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NotDoneReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "outcome",
+          "closed_at",
+          "closed_by_name",
+          "crew_name",
+          "technicians",
+          "tasks",
+          "failure",
+          "repair",
+          "equipment_condition",
+          "not_done_reason",
+          "observation"
+        ],
+        "title": "ClosureAdminOut",
+        "description": "Lo que cargó la escuadrilla al cerrar, para que administración lo revise (E04-08).\n\nFalla y reparación vienen como texto: el nombre del catálogo o lo escrito en \"Otro\"."
+      },
       "ClosureChoiceTechnicianOut": {
         "properties": {
           "id": {
@@ -3694,6 +4159,33 @@
           "closed_at"
         ],
         "title": "ClosureTechnicianOut"
+      },
+      "CompletedOut": {
+        "properties": {
+          "crew_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Name"
+          },
+          "closed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Closed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "crew_name",
+          "closed_at"
+        ],
+        "title": "CompletedOut",
+        "description": "Qué escuadrilla la terminó y cuándo (E04-08, criterio 1)."
       },
       "ContactAdminOut": {
         "properties": {
@@ -4078,6 +4570,26 @@
           "is_active"
         ],
         "title": "CrewUserOut"
+      },
+      "CurrentAssignmentOut": {
+        "properties": {
+          "crew_name": {
+            "type": "string",
+            "title": "Crew Name"
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date",
+            "title": "Scheduled For"
+          }
+        },
+        "type": "object",
+        "required": [
+          "crew_name",
+          "scheduled_for"
+        ],
+        "title": "CurrentAssignmentOut",
+        "description": "Escuadrilla y fecha prevista de una orden Asignada o En curso."
       },
       "EquipmentAdminOut": {
         "properties": {
@@ -4809,6 +5321,155 @@
         ],
         "title": "OrderKind"
       },
+      "OrderListItemOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "client_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Id"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "site_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Label"
+          },
+          "site_address": {
+            "type": "string",
+            "title": "Site Address"
+          },
+          "work_type_name": {
+            "type": "string",
+            "title": "Work Type Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "returned": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReturnedFromCrewOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "assignment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CurrentAssignmentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancellation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CancellationAdminOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompletedOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "status",
+          "client_id",
+          "client_name",
+          "site_label",
+          "site_address",
+          "work_type_name",
+          "description",
+          "created_at",
+          "returned",
+          "assignment",
+          "cancellation",
+          "completed"
+        ],
+        "title": "OrderListItemOut"
+      },
+      "OrderListPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderListItemOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "OrderListPage"
+      },
       "OrderSource": {
         "type": "string",
         "enum": [
@@ -4896,118 +5557,6 @@
         ],
         "title": "OrderTechnicianOut"
       },
-      "PendingOrderOut": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "number": {
-            "type": "integer",
-            "title": "Number"
-          },
-          "client_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Client Id"
-          },
-          "client_name": {
-            "type": "string",
-            "title": "Client Name"
-          },
-          "site_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Site Label"
-          },
-          "site_address": {
-            "type": "string",
-            "title": "Site Address"
-          },
-          "work_type_name": {
-            "type": "string",
-            "title": "Work Type Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "returned": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ReturnedFromCrewOut"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "number",
-          "client_id",
-          "client_name",
-          "site_label",
-          "site_address",
-          "work_type_name",
-          "description",
-          "created_at",
-          "returned"
-        ],
-        "title": "PendingOrderOut"
-      },
-      "PendingOrderPage": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/PendingOrderOut"
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total"
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
-          },
-          "offset": {
-            "type": "integer",
-            "title": "Offset"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "total",
-          "limit",
-          "offset"
-        ],
-        "title": "PendingOrderPage"
-      },
       "RefreshRequest": {
         "properties": {
           "refresh_token": {
@@ -5035,12 +5584,16 @@
             "type": "string",
             "title": "Token Type",
             "default": "bearer"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserOut"
           }
         },
         "type": "object",
         "required": [
           "access_token",
-          "refresh_token"
+          "refresh_token",
+          "user"
         ],
         "title": "RefreshResponse"
       },
@@ -5152,6 +5705,11 @@
       },
       "ReturnedFromCrewOut": {
         "properties": {
+          "crew_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Crew Id"
+          },
           "crew_name": {
             "type": "string",
             "title": "Crew Name"
@@ -5188,6 +5746,7 @@
         },
         "type": "object",
         "required": [
+          "crew_id",
           "crew_name",
           "closed_at",
           "outcome",
@@ -5466,6 +6025,25 @@
           "user"
         ],
         "title": "TokenResponse"
+      },
+      "UnassignmentCreate": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UnassignmentCreate"
       },
       "UserAdminOut": {
         "properties": {

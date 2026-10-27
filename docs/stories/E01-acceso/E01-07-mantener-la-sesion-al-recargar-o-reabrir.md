@@ -4,7 +4,7 @@ title: "Mantener la sesión al recargar o reabrir"
 epic: E01
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [admin, technician, owner]
 size: M
 areas: [backend, web-admin, pwa]

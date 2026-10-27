@@ -56,8 +56,6 @@ describe("LoginPage", () => {
   it("entrega la sesión al iniciar sesión con éxito", async () => {
     const session: Session = {
       access_token: "token",
-      refresh_token: "refresco",
-      token_type: "bearer",
       user: {
         id: "u1",
         email: "tecnico@ot-demo.com",
