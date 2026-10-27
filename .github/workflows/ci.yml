@@ -78,6 +78,15 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy app
+      # Bucket S3 compatible para los tests de archivos (E00-09). Como servicio no se
+      # puede pasar el comando "server", por eso va como paso.
+      - name: Levantar MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=minio -e MINIO_ROOT_PASSWORD=minio12345 \
+            minio/minio:RELEASE.2025-04-22T22-12-26Z server /data
+          for i in $(seq 1 30); do curl -sf http://localhost:9000/minio/health/live && exit 0; sleep 1; done
+          docker logs minio; exit 1
       - run: pytest
 
   web-admin:

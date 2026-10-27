@@ -4,7 +4,7 @@ title: "Almacenamiento de archivos con URLs firmadas"
 epic: E00
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [dev]
 size: M
 areas: [backend, infra]
@@ -44,3 +44,11 @@ assumes: []
 - Límite 5 MB por archivo y tipos permitidos configurables: JPEG, PNG y WebP; PDF.
 - **CORS del bucket:** permitir `PUT` desde los dos sitios (Render) y desde `localhost` en desarrollo. Se anota en `docs/workflow/despliegue.md` junto con la creación del bucket y las claves en R2 (las claves van en las variables de Render, nunca en el repo).
 - La subida directa permite reintentos desde la PWA, necesarios si se corta la conexión (E05-13).
+
+## Notas de implementación
+
+- **Hecho (backend):** `app/core/storage.py` (boto3, firma v4, rutas con el bucket en el path, como piden MinIO y R2), tabla `stored_file` (migración `e2a7c9d4f816`), servicio `app/services/files.py` y rutas `POST /files`, `POST /files/{id}/confirm` y `GET /files/{id}/download`. La descarga genérica la puede pedir la administración (cualquier archivo) o quien lo subió; otro técnico recibe 404.
+- Uso disponible por ahora: `closure_photo` (JPEG, PNG, WebP). La firma suma su uso en E05-07; los PDF, cuando haya comprobantes.
+- Tests en `tests/test_files.py` contra MinIO real (en el CI se levanta como paso del job `backend`), uno por criterio. Comprueban también que el bucket rechaza un `PUT` con otro tamaño u otro tipo que el firmado.
+- Comandos: `python -m app.create_bucket` (MinIO local) y `python -m app.check_storage` (sube, lee y borra un archivo de prueba).
+- **Queda `in_progress`** hasta configurar R2 en el despliegue y que `check_storage` diga `Bucket OK` allá (pasos 2 y 8 de `docs/workflow/despliegue.md`).

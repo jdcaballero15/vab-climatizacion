@@ -353,17 +353,31 @@ Table signature {
   purpose signature_purpose [not null]
   signer_name varchar [not null]
   signer_dni varchar [not null, note: 'Dato personal. Cifrar en reposo']
-  image_key varchar [not null, note: 'Clave en el bucket']
+  image_file_id uuid [ref: - stored_file.id, not null, note: 'Imagen de la firma en el bucket (E00-09)']
   signed_at timestamptz [not null]
 }
 
-Table attachment {
+Table stored_file {
   id uuid [pk]
-  closure_id uuid [ref: > work_order_closure.id, not null]
-  storage_key varchar [not null, note: 'Clave en el bucket. Nunca el archivo en la base']
+  purpose varchar [not null, note: 'Para qué se subió (closure_photo); decide los tipos permitidos']
+  object_key varchar [unique, not null, note: 'Clave en el bucket, sin datos personales. Nunca el archivo en la base']
   content_type varchar [not null]
-  size_bytes int [not null]
-  uploaded_at timestamptz [not null]
+  size_bytes bigint [not null]
+  uploaded_by uuid [ref: > app_user.id, not null]
+  confirmed_at timestamptz [note: 'Nulo hasta que el servidor comprueba el objeto en el bucket']
+
+  Note: 'Archivo del bucket S3 compatible (E00-09). Se descarga con URL firmada de corta duración'
+}
+
+Table work_order_closure_photo {
+  closure_id uuid [ref: > work_order_closure.id, not null]
+  file_id uuid [ref: - stored_file.id, unique, not null]
+  position int [not null]
+  indexes {
+    (closure_id, file_id) [pk]
+  }
+
+  Note: 'Fotos del cierre, hasta 5 (E05-06)'
 }
 
 // ---------- Repuestos, precios y mano de obra ----------
