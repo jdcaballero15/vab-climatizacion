@@ -1,3 +1,4 @@
+import { LogOut, MapPin, RefreshCw, Snowflake } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -57,6 +58,7 @@ export function MyOrdersPage({ onLogout }: MyOrdersPageProps) {
   return (
     <main className="orders">
       <header className="orders__header">
+        <p className="eyebrow">Mis órdenes</p>
         <h1>{title}</h1>
         {count > 0 && (
           <p>
@@ -66,9 +68,11 @@ export function MyOrdersPage({ onLogout }: MyOrdersPageProps) {
       </header>
       <div className="orders__actions">
         <button type="button" onClick={() => void query.refetch()} disabled={query.isFetching}>
+          <RefreshCw size={18} aria-hidden="true" />
           Actualizar
         </button>
         <button type="button" className="orders__logout" onClick={onLogout}>
+          <LogOut size={18} aria-hidden="true" />
           Cerrar sesión
         </button>
       </div>
@@ -95,7 +99,7 @@ function OrderCard({ order, today }: { order: Order; today: string }) {
 
   return (
     <Link to={`/ordenes/${order.id}`} className="order-card-link">
-      <article className="order-card">
+      <article className={`order-card order-card--${order.status}`}>
         <div className="order-card__row">
           <span>
             <span className="order-card__number">N° {order.number}</span>
@@ -115,8 +119,14 @@ function OrderCard({ order, today }: { order: Order; today: string }) {
             {due.text}
           </span>
         </div>
-        <p className="order-card__detail">{order.site.address}</p>
-        <p className="order-card__detail">{equipment}</p>
+        <p className="order-card__detail">
+          <MapPin size={16} aria-hidden="true" />
+          <span>{order.site.address}</span>
+        </p>
+        <p className="order-card__detail">
+          <Snowflake size={16} aria-hidden="true" />
+          <span>{equipment}</span>
+        </p>
       </article>
     </Link>
   );

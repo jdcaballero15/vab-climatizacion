@@ -1,3 +1,4 @@
+import { ChevronLeft } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -69,7 +70,8 @@ export function ClosurePage() {
   return (
     <main className="orders">
       <Link to={`/ordenes/${orderId}`} className="order-detail__back">
-        ← Volver a la orden
+        <ChevronLeft size={20} aria-hidden="true" />
+        Volver a la orden
       </Link>
       <header className="closure__header">
         <h1>Cerrar orden{order.data ? ` N° ${order.data.number}` : ""}</h1>
