@@ -440,7 +440,7 @@ describe("ClosurePage", () => {
     stubApi();
     renderClosure();
 
-    await user.click(await screen.findByRole("link", { name: "← Volver a la orden" }));
+    await user.click(await screen.findByRole("link", { name: "Volver a la orden" }));
     expect(screen.getByRole("heading", { name: "Detalle de la orden" })).toBeInTheDocument();
   });
 });

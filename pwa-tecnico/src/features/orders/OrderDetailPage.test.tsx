@@ -174,7 +174,7 @@ describe("OrderDetailPage", () => {
     stubFetch(() => json(detail()));
     renderDetail();
 
-    await userEvent.click(await screen.findByRole("link", { name: "← Mis órdenes" }));
+    await userEvent.click(await screen.findByRole("link", { name: "Mis órdenes" }));
 
     expect(screen.getByRole("heading", { name: "Lista de órdenes" })).toBeInTheDocument();
   });

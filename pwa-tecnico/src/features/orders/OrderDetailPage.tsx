@@ -1,3 +1,4 @@
+import { ChevronLeft } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -35,7 +36,8 @@ export function OrderDetailPage() {
   return (
     <main className="orders">
       <Link to="/" className="order-detail__back">
-        ← Mis órdenes
+        <ChevronLeft size={20} aria-hidden="true" />
+        Mis órdenes
       </Link>
       {body}
     </main>

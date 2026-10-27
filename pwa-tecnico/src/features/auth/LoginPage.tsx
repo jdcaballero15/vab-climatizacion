@@ -1,3 +1,4 @@
+import { Wrench } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { useLogin } from "./useLogin";
@@ -20,7 +21,11 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
   return (
     <main className="login">
       <form className="login__form" onSubmit={handleSubmit} aria-label="Iniciar sesión">
+        <span className="login__mark" aria-hidden="true">
+          <Wrench size={22} />
+        </span>
         <h1 className="login__title">OT Técnico</h1>
+        <p className="login__subtitle">Ingresá con el usuario del celular de la escuadrilla.</p>
 
         <label htmlFor="email">Correo electrónico</label>
         <input
