@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.closure import (
+    ClosureAdminOut,
     ClosureChoiceTechnicianOut,
     ClosureCreate,
     ClosureOptionsTechnicianOut,
@@ -48,6 +49,10 @@ class ClosureValidationError(Exception):
 
 class IdempotencyKeyReusedError(Exception):
     """La clave ya se usó para el cierre de otra orden."""
+
+
+class ClosureNotFoundError(Exception):
+    """La orden todavía no tiene un cierre de la escuadrilla."""
 
 
 # Estado en que queda la orden según el resultado (máquina de estados, E05-08).
@@ -156,6 +161,31 @@ async def close_order(
         return replay, False
     await session.refresh(closure)
     return _out(closure), True
+
+
+async def get_last_closure(session: AsyncSession, order_id: uuid.UUID) -> ClosureAdminOut:
+    """El último cierre de la orden, con nombres en lugar de ids (E04-08, criterio 1)."""
+    await work_orders_service.get_work_order(session, order_id)
+    repo = WorkOrderClosureRepository(session)
+    closure = await repo.last_for_order(order_id)
+    if closure is None:
+        raise ClosureNotFoundError
+    closed_by = await session.get(User, closure.closed_by)
+    failure = await session.get(Failure, closure.failure_id) if closure.failure_id else None
+    repair = await session.get(Repair, closure.repair_id) if closure.repair_id else None
+    return ClosureAdminOut(
+        outcome=closure.outcome,
+        closed_at=closure.closed_at,
+        closed_by_name=closed_by.full_name if closed_by else "",
+        crew_name=await repo.crew_name(closure),
+        technicians=await repo.technician_names(closure.id),
+        tasks=await repo.task_names(closure.id),
+        failure=failure.name if failure else closure.failure_other_text,
+        repair=repair.name if repair else closure.repair_other_text,
+        equipment_condition=closure.equipment_condition,
+        not_done_reason=closure.not_done_reason,
+        observation=closure.observation,
+    )
 
 
 async def _replay(

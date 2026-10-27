@@ -6,9 +6,9 @@ from typing import Any
 from sqlalchemy import ColumnElement, Row, func, select, true, update
 from sqlalchemy.orm import InstrumentedAttribute, aliased
 
-from app.db.models.catalog import EquipmentType, WorkType
+from app.db.models.catalog import EquipmentType, Task, WorkType
 from app.db.models.client import Client, ClientSite
-from app.db.models.crew import Crew
+from app.db.models.crew import Crew, FieldTechnician
 from app.db.models.equipment import Equipment
 from app.db.models.user import User
 from app.db.models.work_order import (
@@ -16,6 +16,8 @@ from app.db.models.work_order import (
     WorkOrderAssignment,
     WorkOrderCancellation,
     WorkOrderClosure,
+    WorkOrderClosureTask,
+    WorkOrderClosureTechnician,
     WorkOrderEvent,
 )
 from app.db.repository import BaseRepository
@@ -72,7 +74,7 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         """Órdenes en un estado, en el orden en que se las trabaja.
 
         Pendientes, de la más vieja a la más nueva según su evento de creación; Asignadas
-        y En curso, por fecha prevista; canceladas, la última cancelada primero.
+        y En curso, por fecha prevista; terminadas y canceladas, la última primero.
 
         Cada fila trae además el último cierre de la orden y su última asignación (para
         saber si volvió de una escuadrilla, E05-08, o a quién está asignada) y su
@@ -105,6 +107,8 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             order_by = (last_assignment.c.scheduled_for, self.model.number)
         elif status == OrderStatus.cancelled:
             order_by = (WorkOrderCancellation.cancelled_at.desc(), self.model.number.desc())
+        elif status == OrderStatus.done:
+            order_by = (closure.closed_at.desc(), self.model.number.desc())
         else:
             order_by = (WorkOrderEvent.occurred_at, self.model.number)
         stmt = (
@@ -209,3 +213,47 @@ class WorkOrderClosureRepository(BaseRepository[WorkOrderClosure]):
         stmt = self._select().where(self.model.idempotency_key == key)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def last_for_order(self, order_id: uuid.UUID) -> WorkOrderClosure | None:
+        stmt = (
+            self._select()
+            .where(self.model.work_order_id == order_id)
+            .order_by(self.model.closed_at.desc())
+            .limit(1)
+        )
+        return await self.session.scalar(stmt)
+
+    async def technician_names(self, closure_id: uuid.UUID) -> list[str]:
+        stmt = (
+            select(FieldTechnician.full_name)
+            .join(
+                WorkOrderClosureTechnician,
+                WorkOrderClosureTechnician.field_technician_id == FieldTechnician.id,
+            )
+            .where(WorkOrderClosureTechnician.closure_id == closure_id)
+            .order_by(FieldTechnician.full_name)
+        )
+        return list(await self.session.scalars(stmt))
+
+    async def task_names(self, closure_id: uuid.UUID) -> list[str]:
+        stmt = (
+            select(Task.name)
+            .join(WorkOrderClosureTask, WorkOrderClosureTask.task_id == Task.id)
+            .where(WorkOrderClosureTask.closure_id == closure_id)
+            .order_by(Task.name)
+        )
+        return list(await self.session.scalars(stmt))
+
+    async def crew_name(self, closure: WorkOrderClosure) -> str | None:
+        """La escuadrilla de la última asignación anterior al cierre: la que lo hizo."""
+        stmt = (
+            select(Crew.name)
+            .join(WorkOrderAssignment, WorkOrderAssignment.crew_id == Crew.id)
+            .where(
+                WorkOrderAssignment.work_order_id == closure.work_order_id,
+                WorkOrderAssignment.assigned_at <= closure.closed_at,
+            )
+            .order_by(WorkOrderAssignment.assigned_at.desc())
+            .limit(1)
+        )
+        return await self.session.scalar(stmt)

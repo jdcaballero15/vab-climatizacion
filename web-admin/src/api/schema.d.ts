@@ -550,6 +550,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/orders/{order_id}/closure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Work Order Closure */
+        get: operations["get_work_order_closure_admin_orders__order_id__closure_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/crews": {
         parameters: {
             query?: never;
@@ -866,6 +883,36 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /**
+         * ClosureAdminOut
+         * @description Lo que cargó la escuadrilla al cerrar, para que administración lo revise (E04-08).
+         *
+         *     Falla y reparación vienen como texto: el nombre del catálogo o lo escrito en "Otro".
+         */
+        ClosureAdminOut: {
+            outcome: components["schemas"]["ClosureOutcome"];
+            /**
+             * Closed At
+             * Format: date-time
+             */
+            closed_at: string;
+            /** Closed By Name */
+            closed_by_name: string;
+            /** Crew Name */
+            crew_name: string | null;
+            /** Technicians */
+            technicians: string[];
+            /** Tasks */
+            tasks: string[];
+            /** Failure */
+            failure: string | null;
+            /** Repair */
+            repair: string | null;
+            equipment_condition: components["schemas"]["EquipmentCondition"] | null;
+            not_done_reason: components["schemas"]["NotDoneReason"] | null;
+            /** Observation */
+            observation: string | null;
+        };
         /** ClosureChoiceTechnicianOut */
         ClosureChoiceTechnicianOut: {
             /**
@@ -935,6 +982,19 @@ export interface components {
             /** Outcome */
             outcome: string;
             order_status: components["schemas"]["OrderStatus"];
+            /**
+             * Closed At
+             * Format: date-time
+             */
+            closed_at: string;
+        };
+        /**
+         * CompletedOut
+         * @description Qué escuadrilla la terminó y cuándo (E04-08, criterio 1).
+         */
+        CompletedOut: {
+            /** Crew Name */
+            crew_name: string | null;
             /**
              * Closed At
              * Format: date-time
@@ -1357,6 +1417,7 @@ export interface components {
             returned: components["schemas"]["ReturnedFromCrewOut"] | null;
             assignment: components["schemas"]["CurrentAssignmentOut"] | null;
             cancellation: components["schemas"]["CancellationAdminOut"] | null;
+            completed: components["schemas"]["CompletedOut"] | null;
         };
         /** OrderListPage */
         OrderListPage: {
@@ -3214,7 +3275,7 @@ export interface operations {
     list_work_orders_admin_orders_get: {
         parameters: {
             query: {
-                status: "pending" | "assigned" | "in_progress" | "cancelled";
+                status: "pending" | "assigned" | "in_progress" | "done" | "cancelled";
                 limit?: number;
                 offset?: number;
             };
@@ -3334,6 +3395,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CancellationAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_work_order_closure_admin_orders__order_id__closure_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosureAdminOut"];
                 };
             };
             /** @description Validation Error */

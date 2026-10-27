@@ -84,6 +84,13 @@ class CancellationAdminOut(BaseModel):
     cancelled_at: datetime
 
 
+class CompletedOut(BaseModel):
+    """Qué escuadrilla la terminó y cuándo (E04-08, criterio 1)."""
+
+    crew_name: str | None
+    closed_at: datetime
+
+
 class OrderListItemOut(BaseModel):
     id: uuid.UUID
     number: int
@@ -101,6 +108,8 @@ class OrderListItemOut(BaseModel):
     assignment: CurrentAssignmentOut | None
     # Solo en canceladas.
     cancellation: CancellationAdminOut | None
+    # Solo en terminadas.
+    completed: CompletedOut | None
 
 
 class OrderListPage(BaseModel):

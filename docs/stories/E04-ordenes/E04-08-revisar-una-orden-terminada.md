@@ -4,7 +4,7 @@ title: "Revisar una orden terminada"
 epic: E04
 phase: 1
 priority: must
-status: draft
+status: in_progress
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -30,3 +30,11 @@ assumes: [D-005]
 ## Notas técnicas
 
 - Según `D-005`, la revisión es una acción (evento `review_approved` o `review_returned`) y no un estado nuevo.
+
+## Avance
+
+Hecho el 2026-10-28, para que administración vea las terminadas en la prueba del cliente del 2026-10-30 (decisión de Gonza):
+
+- **Criterio 1, en su versión mínima.** `GET /admin/orders?status=done` lista las terminadas (la última cerrada primero) con escuadrilla y fecha de cierre (`completed`). `GET /admin/orders/{id}/closure` devuelve el último cierre con nombres: resultado, quién y cuándo cerró, escuadrilla, técnicos que fueron, tareas, falla y reparación (catálogo o texto de "Otro"), estado del equipo, motivo y observación. 404 si la orden no existe o no tiene cierre; solo administración.
+- Web-admin: "Terminadas" en el selector de estado de Órdenes, con "Ver cierre" que despliega el detalle debajo de la fila. Sin acción de cancelar (R3).
+- Falta: aprobar y devolver (criterios 2 y 3), bloquear la factura sin revisión (criterio 4), destacar mediciones y "Otro" (criterio 5), fotos y firma (con E00-09) y la pantalla de detalle de E04-06.

@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClientSummary, Site } from "../clients/types";
 import type { Crew } from "../crews/types";
 import { OrdersPage } from "./OrdersPage";
-import type { OrderListItem, WorkOrder } from "./types";
+import type { ClosureDetail, OrderListItem, WorkOrder } from "./types";
 
 const SANATORIO: ClientSummary = {
   id: "c1",
@@ -45,6 +45,7 @@ const PENDIENTE: OrderListItem = {
   returned: null,
   assignment: null,
   cancellation: null,
+  completed: null,
 };
 const OTRA_PENDIENTE: OrderListItem = {
   ...PENDIENTE,
@@ -101,6 +102,26 @@ const ASIGNADA: OrderListItem = {
   number: 5,
   status: "assigned",
   assignment: { crew_name: "Escuadrilla 2", scheduled_for: "2026-10-29" },
+};
+const TERMINADA: OrderListItem = {
+  ...PENDIENTE,
+  id: "o3",
+  number: 3,
+  status: "done",
+  completed: { crew_name: "Escuadrilla 1", closed_at: "2026-10-26T18:00:00Z" },
+};
+const CIERRE: ClosureDetail = {
+  outcome: "done",
+  closed_at: "2026-10-26T18:00:00Z",
+  closed_by_name: "Celular 1",
+  crew_name: "Escuadrilla 1",
+  technicians: ["Ana Ficticia", "Beto Inventado"],
+  tasks: ["Carga de gas", "Limpieza de filtros"],
+  failure: "Pérdida de gas",
+  repair: "Soldadura en la cañería",
+  equipment_condition: "working_with_notes",
+  not_done_reason: null,
+  observation: "Revisar en un mes.",
 };
 const CANCELADA: OrderListItem = {
   ...PENDIENTE,
@@ -534,6 +555,9 @@ describe("OrdersPage", () => {
   describe("listado por estado", () => {
     function porEstado() {
       return mockApi((request, url) => {
+        if (url.pathname.endsWith("/admin/orders/o3/closure")) {
+          return json(CIERRE);
+        }
         if (!(url.pathname.endsWith("/admin/orders") && request.method === "GET")) {
           return undefined;
         }
@@ -541,6 +565,7 @@ describe("OrdersPage", () => {
           pending: [PENDIENTE],
           assigned: [ASIGNADA],
           in_progress: [EN_CURSO],
+          done: [TERMINADA],
           cancelled: [CANCELADA],
         };
         return json(pendingPage(items[url.searchParams.get("status") ?? ""] ?? []));
@@ -567,6 +592,52 @@ describe("OrdersPage", () => {
       await user.selectOptions(screen.getByLabelText("Estado"), "in_progress");
       const enCurso = await screen.findByRole("table", { name: "Órdenes en curso" });
       expect(within(enCurso).getByText("Escuadrilla 1")).toBeInTheDocument();
+    });
+
+    it("muestra las terminadas con escuadrilla y fecha de cierre, sin cancelar", async () => {
+      const user = userEvent.setup();
+      porEstado();
+      renderOrders();
+
+      await screen.findByRole("table", { name: "Órdenes pendientes" });
+      await user.selectOptions(screen.getByLabelText("Estado"), "done");
+
+      const tabla = await screen.findByRole("table", { name: "Órdenes terminadas" });
+      const [fila] = within(tabla).getAllByRole("row").slice(1);
+      expect(within(fila).getByText("Escuadrilla 1")).toBeInTheDocument();
+      expect(within(fila).getByText("26/10/2026")).toBeInTheDocument();
+      expect(within(fila).queryByRole("button", { name: /Cancelar/ })).not.toBeInTheDocument();
+    });
+
+    it("muestra lo que cargó la escuadrilla al cerrar", async () => {
+      const user = userEvent.setup();
+      porEstado();
+      renderOrders();
+
+      await screen.findByRole("table", { name: "Órdenes pendientes" });
+      await user.selectOptions(screen.getByLabelText("Estado"), "done");
+      const ver = await screen.findByRole("button", { name: "Ver el cierre de la orden N° 3" });
+      await user.click(ver);
+
+      const detalle = await screen.findByLabelText("Cierre de la orden N° 3");
+      const textos = within(detalle)
+        .getAllByRole("definition")
+        .map((dd) => dd.textContent);
+      expect(textos).toEqual([
+        "Resuelta",
+        "Escuadrilla 1",
+        "26/10/2026 por Celular 1",
+        "Ana Ficticia, Beto Inventado",
+        "Carga de gas, Limpieza de filtros",
+        "Pérdida de gas",
+        "Soldadura en la cañería",
+        "Funciona con observaciones",
+        "Revisar en un mes.",
+      ]);
+      expect(ver).toHaveTextContent("Ocultar cierre");
+
+      await user.click(ver);
+      expect(screen.queryByLabelText("Cierre de la orden N° 3")).not.toBeInTheDocument();
     });
 
     it("muestra las canceladas con motivo, quién y cuándo, sin acciones", async () => {

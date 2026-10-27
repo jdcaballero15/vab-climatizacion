@@ -1,6 +1,7 @@
 import type {
   Cancellation,
   CancelReason,
+  ClosureDetail,
   ListableStatus,
   OrderChannel,
   ReturnedFromCrew,
@@ -18,6 +19,7 @@ export const LIST_STATUS_LABELS: Record<ListableStatus, string> = {
   pending: "Pendientes",
   assigned: "Asignadas",
   in_progress: "En curso",
+  done: "Terminadas",
   cancelled: "Canceladas",
 };
 
@@ -29,17 +31,30 @@ export const CANCEL_REASON_LABELS: Record<CancelReason, string> = {
   other: "Otro",
 };
 
-const OUTCOME_LABELS: Record<ReturnedFromCrew["outcome"], string> = {
+export const OUTCOME_LABELS: Record<ReturnedFromCrew["outcome"], string> = {
   done: "Resuelta",
   needs_revisit: "Requiere otra visita",
   not_done: "No se pudo hacer",
   needs_pickup: "Requiere retiro",
 };
 
-const NOT_DONE_REASON_LABELS: Record<NonNullable<ReturnedFromCrew["not_done_reason"]>, string> = {
+export const NOT_DONE_REASON_LABELS: Record<
+  NonNullable<ReturnedFromCrew["not_done_reason"]>,
+  string
+> = {
   client_absent: "Cliente ausente o sin acceso",
   missing_part: "Falta repuesto o herramienta",
   beyond_repair: "El equipo no tiene arreglo",
+};
+
+// Las mismas palabras que la app del celular (E05-04).
+export const EQUIPMENT_CONDITION_LABELS: Record<
+  NonNullable<ClosureDetail["equipment_condition"]>,
+  string
+> = {
+  working: "Funcionando bien",
+  working_with_notes: "Funciona con observaciones",
+  not_working: "No funciona",
 };
 
 // Hora de la empresa, para que la fecha no cambie según el huso de la PC.
