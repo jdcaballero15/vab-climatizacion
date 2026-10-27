@@ -105,15 +105,40 @@
         ],
         "summary": "Refresh",
         "operationId": "refresh_auth_refresh_post",
+        "parameters": [
+          {
+            "name": "ot_refresh",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ot Refresh"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshRequest"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RefreshRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -146,15 +171,40 @@
         ],
         "summary": "Logout",
         "operationId": "logout_auth_logout_post",
+        "parameters": [
+          {
+            "name": "ot_refresh",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ot Refresh"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LogoutRequest"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/LogoutRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "204": {
@@ -5534,12 +5584,16 @@
             "type": "string",
             "title": "Token Type",
             "default": "bearer"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserOut"
           }
         },
         "type": "object",
         "required": [
           "access_token",
-          "refresh_token"
+          "refresh_token",
+          "user"
         ],
         "title": "RefreshResponse"
       },
