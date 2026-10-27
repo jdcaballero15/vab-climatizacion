@@ -46,7 +46,8 @@ export default defineConfig({
       },
       workbox: {
         // Carcasa offline: se precachea el app shell (criterio 2).
-        globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
+        // Inter solo en sus subconjuntos latinos: sin conexión no cae a la fuente del sistema.
+        globPatterns: ["**/*.{js,css,html,svg,png,ico}", "**/inter-latin-*.woff2"],
         navigateFallback: "index.html",
       },
       devOptions: { enabled: false },
