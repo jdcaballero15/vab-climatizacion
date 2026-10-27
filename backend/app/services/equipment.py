@@ -57,7 +57,7 @@ async def create_equipment(
     equipment_type = await _check_type(session, data.equipment_type_id)
 
     for _ in range(_CODE_ATTEMPTS):
-        code = await _next_code(session, client, equipment_type)
+        code = await next_code(session, client, equipment_type)
         equipment = Equipment(internal_code=code, **data.model_dump())
         session.add(equipment)
         try:
@@ -100,7 +100,7 @@ async def _check_type(session: AsyncSession, type_id: uuid.UUID) -> EquipmentTyp
     return equipment_type
 
 
-async def _next_code(session: AsyncSession, client: Client, equipment_type: EquipmentType) -> str:
+async def next_code(session: AsyncSession, client: Client, equipment_type: EquipmentType) -> str:
     """Prefijo del tipo + dígitos del número de cliente + correlativo (mínimo 2 dígitos).
 
     Los códigos migrados de Persat pueden ocupar el que tocaría: se saltea al siguiente.

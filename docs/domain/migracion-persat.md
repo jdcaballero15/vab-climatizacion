@@ -29,7 +29,7 @@ Generales: se recortan los espacios de más en todos los textos.
 
 ### Clientes
 
-- **No se migran** los registros internos (tipo operario, depósito o administración) ni los registros de prueba de Persat.
+- **No se migran** los registros internos (tipo operario, depósito o administración) ni los registros de prueba de Persat (el nombre dice "Persat", "prueba" o "test" como palabra completa).
 - **Número de cliente**: es texto (ver `D-002`). Se corrigen los espacios alrededor del guion (`CLI -123` pasa a `CLI-123`). Un cliente sin número recibe uno nuevo y queda para revisar.
 - **Segmento**: sale de la columna Tipo (particular, comercio, estado, sanatorio o clínica, hotel; el resto, sin clasificar).
 - **Un domicilio por cliente**: cada registro de Persat es un cliente con un domicilio, tal cual viene. **No se unifican automáticamente** las sedes que Persat tiene cargadas como clientes distintos (cadenas, organismos con varias sedes, particulares repetidos), porque no se sabe si se facturan por separado. Se unifican después a mano (E03-08).
@@ -65,6 +65,16 @@ Generales: se recortan los espacios de más en todos los textos.
 - **Técnicos**: salen de las etiquetas, descartando las que son tipos de trabajo. **Cuadrilla**: el número de la columna técnico.
 - **Equipo**: el código de la celda de datos del equipo, salvo que diga `N/A` o esté vacío (pasa en casi 9 de cada 10 reparaciones).
 - **Detalle**: se juntan los textos de reclamo, observación, trabajo realizado, falla detectada, causal de retiro y tareas, sin repetir y sin valores de relleno (`0`, `N/A`, `OTROS`).
+
+## Cómo se corre
+
+```bash
+cd backend
+python -m app.persat_import --clientes <clientes.xlsx> --equipos <equipos.xlsx>            # prueba
+python -m app.persat_import --clientes <clientes.xlsx> --equipos <equipos.xlsx> --aplicar  # guarda
+```
+
+Se puede repetir: lo que ya tiene referencia en `legacy_reference` no se vuelve a crear. Para importar en producción se corre desde una máquina con los archivos, con `DATABASE_URL` apuntando a la base de producción, así los archivos no salen de esa máquina.
 
 ## Resultado esperado
 

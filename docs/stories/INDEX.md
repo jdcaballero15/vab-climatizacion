@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 120 historias.** done: 28, draft: 83, icebox: 8, ready: 1
+**Total: 120 historias.** done: 30, draft: 81, icebox: 8, ready: 1
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -162,8 +162,8 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
-| [E11-01](E11-migracion/E11-01-importar-clientes-desde-persat.md) | Importar clientes desde Persat | Debe | M | draft | admin | - | - | E03-01, E11-05 |
-| [E11-02](E11-migracion/E11-02-importar-equipos-desde-persat.md) | Importar equipos desde Persat | Debe | M | draft | admin | - | D-002 | E11-01, E03-03 |
+| [E11-01](E11-migracion/E11-01-importar-clientes-desde-persat.md) | Importar clientes desde Persat | Debe | M | done | admin | - | - | E03-01 |
+| [E11-02](E11-migracion/E11-02-importar-equipos-desde-persat.md) | Importar equipos desde Persat | Debe | M | done | admin | - | D-002 | E11-01, E03-03 |
 | [E11-03](E11-migracion/E11-03-importar-el-historial-de-trabajos-de-persat.md) | Importar el historial de trabajos de Persat | Debe | L | draft | admin | - | - | E11-02, E04-06 |
 | [E11-04](E11-migracion/E11-04-informe-de-calidad-de-datos-de-la-importacion.md) | Informe de calidad de datos de la importación | Debería | M | draft | admin | - | - | E11-01 |
 | [E11-05](E11-migracion/E11-05-importacion-repetible-y-reversible.md) | Importación repetible y reversible | Debe | M | draft | admin | - | - | E00-01 |
