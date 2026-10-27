@@ -7,12 +7,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.schemas.client import ClientSiteTechnicianOut, site_map_url
 from app.api.schemas.work_order import (
     AssignmentCreate,
+    CancellationAdminOut,
+    CancellationCreate,
     CrewOrdersTechnicianOut,
     CrewTechnicianOut,
+    CurrentAssignmentOut,
     EquipmentTechnicianOut,
     OrderDetailTechnicianOut,
+    OrderListItemOut,
     OrderTechnicianOut,
-    PendingOrderOut,
     ReturnedFromCrewOut,
     WorkOrderAdminOut,
     WorkOrderCreate,
@@ -23,6 +26,7 @@ from app.db.models.user import User
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
+    WorkOrderCancellation,
     WorkOrderClosure,
     WorkOrderEvent,
 )
@@ -30,7 +34,10 @@ from app.db.repositories.client import ClientContactRepository
 from app.db.repositories.crew import CrewRepository
 from app.db.repositories.work_order import OpenCrewOrderRow, WorkOrderRepository
 from app.domain.work_order import (
+    CANCEL_REASON_LABELS,
+    CREW_OPEN_STATUSES,
     STATUSLESS_EVENT_TYPES,
+    CancelReason,
     ClosureOutcome,
     OrderAction,
     OrderSource,
@@ -69,6 +76,16 @@ class OrderRequiresApprovalError(Exception):
     """La orden es de un lote de mantenimiento sin aprobar (R6)."""
 
 
+class CancellationValidationError(Exception):
+    """Motivo de cancelación incompleto. Lleva el campo para la app."""
+
+    def __init__(self, code: str, field: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.field = field
+        self.message = message
+
+
 async def create_work_order(
     session: AsyncSession, data: WorkOrderCreate, actor: User
 ) -> WorkOrderAdminOut:
@@ -95,16 +112,17 @@ async def create_work_order(
     return WorkOrderAdminOut.model_validate({**_columns(order), "created_at": event.occurred_at})
 
 
-async def list_pending(
-    session: AsyncSession, *, limit: int, offset: int
-) -> tuple[list[PendingOrderOut], int]:
+async def list_by_status(
+    session: AsyncSession, status: OrderStatus, *, limit: int, offset: int
+) -> tuple[list[OrderListItemOut], int]:
     rows, total = await WorkOrderRepository(session).list_by_status_page(
-        OrderStatus.pending, limit=limit, offset=offset
+        status, limit=limit, offset=offset
     )
     items = [
-        PendingOrderOut(
+        OrderListItemOut(
             id=order.id,
             number=order.number,
+            status=order.status,
             client_id=order.client_id,
             client_name=client_name,
             site_label=site_label,
@@ -112,7 +130,22 @@ async def list_pending(
             work_type_name=work_type_name,
             description=order.description,
             created_at=created_at,
-            returned=_returned(closure, assigned_at, crew_name),
+            returned=(
+                _returned(closure, assigned_at, crew_name)
+                if status == OrderStatus.pending
+                else None
+            ),
+            # La última asignación de una orden Asignada o En curso es la vigente.
+            assignment=(
+                CurrentAssignmentOut(crew_name=crew_name, scheduled_for=scheduled_for)
+                if status in CREW_OPEN_STATUSES and crew_name and scheduled_for
+                else None
+            ),
+            cancellation=(
+                _cancellation_out(cancellation, cancelled_by_name)
+                if cancellation is not None and cancelled_by_name is not None
+                else None
+            ),
         )
         for (
             order,
@@ -124,6 +157,9 @@ async def list_pending(
             closure,
             assigned_at,
             crew_name,
+            scheduled_for,
+            cancellation,
+            cancelled_by_name,
         ) in rows
     ]
     return items, total
@@ -351,6 +387,52 @@ async def record_event(
     await session.commit()
     await session.refresh(event)
     return event
+
+
+async def cancel_work_order(
+    session: AsyncSession, order_id: uuid.UUID, data: CancellationCreate, actor: User
+) -> CancellationAdminOut:
+    """Cancela una orden Pendiente, Asignada o En curso con su motivo (E04-07).
+
+    Estado, evento, fin de la asignación vigente y cancelación van en una transacción.
+    """
+    reason = CancelReason(data.reason)
+    if reason == CancelReason.other and data.reason_text is None:
+        raise CancellationValidationError(
+            "reason_text_required", "reason_text", 'Escribí el motivo de "Otro".'
+        )
+    if reason != CancelReason.other and data.reason_text is not None:
+        raise CancellationValidationError(
+            "reason_text_not_allowed", "reason_text", 'El texto va solo con el motivo "Otro".'
+        )
+
+    order = await get_work_order(session, order_id)
+    label = CANCEL_REASON_LABELS[reason]
+    note = f"{label}: {data.reason_text}" if reason == CancelReason.other else f"{label}."
+    await stage_transition(session, order, OrderAction.cancel, actor, note)
+    await WorkOrderRepository(session).end_current_assignment(order.id)
+    cancellation = WorkOrderCancellation(
+        work_order_id=order.id,
+        reason=reason,
+        reason_text=data.reason_text,
+        cancelled_by=actor.id,
+    )
+    session.add(cancellation)
+    await session.commit()
+    await session.refresh(cancellation)
+    await session.refresh(actor)
+    return _cancellation_out(cancellation, actor.full_name)
+
+
+def _cancellation_out(
+    cancellation: WorkOrderCancellation, cancelled_by_name: str
+) -> CancellationAdminOut:
+    return CancellationAdminOut(
+        reason=cancellation.reason,
+        reason_text=cancellation.reason_text,
+        cancelled_by_name=cancelled_by_name,
+        cancelled_at=cancellation.cancelled_at,
+    )
 
 
 async def assign_work_order(

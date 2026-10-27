@@ -1,17 +1,20 @@
 import uuid
 from collections.abc import Sequence
 from datetime import date, datetime
+from typing import Any
 
-from sqlalchemy import Row, func, select, true, update
-from sqlalchemy.orm import aliased
+from sqlalchemy import ColumnElement, Row, func, select, true, update
+from sqlalchemy.orm import InstrumentedAttribute, aliased
 
 from app.db.models.catalog import EquipmentType, WorkType
 from app.db.models.client import Client, ClientSite
 from app.db.models.crew import Crew
 from app.db.models.equipment import Equipment
+from app.db.models.user import User
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
+    WorkOrderCancellation,
     WorkOrderClosure,
     WorkOrderEvent,
 )
@@ -22,8 +25,8 @@ from app.domain.work_order import CREW_OPEN_STATUSES, OrderStatus, WorkOrderEven
 # trabajo, equipo y nombre de su tipo (estos dos, nulos sin equipo).
 type OpenCrewOrderRow = Row[WorkOrder, date, str, ClientSite, str, Equipment | None, str | None]
 # Orden en un estado: orden, fecha de creación, cliente, rótulo y dirección del domicilio,
-# tipo de trabajo, su último cierre, y fecha y escuadrilla de su última asignación
-# (estos tres, nulos si no tiene).
+# tipo de trabajo, su último cierre; fecha, escuadrilla y fecha prevista de su última
+# asignación; su cancelación y quién canceló (nulos si no tiene).
 type StatusOrderRow = Row[
     WorkOrder,
     datetime,
@@ -33,6 +36,9 @@ type StatusOrderRow = Row[
     str,
     WorkOrderClosure | None,
     datetime | None,
+    str | None,
+    date | None,
+    WorkOrderCancellation | None,
     str | None,
 ]
 
@@ -63,10 +69,14 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
     async def list_by_status_page(
         self, status: OrderStatus, *, limit: int, offset: int
     ) -> tuple[Sequence[StatusOrderRow], int]:
-        """Órdenes en un estado, de la más vieja a la más nueva según su evento de creación.
+        """Órdenes en un estado, en el orden en que se las trabaja.
 
-        Cada fila trae además el último cierre de la orden y su última asignación, para
-        saber si volvió de una escuadrilla (E05-08).
+        Pendientes, de la más vieja a la más nueva según su evento de creación; Asignadas
+        y En curso, por fecha prevista; canceladas, la última cancelada primero.
+
+        Cada fila trae además el último cierre de la orden y su última asignación (para
+        saber si volvió de una escuadrilla, E05-08, o a quién está asignada) y su
+        cancelación (E04-07).
         """
         filtered = self._select().where(self.model.status == status)
         total = await self.session.scalar(select(func.count()).select_from(filtered.subquery()))
@@ -79,12 +89,24 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         )
         closure = aliased(WorkOrderClosure, last_closure)
         last_assignment = (
-            select(WorkOrderAssignment.assigned_at, WorkOrderAssignment.crew_id)
+            select(
+                WorkOrderAssignment.assigned_at,
+                WorkOrderAssignment.crew_id,
+                WorkOrderAssignment.scheduled_for,
+            )
             .where(WorkOrderAssignment.work_order_id == self.model.id)
             .order_by(WorkOrderAssignment.assigned_at.desc())
             .limit(1)
             .lateral()
         )
+        cancelled_by = aliased(User)
+        order_by: tuple[ColumnElement[Any] | InstrumentedAttribute[Any], ...]
+        if status in CREW_OPEN_STATUSES:
+            order_by = (last_assignment.c.scheduled_for, self.model.number)
+        elif status == OrderStatus.cancelled:
+            order_by = (WorkOrderCancellation.cancelled_at.desc(), self.model.number.desc())
+        else:
+            order_by = (WorkOrderEvent.occurred_at, self.model.number)
         stmt = (
             select(
                 self.model,
@@ -96,6 +118,9 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
                 closure,
                 last_assignment.c.assigned_at,
                 Crew.name,
+                last_assignment.c.scheduled_for,
+                WorkOrderCancellation,
+                cancelled_by.full_name,
             )
             .join(
                 WorkOrderEvent,
@@ -108,8 +133,14 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             .outerjoin(closure, true())
             .outerjoin(last_assignment, true())
             .outerjoin(Crew, Crew.id == last_assignment.c.crew_id)
+            .outerjoin(
+                WorkOrderCancellation,
+                (WorkOrderCancellation.work_order_id == self.model.id)
+                & WorkOrderCancellation.deleted_at.is_(None),
+            )
+            .outerjoin(cancelled_by, cancelled_by.id == WorkOrderCancellation.cancelled_by)
             .where(self.model.status == status, self.model.deleted_at.is_(None))
-            .order_by(WorkOrderEvent.occurred_at, self.model.number)
+            .order_by(*order_by)
             .limit(limit)
             .offset(offset)
         )

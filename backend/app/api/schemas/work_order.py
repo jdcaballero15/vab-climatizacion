@@ -6,6 +6,7 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, StringConstraints
 
 from app.api.schemas.client import ClientSiteTechnicianOut, blank_to_none
 from app.domain.work_order import (
+    CancelReason,
     ClosureOutcome,
     NotDoneReason,
     OrderChannel,
@@ -17,6 +18,10 @@ from app.domain.work_order import (
 # Obligatoria: un texto vacío pasa a None y se rechaza con 422.
 Description = Annotated[str, BeforeValidator(blank_to_none), StringConstraints(max_length=2000)]
 RequesterText = Annotated[
+    Annotated[str, StringConstraints(max_length=255)] | None, BeforeValidator(blank_to_none)
+]
+# El texto de "Otro" al cancelar: vacío o solo espacios cuenta como no cargado.
+CancelReasonText = Annotated[
     Annotated[str, StringConstraints(max_length=255)] | None, BeforeValidator(blank_to_none)
 ]
 
@@ -63,9 +68,26 @@ class ReturnedFromCrewOut(BaseModel):
     observation: str | None
 
 
-class PendingOrderOut(BaseModel):
+class CurrentAssignmentOut(BaseModel):
+    """Escuadrilla y fecha prevista de una orden Asignada o En curso."""
+
+    crew_name: str
+    scheduled_for: date
+
+
+class CancellationAdminOut(BaseModel):
+    """Motivo, quién y cuándo se canceló (E04-07, criterio 6)."""
+
+    reason: CancelReason
+    reason_text: str | None
+    cancelled_by_name: str
+    cancelled_at: datetime
+
+
+class OrderListItemOut(BaseModel):
     id: uuid.UUID
     number: int
+    status: OrderStatus
     client_id: uuid.UUID
     client_name: str
     site_label: str | None
@@ -73,15 +95,28 @@ class PendingOrderOut(BaseModel):
     work_type_name: str
     description: str | None
     created_at: datetime
-    # Nulo si no volvió de una escuadrilla o si después se la volvió a asignar.
+    # Solo en pendientes. Nulo si no volvió de una escuadrilla o si después se la reasignó.
     returned: ReturnedFromCrewOut | None
+    # Solo en Asignadas y En curso.
+    assignment: CurrentAssignmentOut | None
+    # Solo en canceladas.
+    cancellation: CancellationAdminOut | None
 
 
-class PendingOrderPage(BaseModel):
-    items: list[PendingOrderOut]
+class OrderListPage(BaseModel):
+    items: list[OrderListItemOut]
     total: int
     limit: int
     offset: int
+
+
+# extra="forbid": el estado y quién cancela los pone el sistema.
+class CancellationCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: CancelReason
+    # Obligatorio con "Otro" y solo con "Otro" (lo valida el servicio, con el campo).
+    reason_text: CancelReasonText = None
 
 
 class AssignmentCreate(BaseModel):

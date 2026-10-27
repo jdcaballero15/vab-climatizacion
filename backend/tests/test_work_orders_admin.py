@@ -14,6 +14,7 @@ from app.db.models.user import User, UserRole
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
+    WorkOrderCancellation,
     WorkOrderClosure,
     WorkOrderEvent,
 )
@@ -36,6 +37,7 @@ TABLES = [
     WorkOrderEvent.__table__,
     WorkOrderAssignment.__table__,
     WorkOrderClosure.__table__,
+    WorkOrderCancellation.__table__,
 ]
 ORDERS_URL = "/admin/orders"
 PENDING_URL = f"{ORDERS_URL}?status=pending"
@@ -56,6 +58,7 @@ async def schema() -> AsyncGenerator[None, None]:
             "order_kind",
             "order_source",
             "order_channel",
+            "cancel_reason",
             "closure_outcome",
             "equipment_condition",
             "not_done_reason",
@@ -417,7 +420,8 @@ async def test_listado_paginado(
     assert [item["id"] for item in body["items"]] == [creadas[1]["id"], creadas[2]["id"]]
 
 
-async def test_listado_solo_admite_pendientes(admin: User) -> None:
+# Terminadas en adelante llegan con el panel por estado (E04-05).
+async def test_listado_exige_un_estado_admitido(admin: User) -> None:
     async with _client() as client:
         sin_filtro = await client.get(ORDERS_URL, headers=_auth(admin))
         otro = await client.get(f"{ORDERS_URL}?status=done", headers=_auth(admin))

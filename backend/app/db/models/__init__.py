@@ -7,6 +7,7 @@ from app.db.models.user import User, UserRole
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
+    WorkOrderCancellation,
     WorkOrderClosure,
     WorkOrderClosureTask,
     WorkOrderClosureTechnician,
@@ -31,6 +32,7 @@ __all__ = [
     "UserRole",
     "WorkOrder",
     "WorkOrderAssignment",
+    "WorkOrderCancellation",
     "WorkOrderClosure",
     "WorkOrderClosureTask",
     "WorkOrderClosureTechnician",

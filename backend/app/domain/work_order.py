@@ -76,6 +76,24 @@ NOT_DONE_REASON_LABELS = {
 }
 
 
+class CancelReason(StrEnum):
+    """Por qué administración cancela una orden (E04-07). Lista a validar con la oficina."""
+
+    entered_by_mistake = "entered_by_mistake"
+    duplicate = "duplicate"
+    client_cancelled = "client_cancelled"
+    # Con texto obligatorio.
+    other = "other"
+
+
+CANCEL_REASON_LABELS = {
+    CancelReason.entered_by_mistake: "Cargada por error",
+    CancelReason.duplicate: "Duplicada",
+    CancelReason.client_cancelled: "El cliente la canceló",
+    CancelReason.other: "Otro",
+}
+
+
 class WorkOrderEventType(StrEnum):
     created = "created"
     status_change = "status_change"

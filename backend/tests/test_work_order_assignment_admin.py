@@ -17,6 +17,7 @@ from app.db.models.user import User, UserRole
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
+    WorkOrderCancellation,
     WorkOrderClosure,
     WorkOrderEvent,
 )
@@ -42,6 +43,7 @@ TABLES = [
     WorkOrderEvent.__table__,
     WorkOrderAssignment.__table__,
     WorkOrderClosure.__table__,
+    WorkOrderCancellation.__table__,
 ]
 PENDING_URL = "/admin/orders?status=pending"
 CREWS_URL = "/admin/crews"
@@ -63,6 +65,7 @@ async def schema() -> AsyncGenerator[None, None]:
             "order_kind",
             "order_source",
             "order_channel",
+            "cancel_reason",
             "closure_outcome",
             "equipment_condition",
             "not_done_reason",

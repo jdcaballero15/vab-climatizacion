@@ -84,6 +84,13 @@ Enum not_done_reason {
   beyond_repair  [note: 'El equipo no tiene arreglo']
 }
 
+Enum cancel_reason {
+  entered_by_mistake [note: 'Cargada por error']
+  duplicate          [note: 'Duplicada']
+  client_cancelled   [note: 'El cliente la canceló']
+  other              [note: 'Otro, con texto obligatorio (E04-07). Lista a validar con la oficina']
+}
+
 Enum signature_purpose {
   closure
   pickup
@@ -305,6 +312,17 @@ Table work_order_closure {
   not_done_reason not_done_reason [note: 'Solo con outcome not_done']
   observation text
   idempotency_key uuid [unique, not null, note: 'Generada en el celular. Evita duplicados al sincronizar']
+}
+
+Table work_order_cancellation {
+  id uuid [pk]
+  work_order_id uuid [ref: > work_order.id, not null, note: 'Única por orden (índice parcial sin borradas): Cancelada es final']
+  reason cancel_reason [not null]
+  reason_text varchar [note: 'Solo y obligatorio con reason other (CHECK)']
+  cancelled_by uuid [ref: > app_user.id, not null, note: 'Usuario de administración que canceló']
+  cancelled_at timestamptz [not null]
+
+  Note: 'Cancelación de la orden por administración (E04-07). El evento de la línea de tiempo guarda el motivo legible'
 }
 
 Table work_order_closure_technician {
