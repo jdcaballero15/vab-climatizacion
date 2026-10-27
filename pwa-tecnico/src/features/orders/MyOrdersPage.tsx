@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import type { components } from "../../api/schema";
+import type { ClosedNotice } from "./ClosurePage";
 import { dueLabel, statusLabel } from "./labels";
 import { useMyOrders } from "./useMyOrders";
 
@@ -14,6 +15,7 @@ interface MyOrdersPageProps {
 export function MyOrdersPage({ onLogout }: MyOrdersPageProps) {
   const query = useMyOrders();
   const data = query.data;
+  const notice = (useLocation().state as ClosedNotice | null)?.notice;
 
   let title = "Mis órdenes";
   let body: ReactNode;
@@ -70,6 +72,11 @@ export function MyOrdersPage({ onLogout }: MyOrdersPageProps) {
           Cerrar sesión
         </button>
       </div>
+      {notice && (
+        <p className="orders__notice" role="status">
+          {notice}
+        </p>
+      )}
       {data !== undefined && query.isError && (
         <p className="orders__warning" role="alert">
           No se pudo actualizar. Se muestra la última lista cargada.

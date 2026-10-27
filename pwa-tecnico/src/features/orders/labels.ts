@@ -18,3 +18,19 @@ export function dueLabel(scheduledFor: string, today: string): { text: string; o
   const day = relativeDay(scheduledFor, today);
   return { text: overdue ? `Vencida · ${day}` : day, overdue };
 }
+
+type NotDoneReason = components["schemas"]["NotDoneReason"];
+type EquipmentCondition = components["schemas"]["EquipmentCondition"];
+
+/** Motivos de "No se pudo hacer", como en el prototipo del cliente (E05-08). */
+export const NOT_DONE_REASONS: [NotDoneReason, string][] = [
+  ["client_absent", "Cliente ausente o sin acceso"],
+  ["missing_part", "Falta repuesto o herramienta"],
+  ["beyond_repair", "El equipo no tiene arreglo"],
+];
+
+export const EQUIPMENT_CONDITIONS: [EquipmentCondition, string][] = [
+  ["working", "Funcionando bien"],
+  ["working_with_notes", "Funciona con observaciones"],
+  ["not_working", "No funciona"],
+];

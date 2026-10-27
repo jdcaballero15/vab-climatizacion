@@ -61,6 +61,7 @@ function renderDetail() {
         <Routes>
           <Route path="/" element={<h1>Lista de órdenes</h1>} />
           <Route path="/ordenes/:orderId" element={<OrderDetailPage />} />
+          <Route path="/ordenes/:orderId/cerrar" element={<h1>Formulario de cierre</h1>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -278,6 +279,26 @@ describe("OrderDetailPage", () => {
       expect(
         await screen.findByText("Esta orden ya no está entre las de tu escuadrilla."),
       ).toBeInTheDocument();
+    });
+  });
+
+  // E05-04, criterio 1: el cierre se abre desde una orden En curso.
+  describe("Cerrar orden", () => {
+    it("una orden En curso muestra el botón que abre el cierre", async () => {
+      stubFetch(() => json(detail({ status: "in_progress" })));
+      renderDetail();
+
+      await userEvent.click(await screen.findByRole("link", { name: "Cerrar orden" }));
+
+      expect(screen.getByRole("heading", { name: "Formulario de cierre" })).toBeInTheDocument();
+    });
+
+    it("una orden Asignada no lo muestra", async () => {
+      stubFetch(() => json(detail()));
+      renderDetail();
+
+      await screen.findByRole("button", { name: "Iniciar" });
+      expect(screen.queryByRole("link", { name: "Cerrar orden" })).not.toBeInTheDocument();
     });
   });
 });

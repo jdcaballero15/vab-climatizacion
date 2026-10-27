@@ -1,0 +1,154 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  EMPTY_DRAFT,
+  OTHER,
+  missingFields,
+  repairsFor,
+  toClosurePayload,
+  type ClosureDraft,
+  type ClosureOptions,
+} from "./closure";
+
+const OPTIONS: ClosureOptions = {
+  technicians: [{ id: "t1", name: "Ana Ficticia" }],
+  tasks: [{ id: "k1", name: "Limpiar filtros" }],
+  requires_failure_repair: true,
+  failures: [
+    { id: "f1", name: "No enfría", repairs: [{ id: "r1", name: "Carga de gas" }] },
+    { id: "f2", name: "Pierde agua", repairs: [] },
+  ],
+};
+
+function draft(overrides: Partial<ClosureDraft> = {}): ClosureDraft {
+  return {
+    ...EMPTY_DRAFT,
+    technicianIds: ["t1"],
+    outcome: "done",
+    failure: "f1",
+    repair: "r1",
+    equipmentCondition: "working",
+    ...overrides,
+  };
+}
+
+describe("missingFields", () => {
+  it("un cierre completo no tiene faltantes", () => {
+    expect(missingFields(draft(), OPTIONS)).toEqual({});
+  });
+
+  // E05-04, criterios 2 y 8; E05-08, criterio 1.
+  it("pide quiénes fueron y el resultado", () => {
+    expect(missingFields(EMPTY_DRAFT, OPTIONS)).toEqual({
+      technician_ids: "Tildá quiénes fueron.",
+      outcome: "Elegí el resultado.",
+    });
+  });
+
+  // E05-04, criterio 4.
+  it("con Resuelta y un tipo que la pide, exige falla y reparación", () => {
+    expect(missingFields(draft({ failure: "", repair: "" }), OPTIONS)).toEqual({
+      failure_id: "Elegí la falla.",
+      repair_id: "Elegí la reparación.",
+    });
+  });
+
+  it("no exige falla ni reparación si el tipo no las pide o no está resuelta", () => {
+    const sinFalla = { failure: "", repair: "" };
+    expect(missingFields(draft(sinFalla), { ...OPTIONS, requires_failure_repair: false })).toEqual(
+      {},
+    );
+    expect(
+      missingFields(draft({ ...sinFalla, outcome: "needs_revisit", observation: "x" }), OPTIONS),
+    ).toEqual({});
+  });
+
+  // E05-04, criterio 6.
+  it('con "Otro" pide cuál y la observación', () => {
+    expect(missingFields(draft({ failure: OTHER, repair: OTHER }), OPTIONS)).toEqual({
+      failure_other_text: "Escribí cuál es la falla.",
+      repair_other_text: "Escribí cuál es la reparación.",
+      observation: "Escribí una observación.",
+    });
+  });
+
+  // E05-04, criterio 7.
+  it("pide cómo quedó el equipo y, con observaciones, la observación", () => {
+    expect(missingFields(draft({ equipmentCondition: null }), OPTIONS)).toEqual({
+      equipment_condition: "Elegí cómo quedó el equipo.",
+    });
+    expect(missingFields(draft({ equipmentCondition: "working_with_notes" }), OPTIONS)).toEqual({
+      observation: "Escribí una observación.",
+    });
+  });
+
+  // E05-08, criterios 3 y 4.
+  it("otra visita pide qué falta; no se pudo hacer no pide el equipo", () => {
+    expect(missingFields(draft({ outcome: "needs_revisit", observation: " " }), OPTIONS)).toEqual({
+      observation: "Escribí qué falta.",
+    });
+    expect(
+      missingFields(
+        draft({
+          outcome: "not_done",
+          notDoneReason: "client_absent",
+          failure: "",
+          repair: "",
+          equipmentCondition: null,
+        }),
+        OPTIONS,
+      ),
+    ).toEqual({});
+  });
+});
+
+describe("repairsFor", () => {
+  it("solo las reparaciones de la falla elegida", () => {
+    expect(repairsFor(draft(), OPTIONS)).toEqual([{ id: "r1", name: "Carga de gas" }]);
+    expect(repairsFor(draft({ failure: "f2" }), OPTIONS)).toEqual([]);
+    expect(repairsFor(draft({ failure: OTHER }), OPTIONS)).toEqual([]);
+  });
+});
+
+describe("toClosurePayload", () => {
+  it("arma el cierre resuelto con ids de las listas", () => {
+    expect(toClosurePayload(draft({ taskIds: ["k1"], observation: "  " }), "key")).toEqual({
+      idempotency_key: "key",
+      outcome: "done",
+      technician_ids: ["t1"],
+      task_ids: ["k1"],
+      failure_id: "f1",
+      failure_other_text: null,
+      repair_id: "r1",
+      repair_other_text: null,
+      equipment_condition: "working",
+      not_done_reason: null,
+      observation: null,
+    });
+  });
+
+  it('manda el texto de "Otro" en lugar del id', () => {
+    const payload = toClosurePayload(
+      draft({ failure: OTHER, failureOther: " Ruido ", repair: OTHER, repairOther: "Ajuste" }),
+      "key",
+    );
+    expect(payload).toMatchObject({
+      failure_id: null,
+      failure_other_text: "Ruido",
+      repair_id: null,
+      repair_other_text: "Ajuste",
+    });
+  });
+
+  it("con No se pudo hacer manda el motivo y no el estado del equipo", () => {
+    const payload = toClosurePayload(
+      draft({ outcome: "not_done", notDoneReason: "missing_part" }),
+      "key",
+    );
+    expect(payload).toMatchObject({
+      outcome: "not_done",
+      not_done_reason: "missing_part",
+      equipment_condition: null,
+    });
+  });
+});

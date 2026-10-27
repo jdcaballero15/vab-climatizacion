@@ -4,7 +4,7 @@ title: "Cierre de orden idempotente"
 epic: E05
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [technician]
 size: S
 areas: [backend]
@@ -34,3 +34,4 @@ assumes: []
 ## Notas de implementación
 
 - Se implementa con E05-04: ver sus notas de implementación.
+- PWA (PR 3): la clave (`crypto.randomUUID()`) se genera al abrir el formulario y se reusa en cada reintento del mismo cierre. Si se corta la conexión, avisa y deja lo cargado para reintentar. Con `idempotency_key_reused` se genera una clave nueva. El borrador queda solo en memoria hasta E05-13.

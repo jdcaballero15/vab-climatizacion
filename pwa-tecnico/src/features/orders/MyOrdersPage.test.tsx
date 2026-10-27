@@ -49,12 +49,12 @@ function stubOrders(...responses: (() => Response)[]) {
   return fetchMock;
 }
 
-function renderPage() {
+function renderPage(state?: unknown) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const onLogout = vi.fn();
   render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[{ pathname: "/", state }]}>
         <Routes>
           <Route path="/" element={<MyOrdersPage onLogout={onLogout} />} />
           <Route path="/ordenes/:orderId" element={<DetailStub />} />
@@ -210,5 +210,13 @@ describe("MyOrdersPage", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Cerrar sesión" }));
 
     expect(onLogout).toHaveBeenCalled();
+  });
+
+  // E05-04: al volver de un cierre, la lista lo confirma.
+  it("muestra el aviso del cierre recién enviado", async () => {
+    stubOrders(() => json(payload([])));
+    renderPage({ notice: "Orden N° 3 cerrada." });
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Orden N° 3 cerrada.");
   });
 });
