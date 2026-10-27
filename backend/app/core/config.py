@@ -29,6 +29,17 @@ class Settings(BaseSettings):
     refresh_cookie_path: str = "/api/auth"
     refresh_cookie_secure: bool = True
 
+    # Bucket S3 compatible (E00-09): MinIO en local, Cloudflare R2 en la nube.
+    # Los valores por defecto son los de MinIO local; en la nube se pisan por entorno.
+    s3_endpoint_url: str = "http://localhost:9000"
+    s3_access_key: str = "minio"
+    s3_secret_key: str = "minio12345"  # noqa: S105 (valor de desarrollo, se pisa por entorno)
+    s3_bucket: str = "ot-files"
+    s3_region: str = "us-east-1"  # R2 usa "auto"
+    signed_url_ttl_seconds: int = 300
+    upload_max_bytes: int = 5 * 1024 * 1024
+    upload_allowed_types: str = "image/jpeg,image/png,image/webp,application/pdf"
+
     # Contraseña de los usuarios del generador de datos de prueba. Sin valor por defecto.
     seed_password: str | None = None
 
@@ -55,6 +66,10 @@ class Settings(BaseSettings):
                 f"{MIN_SECRET_KEY_LENGTH} caracteres o más."
             )
         return self
+
+    @property
+    def upload_allowed_type_list(self) -> list[str]:
+        return [t.strip() for t in self.upload_allowed_types.split(",") if t.strip()]
 
     @property
     def cors_origin_list(self) -> list[str]:
