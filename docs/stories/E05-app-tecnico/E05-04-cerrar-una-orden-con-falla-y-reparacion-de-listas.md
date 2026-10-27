@@ -4,7 +4,7 @@ title: "Cerrar una orden con falla y reparación de listas"
 epic: E05
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [technician]
 size: M
 areas: [backend, pwa]
@@ -54,3 +54,12 @@ Validadas con negocio el 2026-10-26, con el prototipo del cliente:
 - Listas para el técnico: `GET /tech/orders/{id}/closure-options` devuelve técnicos activos, tareas activas del tipo de trabajo, si pide falla y reparación, y las fallas con sus reparaciones según el tipo de equipo de la orden. Esquemas `*TechnicianOut`, solo nombres e ids.
 - El cierre se envía en un solo `POST /tech/orders/{id}/closure` con la clave de idempotencia de E05-12 y el resultado de E05-08. Tablas `work_order_closure`, `work_order_closure_technician` y `work_order_closure_task` (ver `data-model.dbml`).
 - Que la falla y la reparación no exigidas por el resultado sean opcionales es una propuesta del refinamiento: si negocio prefiere exigirlas también en "Requiere otra visita", es un cambio de validación.
+
+## Notas de implementación
+
+Se entrega junto con E05-04, E05-08 y E05-12, en PR separados: backend, listado de pendientes (web-admin) y formulario en la PWA.
+
+- Backend (PR 1): migración `b7d2e9f4c613` con `work_order_closure`, `work_order_closure_technician`, `work_order_closure_task` y los enums `closure_outcome` (ya con `needs_pickup` para E06-02), `equipment_condition` y `not_done_reason`. El `stage_id` del modelo llega con las etapas de taller (E06).
+- `GET /tech/orders/{id}/closure-options`: técnicos activos, tareas activas con id, si el tipo pide falla y reparación, y las fallas activas con sus reparaciones (genéricas y, si la orden tiene equipo, las de su tipo).
+- `POST /tech/orders/{id}/closure` (`app/services/closures.py`): valida en orden fijo (lo cargado primero, lo que falta después) y responde 422 con `code`, `message` y `field`. Cierre, transición (`close_done` o `request_revisit`), fin de la asignación y evento en una transacción. 201 al cerrar y 200 al reenviar con la misma clave; una clave usada en otra orden, 422 `idempotency_key_reused`. Una orden que no está En curso de la escuadrilla, 404.
+- Con datos reales: "No enciende" es genérica pero todas sus reparaciones son de un tipo de equipo; sin equipo en la orden, la reparación solo puede ser "Otro".

@@ -13,13 +13,17 @@ from sqlalchemy import (
     Sequence,
     String,
     Text,
+    Uuid,
     func,
     text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import TimestampedBase
+from app.db.base import Base, TimestampedBase
 from app.domain.work_order import (
+    ClosureOutcome,
+    EquipmentCondition,
+    NotDoneReason,
     OrderChannel,
     OrderKind,
     OrderSource,
@@ -127,3 +131,60 @@ class WorkOrderAssignment(TimestampedBase):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     unassigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class WorkOrderClosure(TimestampedBase):
+    """Cierre de la escuadrilla (E05-04, E05-08). Uno por orden en el cierre básico."""
+
+    __tablename__ = "work_order_closure"
+
+    work_order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("work_order.id"), nullable=False, index=True
+    )
+    # Usuario de la escuadrilla que cerró (D-013).
+    closed_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_user.id"), nullable=False)
+    closed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    outcome: Mapped[ClosureOutcome] = mapped_column(
+        Enum(ClosureOutcome, name="closure_outcome"), nullable=False
+    )
+    failure_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("failure.id"), nullable=True)
+    # "Otro": texto en lugar de un valor del catálogo.
+    failure_other_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    repair_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("repair.id"), nullable=True)
+    repair_other_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Nulo si no se pudo hacer.
+    equipment_condition: Mapped[EquipmentCondition | None] = mapped_column(
+        Enum(EquipmentCondition, name="equipment_condition"), nullable=True
+    )
+    not_done_reason: Mapped[NotDoneReason | None] = mapped_column(
+        Enum(NotDoneReason, name="not_done_reason"), nullable=True
+    )
+    observation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # La genera el celular: reenviar el mismo cierre no lo duplica (E05-12).
+    idempotency_key: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, nullable=False)
+
+
+class WorkOrderClosureTechnician(Base):
+    """Quiénes fueron (D-013). Base de los trabajos por técnico (E10-02)."""
+
+    __tablename__ = "work_order_closure_technician"
+
+    closure_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("work_order_closure.id"), primary_key=True
+    )
+    field_technician_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("field_technician.id"), primary_key=True
+    )
+
+
+class WorkOrderClosureTask(Base):
+    """Tareas del tipo de trabajo que se tildaron al cerrar (E05-04)."""
+
+    __tablename__ = "work_order_closure_task"
+
+    closure_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("work_order_closure.id"), primary_key=True
+    )
+    task_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("task.id"), primary_key=True)

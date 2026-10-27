@@ -4,7 +4,7 @@ title: "Cierre de orden idempotente"
 epic: E05
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [technician]
 size: S
 areas: [backend]
@@ -30,3 +30,7 @@ assumes: []
 
 - Se implementa junto con E05-04 y E05-08 (un solo `POST /tech/orders/{id}/closure`). En el criterio 4, repuestos y stock se suman cuando llegue E05-05.
 - La clave la genera la PWA (UUID) y se guarda en `work_order_closure.idempotency_key`. Permite reintentar el envío de un cierre si se corta la conexión (E05-13).
+
+## Notas de implementación
+
+- Se implementa con E05-04: ver sus notas de implementación.

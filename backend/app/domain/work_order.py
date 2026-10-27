@@ -43,6 +43,39 @@ class OrderChannel(StrEnum):
     in_person = "in_person"
 
 
+class ClosureOutcome(StrEnum):
+    """Resultado del cierre de la escuadrilla (E05-08)."""
+
+    done = "done"
+    # Convierte la orden en orden de taller (E06-02); la API todavía no lo acepta.
+    needs_pickup = "needs_pickup"
+    needs_revisit = "needs_revisit"
+    not_done = "not_done"
+
+
+class EquipmentCondition(StrEnum):
+    """Cómo quedó el equipo al cerrar (E05-04)."""
+
+    working = "working"
+    working_with_notes = "working_with_notes"
+    not_working = "not_working"
+
+
+class NotDoneReason(StrEnum):
+    """Por qué no se pudo hacer el trabajo (E05-08). Lista fija, como el prototipo."""
+
+    client_absent = "client_absent"
+    missing_part = "missing_part"
+    beyond_repair = "beyond_repair"
+
+
+NOT_DONE_REASON_LABELS = {
+    NotDoneReason.client_absent: "Cliente ausente o sin acceso",
+    NotDoneReason.missing_part: "Falta repuesto o herramienta",
+    NotDoneReason.beyond_repair: "El equipo no tiene arreglo",
+}
+
+
 class WorkOrderEventType(StrEnum):
     created = "created"
     status_change = "status_change"
