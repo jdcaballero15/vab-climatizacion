@@ -82,17 +82,132 @@ body {
   font-size: 0.875rem;
 }
 
-.home {
-  max-width: 40rem;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+/* Menú lateral fijo en PC; en tablet y celular se pliega detrás del botón Menú. */
+.layout {
+  min-height: 100vh;
 }
 
-.home__header {
+.layout__topbar {
+  display: none;
+}
+
+.layout__brand {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.layout__nav {
+  position: fixed;
+  inset: 0 auto 0 0;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  width: 15rem;
+  padding: 1.25rem 0.75rem;
+  overflow-y: auto;
+  background: #ffffff;
+  border-right: 1px solid #e0e0e0;
+}
+
+.layout__brand--nav {
+  padding: 0 0.5rem 1rem;
+}
+
+.layout__group ul {
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.layout__group-title {
+  margin: 0.5rem 0 0.25rem;
+  padding: 0 0.5rem;
+  color: #6b6b6b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.layout__link {
+  display: block;
+  padding: 0.5rem;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.layout__link:hover {
+  background: #f0f2f5;
+}
+
+.layout__link.active {
+  background: #e8f0fe;
+  color: #1f6feb;
+  font-weight: 600;
+}
+
+.layout__user {
+  margin-top: auto;
+  padding: 1rem 0.5rem 0;
+  border-top: 1px solid #e0e0e0;
+}
+
+.layout__user p {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 0.5rem;
+}
+
+.layout__user span {
+  color: #6b6b6b;
+  font-size: 0.875rem;
+}
+
+.layout__content {
+  max-width: 72rem;
+  margin-left: 15rem;
+  padding: 1.5rem 2rem 3rem;
+}
+
+.layout__content > section:first-child {
+  margin-top: 0;
+}
+
+@media (max-width: 56rem) {
+  .layout__topbar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: #ffffff;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .layout__nav {
+    z-index: 3;
+    top: 3.25rem;
+    display: none;
+    width: 100%;
+    max-width: 20rem;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+  }
+
+  .layout__nav--open {
+    display: flex;
+  }
+
+  .layout__brand--nav {
+    display: none;
+  }
+
+  .layout__content {
+    margin-left: 0;
+    padding: 1rem;
+  }
 }
 
 .users {
