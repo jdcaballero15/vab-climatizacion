@@ -21,7 +21,7 @@ beforeEach(() => {
   setAccessToken(null);
 });
 
-const renewed = { access_token: "nuevo", refresh_token: "r2", user: { id: "u1" } };
+const renewed = { access_token: "nuevo", user: { id: "u1" } };
 
 afterEach(() => vi.restoreAllMocks());
 

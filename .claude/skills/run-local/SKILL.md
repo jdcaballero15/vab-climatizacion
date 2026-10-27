@@ -25,7 +25,7 @@ Servicios en Docker Compose: `db` (Postgres 16), `minio` (bucket S3 compatible),
 En dos terminales distintas:
 
 ```bash
-cd web-admin   && npm ci && VITE_API_URL=http://localhost:8000 npm run dev -- --port 5173 --strictPort
+cd web-admin   && npm ci && npm run dev -- --port 5173 --strictPort
 cd pwa-tecnico && npm ci && npm run dev -- --port 5174 --strictPort
 ```
 
@@ -39,8 +39,8 @@ cd pwa-tecnico && npm ci && npm run dev -- --port 5174 --strictPort
 | Mail de prueba (Mailpit) | http://localhost:8025 |
 | Consola de MinIO | http://localhost:9001 |
 
-Comprobación mínima: iniciar sesión con un usuario de prueba en cada app. Desde la terminal:
-`curl -s -X POST http://localhost:8000/auth/login -H 'Content-Type: application/json' -H 'Origin: http://localhost:5173' -d '{"email":"admin@ot-demo.com","password":"<contraseña>"}' -D -` debe dar `200` y `access-control-allow-origin: http://localhost:5173`.
+Comprobación mínima: iniciar sesión con un usuario de prueba en cada app y recargar: tiene que seguir adentro. Desde la terminal, por el proxy de Vite:
+`curl -s -X POST http://localhost:5173/api/auth/login -H 'Content-Type: application/json' -d '{"email":"admin@ot-demo.com","password":"<contraseña>"}' -D -` debe dar `200` y un `set-cookie: ot_refresh=...; HttpOnly; Path=/api/auth`.
 
 ### 4. Bajar
 
@@ -49,8 +49,8 @@ Comprobación mínima: iniciar sesión con un usuario de prueba en cada app. Des
 ## Trampas conocidas
 
 - **La base local usa el puerto 5433** (no el 5432) a propósito: así un Postgres instalado en la máquina no se confunde con el de Docker, un error difícil de detectar porque `localhost` responde igual. Desde el host: `postgresql+asyncpg://ot:ot@localhost:5433/ot`.
-- **La app del técnico llama a la API por `/api`** y Vite la reenvía a `http://localhost:8000` (ADR 0010: la cookie de la sesión tiene que ser del mismo sitio). No le pases `VITE_API_URL`: con la API en otra dirección, la sesión no sobrevive a una recarga. Si el backend corre en otro puerto: `API_PROXY_TARGET=http://localhost:<puerto>`.
-- **La app de administración todavía necesita `VITE_API_URL`.** Sin esa variable el cliente llama a `/api` y su Vite no tiene proxy configurado, así que todas las llamadas fallan.
+- **Las dos apps llaman a la API por `/api`** y Vite la reenvía a `http://localhost:8000` sin el prefijo (ADR 0010: la cookie de la sesión tiene que ser del mismo sitio). No les pases `VITE_API_URL`: con la API en otra dirección, la sesión no sobrevive a una recarga. Si el backend corre en otro puerto: `API_PROXY_TARGET=http://localhost:<puerto>`.
+- **Sin Docker** (Postgres instalado en la máquina, en el puerto 5433): migrar con `cd backend && .venv/bin/alembic upgrade head` y levantar la API con `.venv/bin/uvicorn app.main:app --port 8000`, con las variables del `.env` cargadas (ver más abajo). Las apps, igual que en el paso 2.
 - **Puertos ocupados por otros proyectos** (5433, 5173, 5174): `--strictPort` hace que Vite falle en lugar de saltar a otro puerto en silencio. Ojo: si el puerto está ocupado, `curl` igual responde 200, pero con la app de otro proyecto. Para usar otros puertos sin tocar el repo, crear un `docker-compose.override.yml` (anotarlo en `.git/info/exclude`):
   ```yaml
   services:

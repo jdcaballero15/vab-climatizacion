@@ -4,7 +4,7 @@
 #
 # Las direcciones públicas salen del nombre de cada servicio (https://<nombre>.onrender.com).
 # Si Render le agrega un sufijo a un nombre por estar ocupado, hay que corregir
-# CORS_ORIGINS y VITE_API_URL con las direcciones reales.
+# CORS_ORIGINS y el destino de las reglas /api/* con las direcciones reales.
 
 databases:
   - name: vab-ot-db

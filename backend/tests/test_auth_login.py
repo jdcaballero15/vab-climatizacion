@@ -47,7 +47,8 @@ async def test_login_ok_devuelve_token_y_rol(schema: None) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["token_type"] == "bearer"
-    assert body["refresh_token"]
+    # El refresh token va solo en la cookie (E01-07, criterio 5).
+    assert "refresh_token" not in body
     assert body["user"]["email"] == "ana@ot-demo.com"
     assert body["user"]["role"] == "admin"
     assert "password_hash" not in body["user"]

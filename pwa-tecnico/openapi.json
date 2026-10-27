@@ -123,23 +123,6 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/RefreshRequest"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Payload"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -189,23 +172,6 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/LogoutRequest"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Payload"
-              }
-            }
-          }
-        },
         "responses": {
           "204": {
             "description": "Successful Response"
@@ -5187,19 +5153,6 @@
         ],
         "title": "LoginRequest"
       },
-      "LogoutRequest": {
-        "properties": {
-          "refresh_token": {
-            "type": "string",
-            "title": "Refresh Token"
-          }
-        },
-        "type": "object",
-        "required": [
-          "refresh_token"
-        ],
-        "title": "LogoutRequest"
-      },
       "NotDoneReason": {
         "type": "string",
         "enum": [
@@ -5557,28 +5510,11 @@
         ],
         "title": "OrderTechnicianOut"
       },
-      "RefreshRequest": {
-        "properties": {
-          "refresh_token": {
-            "type": "string",
-            "title": "Refresh Token"
-          }
-        },
-        "type": "object",
-        "required": [
-          "refresh_token"
-        ],
-        "title": "RefreshRequest"
-      },
       "RefreshResponse": {
         "properties": {
           "access_token": {
             "type": "string",
             "title": "Access Token"
-          },
-          "refresh_token": {
-            "type": "string",
-            "title": "Refresh Token"
           },
           "token_type": {
             "type": "string",
@@ -5592,7 +5528,6 @@
         "type": "object",
         "required": [
           "access_token",
-          "refresh_token",
           "user"
         ],
         "title": "RefreshResponse"
@@ -6005,10 +5940,6 @@
             "type": "string",
             "title": "Access Token"
           },
-          "refresh_token": {
-            "type": "string",
-            "title": "Refresh Token"
-          },
           "token_type": {
             "type": "string",
             "title": "Token Type",
@@ -6021,7 +5952,6 @@
         "type": "object",
         "required": [
           "access_token",
-          "refresh_token",
           "user"
         ],
         "title": "TokenResponse"

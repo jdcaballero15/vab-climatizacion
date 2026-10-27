@@ -5,8 +5,6 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from app.api.deps import SessionDep, require_role
 from app.api.schemas.auth import (
     LoginRequest,
-    LogoutRequest,
-    RefreshRequest,
     RefreshResponse,
     TokenResponse,
     UserOut,
@@ -70,9 +68,7 @@ async def login(payload: LoginRequest, session: SessionDep, response: Response) 
     refresh = await session_service.issue_refresh_token(session, user)
     await session.commit()
     _set_refresh_cookie(response, refresh)
-    return TokenResponse(
-        access_token=access, refresh_token=refresh, user=UserOut.model_validate(user)
-    )
+    return TokenResponse(access_token=access, user=UserOut.model_validate(user))
 
 
 @router.post("/refresh", response_model=RefreshResponse)
@@ -80,13 +76,13 @@ async def refresh(
     session: SessionDep,
     response: Response,
     cookie_token: RefreshCookie = None,
-    payload: RefreshRequest | None = None,
 ) -> RefreshResponse:
-    raw = cookie_token or (payload.refresh_token if payload else None)
     try:
-        if raw is None:
+        if cookie_token is None:
             raise session_service.InvalidRefreshTokenError
-        access, new_refresh, user = await session_service.rotate_refresh_token(session, raw)
+        access, new_refresh, user = await session_service.rotate_refresh_token(
+            session, cookie_token
+        )
     except session_service.InvalidRefreshTokenError:
         # La excepción descarta los headers de `response`: el borrado va en la propia 401.
         clear = Response()
@@ -97,9 +93,7 @@ async def refresh(
             headers={"set-cookie": clear.headers["set-cookie"]},
         ) from None
     _set_refresh_cookie(response, new_refresh)
-    return RefreshResponse(
-        access_token=access, refresh_token=new_refresh, user=UserOut.model_validate(user)
-    )
+    return RefreshResponse(access_token=access, user=UserOut.model_validate(user))
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -107,11 +101,9 @@ async def logout(
     session: SessionDep,
     response: Response,
     cookie_token: RefreshCookie = None,
-    payload: LogoutRequest | None = None,
 ) -> None:
-    raw = cookie_token or (payload.refresh_token if payload else None)
-    if raw is not None:
-        await session_service.revoke_refresh_token(session, raw)
+    if cookie_token is not None:
+        await session_service.revoke_refresh_token(session, cookie_token)
     _clear_refresh_cookie(response)
 
 

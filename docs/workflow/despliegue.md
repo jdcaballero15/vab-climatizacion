@@ -13,7 +13,7 @@ Hoy hay **un solo entorno**, que es el de producción. Staging y la publicación
 | `vab-ot-admin` | Sitio estático (`web-admin`) | La administración, para la PC de la oficina. |
 | `vab-ot-tecnico` | Sitio estático (`pwa-tecnico`) | La app del celular de cada escuadrilla. |
 
-Variables de la API: `APP_ENV=production`, `APP_SECRET_KEY` (la genera Render; la API no arranca en producción sin una clave real), `DATABASE_URL` (la conecta Render) y `CORS_ORIGINS` (las direcciones de los dos sitios). Los sitios reciben `VITE_API_URL` al construirse.
+Variables de la API: `APP_ENV=production`, `APP_SECRET_KEY` (la genera Render; la API no arranca en producción sin una clave real), `DATABASE_URL` (la conecta Render) y `CORS_ORIGINS` (las direcciones de los dos sitios). Los sitios llaman a la API por `/api` de su propia dirección (`VITE_API_URL=/api`): una regla de cada sitio reenvía `/api/*` a la API sin el prefijo. Así la cookie de la sesión es del mismo sitio y la sesión sobrevive a una recarga (ADR 0010, E01-07).
 
 Región: Virginia (Render no tiene región en Sudamérica).
 
@@ -21,8 +21,8 @@ Región: Virginia (Render no tiene región en Sudamérica).
 
 1. **Cuenta (la persona responsable, no el agente).** Crear la cuenta de Render a nombre de la empresa cliente, o anotar el plan de traspaso. Cargar el medio de pago y conectar el repositorio de GitHub.
 2. **Crear todo.** En Render: *New* > *Blueprint*, elegir el repositorio y la rama `main`. Render lee `render.yaml` y muestra los cuatro servicios con sus planes. Confirmar.
-3. **Revisar las direcciones.** Si un nombre estaba ocupado, Render le agrega un sufijo (por ejemplo `vab-ot-api-x1y2`). En ese caso, corregir `CORS_ORIGINS` en la API y `VITE_API_URL` en los dos sitios con las direcciones reales, y volver a desplegar.
-4. **Comprobar la API.** `https://<api>/health/ready` tiene que responder `{"status":"ready","database":"ok"}`.
+3. **Revisar las direcciones.** Si un nombre estaba ocupado, Render le agrega un sufijo (por ejemplo `vab-ot-api-x1y2`). En ese caso, corregir `CORS_ORIGINS` en la API con las direcciones reales de los sitios y, si el sufijo lo tiene la API, el destino de la regla `/api/*` de los dos sitios (*Redirects/Rewrites*). `VITE_API_URL` queda en `/api`. Volver a desplegar.
+4. **Comprobar la API.** `https://<api>/health/ready` tiene que responder `{"status":"ready","database":"ok"}`, y lo mismo por la regla de cada sitio: `https://<sitio>/api/health/ready`.
 5. **Crear el primer administrador.** En la API: *Shell*, y ahí:
 
    ```bash
@@ -30,6 +30,8 @@ Región: Virginia (Render no tiene región en Sudamérica).
    ```
 
    Pide la contraseña dos veces (no se escribe en la línea de comandos). Se niega si ya hay un administrador. Los demás usuarios se crean desde la administración (*Usuarios*), y las escuadrillas desde *Escuadrillas*.
+
+6. **Comprobar la sesión por la regla `/api/*`.** En la administración, ingresar con ese usuario y recargar la página: tiene que entrar directo, sin pedir la contraseña. En las herramientas del navegador (*Red*), la llamada a `/api/auth/login` es un `POST` que responde `200` con un `Set-Cookie` `ot_refresh` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/api/auth`). Cerrar sesión y recargar tiene que mostrar el login. Repetir en la app del técnico con un usuario de escuadrilla. Si la regla no deja pasar el `POST` o el `Set-Cookie`, la sesión se pierde al recargar: pasar al plan B del ADR 0010 (dominio propio con subdominios).
 
 ## Importar clientes y equipos de Persat
 
