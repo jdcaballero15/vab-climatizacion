@@ -2,7 +2,7 @@
 
 Los siete estados los pidió el cliente: **Pendiente, Asignada, En curso, Terminada, Facturada, Cobrada, Cancelada**.
 
-> Las transiciones de esta página se validaron con negocio el 2026-10-26 (refinamiento de E04-01). Lo que sigue abierto figura en [decisiones pendientes](../domain/decisiones-pendientes.md).
+> Las transiciones de esta página se validaron con negocio el 2026-10-26 (refinamiento de E04-01). La reasignación se sumó el 2026-10-27 (refinamiento de E04-04). Lo que sigue abierto figura en [decisiones pendientes](../domain/decisiones-pendientes.md).
 
 ## Diagrama
 
@@ -13,6 +13,8 @@ stateDiagram-v2
 
   Pendiente --> Asignada: administración asigna escuadrilla
   Asignada --> Pendiente: administración desasigna
+  Asignada --> Asignada: administración reasigna a otra escuadrilla
+  EnCurso --> Asignada: administración reasigna (con confirmación)
   Asignada --> EnCurso: escuadrilla inicia
   EnCurso --> Terminada: escuadrilla cierra (resuelta)
   EnCurso --> Pendiente: escuadrilla marca "requiere otra visita" o "no se pudo hacer"
@@ -44,6 +46,7 @@ stateDiagram-v2
 | R6 | Una orden con `requires_approval = true` no se puede asignar hasta que administración apruebe el lote. |
 | R7 | Cada orden (o etapa, en taller) tiene una sola escuadrilla responsable (D-013). Se asigna con fecha prevista, sin hora. Quiénes fueron se registra al cerrar. |
 | R8 | Devolver a la escuadrilla una orden `Terminada` exige motivo y la deja `Asignada` a la misma escuadrilla. |
+| R9 | Reasignar cierra la asignación vigente y abre la nueva en una transacción. Una orden `En curso` reasignada queda `Asignada` para la nueva escuadrilla, que la tiene que iniciar. Desasignar solo es posible desde `Asignada` (E04-04). |
 
 ## Órdenes de taller (retiro, taller y devolución)
 

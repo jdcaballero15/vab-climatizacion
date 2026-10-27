@@ -37,7 +37,8 @@ assumes: []
 
 ## Preguntas abiertas
 
-- Si mientras el cierre estaba pendiente la oficina reasignó o canceló la orden, el servidor rechaza el cierre. ¿Alcanza con que la app muestre el motivo y conserve el borrador para que el técnico avise a la oficina, o hace falta un circuito de revisión como el de E99-08 (icebox)?
+- Si mientras el cierre estaba pendiente la oficina reasignó o canceló la orden, el servidor rechaza el cierre. **Respondido por negocio (2026-10-27, refinamiento de E04-07):** no se pierde nada de lo cargado; queda registrado como intento. Propuesta para refinar: el servidor guarda el cierre rechazado sin cambiar el estado de la orden, la app muestra por qué y borra el borrador, y la oficina lo ve en la orden. Falta definir dónde lo ve la oficina (E04-06) y si alcanza con eso o hace falta el circuito de revisión de E99-08 (icebox).
+- Mantener la sesión iniciada en el celular entre recargas va en una historia aparte, antes de esta (pedido de negocio del 2026-10-27).
 
 ## Fuera de alcance
 
