@@ -46,3 +46,4 @@ No hace falta ADR para: nombrar una función, agregar un test, corregir un bug.
 | [0007](0007-orden-unificada-con-etapas.md) | Orden unificada con etapas | Aceptado |
 | [0008](0008-agentes-de-ia-en-el-repositorio.md) | Agentes de IA en el repositorio | Aceptado |
 | [0009](0009-pwa-con-conexion-y-borrador-local.md) | App del técnico con conexión y borrador local del cierre | Propuesto |
+| [0010](0010-sesion-persistente-con-cookie.md) | Sesión persistente con el refresh token en una cookie httpOnly | Propuesto |

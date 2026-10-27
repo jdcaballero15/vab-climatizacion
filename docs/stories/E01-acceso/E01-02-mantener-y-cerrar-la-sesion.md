@@ -28,7 +28,7 @@ assumes: []
 
 ## Notas técnicas
 
-- El refresh token se guarda en memoria (mismo criterio que el access token de E01-03): la sesión se mantiene mientras la pestaña o la app siguen abiertas; persistirla entre recargas quedaría para una decisión aparte (riesgo XSS en un repo público).
+- El refresh token se guarda en memoria (mismo criterio que el access token de E01-03): la sesión se mantiene mientras la pestaña o la app siguen abiertas; persistirla entre recargas quedaría para una decisión aparte (riesgo XSS en un repo público). Resuelto en el ADR 0010 y la historia E01-07 (cookie `httpOnly`).
 
 ## Notas de implementación
 
