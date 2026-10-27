@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { useState } from "react";
 
 import { ClientContacts } from "./ClientContacts";
@@ -14,6 +15,7 @@ import {
   useCreateClient,
   useUpdateClient,
 } from "./useClients";
+import { PageHeader } from "../../app/PageHeader";
 
 function ClientDetail({ clientId, onClose }: { clientId: string; onClose: () => void }) {
   const client = useClient(clientId);
@@ -60,6 +62,7 @@ export function ClientsPage() {
   const [segment, setSegment] = useState<ClientSegment | null>(null);
   const [offset, setOffset] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const page = useClientPage(segment, offset);
   const createClient = useCreateClient();
 
@@ -68,24 +71,50 @@ export function ClientsPage() {
 
   return (
     <section className="clients">
-      <h2>Clientes</h2>
-
-      <ClientForm
-        idPrefix="new-client"
-        title="Nuevo cliente"
-        initial={EMPTY_CLIENT}
-        submitLabel="Crear cliente"
-        isPending={createClient.isPending}
-        error={createClient.error}
-        onSubmit={(values, reset) =>
-          createClient.mutate(values, {
-            onSuccess: (creado) => {
-              reset();
-              setSelectedId(creado.id);
-            },
-          })
+      <PageHeader
+        eyebrow="Operación"
+        title="Clientes"
+        subtitle="Clientes con sus domicilios, contactos y equipos."
+        actions={
+          <button
+            type="button"
+            className={creating ? undefined : "btn--primary"}
+            aria-expanded={creating}
+            onClick={() => setCreating((open) => !open)}
+          >
+            {creating ? (
+              "Cerrar"
+            ) : (
+              <>
+                <Plus size={16} aria-hidden="true" />
+                Nuevo cliente
+              </>
+            )}
+          </button>
         }
       />
+
+      {creating && (
+        <div className="card form-card">
+          <ClientForm
+            idPrefix="new-client"
+            title="Nuevo cliente"
+            initial={EMPTY_CLIENT}
+            submitLabel="Crear cliente"
+            isPending={createClient.isPending}
+            error={createClient.error}
+            onSubmit={(values, reset) =>
+              createClient.mutate(values, {
+                onSuccess: (creado) => {
+                  reset();
+                  setCreating(false);
+                  setSelectedId(creado.id);
+                },
+              })
+            }
+          />
+        </div>
+      )}
 
       <div className="clients__filters">
         <label htmlFor="segment-filter">Filtrar por segmento</label>

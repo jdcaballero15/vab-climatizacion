@@ -110,3 +110,13 @@ export function cancelReasonText(cancellation: Cancellation): string {
     ? cancellation.reason_text
     : CANCEL_REASON_LABELS[cancellation.reason];
 }
+
+/** Iniciales para un avatar. */
+export function initials(name: string): string {
+  const words = name.split(" ").filter(Boolean);
+  // "Escuadrilla 1" se lee mejor como "E1" que como "E" sola.
+  return words
+    .slice(0, 2)
+    .map((word) => (/^\d+$/.test(word) ? word : word[0]?.toUpperCase()))
+    .join("");
+}

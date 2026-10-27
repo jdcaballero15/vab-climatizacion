@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 
 import { queryClient } from "./app/queryClient";
 import { AppRoutes } from "./app/router";
+import "@fontsource-variable/inter/index.css";
 import "./index.css";
 
 const rootElement = document.getElementById("root");

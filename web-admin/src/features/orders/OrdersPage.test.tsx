@@ -179,6 +179,14 @@ function calls(fetchMock: ReturnType<typeof mockApi>, method: string, pathEnd: s
     .filter((request) => new URL(request.url).pathname.endsWith(pathEnd));
 }
 
+/** Pedidos del listado de un estado, sin contar los de las cifras (que piden una sola orden). */
+function listados(fetchMock: ReturnType<typeof mockApi>, status: string) {
+  return calls(fetchMock, "GET", "/admin/orders").filter((request) => {
+    const params = new URL(request.url).searchParams;
+    return params.get("status") === status && params.get("limit") !== "1";
+  });
+}
+
 function renderOrders() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -187,6 +195,26 @@ function renderOrders() {
     <QueryClientProvider client={client}>
       <OrdersPage />
     </QueryClientProvider>,
+  );
+}
+
+const ESTADOS: Record<string, string> = {
+  pending: "Pendientes",
+  assigned: "Asignadas",
+  in_progress: "En curso",
+  done: "Terminadas",
+  cancelled: "Canceladas",
+};
+
+/** El alta está detrás del botón "Nueva orden". */
+async function abrirAlta() {
+  await userEvent.click(screen.getByRole("button", { name: "Nueva orden" }));
+}
+
+/** Las acciones secundarias están en el menú de tres puntos de la tarjeta. */
+async function abrirMenu(user: ReturnType<typeof userEvent.setup>, numero: number) {
+  await user.click(
+    await screen.findByRole("button", { name: `Más acciones de la orden N° ${numero}` }),
   );
 }
 
@@ -220,10 +248,10 @@ describe("OrdersPage", () => {
     );
     renderOrders();
 
-    const tabla = await screen.findByRole("table", { name: "Órdenes pendientes" });
-    const filas = within(tabla).getAllByRole("row").slice(1);
+    const tabla = await screen.findByRole("list", { name: "Órdenes pendientes" });
+    const filas = within(tabla).getAllByRole("listitem");
     expect(filas).toHaveLength(2);
-    expect(within(filas[0]).getByText("7")).toBeInTheDocument();
+    expect(within(filas[0]).getByText("N° 7")).toBeInTheDocument();
     expect(within(filas[0]).getByText("Sanatorio Ficticio")).toBeInTheDocument();
     expect(within(filas[0]).getByText("Central")).toBeInTheDocument();
     expect(within(filas[0]).getByText("Reparación")).toBeInTheDocument();
@@ -261,7 +289,7 @@ describe("OrdersPage", () => {
     );
     renderOrders();
 
-    const tabla = await screen.findByRole("table", { name: "Órdenes pendientes" });
+    const tabla = await screen.findByRole("list", { name: "Órdenes pendientes" });
     expect(
       within(tabla).getByText(
         "Volvió de Escuadrilla 1 el 27/10/2026: Requiere otra visita. Falta el capacitor.",
@@ -272,8 +300,8 @@ describe("OrdersPage", () => {
         "Volvió de Escuadrilla 2 el 26/10/2026: No se pudo hacer. Cliente ausente o sin acceso",
       ),
     ).toBeInTheDocument();
-    // Tres órdenes y dos líneas de motivo: la que nunca salió no tiene.
-    expect(within(tabla).getAllByRole("row").slice(1)).toHaveLength(5);
+    // Tres órdenes y dos con el motivo: la que nunca salió no tiene.
+    expect(within(tabla).getAllByRole("listitem")).toHaveLength(3);
   });
 
   it("avisa cuando no hay pendientes", async () => {
@@ -287,6 +315,7 @@ describe("OrdersPage", () => {
     const user = userEvent.setup();
     const fetchMock = mockApi();
     renderOrders();
+    await abrirAlta();
 
     await user.type(within(formulario()).getByLabelText("Cliente"), "san");
 
@@ -302,6 +331,7 @@ describe("OrdersPage", () => {
         : undefined,
     );
     renderOrders();
+    await abrirAlta();
 
     await elegirCliente(user);
     const form = formulario();
@@ -323,7 +353,7 @@ describe("OrdersPage", () => {
       requester_area: "Piso 3",
     });
     // Se refresca el listado de pendientes.
-    await waitFor(() => expect(calls(fetchMock, "GET", "/admin/orders")).toHaveLength(2));
+    await waitFor(() => expect(listados(fetchMock, "pending")).toHaveLength(2));
     // El formulario queda listo para el próximo pedido, sin la búsqueda anterior.
     expect(within(form).getByLabelText("Cliente")).toHaveValue("");
     expect(within(form).queryByRole("button", { name: /Elegir/ })).not.toBeInTheDocument();
@@ -340,6 +370,7 @@ describe("OrdersPage", () => {
       [CENTRAL, ANEXO, VIEJO],
     );
     renderOrders();
+    await abrirAlta();
 
     await elegirCliente(user);
     const form = formulario();
@@ -373,6 +404,7 @@ describe("OrdersPage", () => {
       return undefined;
     });
     renderOrders();
+    await abrirAlta();
 
     await elegirCliente(user);
     const form = formulario();
@@ -390,6 +422,7 @@ describe("OrdersPage", () => {
     const user = userEvent.setup();
     const fetchMock = mockApi();
     renderOrders();
+    await abrirAlta();
 
     await user.click(within(formulario()).getByRole("button", { name: "Crear orden" }));
 
@@ -415,6 +448,7 @@ describe("OrdersPage", () => {
         : undefined,
     );
     renderOrders();
+    await abrirAlta();
 
     await elegirCliente(user);
     await within(formulario()).findByText("Domicilio: Central");
@@ -430,6 +464,7 @@ describe("OrdersPage", () => {
     const user = userEvent.setup();
     mockApi();
     renderOrders();
+    await abrirAlta();
 
     await elegirCliente(user);
     await user.click(within(formulario()).getByRole("button", { name: "Cambiar cliente" }));
@@ -580,21 +615,40 @@ describe("OrdersPage", () => {
       const fetchMock = porEstado();
       renderOrders();
 
-      await screen.findByRole("table", { name: "Órdenes pendientes" });
-      await user.selectOptions(screen.getByLabelText("Estado"), "assigned");
+      await screen.findByRole("list", { name: "Órdenes pendientes" });
+      await user.click(screen.getByRole("button", { name: "Asignadas" }));
 
-      const tabla = await screen.findByRole("table", { name: "Órdenes asignadas" });
-      const [fila] = within(tabla).getAllByRole("row").slice(1);
+      const tabla = await screen.findByRole("list", { name: "Órdenes asignadas" });
+      const [fila] = within(tabla).getAllByRole("listitem");
       expect(within(fila).getByText("Escuadrilla 2")).toBeInTheDocument();
       expect(within(fila).getByText("29/10/2026")).toBeInTheDocument();
-      expect(within(fila).getByRole("button", { name: "Cancelar la orden N° 5" })).toBeVisible();
+      expect(
+        within(fila).getByRole("button", { name: "Más acciones de la orden N° 5" }),
+      ).toBeVisible();
       expect(within(fila).queryByRole("button", { name: /Asignar/ })).not.toBeInTheDocument();
-      const [ultima] = calls(fetchMock, "GET", "/admin/orders").slice(-1);
+      const [ultima] = listados(fetchMock, "assigned").slice(-1);
       expect(new URL(ultima.url).searchParams.get("status")).toBe("assigned");
 
-      await user.selectOptions(screen.getByLabelText("Estado"), "in_progress");
-      const enCurso = await screen.findByRole("table", { name: "Órdenes en curso" });
+      await user.click(screen.getByRole("button", { name: "En curso" }));
+      const enCurso = await screen.findByRole("list", { name: "Órdenes en curso" });
       expect(within(enCurso).getByText("Escuadrilla 1")).toBeInTheDocument();
+    });
+
+    it("muestra cuántas hay en cada estado y las escuadrillas activas", async () => {
+      porEstado();
+      renderOrders();
+
+      for (const nombre of ["Pendientes", "Asignadas", "En curso", "Terminadas"]) {
+        expect(await screen.findByLabelText(`${nombre}: 1`)).toBeInTheDocument();
+      }
+      const escuadrillas = within(screen.getByRole("region", { name: "Escuadrillas activas" }));
+      expect(await escuadrillas.findByText("Escuadrilla 1")).toBeInTheDocument();
+      expect(escuadrillas.getByText("Celular 1")).toBeInTheDocument();
+      expect(escuadrillas.getByText("Sin celular")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Pendientes" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
     });
 
     it("muestra las terminadas con escuadrilla y fecha de cierre, sin cancelar", async () => {
@@ -602,11 +656,11 @@ describe("OrdersPage", () => {
       porEstado();
       renderOrders();
 
-      await screen.findByRole("table", { name: "Órdenes pendientes" });
-      await user.selectOptions(screen.getByLabelText("Estado"), "done");
+      await screen.findByRole("list", { name: "Órdenes pendientes" });
+      await user.click(screen.getByRole("button", { name: "Terminadas" }));
 
-      const tabla = await screen.findByRole("table", { name: "Órdenes terminadas" });
-      const [fila] = within(tabla).getAllByRole("row").slice(1);
+      const tabla = await screen.findByRole("list", { name: "Órdenes terminadas" });
+      const [fila] = within(tabla).getAllByRole("listitem");
       expect(within(fila).getByText("Escuadrilla 1")).toBeInTheDocument();
       expect(within(fila).getByText("26/10/2026")).toBeInTheDocument();
       expect(within(fila).queryByRole("button", { name: /Cancelar/ })).not.toBeInTheDocument();
@@ -617,8 +671,8 @@ describe("OrdersPage", () => {
       porEstado();
       renderOrders();
 
-      await screen.findByRole("table", { name: "Órdenes pendientes" });
-      await user.selectOptions(screen.getByLabelText("Estado"), "done");
+      await screen.findByRole("list", { name: "Órdenes pendientes" });
+      await user.click(screen.getByRole("button", { name: "Terminadas" }));
       const ver = await screen.findByRole("button", { name: "Ver el cierre de la orden N° 3" });
       await user.click(ver);
 
@@ -648,11 +702,11 @@ describe("OrdersPage", () => {
       porEstado();
       renderOrders();
 
-      await screen.findByRole("table", { name: "Órdenes pendientes" });
-      await user.selectOptions(screen.getByLabelText("Estado"), "cancelled");
+      await screen.findByRole("list", { name: "Órdenes pendientes" });
+      await user.click(screen.getByRole("button", { name: "Canceladas" }));
 
-      const tabla = await screen.findByRole("table", { name: "Órdenes canceladas" });
-      const [fila] = within(tabla).getAllByRole("row").slice(1);
+      const tabla = await screen.findByRole("list", { name: "Órdenes canceladas" });
+      const [fila] = within(tabla).getAllByRole("listitem");
       expect(within(fila).getByText("Se mudó el local")).toBeInTheDocument();
       expect(within(fila).getByText("Admin Ficticia")).toBeInTheDocument();
       expect(within(fila).getByText("26/10/2026")).toBeInTheDocument();
@@ -688,6 +742,7 @@ describe("OrdersPage", () => {
     }
 
     async function abrirCancelar(user: ReturnType<typeof userEvent.setup>, numero = 7) {
+      await abrirMenu(user, numero);
       await user.click(
         await screen.findByRole("button", { name: `Cancelar la orden N° ${numero}` }),
       );
@@ -757,7 +812,7 @@ describe("OrdersPage", () => {
       renderOrders();
 
       await screen.findByText("No hay órdenes pendientes.");
-      await user.selectOptions(screen.getByLabelText("Estado"), "in_progress");
+      await user.click(screen.getByRole("button", { name: "En curso" }));
       const form = await abrirCancelar(user, 4);
 
       expect(within(form).getByRole("alert")).toHaveTextContent(
@@ -851,7 +906,7 @@ describe("OrdersPage", () => {
     async function verEstado(user: ReturnType<typeof userEvent.setup>, status: string) {
       await screen.findByRole("heading", { name: "Órdenes pendientes" });
       if (status !== "pending") {
-        await user.selectOptions(screen.getByLabelText("Estado"), status);
+        await user.click(screen.getByRole("button", { name: ESTADOS[status] }));
       }
     }
 
@@ -932,6 +987,7 @@ describe("OrdersPage", () => {
       renderOrders();
 
       await verEstado(user, "assigned");
+      await abrirMenu(user, 5);
       await user.click(await screen.findByRole("button", { name: "Desasignar la orden N° 5" }));
       const form = screen.getByRole("form", { name: "Desasignar la orden N° 5" });
       expect(form).toHaveTextContent("desaparece del celular de Escuadrilla 2");

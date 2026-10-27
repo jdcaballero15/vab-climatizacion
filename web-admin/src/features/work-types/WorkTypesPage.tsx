@@ -11,6 +11,7 @@ import {
   useUpdateWorkType,
   useWorkTypes,
 } from "./useWorkTypes";
+import { PageHeader } from "../../app/PageHeader";
 
 const WORK_TYPE_TAKEN = "Ya existe un tipo de trabajo con ese nombre (puede estar desactivado).";
 const TASK_TAKEN =
@@ -23,7 +24,11 @@ export function WorkTypesPage() {
 
   return (
     <section className="catalog">
-      <h2>Tipos de trabajo</h2>
+      <PageHeader
+        eyebrow="Catálogos"
+        title="Tipos de trabajo"
+        subtitle="Qué se le pide a la escuadrilla: reparación, service, instalación. Cada uno con sus tareas."
+      />
 
       <NewNameForm
         label="Nuevo tipo de trabajo"

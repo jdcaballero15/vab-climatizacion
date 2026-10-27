@@ -1,3 +1,14 @@
+import {
+  AirVent,
+  Building2,
+  ClipboardList,
+  Hammer,
+  TriangleAlert,
+  Truck,
+  Users,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import type { Session } from "../features/auth/types";
@@ -25,6 +36,7 @@ export interface NavSection {
   group: string | null;
   /** Roles que ven la sección. La API exige el rol igual: esto solo ordena la interfaz. */
   roles: Role[];
+  icon: LucideIcon;
   element: ReactNode;
 }
 
@@ -32,13 +44,28 @@ export interface NavSection {
 // (roles-permisos.md); dirección gestiona usuarios. El orden del arreglo es el del menú,
 // y la primera sección visible es la pantalla de inicio del rol.
 export const NAV_SECTIONS: NavSection[] = [
-  { path: "/ordenes", label: "Órdenes", group: null, roles: ["admin"], element: <OrdersPage /> },
-  { path: "/clientes", label: "Clientes", group: null, roles: ["admin"], element: <ClientsPage /> },
+  {
+    path: "/ordenes",
+    label: "Órdenes",
+    group: null,
+    roles: ["admin"],
+    icon: ClipboardList,
+    element: <OrdersPage />,
+  },
+  {
+    path: "/clientes",
+    label: "Clientes",
+    group: null,
+    roles: ["admin"],
+    icon: Building2,
+    element: <ClientsPage />,
+  },
   {
     path: "/escuadrillas",
     label: "Escuadrillas",
     group: "Equipo",
     roles: ["admin"],
+    icon: Truck,
     element: <CrewsPage />,
   },
   {
@@ -46,6 +73,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Usuarios",
     group: "Equipo",
     roles: ["admin", "owner"],
+    icon: Users,
     element: <UsersPage />,
   },
   {
@@ -53,6 +81,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Tipos de trabajo",
     group: "Catálogos",
     roles: ["admin"],
+    icon: Wrench,
     element: <WorkTypesPage />,
   },
   {
@@ -60,6 +89,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Tipos de equipo",
     group: "Catálogos",
     roles: ["admin"],
+    icon: AirVent,
     element: <EquipmentTypesPage />,
   },
   {
@@ -67,6 +97,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Fallas",
     group: "Catálogos",
     roles: ["admin"],
+    icon: TriangleAlert,
     element: <FailuresPage />,
   },
   {
@@ -74,6 +105,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Reparaciones",
     group: "Catálogos",
     roles: ["admin"],
+    icon: Hammer,
     element: <RepairsPage />,
   },
 ];

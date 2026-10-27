@@ -56,7 +56,12 @@ export function CatalogItem({
           </form>
         ) : (
           <>
-            <span className={isActive ? undefined : "catalog__inactive"}>{name}</span>
+            <span className="catalog__initial" aria-hidden="true">
+              {name.trim()[0]?.toUpperCase()}
+            </span>
+            <span className={isActive ? "catalog__name" : "catalog__name catalog__inactive"}>
+              {name}
+            </span>
             {!isActive && <span className="catalog__badge">Desactivado</span>}
             <button
               type="button"

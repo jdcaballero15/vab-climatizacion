@@ -8,6 +8,7 @@ import {
   useEquipmentTypes,
   useUpdateEquipmentType,
 } from "./useEquipmentTypes";
+import { PageHeader } from "../../app/PageHeader";
 
 const NAME_TAKEN = "Ya existe un tipo de equipo con ese nombre (puede estar desactivado).";
 
@@ -18,7 +19,11 @@ export function EquipmentTypesPage() {
 
   return (
     <section className="catalog">
-      <h2>Tipos de equipo</h2>
+      <PageHeader
+        eyebrow="Catálogos"
+        title="Tipos de equipo"
+        subtitle="Clasifican los equipos de los clientes y arman su código interno."
+      />
 
       <NewNameForm
         label="Nuevo tipo de equipo"

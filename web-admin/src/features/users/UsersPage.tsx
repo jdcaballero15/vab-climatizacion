@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 
 import type { UserRole } from "./types";
 import { EmailAlreadyExistsError, useCreateUser, useDeactivateUser, useUsers } from "./useUsers";
+import { PageHeader } from "../../app/PageHeader";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administración",
@@ -36,7 +37,11 @@ export function UsersPage() {
 
   return (
     <section className="users">
-      <h2>Usuarios</h2>
+      <PageHeader
+        eyebrow="Equipo"
+        title="Usuarios"
+        subtitle="Quién entra al sistema y con qué rol. Cada escuadrilla usa el usuario de su celular."
+      />
 
       <form className="users__form" onSubmit={handleCreate} aria-label="Crear usuario">
         <h3>Nuevo usuario</h3>
