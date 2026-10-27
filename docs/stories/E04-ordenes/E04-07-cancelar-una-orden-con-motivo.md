@@ -4,7 +4,7 @@ title: "Cancelar una orden con motivo"
 epic: E04
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [admin]
 size: S
 areas: [backend, web-admin]
@@ -49,5 +49,7 @@ Validadas con negocio el 2026-10-27, con el prototipo del cliente y lo que se us
 
 - Transición `cancel` (ya en la máquina de estados, `requires_reason`). Motivo como enum `cancel_reason` (`entered_by_mistake`, `duplicate`, `client_cancelled`, `other`) más `cancel_reason_text` para "Otro"; el evento guarda el texto legible.
 - En la misma transacción: transición, fin de la asignación vigente (`unassigned_at`) y evento, igual que el cierre con "requiere otra visita" (E05-08).
-- Endpoint propuesto: `POST /admin/orders/{id}/cancellation` con `{reason, reason_text}`. 409 si el estado no lo permite, 422 si falta el motivo.
+- Endpoint: `POST /admin/orders/{id}/cancellation` con `{reason, reason_text}`. 201 con motivo, quién y cuándo; 404 si no existe; 409 si el estado no lo permite (`invalid_transition`) o si otro la cambió a la vez (`order_status_conflict`); 422 con `field` si falta el motivo, si "Otro" no trae texto o si el texto viene con otro motivo.
+- Tabla `work_order_cancellation` (una por orden) con migración `c4e8a2f6d915`.
+- `GET /admin/orders?status=` acepta `pending`, `assigned`, `in_progress` y `cancelled`. Cada fila trae `assignment` (escuadrilla y fecha, en Asignadas y En curso) y `cancellation` (en canceladas, la última primero). Terminadas en adelante llegan con E04-05.
 - Web-admin: acción "Cancelar" en el listado y en la orden, con un diálogo propio de la app (motivo y confirmación). Filtro o pestaña de canceladas en el listado.

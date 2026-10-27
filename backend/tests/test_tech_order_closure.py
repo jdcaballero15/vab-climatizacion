@@ -18,6 +18,7 @@ from app.db.models.user import User, UserRole
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
+    WorkOrderCancellation,
     WorkOrderClosure,
     WorkOrderClosureTask,
     WorkOrderClosureTechnician,
@@ -49,6 +50,7 @@ TABLES = [
     WorkOrderClosure.__table__,
     WorkOrderClosureTechnician.__table__,
     WorkOrderClosureTask.__table__,
+    WorkOrderCancellation.__table__,
 ]
 HOY = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")).date()
 
@@ -68,6 +70,7 @@ async def schema() -> AsyncGenerator[None, None]:
             "order_kind",
             "order_source",
             "order_channel",
+            "cancel_reason",
             "closure_outcome",
             "equipment_condition",
             "not_done_reason",

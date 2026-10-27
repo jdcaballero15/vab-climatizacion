@@ -21,6 +21,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampedBase
 from app.domain.work_order import (
+    CancelReason,
     ClosureOutcome,
     EquipmentCondition,
     NotDoneReason,
@@ -188,3 +189,32 @@ class WorkOrderClosureTask(Base):
         ForeignKey("work_order_closure.id"), primary_key=True
     )
     task_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("task.id"), primary_key=True)
+
+
+class WorkOrderCancellation(TimestampedBase):
+    """Cancelación de una orden por administración (E04-07). Una por orden: es final (R5)."""
+
+    __tablename__ = "work_order_cancellation"
+    __table_args__ = (
+        Index(
+            "uq_work_order_cancellation_work_order",
+            "work_order_id",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+        # El texto va solo con "Otro", y con "Otro" es obligatorio.
+        CheckConstraint(
+            "(reason = 'other') = (reason_text IS NOT NULL)",
+            name="ck_work_order_cancellation_reason_text",
+        ),
+    )
+
+    work_order_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("work_order.id"), nullable=False)
+    reason: Mapped[CancelReason] = mapped_column(
+        Enum(CancelReason, name="cancel_reason"), nullable=False
+    )
+    reason_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    cancelled_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_user.id"), nullable=False)
+    cancelled_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )

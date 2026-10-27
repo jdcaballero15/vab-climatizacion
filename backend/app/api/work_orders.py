@@ -7,7 +7,9 @@ from app.api.deps import SessionDep, require_role
 from app.api.schemas.work_order import (
     AssignmentAdminOut,
     AssignmentCreate,
-    PendingOrderPage,
+    CancellationAdminOut,
+    CancellationCreate,
+    OrderListPage,
     WorkOrderAdminOut,
     WorkOrderCreate,
 )
@@ -15,6 +17,7 @@ from app.db.models.user import User, UserRole
 from app.db.models.work_order import WorkOrderAssignment
 from app.domain.work_order import (
     InvalidTransitionError,
+    OrderStatus,
     ReasonRequiredError,
     TransitionRoleError,
     WorkOrderRuleError,
@@ -99,18 +102,23 @@ async def create_work_order(
         raise _error(status_code, code, message) from None
 
 
-# Por ahora solo pendientes, que es desde donde se asigna (E04-03); el panel por estado
-# con filtros llega con E04-05.
-@router.get("", response_model=PendingOrderPage)
+# Los estados desde los que se asigna (E04-03) o se cancela (E04-07), y las canceladas;
+# el panel completo con filtros llega con E04-05.
+ListableStatus = Literal["pending", "assigned", "in_progress", "cancelled"]
+
+
+@router.get("", response_model=OrderListPage)
 async def list_work_orders(
     session: SessionDep,
     _: AdminOnly,
-    status: Literal["pending"],
+    status: ListableStatus,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
-) -> PendingOrderPage:
-    items, total = await work_orders_service.list_pending(session, limit=limit, offset=offset)
-    return PendingOrderPage(items=items, total=total, limit=limit, offset=offset)
+) -> OrderListPage:
+    items, total = await work_orders_service.list_by_status(
+        session, OrderStatus(status), limit=limit, offset=offset
+    )
+    return OrderListPage(items=items, total=total, limit=limit, offset=offset)
 
 
 @router.post(
@@ -124,6 +132,31 @@ async def assign_work_order(
     try:
         return await work_orders_service.assign_work_order(session, order_id, payload, admin)
     except _ASSIGNMENT_ERRORS as exc:
+        status_code, code, message = _ASSIGNMENT_ERROR_DETAIL[type(exc)]
+        raise _error(status_code, code, message) from None
+    except WorkOrderRuleError as exc:
+        raise _error(_RULE_STATUS[type(exc)], exc.code, exc.message) from None
+
+
+@router.post(
+    "/{order_id}/cancellation",
+    response_model=CancellationAdminOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def cancel_work_order(
+    order_id: uuid.UUID, payload: CancellationCreate, session: SessionDep, admin: AdminOnly
+) -> CancellationAdminOut:
+    try:
+        return await work_orders_service.cancel_work_order(session, order_id, payload, admin)
+    except work_orders_service.CancellationValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": exc.code, "message": exc.message, "field": exc.field},
+        ) from None
+    except (
+        work_orders_service.WorkOrderNotFoundError,
+        work_orders_service.OrderStatusConflictError,
+    ) as exc:
         status_code, code, message = _ASSIGNMENT_ERROR_DETAIL[type(exc)]
         raise _error(status_code, code, message) from None
     except WorkOrderRuleError as exc:
