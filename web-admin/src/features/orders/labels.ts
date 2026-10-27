@@ -1,10 +1,32 @@
-import type { OrderChannel, ReturnedFromCrew } from "./types";
+import type {
+  Cancellation,
+  CancelReason,
+  ListableStatus,
+  OrderChannel,
+  ReturnedFromCrew,
+} from "./types";
 
 export const CHANNEL_LABELS: Record<OrderChannel, string> = {
   whatsapp: "WhatsApp",
   email: "Mail",
   phone: "Teléfono",
   in_person: "Presencial",
+};
+
+/** Plural, como se elige en el listado de Órdenes. */
+export const LIST_STATUS_LABELS: Record<ListableStatus, string> = {
+  pending: "Pendientes",
+  assigned: "Asignadas",
+  in_progress: "En curso",
+  cancelled: "Canceladas",
+};
+
+// Lista a validar con la oficina (E04-07).
+export const CANCEL_REASON_LABELS: Record<CancelReason, string> = {
+  entered_by_mistake: "Cargada por error",
+  duplicate: "Duplicada",
+  client_cancelled: "El cliente la canceló",
+  other: "Otro",
 };
 
 const OUTCOME_LABELS: Record<ReturnedFromCrew["outcome"], string> = {
@@ -58,4 +80,11 @@ export function returnedText(returned: ReturnedFromCrew): string {
     `Volvió de ${returned.crew_name} el ${formatDate(returned.closed_at)}: ` +
     (detail ? `${outcome}. ${detail}` : outcome)
   );
+}
+
+/** Motivo de una cancelación; con "Otro", el texto que se escribió. */
+export function cancelReasonText(cancellation: Cancellation): string {
+  return cancellation.reason === "other" && cancellation.reason_text
+    ? cancellation.reason_text
+    : CANCEL_REASON_LABELS[cancellation.reason];
 }
