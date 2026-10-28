@@ -75,14 +75,15 @@ Respondido por Gonza (2026-10-26, refinamiento de E03-03):
 
 Respondido por el cliente (2026-10-28):
 
-- **No hay etiquetas pegadas en los equipos.** Según el cliente, el único que hoy usa los códigos es un cliente industrial (el de las siglas de sector). El código lo sigue generando el sistema; en el resto de los clientes la gente identifica el equipo por la ubicación.
+- **No hay etiquetas pegadas en los equipos.** Según el cliente, el único que hoy usa los códigos es un cliente industrial (el de las siglas de sector). El código lo sigue generando el sistema; en el resto de los clientes la gente identifica el equipo por la ubicación (confirmado por Gonza el mismo día).
 - **El técnico no da de alta equipos.** Los carga solo la oficina, para no tener repetidos con distinto nombre. Si la escuadrilla encuentra un equipo que no está cargado, lo avisa (por ejemplo, en la observación del cierre).
 - **Un equipo puede pasar de un cliente a otro** (venta o traslado). Va en una historia nueva, E03-09 (`draft`).
 
 Preguntas abiertas para el cliente:
 
 - ¿Las siglas como `FAB` son sectores de la planta? ¿Hay que seguir usándolas en los equipos nuevos de ese cliente?
-- Al pasar un equipo a otro cliente: ¿el cliente nuevo ve los trabajos que se le hicieron antes del traslado? ¿El equipo conserva su código o recibe uno con el número del cliente nuevo?
+
+Respondido por Gonza (2026-10-28): al pasar a otro cliente el equipo **recibe un código nuevo** con el número del cliente nuevo, y queda registro del traslado y del código anterior (E03-09).
 
 ### D-003 Edición de catálogos
 

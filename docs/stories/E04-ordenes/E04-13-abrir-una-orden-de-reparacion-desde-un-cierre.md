@@ -28,10 +28,7 @@ assumes: []
 
 - Respuesta del cliente (2026-10-28): en el service no se pide falla y reparación (E02-10), pero tiene que haber una observación para anotar una falla y poder generar una orden de correctivo. La observación del cierre ya existe (E05-04); falta el atajo para abrir la orden.
 
-## Preguntas abiertas
-
-- ¿Sirve desde cualquier tipo de trabajo o solo desde el service?
-- ¿Hace falta que la escuadrilla marque "hay que volver" en el cierre, o alcanza con que la oficina lea la observación?
+- Decidido (Gonza lo dejó a recomendación, 2026-10-28): sirve desde **cualquier tipo de trabajo** Terminado con observación, no solo el service; una falla puede aparecer en cualquier visita y no agrega reglas por tipo. La escuadrilla no marca nada nuevo en el cierre: la oficina lee la observación al revisar la Terminada (E04-08). Si después hace falta un aviso explícito, se suma.
 
 ## Fuera de alcance
 

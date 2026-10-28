@@ -35,7 +35,7 @@ assumes: [D-002]
 ## Preguntas abiertas
 
 - Respondida en parte (cliente, 2026-10-28): depende del CUIT. Las sucursales con el mismo CUIT son un cliente con varios domicilios (se pueden unificar); las que tienen otro CUIT son clientes distintos. El Poder Judicial lo quiere cargar **por obra**, para distinguir cada una.
-- Falta confirmar qué es "por obra" en el Poder Judicial: ¿cada obra es un domicilio del mismo cliente, o un cliente aparte? ¿Se factura por obra?
+- Respondida (Gonza, 2026-10-28): en el Poder Judicial cada obra es un **domicilio** del mismo cliente, y se factura por obra. La facturación por domicilio va con D-004 (E04-09).
 - ¿Qué pasa con el número de cliente del que se va? Los códigos de sus equipos lo llevan y no cambian; el número queda en el cliente dado de baja.
 
 ## Fuera de alcance
