@@ -978,6 +978,27 @@ label {
   outline: 3px solid rgb(37 99 235 / 35%);
 }
 
+.orders__closure-signature {
+  display: block;
+  width: 100%;
+  max-width: 20rem;
+  aspect-ratio: 5 / 2;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  /* El PNG de la firma es transparente: sobre blanco se lee en cualquier fondo. */
+  background: #fff;
+  object-fit: contain;
+}
+
+.orders__closure-signature-row a:focus-visible img {
+  outline: 3px solid rgb(37 99 235 / 35%);
+}
+
+.orders__closure-signer {
+  margin: 0.375rem 0 0;
+  color: var(--text-muted);
+}
+
 .form-card {
   margin-bottom: 1.5rem;
   padding: 1.25rem;
