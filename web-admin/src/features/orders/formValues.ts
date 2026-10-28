@@ -9,6 +9,8 @@ export interface OrderFormValues {
   description: string;
   requesterName: string;
   requesterArea: string;
+  /** "" sin equipo (E04-12). */
+  equipmentId: string;
 }
 
 export const EMPTY_ORDER: OrderFormValues = {
@@ -19,6 +21,7 @@ export const EMPTY_ORDER: OrderFormValues = {
   description: "",
   requesterName: "",
   requesterArea: "",
+  equipmentId: "",
 };
 
 export function activeSites(sites: Site[] | undefined): Site[] {

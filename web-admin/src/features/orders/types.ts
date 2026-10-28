@@ -5,6 +5,7 @@ export type ReturnedFromCrew = components["schemas"]["ReturnedFromCrewOut"];
 export type OrderListPage = components["schemas"]["OrderListPage"];
 export type WorkOrder = components["schemas"]["WorkOrderAdminOut"];
 export type WorkOrderCreate = components["schemas"]["WorkOrderCreate"];
+export type EquipmentChange = components["schemas"]["EquipmentChange"];
 export type OrderChannel = WorkOrderCreate["channel"];
 export type Assignment = components["schemas"]["AssignmentAdminOut"];
 export type AssignmentCreate = components["schemas"]["AssignmentCreate"];

@@ -13,6 +13,7 @@ import { PageHeader } from "../../app/PageHeader";
 import { useCrews } from "../crews/useCrews";
 import { AssignOrderForm, type AssignMode } from "./AssignOrderForm";
 import { CancelOrderForm } from "./CancelOrderForm";
+import { ChangeEquipmentForm } from "./ChangeEquipmentForm";
 import { ClosureDetail } from "./ClosureDetail";
 import { formatDay, initials, LIST_STATUS_LABELS } from "./labels";
 import { OrderCard, type CardAction } from "./OrderCard";
@@ -23,7 +24,7 @@ import { PAGE_SIZE, useOrderCounts, useOrderList } from "./useOrders";
 
 type RowAction = {
   orderId: string;
-  kind: AssignMode | "unassign" | "cancel" | "closure";
+  kind: AssignMode | "unassign" | "cancel" | "closure" | "equipment";
 };
 
 const ASSIGNED_WORD: Record<AssignMode, string> = {
@@ -71,6 +72,12 @@ function cardActions(
   if (status === "cancelled") {
     return { more: [] };
   }
+  // El equipo se elige o se cambia hasta que la escuadrilla inicia la orden (E04-12).
+  const equipment: CardAction = {
+    label: order.equipment ? "Cambiar equipo" : "Agregar equipo",
+    name: `${order.equipment ? "Cambiar" : "Agregar"} el equipo de ${n}`,
+    onClick: () => open("equipment"),
+  };
   if (order.status === "pending") {
     return order.returned
       ? {
@@ -79,11 +86,11 @@ function cardActions(
             name: `Reprogramar ${n}`,
             onClick: () => open("reprogram"),
           },
-          more: [cancel],
+          more: [equipment, cancel],
         }
       : {
           primary: { label: "Asignar", name: `Asignar ${n}`, onClick: () => open("assign") },
-          more: [cancel],
+          more: [equipment, cancel],
         };
   }
   const reassign: CardAction = {
@@ -95,6 +102,7 @@ function cardActions(
     return {
       primary: reassign,
       more: [
+        equipment,
         { label: "Desasignar", name: `Desasignar ${n}`, onClick: () => open("unassign") },
         cancel,
       ],
@@ -145,6 +153,18 @@ export function OrdersPage() {
           onUnassigned={() => {
             close();
             setNotice(`Orden N° ${order.number} desasignada: volvió a Pendientes.`);
+          }}
+        />
+      );
+    }
+    if (action.kind === "equipment") {
+      return (
+        <ChangeEquipmentForm
+          order={order}
+          onClose={close}
+          onChanged={() => {
+            close();
+            setNotice(`Equipo de la orden N° ${order.number} guardado.`);
           }}
         />
       );
