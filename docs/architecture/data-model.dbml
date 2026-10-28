@@ -91,6 +91,12 @@ Enum cancel_reason {
   other              [note: 'Otro, con texto obligatorio (E04-07). Lista a validar con la oficina']
 }
 
+Enum no_signature_reason {
+  client_absent [note: 'Cliente ausente']
+  refused       [note: 'No quiso firmar']
+  other         [note: 'Otro, con texto obligatorio. Lista a validar con la oficina']
+}
+
 Enum signature_purpose {
   closure
   pickup
@@ -314,6 +320,8 @@ Table work_order_closure {
   equipment_condition equipment_condition [note: 'Nulo si no se pudo hacer']
   not_done_reason not_done_reason [note: 'Solo con outcome not_done']
   observation text
+  no_signature_reason no_signature_reason [note: 'Por qué no hay firma (D-011, E05-07). Nulo si hay firma']
+  no_signature_text varchar [note: 'Solo y obligatorio con no_signature_reason other']
   idempotency_key uuid [unique, not null, note: 'Generada en el celular. Evita duplicados al sincronizar']
 }
 
@@ -355,9 +363,10 @@ Table signature {
   closure_id uuid [ref: > work_order_closure.id, not null]
   purpose signature_purpose [not null]
   signer_name varchar [not null]
-  signer_dni varchar [not null, note: 'Dato personal. Cifrar en reposo']
-  image_file_id uuid [ref: - stored_file.id, not null, note: 'Imagen de la firma en el bucket (E00-09)']
+  image_file_id uuid [ref: - stored_file.id, unique, not null, note: 'Imagen de la firma en el bucket (E00-09)']
   signed_at timestamptz [not null]
+
+  Note: 'Firma del cliente. En el cierre no se pide DNI (D-008, E05-07); retiro y devolución a confirmar'
 }
 
 Table stored_file {

@@ -1,38 +1,49 @@
 ---
 id: E05-07
-title: "Firma del cliente en pantalla con nombre y DNI"
+title: "Firma del cliente en pantalla con su nombre"
 epic: E05
 phase: 1
 priority: must
-status: draft
-roles: [technician]
+status: ready
+roles: [technician, admin]
 size: M
-areas: [backend, pwa]
-depends_on: [E05-04, E00-09]
+areas: [backend, pwa, web-admin]
+depends_on: [E05-04, E00-09, E05-13]
 blocked_by: []
-assumes: [D-011]
+assumes: []
 ---
 
-# E05-07 Firma del cliente en pantalla con nombre y DNI
+# E05-07 Firma del cliente en pantalla con su nombre
 
 ## Historia
 
-**Como** técnico, **quiero** que el cliente firme en la pantalla e ingrese su nombre y DNI, **para** tener constancia de que el trabajo fue recibido.
+**Como** técnico, **quiero** que el cliente firme en la pantalla y quede su nombre, **para** tener constancia de que el trabajo fue recibido.
 
 ## Criterios de aceptación
 
-1. **Dado:** un cierre listo para firmar. **Cuando:** el cliente firma con el dedo y se cargan nombre y DNI. **Entonces:** se guarda la imagen de la firma en el bucket y los datos en el registro de firma.
-2. **Dado:** una firma sin nombre o sin DNI. **Cuando:** se intenta enviar el cierre. **Entonces:** se rechaza.
-3. **Dado:** el DNI. **Cuando:** se guarda. **Entonces:** se almacena cifrado y no aparece en logs.
-4. **Dado:** la firma. **Cuando:** se rota el celular o se vuelve atrás. **Entonces:** no se pierde lo ya trazado.
-5. **Dado:** un DNI con formato inválido. **Cuando:** se ingresa. **Entonces:** se avisa (7 u 8 dígitos).
+1. **Dado:** un cierre. **Cuando:** el cliente firma con el dedo en la pantalla y se escribe su nombre (aclaración). **Entonces:** al enviar, la imagen de la firma se sube al bucket (E00-09) y el cierre guarda la firma con el nombre y la hora.
+2. **Dado:** un cierre sin firma. **Cuando:** se intenta enviar. **Entonces:** la app pide la firma o el motivo por el que no hay: "Cliente ausente", "No quiso firmar" u "Otro" (con texto obligatorio). Sin una de las dos no se envía, y la API lo rechaza igual (422, campo `signature`). Vale para cualquier resultado del cierre (`D-011`).
+3. **Dado:** una firma sin nombre. **Cuando:** se intenta enviar. **Entonces:** se marca que falta el nombre de quien firma.
+4. **Dado:** el resultado "No se pudo hacer" con "Cliente ausente o sin acceso". **Cuando:** se llega a la firma. **Entonces:** el motivo "Cliente ausente" ya viene elegido, y se puede cambiar.
+5. **Dado:** una firma trazada. **Cuando:** se gira el celular, se vuelve atrás, se recarga la app o se corta la señal. **Entonces:** la firma no se pierde: viaja en el borrador del celular hasta enviarse (E05-13). "Borrar" la limpia para firmar de nuevo.
+6. **Dado:** una orden Terminada. **Cuando:** la administración la revisa (E04-08). **Entonces:** ve la firma con el nombre y la hora, o el motivo por el que no hay firma. La imagen se sirve con URL firmada de corta duración.
+7. **Dado:** el técnico. **Cuando:** pide la lista o el detalle de sus órdenes. **Entonces:** no recibe firmas de cierres anteriores (no ve historial).
+8. **Dado:** el nombre de quien firma. **Cuando:** se procesa el cierre. **Entonces:** no aparece en logs.
 
-## Preguntas abiertas
+## Fuera de alcance
 
-- Los formularios del cliente dicen que la firma es obligatoria al cerrar. La propuesta técnica dice "firma del cliente, si corresponde". Ver `D-011`.
-- ¿Qué pasa si el cliente no está presente? No se inventa una excepción hasta que negocio la defina.
-- ¿Se pide el DNI de quien firma? Depende de `D-008` (retención y texto legal). Si no se pide, se sacan los criterios 3 y 5.
+- DNI de quien firma: no se pide (`D-008`, Gonza 2026-10-28).
+- Firma en retiro y devolución del taller (E06-04 y E06-06).
+- Comprobante en PDF o por mail con la firma (E09).
+- Retención de firmas y aviso legal (`D-008`, E12-04).
 
 ## Notas técnicas
 
-- La imagen de la firma se guarda con el servicio de archivos de E00-09 (PNG, bucket R2) igual que las fotos de E05-06, y viaja en el borrador del celular hasta enviarse (E05-13).
+- Backend: tabla `signature` del modelo de datos, con `closure_id`, `purpose` `closure`, `signer_name`, `image_file_id` (único) y `signed_at`, sin `signer_dni`. El motivo sin firma va en `work_order_closure`: enum `no_signature_reason` (`client_absent`, `refused`, `other`) y `no_signature_text` (solo y obligatorio con `other`). El servicio exige exactamente una de las dos cosas. Migración reversible; los cierres anteriores quedan sin firma ni motivo.
+- `ClosureCreate` suma `signature` (`file_id` y `signer_name`) o `no_signature_reason` con su texto. La imagen sigue las reglas de las fotos de E05-06: subida por el mismo usuario, confirmada y sin usar en otro cierre. Propósito de archivo nuevo `closure_signature`, solo `image/png`.
+- PWA: lienzo con eventos de puntero (dedo, lápiz o mouse) que exporta un PNG chico. El trazo se guarda como `Blob` en el borrador de E05-13 junto con el nombre o el motivo, y se sube con las fotos antes de mandar el cierre (`closureSender`). Se agregan los campos al copiado de `closureDrafts.ts` (criterio 8 de E05-13).
+- Web-admin: la firma en el detalle de la orden terminada, con la misma URL firmada que las fotos.
+
+## Preguntas abiertas
+
+- ¿El retiro y la devolución del taller (E06-04, E06-06 y sus comprobantes E09-01 y E09-02) también van sin DNI? Esas historias lo piden; no se cambian acá.
