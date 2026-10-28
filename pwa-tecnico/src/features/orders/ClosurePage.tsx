@@ -1,7 +1,8 @@
 import { ChevronLeft } from "lucide-react";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+import { ClosurePhotos } from "./ClosurePhotos";
 import {
   EMPTY_DRAFT,
   OTHER,
@@ -17,6 +18,13 @@ import {
   type ClosureOptions,
 } from "./closure";
 import { EQUIPMENT_CONDITIONS, NOT_DONE_REASONS } from "./labels";
+import {
+  MAX_PHOTOS,
+  PhotoUploadError,
+  compressImage,
+  uploadPhotos,
+  type ClosurePhoto,
+} from "./photos";
 import { useCloseOrder } from "./useCloseOrder";
 import { useClosureOptions } from "./useClosureOptions";
 import { useOrderDetail } from "./useOrderDetail";
@@ -37,6 +45,7 @@ const SECTION_OF: Record<ClosureField, string> = {
   repair_id: "closure-repair",
   repair_other_text: "closure-repair",
   equipment_condition: "closure-equipment",
+  photo_ids: "closure-photos",
   observation: "closure-observation",
 };
 const FIELD_ORDER = Object.keys(SECTION_OF) as ClosureField[];
@@ -110,6 +119,19 @@ function ClosureForm({ orderId, orderNumber, options }: ClosureFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState<{ field: string; message: string } | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [photos, setPhotos] = useState<ClosurePhoto[]>([]);
+  const [addingPhotos, setAddingPhotos] = useState(false);
+  const [photoNotice, setPhotoNotice] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Las miniaturas ocupan memoria hasta que se liberan: al salir del formulario se sueltan.
+  const photosRef = useRef(photos);
+  photosRef.current = photos;
+  useEffect(
+    () => () => photosRef.current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl)),
+    [],
+  );
 
   if (notFound) {
     return <NotFound />;
@@ -137,22 +159,87 @@ function ClosureForm({ orderId, orderNumber, options }: ClosureFormProps) {
     }
   };
 
-  const onSubmit = (event: FormEvent) => {
+  const addPhotos = async (files: File[]) => {
+    setServerError(null);
+    setUploadError(null);
+    const room = MAX_PHOTOS - photos.length;
+    setPhotoNotice(files.length > room ? `Podés adjuntar hasta ${MAX_PHOTOS} fotos.` : null);
+    setAddingPhotos(true);
+    try {
+      for (const file of files.slice(0, room)) {
+        const blob = await compressImage(file);
+        const photo: ClosurePhoto = {
+          key: crypto.randomUUID(),
+          blob,
+          previewUrl: URL.createObjectURL(blob),
+          fileId: null,
+          uploaded: false,
+        };
+        setPhotos((current) => [...current, photo]);
+      }
+    } catch (error) {
+      setPhotoNotice(
+        error instanceof PhotoUploadError ? error.message : "No se pudo abrir la foto.",
+      );
+    } finally {
+      setAddingPhotos(false);
+    }
+  };
+
+  const removePhoto = (key: string) => {
+    setServerError(null);
+    setUploadError(null);
+    setPhotoNotice(null);
+    setPhotos((current) => {
+      const removed = current.find((photo) => photo.key === key);
+      if (removed) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+      return current.filter((photo) => photo.key !== key);
+    });
+  };
+
+  const savePhoto = (key: string, changes: Partial<ClosurePhoto>) =>
+    setPhotos((current) =>
+      current.map((photo) => (photo.key === key ? { ...photo, ...changes } : photo)),
+    );
+
+  const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setSubmitted(true);
     setServerError(null);
+    setUploadError(null);
     const missing = missingFields(draft, options);
     if (Object.keys(missing).length > 0) {
       focusFirst(missing);
       return;
     }
-    close.mutate(toClosurePayload(draft, idempotencyKey), {
+    // Primero las fotos (E05-06): el cierre viaja con los ids de las que ya llegaron.
+    let photoIds: string[];
+    setUploading(true);
+    try {
+      photoIds = await uploadPhotos(photos, savePhoto);
+    } catch (error) {
+      setUploadError(
+        error instanceof PhotoUploadError ? error.message : "No se pudo subir una foto.",
+      );
+      return;
+    } finally {
+      setUploading(false);
+    }
+    close.mutate(toClosurePayload(draft, idempotencyKey, photoIds), {
       onSuccess: (result) => {
         if (result.kind === "not_found") {
           setNotFound(true);
         } else if (result.kind === "invalid") {
           if (result.code === "idempotency_key_reused") {
             setIdempotencyKey(crypto.randomUUID());
+          }
+          if (result.field === "photo_ids") {
+            // La API no acepta alguna foto: el próximo envío las sube de nuevo.
+            setPhotos((current) =>
+              current.map((photo) => ({ ...photo, fileId: null, uploaded: false })),
+            );
           }
           setServerError({ field: result.field, message: result.message });
           if (isClosureField(result.field)) {
@@ -170,6 +257,7 @@ function ClosureForm({ orderId, orderNumber, options }: ClosureFormProps) {
     });
   };
 
+  const busy = uploading || close.isPending;
   const required = failureRepairRequired(draft, options);
   const repairs = repairsFor(draft, options);
   let step = 0;
@@ -187,7 +275,7 @@ function ClosureForm({ orderId, orderNumber, options }: ClosureFormProps) {
   );
 
   return (
-    <form className="closure" onSubmit={onSubmit} noValidate>
+    <form className="closure" onSubmit={(event) => void onSubmit(event)} noValidate>
       <Section id="closure-technicians" error={errors.technician_ids}>
         {title("¿Quiénes fueron?")}
         <div className="closure__choices closure__choices--cols">
@@ -337,6 +425,18 @@ function ClosureForm({ orderId, orderNumber, options }: ClosureFormProps) {
         </Section>
       )}
 
+      <Section id="closure-photos" error={errors.photo_ids}>
+        {title("Fotos", optionalTag(false))}
+        <ClosurePhotos
+          photos={photos}
+          adding={addingPhotos}
+          notice={photoNotice}
+          disabled={busy}
+          onAdd={(files) => void addPhotos(files)}
+          onRemove={removePhoto}
+        />
+      </Section>
+
       <Section id="closure-observation" error={errors.observation}>
         {title("Observación", optionalTag(observationRequired(draft)), "closure-observation-title")}
         {draft.outcome === "needs_revisit" && (
@@ -368,17 +468,24 @@ function ClosureForm({ orderId, orderNumber, options }: ClosureFormProps) {
           {generalError}
         </p>
       )}
+      {uploadError && (
+        <p className="closure__error" role="alert">
+          {uploadError}
+        </p>
+      )}
       {close.isError && (
         <p className="closure__error" role="alert">
           No se pudo enviar el cierre. Revisá la conexión e intentá de nuevo.
         </p>
       )}
-      <button type="submit" className="closure__submit" disabled={close.isPending}>
-        {close.isPending
-          ? "Enviando…"
-          : draft.outcome === "not_done"
-            ? "Cerrar como no realizada"
-            : "Finalizar orden"}
+      <button type="submit" className="closure__submit" disabled={busy || addingPhotos}>
+        {uploading
+          ? "Subiendo fotos…"
+          : close.isPending
+            ? "Enviando…"
+            : draft.outcome === "not_done"
+              ? "Cerrar como no realizada"
+              : "Finalizar orden"}
       </button>
     </form>
   );
