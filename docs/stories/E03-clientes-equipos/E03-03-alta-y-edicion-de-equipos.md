@@ -36,9 +36,9 @@ assumes: [D-002]
 ## Fuera de alcance
 
 - Dar de baja y restaurar un equipo: E03-07. En esta historia no hay borrado de ningún tipo.
-- Pasar un equipo a otro cliente (sigue abierto en D-002) y unificar clientes: E03-08.
+- Pasar un equipo a otro cliente: E03-09. Unificar clientes: E03-08.
 - Ficha del equipo con historial y mediciones: E03-05. Buscar equipos: E03-06.
-- Que el técnico dé de alta un equipo desde la app (pregunta abierta en D-002).
+- Que el técnico dé de alta un equipo desde la app: el cliente prefiere que los cargue solo la oficina (D-002).
 - Siglas de sector en el código (como `FAB`), hasta que el cliente confirme qué son.
 - Editar el prefijo de un tipo de equipo desde la pantalla de tipos.
 - Importar los equipos de Persat: E11-02.
@@ -66,7 +66,7 @@ Validadas con negocio el 2026-10-26:
 
 ## Preguntas abiertas
 
-- Para el cliente (ya en D-002): ¿quién asigna hoy los códigos?, ¿hay etiquetas físicas en los equipos? y ¿el técnico tiene que poder dar de alta un equipo que no encuentra en la lista?
+- Respondida (cliente, 2026-10-28): no hay etiquetas pegadas en los equipos y el código lo sigue generando el sistema. El técnico no da de alta equipos: los carga solo la oficina. Ver D-002.
 
 ## Notas de implementación
 

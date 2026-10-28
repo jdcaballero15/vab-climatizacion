@@ -59,6 +59,7 @@ Validadas con negocio el 2026-10-26:
 ## Preguntas abiertas
 
 - Respondida (negocio, 2026-10-26, al refinar E05-02): el técnico no ve el teléfono del contacto del lugar, aunque el prototipo del cliente lo muestre. Solo el nombre.
+- Confirmada por el cliente (2026-10-28): la escuadrilla ve el nombre del cliente y el domicilio, sin teléfono.
 
 ## Notas de implementación
 
