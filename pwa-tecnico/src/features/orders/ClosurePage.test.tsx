@@ -2,10 +2,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { components } from "../../api/schema";
 import { ClosurePage } from "./ClosurePage";
+
+// En jsdom no hay canvas: la compresión se prueba en photos.test.ts.
+vi.mock("./photos", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./photos")>()),
+  compressImage: vi.fn(async (file: File) => new Blob([file.name], { type: "image/jpeg" })),
+}));
 
 type Options = components["schemas"]["ClosureOptionsTechnicianOut"];
 type ClosureCreate = components["schemas"]["ClosureCreate"];
@@ -62,17 +68,41 @@ const CLOSED = {
   closed_at: "2026-10-27T12:00:00Z",
 };
 
-/** Simula la API: detalle, listas y el cierre. Devuelve los cierres enviados. */
+const BUCKET = "https://bucket.example";
+let uploads = 0;
+let calls: string[] = [];
+
+/** Responde la API de archivos y el bucket como si todo anduviera bien. */
+function filesOk(request: Request): Response {
+  const path = new URL(request.url).pathname;
+  if (path.endsWith("/confirm")) {
+    return json({ id: path.split("/").at(-2) });
+  }
+  if (request.method === "PUT") {
+    return new Response(null, { status: 200 });
+  }
+  const id = `f0000000-0000-4000-8000-00000000000${++uploads}`;
+  return json({ file_id: id, upload_url: `${BUCKET}/ot-files/${id}`, expires_in: 300 }, 201);
+}
+
+/** Simula la API: detalle, listas, archivos y el cierre. Devuelve los cierres enviados. */
 function stubApi(
   closure: () => Response | Promise<Response> = () => json(CLOSED, 201),
   closureOptions: () => Response = () => json(options()),
+  files: (request: Request) => Response = filesOk,
 ) {
   const sent: ClosureCreate[] = [];
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (request: Request) => {
+    vi.fn(async (input: Request | string, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(input, init);
       const path = new URL(request.url).pathname;
+      if (request.url.startsWith(BUCKET) || path.includes("/files")) {
+        calls.push(`${request.method} ${request.url.startsWith(BUCKET) ? "bucket" : path}`);
+        return files(request);
+      }
       if (request.method === "POST") {
+        calls.push("POST closure");
         sent.push((await request.json()) as ClosureCreate);
         return closure();
       }
@@ -120,7 +150,18 @@ async function fillResolved() {
   await click("Funcionando bien");
 }
 
+beforeEach(() => {
+  calls = [];
+  uploads = 0;
+  let previews = 0;
+  // jsdom no trae estas dos funciones.
+  URL.createObjectURL = vi.fn(() => `blob:preview-${++previews}`);
+  URL.revokeObjectURL = vi.fn();
+});
+
 afterEach(() => vi.restoreAllMocks());
+
+const jpeg = (name: string) => new File([name], name, { type: "image/jpeg" });
 
 describe("ClosurePage", () => {
   // E05-04, criterios 2, 3 y 5: las listas del cierre.
@@ -443,5 +484,140 @@ describe("ClosurePage", () => {
 
     await user.click(await screen.findByRole("link", { name: "Volver a la orden" }));
     expect(screen.getByRole("heading", { name: "Detalle de la orden" })).toBeInTheDocument();
+  });
+
+  // E05-06, criterio 1: sacar o elegir, ver en miniatura y quitar antes de enviar.
+  it("agrega fotos de la cámara y de la galería, y se pueden quitar", async () => {
+    stubApi();
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+
+    await user.upload(screen.getByLabelText("Sacar foto"), jpeg("camara.jpg"));
+    await user.upload(screen.getByLabelText("Elegir de la galería"), [
+      jpeg("a.jpg"),
+      jpeg("b.jpg"),
+    ]);
+
+    expect(await screen.findAllByRole("img", { name: /Foto \d/ })).toHaveLength(3);
+    expect(screen.getByLabelText("Sacar foto")).toHaveAttribute("capture", "environment");
+    await click("Quitar foto 2");
+    expect(screen.getAllByRole("img", { name: /Foto \d/ })).toHaveLength(2);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:preview-2");
+  });
+
+  // E05-06, criterio 2: máximo 5 fotos.
+  it("no deja pasar de 5 fotos y lo avisa", async () => {
+    stubApi();
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+
+    await user.upload(
+      screen.getByLabelText("Elegir de la galería"),
+      ["1", "2", "3", "4", "5", "6"].map((name) => jpeg(`${name}.jpg`)),
+    );
+
+    expect(await screen.findAllByRole("img", { name: /Foto \d/ })).toHaveLength(5);
+    expect(screen.getByText("Podés adjuntar hasta 5 fotos.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Sacar foto")).toBeDisabled();
+  });
+
+  // E05-06, criterio 3: primero se suben las fotos y después va el cierre con sus ids.
+  it("sube las fotos y envía el cierre con sus ids en orden", async () => {
+    const sent = stubApi();
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+    await fillResolved();
+    await user.upload(screen.getByLabelText("Elegir de la galería"), [
+      jpeg("a.jpg"),
+      jpeg("b.jpg"),
+    ]);
+    await screen.findAllByRole("img", { name: /Foto \d/ });
+    await click("Finalizar orden");
+
+    await screen.findByRole("heading", { name: /Lista/ });
+    expect(calls).toEqual([
+      "POST /api/files",
+      "PUT bucket",
+      "POST /api/files/f0000000-0000-4000-8000-000000000001/confirm",
+      "POST /api/files",
+      "PUT bucket",
+      "POST /api/files/f0000000-0000-4000-8000-000000000002/confirm",
+      "POST closure",
+    ]);
+    expect(sent[0].photo_ids).toEqual([
+      "f0000000-0000-4000-8000-000000000001",
+      "f0000000-0000-4000-8000-000000000002",
+    ]);
+  });
+
+  // E05-06, criterio 5: con mala señal no se pierde ni se duplica la foto.
+  it("si falla la subida de una foto, el reintento no vuelve a subir las que llegaron", async () => {
+    let puts = 0;
+    const sent = stubApi(undefined, undefined, (request) => {
+      if (request.method === "PUT" && ++puts === 2) {
+        throw new TypeError("Failed to fetch");
+      }
+      return filesOk(request);
+    });
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+    await fillResolved();
+    await user.upload(screen.getByLabelText("Elegir de la galería"), [
+      jpeg("a.jpg"),
+      jpeg("b.jpg"),
+    ]);
+    await screen.findAllByRole("img", { name: /Foto \d/ });
+    await click("Finalizar orden");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo subir una foto");
+    expect(sent).toHaveLength(0);
+    expect(screen.getAllByRole("img", { name: /Foto \d/ })).toHaveLength(2);
+
+    calls = [];
+    await click("Finalizar orden");
+    await screen.findByRole("heading", { name: /Lista/ });
+    // Solo la segunda foto se vuelve a pedir: la primera ya estaba confirmada.
+    expect(calls.filter((call) => call === "POST /api/files")).toHaveLength(1);
+    expect(sent).toHaveLength(1);
+    expect(sent[0].photo_ids).toEqual([
+      "f0000000-0000-4000-8000-000000000001",
+      "f0000000-0000-4000-8000-000000000003",
+    ]);
+  });
+
+  // E05-06, criterio 4: la API rechaza una foto y se marca en la sección.
+  it("marca las fotos si la API las rechaza y el reintento las sube de nuevo", async () => {
+    let closures = 0;
+    const sent = stubApi(() => {
+      closures += 1;
+      if (closures === 1) {
+        return json(
+          {
+            detail: {
+              code: "photo_not_available",
+              message: "Una de las fotos no se subió bien.",
+              field: "photo_ids",
+            },
+          },
+          422,
+        );
+      }
+      return json(CLOSED, 201);
+    });
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+    await fillResolved();
+    await user.upload(screen.getByLabelText("Sacar foto"), jpeg("a.jpg"));
+    await screen.findByRole("img", { name: "Foto 1" });
+    await click("Finalizar orden");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Una de las fotos no se subió bien.",
+    );
+    expect(document.getElementById("closure-photos")).toHaveClass("closure__section--invalid");
+
+    await click("Finalizar orden");
+    await screen.findByRole("heading", { name: /Lista/ });
+    expect(sent[1].photo_ids).toEqual(["f0000000-0000-4000-8000-000000000002"]);
   });
 });
