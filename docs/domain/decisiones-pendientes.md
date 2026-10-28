@@ -19,7 +19,7 @@ El índice [docs/stories/INDEX.md](../stories/INDEX.md) lista las historias bloq
 | D-008 | Retención y texto legal de datos personales (DNI y firmas) | Negocio y asesoría legal | **Abierta** | E12-04 |
 | D-009 | Proveedor de mail transaccional | Desarrollo | **Abierta** | E00-10 |
 | D-010 | Formato y calidad de la exportación de Persat | Cliente y desarrollo | Resuelta | E11-01 a E11-04 |
-| D-011 | ¿La firma del cliente es obligatoria en todo cierre? | Negocio | **Propuesta** | E05-07, E06-04, E06-06 |
+| D-011 | ¿La firma del cliente es obligatoria en todo cierre? | Negocio | Resuelta | E05-07, E06-04, E06-06 |
 | D-012 | Cierre de los issues de historias terminadas | Desarrollo | **Propuesta** | `scripts/sync_stories.py`, plantilla de PR |
 | D-013 | Trabajo por escuadrillas en vez de técnico individual | Cliente | Resuelta | E02-09, E04-03, E04-04, E04-05, E04-08, E05-01, E05-02, E06-03, E08-01, E10-02 |
 
@@ -111,6 +111,8 @@ Con Microsoft 365 no había costo de infraestructura. Con el sistema a medida ha
 
 El sistema guarda nombre y DNI de quien firma, y la firma manuscrita. Definir: plazo de retención, derecho de acceso y supresión, aviso en el comprobante, y si hace falta registrar la base ante la autoridad de aplicación. Consultar a asesoría legal.
 
+*Avance* (Gonza, 2026-10-28): en el cierre de una orden **no se pide el DNI**, solo el nombre de quien firma y la firma (E05-07). Falta confirmar si vale también para retiro y devolución (E06-04, E06-06). Siguen abiertos la retención de firmas y nombres y el aviso legal.
+
 ### D-009 Proveedor de mail
 
 Para informe mensual y comprobantes. Candidatos: Resend, Brevo, Amazon SES. Criterios: entregabilidad, costo, dominio propio del cliente (SPF, DKIM).
@@ -119,6 +121,8 @@ Para informe mensual y comprobantes. Candidatos: Resend, Brevo, Amazon SES. Crit
 
 Los formularios del cliente dicen que la firma es obligatoria al cerrar una orden. La propuesta técnica, en cambio, dice "firma del cliente, si corresponde" para las órdenes en el lugar, y la exige solo en retiro y devolución.
 *Propuesta*: seguir lo que dicen los formularios (firma obligatoria en todo cierre, con nombre y DNI), y que negocio defina qué pasa si el cliente no está presente (por ejemplo, un motivo de ausencia predefinido). No se inventa una excepción hasta que se defina.
+
+**Resuelta** (Gonza, 2026-10-28): todo cierre lleva la firma del cliente o un motivo por el que no hay. Motivos propuestos: "Cliente ausente", "No quiso firmar" y "Otro" con texto (a validar con la oficina). Ver E05-07.
 
 ### D-010 Exportación de Persat
 
