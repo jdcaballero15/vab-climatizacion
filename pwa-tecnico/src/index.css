@@ -776,3 +776,84 @@ button:disabled {
   margin: 0.25rem 0 0;
   padding-left: 1.25rem;
 }
+
+/* Fotos del cierre (E05-06): miniaturas grandes para quitar con un dedo. */
+.closure__photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.closure__photo {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.closure__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.closure__photo-remove {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 999px;
+  background: rgb(11 27 51 / 70%);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.closure__photo-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.5rem;
+}
+
+.closure__photo-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 56px;
+  padding: 0.75rem;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background: rgb(255 255 255 / 70%);
+  color: var(--primary-dark);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.closure__photo-button:focus-within {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.closure__photo-button[aria-disabled="true"] {
+  border-color: var(--border-strong);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

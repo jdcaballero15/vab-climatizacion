@@ -128,6 +128,11 @@ describe("toClosurePayload", () => {
     });
   });
 
+  // E05-06, criterio 3: las fotos van como ids, en el orden del formulario.
+  it("suma los ids de las fotos subidas", () => {
+    expect(toClosurePayload(draft(), "key", ["p2", "p1"]).photo_ids).toEqual(["p2", "p1"]);
+  });
+
   it('manda el texto de "Otro" en lugar del id', () => {
     const payload = toClosurePayload(
       draft({ failure: OTHER, failureOther: " Ruido ", repair: OTHER, repairOther: "Ajuste" }),
