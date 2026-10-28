@@ -126,6 +126,8 @@ class WorkOrderEventType(StrEnum):
     review_approved = "review_approved"
     review_returned = "review_returned"
     converted_to_workshop = "converted_to_workshop"
+    # Se agregó, cambió o sacó el equipo de la orden (E04-12).
+    equipment_changed = "equipment_changed"
 
 
 # Hechos que se registran en la línea de tiempo sin cambiar el estado (criterio 7).
@@ -134,6 +136,7 @@ STATUSLESS_EVENT_TYPES = frozenset(
         WorkOrderEventType.reassigned,
         WorkOrderEventType.review_approved,
         WorkOrderEventType.converted_to_workshop,
+        WorkOrderEventType.equipment_changed,
     }
 )
 

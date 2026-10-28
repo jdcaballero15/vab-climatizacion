@@ -10,6 +10,7 @@ from app.api.schemas.work_order import (
     AssignmentCreate,
     CancellationAdminOut,
     CancellationCreate,
+    EquipmentChange,
     OrderListPage,
     UnassignmentCreate,
     WorkOrderAdminOut,
@@ -53,6 +54,19 @@ _CHOICE_ERROR_DETAIL: dict[type[Exception], tuple[int, str, str]] = {
     ),
 }
 _CHOICE_ERRORS = tuple(_CHOICE_ERROR_DETAIL)
+
+
+def _equipment_not_available() -> HTTPException:
+    """Equipo que no es del domicilio de la orden o está dado de baja (E04-12, criterio 4)."""
+    return HTTPException(
+        status_code=422,
+        detail={
+            "code": "equipment_not_available",
+            "message": "Elegí un equipo de este domicilio.",
+            "field": "equipment_id",
+        },
+    )
+
 
 # Reglas de la máquina de estados: no se puede en el estado actual es un conflicto (409).
 _RULE_STATUS: dict[type[WorkOrderRuleError], int] = {
@@ -114,6 +128,26 @@ async def create_work_order(
     except _CHOICE_ERRORS as exc:
         status_code, code, message = _CHOICE_ERROR_DETAIL[type(exc)]
         raise _error(status_code, code, message) from None
+    except work_orders_service.EquipmentNotAvailableError:
+        raise _equipment_not_available() from None
+
+
+@router.put("/{order_id}/equipment", response_model=WorkOrderAdminOut)
+async def change_equipment(
+    order_id: uuid.UUID, payload: EquipmentChange, session: SessionDep, admin: AdminOnly
+) -> WorkOrderAdminOut:
+    try:
+        return await work_orders_service.change_equipment(
+            session, order_id, payload.equipment_id, admin
+        )
+    except work_orders_service.WorkOrderNotFoundError:
+        raise _error(404, "order_not_found", "No se encontró la orden.") from None
+    except work_orders_service.OrderNotEditableError:
+        raise _error(
+            409, "order_not_editable", "El equipo se cambia solo antes de que se inicie la orden."
+        ) from None
+    except work_orders_service.EquipmentNotAvailableError:
+        raise _equipment_not_available() from None
 
 
 # Los estados desde los que se asigna (E04-03) o se cancela (E04-07), las terminadas para

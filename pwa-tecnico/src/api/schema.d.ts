@@ -553,6 +553,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/orders/{order_id}/equipment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Equipment */
+        put: operations["change_equipment_admin_orders__order_id__equipment_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/orders/{order_id}/assignment": {
         parameters: {
             query?: never;
@@ -1386,6 +1403,14 @@ export interface components {
             notes: string | null;
         };
         /**
+         * EquipmentChange
+         * @description El equipo de una orden Pendiente o Asignada; nulo para sacarlo (E04-12).
+         */
+        EquipmentChange: {
+            /** Equipment Id */
+            equipment_id: string | null;
+        };
+        /**
          * EquipmentCondition
          * @description Cómo quedó el equipo al cerrar (E05-04).
          * @enum {string}
@@ -1618,6 +1643,21 @@ export interface components {
             today: string;
         };
         /**
+         * OrderEquipmentOut
+         * @description El equipo de la orden en el listado de la oficina (E04-12).
+         */
+        OrderEquipmentOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Internal Code */
+            internal_code: string;
+            /** Location Note */
+            location_note: string;
+        };
+        /**
          * OrderKind
          * @enum {string}
          */
@@ -1656,6 +1696,7 @@ export interface components {
             assignment: components["schemas"]["CurrentAssignmentOut"] | null;
             cancellation: components["schemas"]["CancellationAdminOut"] | null;
             completed: components["schemas"]["CompletedOut"] | null;
+            equipment: components["schemas"]["OrderEquipmentOut"] | null;
         };
         /** OrderListPage */
         OrderListPage: {
@@ -2032,6 +2073,8 @@ export interface components {
             requester_name: string | null;
             /** Requester Area */
             requester_area: string | null;
+            /** Equipment Id */
+            equipment_id: string | null;
             /**
              * Created At
              * Format: date-time
@@ -2062,6 +2105,8 @@ export interface components {
             requester_name?: string | null;
             /** Requester Area */
             requester_area?: string | null;
+            /** Equipment Id */
+            equipment_id?: string | null;
         };
         /** WorkTypeAdminOut */
         WorkTypeAdminOut: {
@@ -3676,6 +3721,41 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOrderAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_equipment_admin_orders__order_id__equipment_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

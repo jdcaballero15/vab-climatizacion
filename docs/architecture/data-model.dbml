@@ -280,7 +280,7 @@ Table work_order_event {
   id uuid [pk]
   work_order_id uuid [ref: > work_order.id, not null]
   stage_id uuid [ref: > work_order_stage.id]
-  event_type varchar [not null, note: 'Con CHECK sobre los valores válidos: created, status_change, assigned, unassigned, reassigned, review_approved, review_returned, converted_to_workshop. closure_in_review se suma con la historia que lo use']
+  event_type varchar [not null, note: 'Con CHECK sobre los valores válidos: created, status_change, assigned, unassigned, reassigned, review_approved, review_returned, converted_to_workshop, equipment_changed (E04-12). closure_in_review se suma con la historia que lo use']
   from_status order_status
   to_status order_status [note: 'Null en eventos que no cambian el estado']
   occurred_at timestamptz [not null, note: 'Fuente de todas las fechas de negocio de la orden']

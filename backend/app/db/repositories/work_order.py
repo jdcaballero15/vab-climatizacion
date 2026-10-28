@@ -33,7 +33,8 @@ type OpenCrewOrderRow = Row[WorkOrder, date, str, ClientSite, str, Equipment | N
 type CrewClosureRow = Row[WorkOrderClosure, WorkOrder, str, str, str]
 # Orden en un estado: orden, fecha de creación, cliente, rótulo y dirección del domicilio,
 # tipo de trabajo, su último cierre; fecha, escuadrilla (nombre e id) y fecha prevista de
-# su última asignación; su cancelación y quién canceló (nulos si no tiene).
+# su última asignación; su cancelación y quién canceló (nulos si no tiene); y su equipo
+# (nulo sin equipo, E04-12).
 type StatusOrderRow = Row[
     WorkOrder,
     datetime,
@@ -48,6 +49,7 @@ type StatusOrderRow = Row[
     date | None,
     WorkOrderCancellation | None,
     str | None,
+    Equipment | None,
 ]
 
 
@@ -70,6 +72,35 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             .execution_options(synchronize_session=False)
         )
         return await self.session.scalar(stmt) is not None
+
+    async def update_equipment_if(
+        self,
+        order_id: uuid.UUID,
+        equipment_id: uuid.UUID | None,
+        *,
+        statuses: frozenset[OrderStatus],
+    ) -> bool:
+        """Cambia el equipo solo si la orden sigue en uno de esos estados (E04-12)."""
+        stmt = (
+            update(self.model)
+            .where(
+                self.model.id == order_id,
+                self.model.status.in_(statuses),
+                self.model.deleted_at.is_(None),
+            )
+            .values(equipment_id=equipment_id)
+            .returning(self.model.id)
+            .execution_options(synchronize_session=False)
+        )
+        return await self.session.scalar(stmt) is not None
+
+    async def created_at(self, order_id: uuid.UUID) -> datetime | None:
+        """Cuándo se creó la orden: su evento de creación (ADR 0005)."""
+        stmt = select(WorkOrderEvent.occurred_at).where(
+            WorkOrderEvent.work_order_id == order_id,
+            WorkOrderEvent.event_type == WorkOrderEventType.created,
+        )
+        return await self.session.scalar(stmt)
 
     def add_event(self, event: WorkOrderEvent) -> None:
         self.session.add(event)
@@ -132,6 +163,7 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
                 last_assignment.c.scheduled_for,
                 WorkOrderCancellation,
                 cancelled_by.full_name,
+                Equipment,
             )
             .join(
                 WorkOrderEvent,
@@ -150,6 +182,8 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
                 & WorkOrderCancellation.deleted_at.is_(None),
             )
             .outerjoin(cancelled_by, cancelled_by.id == WorkOrderCancellation.cancelled_by)
+            # Un equipo dado de baja después sigue siendo el de la orden.
+            .outerjoin(Equipment, Equipment.id == self.model.equipment_id)
             .where(self.model.status == status, self.model.deleted_at.is_(None))
             .order_by(*order_by)
             .limit(limit)

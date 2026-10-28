@@ -2599,6 +2599,64 @@
         }
       }
     },
+    "/admin/orders/{order_id}/equipment": {
+      "put": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Change Equipment",
+        "operationId": "change_equipment_admin_orders__order_id__equipment_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkOrderAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/orders/{order_id}/assignment": {
       "post": {
         "tags": [
@@ -5148,6 +5206,29 @@
         ],
         "title": "EquipmentAdminOut"
       },
+      "EquipmentChange": {
+        "properties": {
+          "equipment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipment Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "equipment_id"
+        ],
+        "title": "EquipmentChange",
+        "description": "El equipo de una orden Pendiente o Asignada; nulo para sacarlo (E04-12)."
+      },
       "EquipmentCondition": {
         "type": "string",
         "enum": [
@@ -5825,6 +5906,31 @@
         "title": "OrderDetailTechnicianOut",
         "description": "Detalle de una orden abierta de la escuadrilla (E05-02). Sin historial ni quién pidió."
       },
+      "OrderEquipmentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "internal_code": {
+            "type": "string",
+            "title": "Internal Code"
+          },
+          "location_note": {
+            "type": "string",
+            "title": "Location Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "internal_code",
+          "location_note"
+        ],
+        "title": "OrderEquipmentOut",
+        "description": "El equipo de la orden en el listado de la oficina (E04-12)."
+      },
       "OrderKind": {
         "type": "string",
         "enum": [
@@ -5930,6 +6036,16 @@
                 "type": "null"
               }
             ]
+          },
+          "equipment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderEquipmentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -5947,7 +6063,8 @@
           "returned",
           "assignment",
           "cancellation",
-          "completed"
+          "completed",
+          "equipment"
         ],
         "title": "OrderListItemOut"
       },
@@ -6912,6 +7029,18 @@
             ],
             "title": "Requester Area"
           },
+          "equipment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipment Id"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -6932,6 +7061,7 @@
           "description",
           "requester_name",
           "requester_area",
+          "equipment_id",
           "created_at"
         ],
         "title": "WorkOrderAdminOut"
@@ -6984,6 +7114,18 @@
               }
             ],
             "title": "Requester Area"
+          },
+          "equipment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipment Id"
           }
         },
         "additionalProperties": false,
