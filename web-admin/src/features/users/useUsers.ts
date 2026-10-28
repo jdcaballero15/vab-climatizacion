@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../../api/client";
-import type { UserAdmin, UserCreate } from "./types";
+import type { PasswordReset, UserAdmin, UserCreate } from "./types";
 
 const USERS_KEY = ["users"] as const;
 
@@ -47,6 +47,23 @@ export function useDeactivateUser() {
       if (error) {
         throw new Error("no se pudo dar de baja el usuario");
       }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+  });
+}
+
+/** Restablece la contraseña (E01-05): la temporal llega solo en esta respuesta. */
+export function useResetPassword() {
+  const queryClient = useQueryClient();
+  return useMutation<PasswordReset, Error, string>({
+    mutationFn: async (userId) => {
+      const { data, error } = await api.POST("/admin/users/{user_id}/password-reset", {
+        params: { path: { user_id: userId } },
+      });
+      if (error || !data) {
+        throw new Error("No se pudo restablecer la contraseña. Probá de nuevo.");
+      }
+      return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
   });

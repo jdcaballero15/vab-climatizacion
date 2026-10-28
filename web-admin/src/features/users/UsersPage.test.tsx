@@ -12,6 +12,7 @@ const EXISTENTE: UserAdmin = {
   full_name: "Ana Gómez",
   role: "admin",
   is_active: true,
+  must_change_password: false,
 };
 
 function json(body: unknown, status = 200) {
@@ -64,5 +65,51 @@ describe("UsersPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Crear usuario" }));
 
     expect(await screen.findByText("Ya existe un usuario con ese correo.")).toBeInTheDocument();
+  });
+
+  // E01-05, criterio 1: con confirmación, muestra la temporal una sola vez y se puede copiar.
+  it("restablece la contraseña y muestra la temporal una sola vez", async () => {
+    const user = userEvent.setup();
+    const posts: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (request: Request) => {
+        if (request.method === "POST") {
+          posts.push(new URL(request.url).pathname);
+          return json({ temporary_password: "TemporalDePrueba" });
+        }
+        return json([EXISTENTE]);
+      }),
+    );
+    renderUsers();
+
+    await user.click(await screen.findByRole("button", { name: "Restablecer contraseña" }));
+    expect(screen.getByText(/se cierran todas sus sesiones/)).toBeInTheDocument();
+    expect(posts).toEqual([]);
+
+    await user.click(screen.getByRole("button", { name: "Confirmar restablecimiento" }));
+
+    expect(await screen.findByText("TemporalDePrueba")).toBeInTheDocument();
+    expect(posts).toEqual(["/api/admin/users/u1/password-reset"]);
+
+    await user.click(screen.getByRole("button", { name: "Copiar" }));
+    expect(await navigator.clipboard.readText()).toBe("TemporalDePrueba");
+    expect(screen.getByRole("button", { name: "Copiada" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Listo" }));
+    expect(screen.queryByText("TemporalDePrueba")).not.toBeInTheDocument();
+  });
+
+  it("sin confirmar no restablece nada", async () => {
+    const fetchMock = vi.fn(async () => json([EXISTENTE]));
+    vi.stubGlobal("fetch", fetchMock);
+    renderUsers();
+
+    await userEvent.click(await screen.findByRole("button", { name: "Restablecer contraseña" }));
+    await userEvent.click(screen.getByRole("button", { name: "Volver" }));
+
+    expect(screen.queryByText(/se cierran todas sus sesiones/)).not.toBeInTheDocument();
+    const methods = fetchMock.mock.calls.map((call) => (call as unknown as [Request])[0].method);
+    expect(methods).not.toContain("POST");
   });
 });

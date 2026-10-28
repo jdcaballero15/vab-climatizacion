@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 import { refreshSession } from "../api/client";
+import { ChangePasswordPage } from "../features/auth/ChangePasswordPage";
 import { LoginPage } from "../features/auth/LoginPage";
 import { onSessionExpired } from "../features/auth/session";
 import { setAccessToken } from "../features/auth/token";
@@ -62,15 +63,22 @@ export function AppRoot() {
     );
   }
 
-  return (
-    <AppLayout
-      session={session}
-      onLogout={() => {
-        setSession(null);
-        logout.mutate();
-        // El próximo usuario entra a su pantalla de inicio, no a la del anterior.
-        navigate("/", { replace: true });
-      }}
-    />
-  );
+  const onLogout = () => {
+    setSession(null);
+    logout.mutate();
+    // El próximo usuario entra a su pantalla de inicio, no a la del anterior.
+    navigate("/", { replace: true });
+  };
+
+  if (session.user.must_change_password) {
+    return (
+      <ChangePasswordPage
+        user={session.user}
+        onChanged={(user) => setSession({ ...session, user })}
+        onLogout={onLogout}
+      />
+    );
+  }
+
+  return <AppLayout session={session} onLogout={onLogout} />;
 }

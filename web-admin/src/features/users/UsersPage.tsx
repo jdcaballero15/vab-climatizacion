@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { Fragment, useState, type FormEvent } from "react";
 
+import { ResetPasswordPanel } from "./ResetPasswordPanel";
 import type { UserRole } from "./types";
 import { EmailAlreadyExistsError, useCreateUser, useDeactivateUser, useUsers } from "./useUsers";
 import { PageHeader } from "../../app/PageHeader";
@@ -14,6 +15,7 @@ export function UsersPage() {
   const users = useUsers();
   const createUser = useCreateUser();
   const deactivateUser = useDeactivateUser();
+  const [resetting, setResetting] = useState<string | null>(null);
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -114,20 +116,38 @@ export function UsersPage() {
           </thead>
           <tbody>
             {users.data.map((user) => (
-              <tr key={user.id}>
-                <td>{user.full_name}</td>
-                <td>{user.email}</td>
-                <td>{ROLE_LABELS[user.role]}</td>
-                <td>
-                  <button
-                    type="button"
-                    onClick={() => deactivateUser.mutate(user.id)}
-                    disabled={deactivateUser.isPending}
-                  >
-                    Dar de baja
-                  </button>
-                </td>
-              </tr>
+              <Fragment key={user.id}>
+                <tr>
+                  <td>{user.full_name}</td>
+                  <td>{user.email}</td>
+                  <td>{ROLE_LABELS[user.role]}</td>
+                  <td>
+                    <div className="users__actions">
+                      <button
+                        type="button"
+                        onClick={() => setResetting(user.id)}
+                        disabled={resetting === user.id}
+                      >
+                        Restablecer contraseña
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deactivateUser.mutate(user.id)}
+                        disabled={deactivateUser.isPending}
+                      >
+                        Dar de baja
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {resetting === user.id && (
+                  <tr className="users__panel">
+                    <td colSpan={4}>
+                      <ResetPasswordPanel user={user} onClose={() => setResetting(null)} />
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>
