@@ -7,8 +7,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { EMPTY_DRAFT } from "./closure";
 import {
   deleteClosureDraft,
-  listClosureDrafts,
+  listStoredClosures,
   loadClosureDraft,
+  onClosureDraftsChanged,
   saveClosureDraft,
   type StoredClosure,
 } from "./closureDrafts";
@@ -22,6 +23,9 @@ function stored(overrides: Partial<StoredClosure> = {}): StoredClosure {
   return {
     userId: CELULAR1,
     orderId: ORDER,
+    status: "draft",
+    problem: null,
+    order: { number: 5, workTypeName: "Reparación", clientName: "Sanatorio Ficticio" },
     draft: { ...EMPTY_DRAFT, technicianIds: ["ana"], observation: "Filtro sucio" },
     idempotencyKey: "clave-1",
     photos: [
@@ -34,6 +38,11 @@ function stored(overrides: Partial<StoredClosure> = {}): StoredClosure {
     ],
     ...overrides,
   };
+}
+
+/** Órdenes con cierre guardado de un usuario. */
+async function orderIds(userId: string) {
+  return (await listStoredClosures(userId)).map((closure) => closure.orderId).sort();
 }
 
 beforeEach(() => {
@@ -65,7 +74,7 @@ describe("closureDrafts", () => {
 
     expect(loaded?.draft.observation).toBe("Cambio");
     expect(loaded?.photos).toEqual([]);
-    expect(await listClosureDrafts(CELULAR1)).toEqual([ORDER]);
+    expect(await orderIds(CELULAR1)).toEqual([ORDER]);
   });
 
   it("sin borrador devuelve null", async () => {
@@ -78,8 +87,8 @@ describe("closureDrafts", () => {
     await saveClosureDraft(stored({ orderId: OTHER_ORDER }));
 
     expect(await loadClosureDraft(CELULAR2, ORDER)).toBeNull();
-    expect(await listClosureDrafts(CELULAR2)).toEqual([]);
-    expect((await listClosureDrafts(CELULAR1)).sort()).toEqual([ORDER, OTHER_ORDER]);
+    expect(await orderIds(CELULAR2)).toEqual([]);
+    expect(await orderIds(CELULAR1)).toEqual([ORDER, OTHER_ORDER]);
   });
 
   it("borra el borrador de una orden sin tocar los demás", async () => {
@@ -90,8 +99,8 @@ describe("closureDrafts", () => {
     await deleteClosureDraft(CELULAR1, ORDER);
 
     expect(await loadClosureDraft(CELULAR1, ORDER)).toBeNull();
-    expect(await listClosureDrafts(CELULAR1)).toEqual([OTHER_ORDER]);
-    expect(await listClosureDrafts(CELULAR2)).toEqual([ORDER]);
+    expect(await orderIds(CELULAR1)).toEqual([OTHER_ORDER]);
+    expect(await orderIds(CELULAR2)).toEqual([ORDER]);
   });
 
   // Criterio 8: solo lo que carga el técnico. Nada de precios, mano de obra ni historial.
@@ -101,6 +110,7 @@ describe("closureDrafts", () => {
       price: 1000,
       labor: 500,
       history: ["Orden N° 1"],
+      order: { ...stored().order, address: "Calle 1", price: 1000 },
       draft: { ...stored().draft, price: 1000 },
       photos: [{ ...stored().photos[0], previewUrl: "blob:preview" }],
     } as unknown as StoredClosure;
@@ -109,9 +119,19 @@ describe("closureDrafts", () => {
     const loaded = await loadClosureDraft(CELULAR1, ORDER);
 
     expect(Object.keys(loaded ?? {}).sort()).toEqual(
-      ["draft", "idempotencyKey", "orderId", "photos", "userId"].sort(),
+      [
+        "draft",
+        "idempotencyKey",
+        "order",
+        "orderId",
+        "photos",
+        "problem",
+        "status",
+        "userId",
+      ].sort(),
     );
     expect(Object.keys(loaded?.draft ?? {}).sort()).toEqual(Object.keys(EMPTY_DRAFT).sort());
+    expect(loaded?.order).toEqual(stored().order);
     expect(Object.keys(loaded?.photos[0] ?? {}).sort()).toEqual(
       ["blob", "fileId", "key", "uploaded"].sort(),
     );
@@ -124,7 +144,34 @@ describe("closureDrafts", () => {
 
     await expect(saveClosureDraft(stored())).resolves.toBeUndefined();
     expect(await loadClosureDraft(CELULAR1, ORDER)).toBeNull();
-    expect(await listClosureDrafts(CELULAR1)).toEqual([]);
+    expect(await orderIds(CELULAR1)).toEqual([]);
     await expect(deleteClosureDraft(CELULAR1, ORDER)).resolves.toBeUndefined();
+  });
+
+  // Criterios 3 y 6: el estado y el motivo viajan con el cierre.
+  it("guarda el estado y el problema, y los lista con todo", async () => {
+    await saveClosureDraft(
+      stored({ status: "rejected", problem: { field: "", message: "Ya no está en curso." } }),
+    );
+
+    const [listed] = await listStoredClosures(CELULAR1);
+
+    expect(listed).toMatchObject({
+      status: "rejected",
+      problem: { field: "", message: "Ya no está en curso." },
+      order: { number: 5 },
+    });
+  });
+
+  it("avisa cuando se guarda o se borra un cierre", async () => {
+    let changes = 0;
+    const stop = onClosureDraftsChanged(() => changes++);
+
+    await saveClosureDraft(stored());
+    await deleteClosureDraft(CELULAR1, ORDER);
+    stop();
+    await saveClosureDraft(stored());
+
+    expect(changes).toBe(2);
   });
 });

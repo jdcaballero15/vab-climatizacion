@@ -16,9 +16,31 @@ export interface StoredPhoto {
   uploaded: boolean;
 }
 
+/**
+ * Borrador que se está cargando, cierre pendiente de enviar (se reintenta solo) o cierre
+ * que el servidor rechazó porque la orden ya no está en curso (E05-13, criterios 3 y 6).
+ */
+export type ClosureState = "draft" | "pending" | "rejected";
+
+/** Lo que el técnico ve de la orden, para mostrar el cierre aunque salga de la lista. */
+export interface StoredOrderSummary {
+  number: number;
+  workTypeName: string;
+  clientName: string;
+}
+
+/** Por qué el servidor no tomó el cierre: el campo con error (422) o el motivo del rechazo. */
+export interface ClosureProblem {
+  field: string;
+  message: string;
+}
+
 export interface StoredClosure {
   userId: string;
   orderId: string;
+  status: ClosureState;
+  problem: ClosureProblem | null;
+  order: StoredOrderSummary | null;
   draft: ClosureDraft;
   idempotencyKey: string;
   photos: StoredPhoto[];
@@ -29,10 +51,16 @@ export interface StoredClosure {
  * (E05-13, criterio 8: nada de precios, mano de obra ni historial).
  */
 function pick(closure: StoredClosure): StoredClosure {
-  const { draft } = closure;
+  const { draft, order, problem } = closure;
   return {
     userId: closure.userId,
     orderId: closure.orderId,
+    // Los guardados antes de que existieran los estados eran borradores.
+    status: closure.status ?? "draft",
+    problem: problem ? { field: problem.field, message: problem.message } : null,
+    order: order
+      ? { number: order.number, workTypeName: order.workTypeName, clientName: order.clientName }
+      : null,
     draft: {
       technicianIds: [...draft.technicianIds],
       taskIds: [...draft.taskIds],
@@ -78,6 +106,19 @@ function open(): Promise<IDBDatabase> | null {
 // no puede terminar después de uno nuevo ni del borrado al enviar.
 let queue: Promise<unknown> = Promise.resolve();
 
+// La lista y el reintento se enteran cuando cambia algo guardado.
+const listeners = new Set<() => void>();
+
+/** Avisa cada vez que se guarda o se borra un cierre. Devuelve cómo dejar de escuchar. */
+export function onClosureDraftsChanged(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function changed() {
+  listeners.forEach((listener) => listener());
+}
+
 /**
  * Corre `work` en una transacción y espera a que se escriba. Si el navegador no tiene
  * IndexedDB o falla, devuelve `fallback`: el cierre sigue andando, sin borrador.
@@ -122,6 +163,7 @@ async function transact<T>(
 
 export async function saveClosureDraft(closure: StoredClosure): Promise<void> {
   await withStore("readwrite", undefined, (store) => store.put(pick(closure)));
+  changed();
 }
 
 export async function loadClosureDraft(
@@ -131,17 +173,18 @@ export async function loadClosureDraft(
   const found = await withStore<StoredClosure | undefined>("readonly", undefined, (store) =>
     store.get([userId, orderId]),
   );
-  return found ?? null;
+  return found ? pick(found) : null;
 }
 
 export async function deleteClosureDraft(userId: string, orderId: string): Promise<void> {
   await withStore("readwrite", undefined, (store) => store.delete([userId, orderId]));
+  changed();
 }
 
-/** Ids de las órdenes con borrador de este usuario. */
-export async function listClosureDrafts(userId: string): Promise<string[]> {
-  const keys = await withStore<IDBValidKey[]>("readonly", [], (store) =>
-    store.index(BY_USER).getAllKeys(IDBKeyRange.only(userId)),
+/** Los cierres guardados de este usuario, en cualquier estado. */
+export async function listStoredClosures(userId: string): Promise<StoredClosure[]> {
+  const found = await withStore<StoredClosure[]>("readonly", [], (store) =>
+    store.index(BY_USER).getAll(IDBKeyRange.only(userId)),
   );
-  return keys.map((key) => (key as [string, string])[1]);
+  return found.map(pick);
 }
