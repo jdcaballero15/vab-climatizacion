@@ -117,3 +117,22 @@ async def test_tecnico_no_puede_gestionar_usuarios(schema: None) -> None:
 
     assert listar.status_code == 403
     assert crear.status_code == 403
+
+
+# La lista sale ordenada por nombre: restablecer o editar a alguien no lo mueve de lugar.
+async def test_listado_ordenado_por_nombre_aunque_se_modifique_uno(schema: None) -> None:
+    admin = make_user(email="admin@ot-demo.com", full_name="carla Admin")
+    beto = make_user(email="beto@ot-demo.com", full_name="Beto Ficticio")
+    ana = make_user(email="ana@ot-demo.com", full_name="Ana Ficticia")
+    await _seed([admin, beto, ana])
+
+    async with _client() as client:
+        reset = await client.post(f"/admin/users/{ana.id}/password-reset", headers=_auth(admin))
+        assert reset.status_code == 200
+        listar = await client.get("/admin/users", headers=_auth(admin))
+
+    assert [user["full_name"] for user in listar.json()] == [
+        "Ana Ficticia",
+        "Beto Ficticio",
+        "carla Admin",
+    ]

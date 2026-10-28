@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { refreshSession } from "../api/client";
 import { ChangePasswordPage } from "../features/auth/ChangePasswordPage";
 import { LoginPage } from "../features/auth/LoginPage";
-import { onSessionExpired } from "../features/auth/session";
+import { onPasswordChangeRequired, onSessionExpired } from "../features/auth/session";
 import { setAccessToken } from "../features/auth/token";
 import type { Session } from "../features/auth/types";
 import { useLogout } from "../features/auth/useLogout";
@@ -40,6 +40,17 @@ export function AppRoot() {
         setSession(null);
       }),
     [queryClient],
+  );
+
+  // La API pide una contraseña nueva (E01-05): se muestra la pantalla para elegirla.
+  useEffect(
+    () =>
+      onPasswordChangeRequired(() =>
+        setSession((actual) =>
+          actual ? { ...actual, user: { ...actual.user, must_change_password: true } } : actual,
+        ),
+      ),
+    [],
   );
 
   if (session === undefined) {

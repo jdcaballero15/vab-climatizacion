@@ -1,9 +1,11 @@
 import { Fragment, useState, type FormEvent } from "react";
+import { useOutletContext } from "react-router-dom";
 
 import { ResetPasswordPanel } from "./ResetPasswordPanel";
 import type { UserRole } from "./types";
 import { EmailAlreadyExistsError, useCreateUser, useDeactivateUser, useUsers } from "./useUsers";
 import { PageHeader } from "../../app/PageHeader";
+import type { Session } from "../auth/types";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administración",
@@ -12,6 +14,8 @@ const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export function UsersPage() {
+  // La sesión llega por el Outlet de AppLayout; puede faltar fuera del router (tests).
+  const session = useOutletContext<Session | undefined>();
   const users = useUsers();
   const createUser = useCreateUser();
   const deactivateUser = useDeactivateUser();
@@ -143,7 +147,11 @@ export function UsersPage() {
                 {resetting === user.id && (
                   <tr className="users__panel">
                     <td colSpan={4}>
-                      <ResetPasswordPanel user={user} onClose={() => setResetting(null)} />
+                      <ResetPasswordPanel
+                        user={user}
+                        self={user.id === session?.user.id}
+                        onClose={() => setResetting(null)}
+                      />
                     </td>
                   </tr>
                 )}

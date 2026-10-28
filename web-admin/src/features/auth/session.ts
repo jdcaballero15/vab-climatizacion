@@ -16,3 +16,21 @@ export function notifySessionExpired(): void {
     listener();
   }
 }
+
+// Aviso de contraseña temporal: la API niega todo con 403 `password_change_required`
+// (E01-05), por ejemplo después de restablecerse la contraseña a uno mismo. AppRoot lo
+// escucha y muestra la pantalla para elegir una nueva en lugar de quedar con errores.
+const passwordListeners = new Set<Listener>();
+
+export function onPasswordChangeRequired(listener: Listener): () => void {
+  passwordListeners.add(listener);
+  return () => {
+    passwordListeners.delete(listener);
+  };
+}
+
+export function notifyPasswordChangeRequired(): void {
+  for (const listener of passwordListeners) {
+    listener();
+  }
+}

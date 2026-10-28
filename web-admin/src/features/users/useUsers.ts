@@ -52,8 +52,12 @@ export function useDeactivateUser() {
   });
 }
 
-/** Restablece la contraseña (E01-05): la temporal llega solo en esta respuesta. */
-export function useResetPassword() {
+/**
+ * Restablece la contraseña (E01-05): la temporal llega solo en esta respuesta. Con `self`
+ * (la propia) no se recarga la lista: la API ya niega todo hasta elegir una nueva, y la
+ * temporal tiene que quedar a la vista para anotarla.
+ */
+export function useResetPassword({ self = false }: { self?: boolean } = {}) {
   const queryClient = useQueryClient();
   return useMutation<PasswordReset, Error, string>({
     mutationFn: async (userId) => {
@@ -65,6 +69,10 @@ export function useResetPassword() {
       }
       return data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+    onSuccess: () => {
+      if (!self) {
+        void queryClient.invalidateQueries({ queryKey: USERS_KEY });
+      }
+    },
   });
 }

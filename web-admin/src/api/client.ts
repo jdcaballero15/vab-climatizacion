@@ -1,6 +1,6 @@
 import createClient from "openapi-fetch";
 
-import { notifySessionExpired } from "../features/auth/session";
+import { notifyPasswordChangeRequired, notifySessionExpired } from "../features/auth/session";
 import { getAccessToken, setAccessToken } from "../features/auth/token";
 import type { Session } from "../features/auth/types";
 import type { paths } from "./schema";
@@ -50,6 +50,18 @@ export function refreshSession(): Promise<Session | null> {
   return refreshInFlight;
 }
 
+/** Avisa si un 403 es por contraseña temporal (E01-05). Lee una copia: el cuerpo sigue intacto. */
+async function checkPasswordChangeRequired(response: Response): Promise<void> {
+  try {
+    const body = (await response.clone().json()) as { detail?: { code?: unknown } };
+    if (body.detail?.code === "password_change_required") {
+      notifyPasswordChangeRequired();
+    }
+  } catch {
+    // Un 403 sin JSON no es este caso.
+  }
+}
+
 api.use({
   onRequest({ request }) {
     const token = getAccessToken();
@@ -61,6 +73,10 @@ api.use({
   // Renueva el token en segundo plano ante un 401 y reintenta la request original.
   // Si no se puede renovar (refresh vencido o usuario dado de baja), limpia la sesión.
   async onResponse({ request, response }) {
+    if (response.status === 403) {
+      await checkPasswordChangeRequired(response);
+      return undefined;
+    }
     if (response.status !== 401) {
       return undefined;
     }

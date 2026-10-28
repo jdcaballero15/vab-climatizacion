@@ -341,4 +341,80 @@ describe("AppRoot", () => {
       ).toBeInTheDocument();
     });
   });
+
+  // E01-05: restablecerse la propia contraseña no deja la sesión con errores 403.
+  describe("restablecerse la propia contraseña", () => {
+    const PASSWORD_CHANGE_REQUIRED = () =>
+      json(
+        { detail: { code: "password_change_required", message: "Elegí una contraseña nueva." } },
+        403,
+      );
+
+    function stubSelfReset() {
+      let reset = false;
+      const listados: string[] = [];
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: Request | string, init?: RequestInit) => {
+          const request = toRequest(input, init);
+          const path = new URL(request.url).pathname;
+          if (path.endsWith("/auth/refresh")) {
+            return json(sessionFor("admin"));
+          }
+          if (path.endsWith("/password-reset")) {
+            reset = true;
+            return json({ temporary_password: "TemporalDePrueba" });
+          }
+          if (path.endsWith("/admin/users")) {
+            listados.push(path);
+            return reset
+              ? PASSWORD_CHANGE_REQUIRED()
+              : json([{ ...sessionFor("admin").user, is_active: true }]);
+          }
+          return path.includes("/admin/") ? json([]) : json(sessionFor("admin"));
+        }),
+      );
+      return listados;
+    }
+
+    it("muestra la temporal y al tocar Listo pide elegir una nueva", async () => {
+      const user = userEvent.setup();
+      const listados = stubSelfReset();
+      renderApp("/usuarios");
+
+      await user.click(await screen.findByRole("button", { name: "Restablecer contraseña" }));
+      expect(screen.getByText(/Es tu propio usuario/)).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Confirmar restablecimiento" }));
+
+      expect(await screen.findByText("TemporalDePrueba")).toBeInTheDocument();
+      expect(screen.getByText(/Tu contraseña temporal/)).toBeInTheDocument();
+      // La lista no se recarga: la API ya la negaría y se perdería la temporal.
+      expect(listados).toHaveLength(1);
+
+      await user.click(screen.getByRole("button", { name: "Listo" }));
+
+      expect(
+        await screen.findByRole("heading", { name: "Elegí una contraseña nueva" }),
+      ).toBeInTheDocument();
+    });
+
+    it("si la API pide una contraseña nueva en medio del uso, muestra la pantalla", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: Request | string, init?: RequestInit) => {
+          const request = toRequest(input, init);
+          const path = new URL(request.url).pathname;
+          if (path.endsWith("/auth/refresh")) {
+            return json(sessionFor("admin"));
+          }
+          return path.includes("/admin/") ? PASSWORD_CHANGE_REQUIRED() : json(sessionFor("admin"));
+        }),
+      );
+      renderApp("/usuarios");
+
+      expect(
+        await screen.findByRole("heading", { name: "Elegí una contraseña nueva" }),
+      ).toBeInTheDocument();
+    });
+  });
 });
