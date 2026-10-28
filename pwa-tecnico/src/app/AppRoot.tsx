@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { refreshSession } from "../api/client";
+import { ChangePasswordPage } from "../features/auth/ChangePasswordPage";
 import { LoginPage } from "../features/auth/LoginPage";
 import { onSessionExpired } from "../features/auth/session";
 import { setAccessToken } from "../features/auth/token";
@@ -68,6 +69,17 @@ export function AppRoot() {
     setSession(null);
     logout.mutate();
   };
+
+  // E01-05: con una contraseña temporal, la API niega todo hasta que se elija una nueva.
+  if (session.user.must_change_password) {
+    return (
+      <ChangePasswordPage
+        user={session.user}
+        onChanged={(user) => setSession({ ...session, user })}
+        onLogout={onLogout}
+      />
+    );
+  }
 
   if (session.user.role !== "technician") {
     return <WrongRolePage onLogout={onLogout} />;

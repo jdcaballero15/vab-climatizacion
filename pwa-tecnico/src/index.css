@@ -113,6 +113,7 @@ textarea {
 }
 
 .btn-secondary,
+.login__form .btn-secondary,
 .orders__actions .orders__logout,
 .order-start__secondary {
   display: inline-flex;
@@ -220,6 +221,10 @@ button:disabled {
 .login__form button {
   margin-top: 1rem;
   font-size: 1.125rem;
+}
+
+.login__form .btn-secondary {
+  margin-top: 0;
 }
 
 .login__error {

@@ -216,6 +216,53 @@
         ]
       }
     },
+    "/auth/password": {
+      "post": {
+        "tags": [
+          "acceso"
+        ],
+        "summary": "Change Password",
+        "description": "Cambia la contraseña propia; con una temporal, es lo único que se puede hacer.",
+        "operationId": "change_password_auth_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/admin/users": {
       "get": {
         "tags": [
@@ -419,6 +466,54 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{user_id}/password-reset": {
+      "post": {
+        "tags": [
+          "usuarios"
+        ],
+        "summary": "Reset Password",
+        "operationId": "reset_password_admin_users__user_id__password_reset_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasswordResetOut"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -5753,6 +5848,41 @@
         ],
         "title": "OrderTechnicianOut"
       },
+      "PasswordChange": {
+        "properties": {
+          "current_password": {
+            "type": "string",
+            "maxLength": 128,
+            "title": "Current Password"
+          },
+          "new_password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "New Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "title": "PasswordChange"
+      },
+      "PasswordResetOut": {
+        "properties": {
+          "temporary_password": {
+            "type": "string",
+            "title": "Temporary Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "temporary_password"
+        ],
+        "title": "PasswordResetOut",
+        "description": "La contraseña temporal: solo viaja en esta respuesta (E01-05)."
+      },
       "RefreshResponse": {
         "properties": {
           "access_token": {
@@ -6291,6 +6421,10 @@
           "is_active": {
             "type": "boolean",
             "title": "Is Active"
+          },
+          "must_change_password": {
+            "type": "boolean",
+            "title": "Must Change Password"
           }
         },
         "type": "object",
@@ -6299,7 +6433,8 @@
           "email",
           "full_name",
           "role",
-          "is_active"
+          "is_active",
+          "must_change_password"
         ],
         "title": "UserAdminOut"
       },
@@ -6353,6 +6488,10 @@
           },
           "role": {
             "$ref": "#/components/schemas/UserRole"
+          },
+          "must_change_password": {
+            "type": "boolean",
+            "title": "Must Change Password"
           }
         },
         "type": "object",
@@ -6360,7 +6499,8 @@
           "id",
           "email",
           "full_name",
-          "role"
+          "role",
+          "must_change_password"
         ],
         "title": "UserOut"
       },
