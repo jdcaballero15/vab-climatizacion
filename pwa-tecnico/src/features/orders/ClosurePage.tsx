@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -12,29 +13,35 @@ import {
   observationRequired,
   repairsFor,
   restoreDraft,
-  toClosurePayload,
   type ClosureDraft,
   type ClosureErrors,
   type ClosureField,
   type ClosureOptions,
 } from "./closure";
-import { deleteClosureDraft, saveClosureDraft, type StoredClosure } from "./closureDrafts";
-import { EQUIPMENT_CONDITIONS, NOT_DONE_REASONS } from "./labels";
 import {
-  MAX_PHOTOS,
-  PhotoUploadError,
-  compressImage,
-  uploadPhotos,
-  type ClosurePhoto,
-} from "./photos";
-import { useCloseOrder } from "./useCloseOrder";
+  deleteClosureDraft,
+  saveClosureDraft,
+  type ClosureProblem,
+  type StoredClosure,
+  type StoredOrderSummary,
+} from "./closureDrafts";
+import { schedulePendingClosures } from "./closureRetry";
+import { sendClosure } from "./closureSender";
+import { EQUIPMENT_CONDITIONS, NOT_DONE_REASONS } from "./labels";
+import { MAX_PHOTOS, PhotoUploadError, compressImage, type ClosurePhoto } from "./photos";
 import { useStoredClosure } from "./useClosureDrafts";
 import { useClosureOptions } from "./useClosureOptions";
+import { forgetClosedOrder } from "./useMyOrders";
 import { useOrderDetail } from "./useOrderDetail";
 
 /** Aviso que la lista muestra al volver de un cierre. */
 export interface ClosedNotice {
   notice: string;
+  /** Quedó pendiente de enviar (E05-13): se muestra como aviso, no como éxito. */
+  pending?: boolean;
+  /** Orden del cierre pendiente y qué decir cuando el reintento lo manda. */
+  orderId?: string;
+  sentNotice?: string;
 }
 
 // Sección del formulario de cada campo, en el orden en que se muestran.
@@ -67,24 +74,48 @@ export function ClosurePage({ userId }: ClosurePageProps) {
   const order = useOrderDetail(orderId);
   const options = useClosureOptions(orderId);
   const stored = useStoredClosure(userId, orderId);
+  // La orden rechazada ya no tiene detalle: se muestra con lo que quedó guardado.
+  const summary: StoredOrderSummary | null = order.data
+    ? {
+        number: order.data.number,
+        workTypeName: order.data.work_type_name,
+        clientName: order.data.client_name,
+      }
+    : (stored?.order ?? null);
+
+  // Una orden rechazada ya no tiene detalle al que volver.
+  const gone = stored?.status === "rejected" || options.data === null;
 
   let body: ReactNode;
-  if (options.isPending || stored === undefined) {
-    body = <p className="orders__message">Cargando el cierre…</p>;
+  const loading = <p className="orders__message">Cargando el cierre…</p>;
+  if (stored === undefined) {
+    body = loading;
+  } else if (stored?.status === "rejected") {
+    body = <RejectedClosure userId={userId} orderId={orderId} problem={stored.problem} />;
+  } else if (options.isPending) {
+    body = loading;
   } else if (options.isError) {
     body = (
-      <p className="orders__message" role="alert">
-        No se pudo cargar el cierre. Revisá la conexión.
-      </p>
+      <div className="orders__message" role="alert">
+        <p>No se pudo cargar el cierre. Revisá la conexión.</p>
+        {stored?.status === "pending" && (
+          <p>El cierre quedó guardado y se envía solo cuando vuelva la señal.</p>
+        )}
+      </div>
     );
   } else if (options.data === null) {
-    body = <NotFound />;
+    // Un borrador de una orden que la oficina canceló o reasignó: no se pierde sin avisar.
+    body = stored ? (
+      <RejectedClosure userId={userId} orderId={orderId} problem={null} />
+    ) : (
+      <NotFound />
+    );
   } else {
     body = (
       <ClosureForm
         userId={userId}
         orderId={orderId}
-        orderNumber={order.data?.number}
+        summary={summary}
         options={options.data}
         stored={stored}
       />
@@ -93,15 +124,15 @@ export function ClosurePage({ userId }: ClosurePageProps) {
 
   return (
     <main className="orders">
-      <Link to={`/ordenes/${orderId}`} className="order-detail__back">
+      <Link to={gone ? "/" : `/ordenes/${orderId}`} className="order-detail__back">
         <ChevronLeft size={20} aria-hidden="true" />
-        Volver a la orden
+        {gone ? "Volver a la lista" : "Volver a la orden"}
       </Link>
       <header className="closure__header">
-        <h1>Cerrar orden{order.data ? ` N° ${order.data.number}` : ""}</h1>
-        {order.data && (
+        <h1>Cerrar orden{summary ? ` N° ${summary.number}` : ""}</h1>
+        {summary && (
           <p>
-            {order.data.work_type_name} · {order.data.client_name}
+            {summary.workTypeName} · {summary.clientName}
           </p>
         )}
       </header>
@@ -119,18 +150,89 @@ function NotFound() {
   );
 }
 
+interface RejectedClosureProps {
+  userId: string;
+  orderId: string;
+  problem: ClosureProblem | null;
+}
+
+/**
+ * E05-13, criterio 6: la oficina canceló o reasignó la orden. Lo cargado queda en el
+ * celular hasta que el técnico lo descarte, con confirmación.
+ */
+function RejectedClosure({ userId, orderId, problem }: RejectedClosureProps) {
+  const navigate = useNavigate();
+  const [confirming, setConfirming] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
+
+  const discard = async () => {
+    setDiscarding(true);
+    await deleteClosureDraft(userId, orderId);
+    navigate("/", {
+      replace: true,
+      state: { notice: "Cierre descartado." } satisfies ClosedNotice,
+    });
+  };
+
+  return (
+    <div className="closure__rejected">
+      <p className="closure__rejected-title" role="alert">
+        Rechazado: avisale a la oficina
+      </p>
+      <p>{problem?.message ?? "Esta orden ya no está en curso para tu escuadrilla."}</p>
+      <p>Lo que cargaste sigue guardado en este celular hasta que lo descartes.</p>
+      {confirming ? (
+        <div
+          className="order-start order-start--confirm"
+          role="group"
+          aria-label="Confirmar descarte"
+        >
+          <p className="order-start__question">¿Descartar el cierre?</p>
+          <p className="closure__hint">Se borra del celular lo cargado, con sus fotos.</p>
+          <div className="order-start__actions">
+            <button
+              type="button"
+              className="order-start__primary"
+              disabled={discarding}
+              onClick={() => void discard()}
+            >
+              Sí, descartar
+            </button>
+            <button
+              type="button"
+              className="order-start__secondary"
+              disabled={discarding}
+              onClick={() => setConfirming(false)}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="order-start__secondary"
+          onClick={() => setConfirming(true)}
+        >
+          Descartar cierre
+        </button>
+      )}
+    </div>
+  );
+}
+
 interface ClosureFormProps {
   userId: string;
   orderId: string;
-  orderNumber: number | undefined;
+  summary: StoredOrderSummary | null;
   options: ClosureOptions;
   /** Lo que quedó guardado en el celular de una vez anterior (E05-13). */
   stored: StoredClosure | null;
 }
 
-function ClosureForm({ userId, orderId, orderNumber, options, stored }: ClosureFormProps) {
+function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormProps) {
   const navigate = useNavigate();
-  const close = useCloseOrder(orderId);
+  const queryClient = useQueryClient();
   // Lo que se cargó al abrir: mientras nada cambie, no hay nada nuevo que guardar.
   const [initial] = useState(() => ({
     draft: stored ? restoreDraft(stored.draft, options) : EMPTY_DRAFT,
@@ -144,13 +246,13 @@ function ClosureForm({ userId, orderId, orderNumber, options, stored }: ClosureF
   const [draft, setDraft] = useState<ClosureDraft>(initial.draft);
   const [idempotencyKey, setIdempotencyKey] = useState(initial.idempotencyKey);
   const [submitted, setSubmitted] = useState(false);
-  const [serverError, setServerError] = useState<{ field: string; message: string } | null>(null);
-  const [notFound, setNotFound] = useState(false);
+  // E05-13, criterio 7: un 422 de un envío anterior vuelve marcado en el formulario.
+  const [serverError, setServerError] = useState<ClosureProblem | null>(stored?.problem ?? null);
+  const [rejected, setRejected] = useState<ClosureProblem | null>(null);
   const [photos, setPhotos] = useState<ClosurePhoto[]>(initial.photos);
   const [addingPhotos, setAddingPhotos] = useState(false);
   const [photoNotice, setPhotoNotice] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
   // Las miniaturas ocupan memoria hasta que se liberan: al salir del formulario se sueltan.
   const photosRef = useRef(photos);
@@ -160,21 +262,32 @@ function ClosureForm({ userId, orderId, orderNumber, options, stored }: ClosureF
     [],
   );
 
-  // E05-13, criterio 1: cada cambio queda en el celular, sin tocar ningún botón.
-  const sent = useRef(false);
+  // E05-13, criterio 1: cada cambio queda en el celular, sin tocar ningún botón. Un cambio
+  // en un cierre pendiente lo vuelve borrador: se manda cuando el técnico toque enviar.
+  // Mientras se envía, lo guardado lo maneja el envío.
+  const handedOff = useRef(false);
   useEffect(() => {
     const unchanged =
       draft === initial.draft &&
       photos === initial.photos &&
       idempotencyKey === initial.idempotencyKey;
-    if (unchanged || sent.current) {
+    if (unchanged || handedOff.current) {
       return;
     }
-    void saveClosureDraft({ userId, orderId, draft, idempotencyKey, photos });
-  }, [userId, orderId, draft, photos, idempotencyKey, initial]);
+    void saveClosureDraft({
+      userId,
+      orderId,
+      status: "draft",
+      problem: serverError,
+      order: summary,
+      draft,
+      idempotencyKey,
+      photos,
+    });
+  }, [userId, orderId, summary, draft, photos, idempotencyKey, serverError, initial]);
 
-  if (notFound) {
-    return <NotFound />;
+  if (rejected) {
+    return <RejectedClosure userId={userId} orderId={orderId} problem={rejected} />;
   }
 
   const errors: ClosureErrors = submitted ? missingFields(draft, options) : {};
@@ -201,7 +314,6 @@ function ClosureForm({ userId, orderId, orderNumber, options, stored }: ClosureF
 
   const addPhotos = async (files: File[]) => {
     setServerError(null);
-    setUploadError(null);
     const room = MAX_PHOTOS - photos.length;
     setPhotoNotice(files.length > room ? `Podés adjuntar hasta ${MAX_PHOTOS} fotos.` : null);
     setAddingPhotos(true);
@@ -228,7 +340,6 @@ function ClosureForm({ userId, orderId, orderNumber, options, stored }: ClosureF
 
   const removePhoto = (key: string) => {
     setServerError(null);
-    setUploadError(null);
     setPhotoNotice(null);
     setPhotos((current) => {
       const removed = current.find((photo) => photo.key === key);
@@ -239,68 +350,66 @@ function ClosureForm({ userId, orderId, orderNumber, options, stored }: ClosureF
     });
   };
 
-  const savePhoto = (key: string, changes: Partial<ClosurePhoto>) =>
-    setPhotos((current) =>
-      current.map((photo) => (photo.key === key ? { ...photo, ...changes } : photo)),
-    );
-
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setSubmitted(true);
     setServerError(null);
-    setUploadError(null);
     const missing = missingFields(draft, options);
     if (Object.keys(missing).length > 0) {
       focusFirst(missing);
       return;
     }
-    // Primero las fotos (E05-06): el cierre viaja con los ids de las que ya llegaron.
-    let photoIds: string[];
-    setUploading(true);
-    try {
-      photoIds = await uploadPhotos(photos, savePhoto);
-    } catch (error) {
-      setUploadError(
-        error instanceof PhotoUploadError ? error.message : "No se pudo subir una foto.",
-      );
-      return;
-    } finally {
-      setUploading(false);
-    }
-    close.mutate(toClosurePayload(draft, idempotencyKey, photoIds), {
-      onSuccess: (result) => {
-        if (result.kind === "not_found") {
-          setNotFound(true);
-        } else if (result.kind === "invalid") {
-          if (result.code === "idempotency_key_reused") {
-            setIdempotencyKey(crypto.randomUUID());
-          }
-          if (result.field === "photo_ids") {
-            // La API no acepta alguna foto: el próximo envío las sube de nuevo.
-            setPhotos((current) =>
-              current.map((photo) => ({ ...photo, fileId: null, uploaded: false })),
-            );
-          }
-          setServerError({ field: result.field, message: result.message });
-          if (isClosureField(result.field)) {
-            focusFirst({ [result.field]: result.message });
-          }
-        } else {
-          // E05-13, criterio 5: el servidor lo tiene, el borrador ya no hace falta.
-          sent.current = true;
-          void deleteClosureDraft(userId, orderId);
-          const number = orderNumber !== undefined ? ` N° ${orderNumber}` : "";
-          const notice =
-            result.closure.order_status === "done"
-              ? `Orden${number} cerrada.`
-              : `Orden${number} devuelta a la oficina.`;
-          navigate("/", { replace: true, state: { notice } satisfies ClosedNotice });
-        }
-      },
+    handedOff.current = true;
+    setSending(true);
+    const result = await sendClosure({
+      userId,
+      orderId,
+      status: "pending",
+      problem: null,
+      order: summary,
+      draft,
+      idempotencyKey,
+      photos,
     });
+    const number = summary ? ` N° ${summary.number}` : "";
+    if (result.kind === "closed") {
+      forgetClosedOrder(queryClient, orderId);
+      const notice =
+        result.closure.order_status === "done"
+          ? `Orden${number} cerrada.`
+          : `Orden${number} devuelta a la oficina.`;
+      navigate("/", { replace: true, state: { notice } satisfies ClosedNotice });
+    } else if (result.kind === "offline") {
+      // E05-13, criterio 3: queda pendiente y se manda solo cuando vuelve la señal.
+      schedulePendingClosures();
+      const notice = `Sin señal. El cierre de la orden${number} quedó pendiente y se envía solo cuando vuelva la señal.`;
+      const sentNotice = `Se envió el cierre de la orden${number}.`;
+      navigate("/", {
+        replace: true,
+        state: { notice, pending: true, orderId, sentNotice } satisfies ClosedNotice,
+      });
+    } else if (result.kind === "rejected") {
+      setRejected(result.stored.problem);
+    } else {
+      // Lo que el envío ya hizo (fotos subidas, clave nueva) pasa al formulario.
+      const { stored: saved } = result;
+      setIdempotencyKey(saved.idempotencyKey);
+      setPhotos((current) =>
+        current.map((photo) => {
+          const match = saved.photos.find((item) => item.key === photo.key);
+          return match ? { ...photo, fileId: match.fileId, uploaded: match.uploaded } : photo;
+        }),
+      );
+      setServerError(saved.problem);
+      handedOff.current = false;
+      setSending(false);
+      if (saved.problem && isClosureField(saved.problem.field)) {
+        focusFirst({ [saved.problem.field]: saved.problem.message });
+      }
+    }
   };
 
-  const busy = uploading || close.isPending;
+  const busy = sending;
   const required = failureRepairRequired(draft, options);
   const repairs = repairsFor(draft, options);
   let step = 0;
@@ -319,10 +428,17 @@ function ClosureForm({ userId, orderId, orderNumber, options, stored }: ClosureF
 
   return (
     <form className="closure" onSubmit={(event) => void onSubmit(event)} noValidate>
-      {stored && (
-        <p className="closure__restored" role="status">
-          Se recuperó lo que habías cargado en este celular.
+      {stored?.status === "pending" ? (
+        <p className="closure__restored closure__restored--pending" role="status">
+          Pendiente de enviar: se envía solo cuando vuelva la señal. Si cambiás algo, tocá de nuevo
+          el botón de abajo.
         </p>
+      ) : (
+        stored && (
+          <p className="closure__restored" role="status">
+            Se recuperó lo que habías cargado en este celular.
+          </p>
+        )
       )}
       <Section id="closure-technicians" error={errors.technician_ids}>
         {title("¿Quiénes fueron?")}
@@ -516,24 +632,13 @@ function ClosureForm({ userId, orderId, orderNumber, options, stored }: ClosureF
           {generalError}
         </p>
       )}
-      {uploadError && (
-        <p className="closure__error" role="alert">
-          {uploadError}
-        </p>
-      )}
-      {close.isError && (
-        <p className="closure__error" role="alert">
-          No se pudo enviar el cierre. Revisá la conexión e intentá de nuevo.
-        </p>
-      )}
+
       <button type="submit" className="closure__submit" disabled={busy || addingPhotos}>
-        {uploading
-          ? "Subiendo fotos…"
-          : close.isPending
-            ? "Enviando…"
-            : draft.outcome === "not_done"
-              ? "Cerrar como no realizada"
-              : "Finalizar orden"}
+        {sending
+          ? "Enviando…"
+          : draft.outcome === "not_done"
+            ? "Cerrar como no realizada"
+            : "Finalizar orden"}
       </button>
     </form>
   );

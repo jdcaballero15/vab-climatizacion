@@ -297,6 +297,25 @@ button:disabled {
   font-weight: 600;
 }
 
+.orders__notice--pending {
+  border-color: #fdba74;
+  background: rgb(255 247 237 / 90%);
+  color: #9a3412;
+}
+
+.orders__saved {
+  margin-bottom: 1.25rem;
+}
+
+.orders__saved-title {
+  margin: 0 0 0.625rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .orders__logout-warning {
   margin: 0 0 1rem;
 }
@@ -336,6 +355,15 @@ button:disabled {
   width: 4px;
   background: var(--status-color);
   content: "";
+}
+
+/* Cierre guardado de una orden que ya no está en la lista (E05-13). */
+.order-card--saved {
+  --status-color: var(--text-muted);
+}
+
+.order-card--saved.order-card--rejected {
+  --status-color: var(--danger);
 }
 
 .order-card--in_progress {
@@ -389,6 +417,18 @@ button:disabled {
   color: #92400e;
   font-size: 0.875rem;
   font-weight: 600;
+}
+
+.order-card__draft--pending {
+  border-color: #fdba74;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.order-card__draft--rejected {
+  border-color: #fecdca;
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 .order-card__status::before {
@@ -695,6 +735,33 @@ button:disabled {
   background: rgb(239 246 255 / 85%);
   color: var(--primary-dark);
   font-weight: 600;
+}
+
+.closure__restored--pending {
+  border-color: #fdba74;
+  background: rgb(255 247 237 / 90%);
+  color: #9a3412;
+}
+
+/* Cierre que el servidor rechazó: la orden ya no está en curso (E05-13). */
+.closure__rejected {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #fecdca;
+  border-radius: var(--radius);
+  background: rgb(254 243 242 / 90%);
+}
+
+.closure__rejected p {
+  margin: 0;
+}
+
+.closure__rejected-title {
+  color: var(--danger);
+  font-size: 1.125rem;
+  font-weight: 700;
 }
 
 .closure__hint,

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryClient } from "@tanstack/react-query";
 
 import { api } from "../../api/client";
 
@@ -17,4 +17,10 @@ export function useMyOrders() {
     // Al volver a la app, la lista se actualiza sola (criterio 4).
     refetchOnWindowFocus: true,
   });
+}
+
+/** Una orden recién cerrada ya no está entre las abiertas de la escuadrilla. */
+export function forgetClosedOrder(queryClient: QueryClient, orderId: string) {
+  queryClient.removeQueries({ queryKey: [...MY_ORDERS_KEY, orderId] });
+  void queryClient.invalidateQueries({ queryKey: MY_ORDERS_KEY, exact: true });
 }

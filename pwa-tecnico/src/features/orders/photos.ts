@@ -18,10 +18,15 @@ export interface ClosurePhoto {
   uploaded: boolean;
 }
 
-/** Error con un mensaje para mostrarle al técnico. */
-export class PhotoUploadError extends Error {}
-
 const NO_CONNECTION = "No se pudo subir una foto. Revisá la conexión e intentá de nuevo.";
+
+/** Error con un mensaje para mostrarle al técnico. */
+export class PhotoUploadError extends Error {
+  /** Sin señal o el servidor caído: se puede reintentar más tarde (E05-13). */
+  get offline(): boolean {
+    return this.message === NO_CONNECTION;
+  }
+}
 
 /** Tamaño con el lado mayor en 1600 px como máximo, sin agrandar las fotos chicas. */
 export function scaledSize(width: number, height: number) {
@@ -58,14 +63,16 @@ export async function compressImage(file: Blob): Promise<Blob> {
   }
 }
 
-type SavePhoto = (key: string, changes: Partial<ClosurePhoto>) => void;
+/** Lo que hace falta para subir una foto: la del formulario o la guardada en el celular. */
+type UploadablePhoto = Pick<ClosurePhoto, "key" | "blob" | "fileId" | "uploaded">;
+type SavePhoto = (key: string, changes: Partial<UploadablePhoto>) => void;
 
 /**
  * Sube las fotos que falten y devuelve sus ids en el orden del formulario. Cada paso
  * hecho se guarda con `save`: si se corta la señal, el reintento sigue desde ahí y no
  * vuelve a subir lo que ya llegó (E05-06, criterio 5).
  */
-export async function uploadPhotos(photos: ClosurePhoto[], save: SavePhoto): Promise<string[]> {
+export async function uploadPhotos(photos: UploadablePhoto[], save: SavePhoto): Promise<string[]> {
   const ids: string[] = [];
   for (const photo of photos) {
     ids.push(await uploadOne(photo, save));
@@ -73,7 +80,7 @@ export async function uploadPhotos(photos: ClosurePhoto[], save: SavePhoto): Pro
   return ids;
 }
 
-async function uploadOne(photo: ClosurePhoto, save: SavePhoto): Promise<string> {
+async function uploadOne(photo: UploadablePhoto, save: SavePhoto): Promise<string> {
   if (photo.fileId && photo.uploaded) {
     return photo.fileId;
   }
@@ -82,7 +89,7 @@ async function uploadOne(photo: ClosurePhoto, save: SavePhoto): Promise<string> 
   return fileId;
 }
 
-async function sendToBucket(photo: ClosurePhoto, save: SavePhoto): Promise<string> {
+async function sendToBucket(photo: UploadablePhoto, save: SavePhoto): Promise<string> {
   const { data, error, response } = await guard(() =>
     api.POST("/files", {
       body: { purpose: "closure_photo", content_type: PHOTO_TYPE, size_bytes: photo.blob.size },

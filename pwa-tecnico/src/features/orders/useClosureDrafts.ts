@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 
-import { listClosureDrafts, loadClosureDraft, type StoredClosure } from "./closureDrafts";
+import {
+  listStoredClosures,
+  loadClosureDraft,
+  onClosureDraftsChanged,
+  type StoredClosure,
+} from "./closureDrafts";
 
 /** Borrador guardado de una orden: `undefined` mientras se lee del celular. */
 export function useStoredClosure(userId: string, orderId: string) {
@@ -19,19 +24,27 @@ export function useStoredClosure(userId: string, orderId: string) {
   return stored;
 }
 
-/** Órdenes con borrador de este usuario, para marcarlas en la lista y avisar al salir. */
-export function useClosureDraftIds(userId: string) {
-  const [ids, setIds] = useState<ReadonlySet<string>>(new Set());
+/**
+ * Cierres guardados de este usuario, para marcarlos en la lista y avisar al salir. Se
+ * actualiza solo cuando el reintento manda uno o lo marca rechazado. `undefined` mientras
+ * se lee del celular.
+ */
+export function useStoredClosures(userId: string) {
+  const [closures, setClosures] = useState<StoredClosure[] | undefined>(undefined);
   useEffect(() => {
     let current = true;
-    void listClosureDrafts(userId).then((found) => {
-      if (current) {
-        setIds(new Set(found));
-      }
-    });
+    const load = () =>
+      void listStoredClosures(userId).then((found) => {
+        if (current) {
+          setClosures(found);
+        }
+      });
+    load();
+    const stop = onClosureDraftsChanged(load);
     return () => {
       current = false;
+      stop();
     };
   }, [userId]);
-  return ids;
+  return closures;
 }

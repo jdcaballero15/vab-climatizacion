@@ -4,7 +4,7 @@ title: "No perder un cierre si se corta la conexión"
 epic: E05
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [technician]
 size: M
 areas: [pwa]
@@ -45,6 +45,7 @@ assumes: []
 - Un borrador es de la sesión de la escuadrilla: si entra otro usuario en el mismo celular, no ve borradores ajenos (clave por usuario).
 - Cubre el criterio 3 de E01-02 (aviso al cerrar sesión), que quedó diferido por `D-001`.
 - Primera parte (criterios 1, 2, 8 y 9): `pwa-tecnico/src/features/orders/closureDrafts.ts`, módulo propio sobre IndexedDB (base `vab-ot`, almacén `closure-drafts`, clave `[userId, orderId]`). Copia campo por campo lo que carga el técnico, así no se cuela otro dato. Las operaciones van en fila para que un guardado viejo no pise uno nuevo ni el borrado. Al restaurar, lo que la oficina sacó de las listas vuelve a sin elegir (`restoreDraft`). Al cerrar sesión el borrador no se borra: queda para cuando vuelva a entrar el mismo usuario. `fake-indexeddb` solo para los tests.
+- Segunda parte (criterios 3 a 7): el cierre guardado tiene estado (`draft`, `pending`, `rejected`), el problema (campo del 422 o motivo del rechazo) y un resumen de la orden (número, tipo y cliente, para mostrarlo aunque salga de la lista). `closureSender.ts` lo envía: primero lo deja `pending`, sube las fotos que falten guardando cada paso y manda el cierre con su clave; un mismo cierre no se manda dos veces a la vez. Sin señal, un 5xx o una foto cortada lo dejan `pending`; 404 o 409 lo marcan `rejected`; 422 lo vuelve a `draft` con el campo (y cambia la clave si estaba usada, o resube las fotos si las rechazó). `closureRetry.ts` reintenta mientras hay sesión: al abrir, con el evento `online` y con espera creciente (5 s, 10 s, 20 s... hasta 5 minutos). Cambiar un cierre pendiente lo vuelve borrador. La lista muestra "Borrador", "Pendiente de enviar", "Rechazado" o "Revisar" (422), y en "Guardados en este celular" los de órdenes que ya no están en la lista. Sin señal, TanStack Query pausa la consulta de la lista: se avisa que no hay señal y se muestran los guardados.
 
 ## Preguntas abiertas
 

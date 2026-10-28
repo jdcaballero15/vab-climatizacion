@@ -1,19 +1,34 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useParams } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { components } from "../../api/schema";
+import { deleteClosureDraft, memory, saveClosureDraft } from "../../test/memoryClosureDrafts";
+import { EMPTY_DRAFT } from "./closure";
+import type { StoredClosure } from "./closureDrafts";
 import { MyOrdersPage } from "./MyOrdersPage";
 
-// Órdenes con borrador en el celular, por usuario (IndexedDB se prueba en closureDrafts.test.ts).
-const drafts = vi.hoisted(() => new Map<string, string[]>());
-vi.mock("./closureDrafts", () => ({
-  listClosureDrafts: async (userId: string) => drafts.get(userId) ?? [],
-}));
+vi.mock("./closureDrafts", () => import("../../test/memoryClosureDrafts"));
 
 const USER_ID = "90000000-0000-4000-8000-000000000001";
+
+/** Guarda un cierre en el celular de prueba. */
+function store(orderId: string, overrides: Partial<StoredClosure> = {}) {
+  const closure: StoredClosure = {
+    userId: USER_ID,
+    orderId,
+    status: "draft",
+    problem: null,
+    order: { number: 9, workTypeName: "Service", clientName: "Clínica Ficticia" },
+    draft: EMPTY_DRAFT,
+    idempotencyKey: `clave-${orderId}`,
+    photos: [],
+    ...overrides,
+  };
+  memory.set(`${closure.userId}/${orderId}`, closure);
+}
 
 type CrewOrders = components["schemas"]["CrewOrdersTechnicianOut"];
 type Order = components["schemas"]["OrderTechnicianOut"];
@@ -78,7 +93,7 @@ function DetailStub() {
   return <h1>Detalle {orderId}</h1>;
 }
 
-beforeEach(() => drafts.clear());
+beforeEach(() => memory.clear());
 afterEach(() => vi.restoreAllMocks());
 
 describe("MyOrdersPage", () => {
@@ -232,8 +247,8 @@ describe("MyOrdersPage", () => {
   // E05-13, criterio 2: la tarjeta avisa que hay un cierre empezado.
   it("marca las órdenes con un borrador del cierre", async () => {
     const withDraft = order({ number: 5, status: "in_progress" });
-    drafts.set(USER_ID, [withDraft.id]);
-    drafts.set("otro-usuario", [withDraft.id]);
+    store(withDraft.id);
+    store(withDraft.id, { userId: "otro-usuario" });
     stubOrders(() => json(payload([withDraft, order({ number: 6 })])));
     renderPage();
 
@@ -245,7 +260,7 @@ describe("MyOrdersPage", () => {
   // E05-13, criterio 9: con un cierre sin enviar, avisa antes de cerrar sesión.
   it("con un borrador pide confirmar antes de cerrar sesión", async () => {
     const withDraft = order({ status: "in_progress" });
-    drafts.set(USER_ID, [withDraft.id]);
+    store(withDraft.id);
     stubOrders(() => json(payload([withDraft])));
     const { onLogout } = renderPage();
     await screen.findByText("Borrador");
@@ -263,6 +278,103 @@ describe("MyOrdersPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión igual" }));
     expect(onLogout).toHaveBeenCalled();
     // El borrador no se borra: queda para cuando vuelva a entrar.
-    expect(drafts.get(USER_ID)).toEqual([withDraft.id]);
+    expect(memory.size).toBe(1);
+  });
+
+  // Criterio 2: cada estado del cierre guardado se ve en la tarjeta.
+  it("marca pendientes, rechazados y los que hay que revisar", async () => {
+    const orders = [1, 2, 3].map((number) => order({ number, status: "in_progress" }));
+    store(orders[0].id, { status: "pending" });
+    store(orders[1].id, { status: "rejected" });
+    store(orders[2].id, { problem: { field: "observation", message: "Escribí qué falta." } });
+    stubOrders(() => json(payload(orders)));
+    renderPage();
+
+    const cards = await screen.findAllByRole("article");
+    expect(await within(cards[0]).findByText("Pendiente de enviar")).toBeInTheDocument();
+    expect(within(cards[1]).getByText("Rechazado")).toBeInTheDocument();
+    expect(within(cards[2]).getByText("Revisar")).toBeInTheDocument();
+  });
+
+  // Criterio 6: la orden rechazada ya no viene en la lista, pero lo guardado se ve.
+  it("muestra los cierres guardados de órdenes que ya no están en la lista", async () => {
+    store("orden-cancelada", { status: "rejected" });
+    stubOrders(() => json(payload([order({ number: 2 })])));
+    renderPage();
+
+    const saved = await screen.findByRole("region", { name: "Guardados en este celular" });
+    expect(within(saved).getByText("N° 9")).toBeInTheDocument();
+    expect(within(saved).getByText("Clínica Ficticia")).toBeInTheDocument();
+    expect(within(saved).getByText("Rechazado")).toBeInTheDocument();
+    expect(within(saved).getByRole("link")).toHaveAttribute(
+      "href",
+      "/ordenes/orden-cancelada/cerrar",
+    );
+  });
+
+  it("sin conexión muestra igual los cierres guardados", async () => {
+    store("orden-1", { status: "pending" });
+    stubOrders(() => {
+      throw new TypeError("Failed to fetch");
+    });
+    renderPage();
+
+    const saved = await screen.findByRole("region", { name: "Guardados en este celular" });
+    expect(within(saved).getByText("Pendiente de enviar")).toBeInTheDocument();
+  });
+
+  // Sin señal el navegador está offline y TanStack Query pausa la consulta, sin error.
+  it("con el celular offline avisa que no hay señal y muestra lo guardado", async () => {
+    store("orden-1", { status: "pending" });
+    const fetchMock = stubOrders(() => json(payload([])));
+    onlineManager.setOnline(false);
+    try {
+      renderPage();
+
+      expect(await screen.findByText(/No hay señal/)).toBeInTheDocument();
+      const saved = screen.getByRole("region", { name: "Guardados en este celular" });
+      expect(within(saved).getByText("Pendiente de enviar")).toBeInTheDocument();
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      onlineManager.setOnline(true);
+    }
+  });
+
+  it("cuando el reintento manda un cierre, la tarjeta se actualiza sola", async () => {
+    const pending = order({ status: "in_progress" });
+    store(pending.id, { status: "pending" });
+    stubOrders(() => json(payload([pending])));
+    renderPage();
+    await screen.findByText("Pendiente de enviar");
+
+    await act(() =>
+      saveClosureDraft({ ...memory.get(`${USER_ID}/${pending.id}`)!, status: "rejected" }),
+    );
+
+    expect(await screen.findByText("Rechazado")).toBeInTheDocument();
+  });
+
+  it("cuando el reintento manda el cierre pendiente, el aviso lo dice", async () => {
+    store("orden-1", { status: "pending" });
+    stubOrders(() => json(payload([])));
+    renderPage({
+      notice: "Sin señal. Quedó pendiente.",
+      pending: true,
+      orderId: "orden-1",
+      sentNotice: "Se envió el cierre de la orden N° 9.",
+    });
+    expect(await screen.findByRole("status")).toHaveTextContent("Sin señal. Quedó pendiente.");
+
+    await act(() => deleteClosureDraft(USER_ID, "orden-1"));
+
+    const status = await screen.findByText("Se envió el cierre de la orden N° 9.");
+    expect(status).not.toHaveClass("orders__notice--pending");
+  });
+
+  it("el aviso de un cierre pendiente se muestra distinto al de uno enviado", async () => {
+    stubOrders(() => json(payload([])));
+    renderPage({ notice: "Sin señal. Quedó pendiente.", pending: true });
+
+    expect(await screen.findByRole("status")).toHaveClass("orders__notice--pending");
   });
 });

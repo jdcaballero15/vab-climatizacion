@@ -10,6 +10,7 @@ import { setAccessToken } from "../features/auth/token";
 import type { Session } from "../features/auth/types";
 import { useLogout } from "../features/auth/useLogout";
 import { WrongRolePage } from "../features/auth/WrongRolePage";
+import { PendingClosuresRetry } from "../features/orders/PendingClosuresRetry";
 import { ClosurePage } from "../features/orders/ClosurePage";
 import { MyOrdersPage } from "../features/orders/MyOrdersPage";
 import { OrderDetailPage } from "../features/orders/OrderDetailPage";
@@ -86,11 +87,14 @@ export function AppRoot() {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={<MyOrdersPage userId={session.user.id} onLogout={onLogout} />} />
-      <Route path="/ordenes/:orderId" element={<OrderDetailPage />} />
-      <Route path="/ordenes/:orderId/cerrar" element={<ClosurePage userId={session.user.id} />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <PendingClosuresRetry userId={session.user.id} />
+      <Routes>
+        <Route path="/" element={<MyOrdersPage userId={session.user.id} onLogout={onLogout} />} />
+        <Route path="/ordenes/:orderId" element={<OrderDetailPage />} />
+        <Route path="/ordenes/:orderId/cerrar" element={<ClosurePage userId={session.user.id} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }

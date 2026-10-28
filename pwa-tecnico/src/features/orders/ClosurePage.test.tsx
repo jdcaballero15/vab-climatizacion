@@ -6,21 +6,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { components } from "../../api/schema";
 import { EMPTY_DRAFT } from "./closure";
+import { memory, storedFor } from "../../test/memoryClosureDrafts";
 import type { StoredClosure } from "./closureDrafts";
 import { ClosurePage } from "./ClosurePage";
 
-// IndexedDB se prueba en closureDrafts.test.ts: acá alcanza con un borrador en memoria.
-const drafts = vi.hoisted(() => new Map<string, StoredClosure>());
-vi.mock("./closureDrafts", () => ({
-  saveClosureDraft: async (closure: StoredClosure) => {
-    drafts.set(`${closure.userId}/${closure.orderId}`, closure);
-  },
-  loadClosureDraft: async (userId: string, orderId: string) =>
-    drafts.get(`${userId}/${orderId}`) ?? null,
-  deleteClosureDraft: async (userId: string, orderId: string) => {
-    drafts.delete(`${userId}/${orderId}`);
-  },
-}));
+vi.mock("./closureDrafts", () => import("../../test/memoryClosureDrafts"));
 
 // En jsdom no hay canvas: la compresión se prueba en photos.test.ts.
 vi.mock("./photos", async (importOriginal) => ({
@@ -134,6 +124,33 @@ function stubApi(
   return sent;
 }
 
+/** Un cierre guardado en el celular, como lo deja el formulario. */
+function saved(overrides: Partial<StoredClosure> = {}): StoredClosure {
+  return {
+    userId: USER_ID,
+    orderId: ORDER_ID,
+    status: "draft",
+    problem: null,
+    order: { number: 3, workTypeName: "Reparación", clientName: "Sanatorio Ficticio" },
+    draft: {
+      ...EMPTY_DRAFT,
+      technicianIds: [ANA],
+      taskIds: [TASK],
+      outcome: "done",
+      failure: FAILURE,
+      repair: REPAIR,
+      equipmentCondition: "working",
+      observation: "Filtro sucio",
+    },
+    idempotencyKey: "7c000000-0000-4000-8000-000000000001",
+    photos: [],
+    ...overrides,
+  };
+}
+
+const NOT_FOUND = () =>
+  json({ detail: { code: "order_not_found", message: "No se encontró la orden." } }, 404);
+
 function OrdersList() {
   const state = useLocation().state as { notice?: string } | null;
   return <h1>Lista: {state?.notice}</h1>;
@@ -167,7 +184,7 @@ async function fillResolved() {
 }
 
 beforeEach(() => {
-  drafts.clear();
+  memory.clear();
   calls = [];
   uploads = 0;
   let previews = 0;
@@ -413,14 +430,10 @@ describe("ClosurePage", () => {
   });
 
   // E05-12: reintentar después de un corte reusa la clave; no duplica el cierre.
-  it("si se corta la conexión avisa y el reintento usa la misma clave", async () => {
-    let calls = 0;
+  // E05-13, criterio 3: sin señal queda pendiente y vuelve a la lista con el aviso.
+  it("sin señal deja el cierre pendiente y vuelve a la lista", async () => {
     const sent = stubApi(() => {
-      calls += 1;
-      if (calls === 1) {
-        throw new TypeError("sin conexión");
-      }
-      return json(CLOSED, 200);
+      throw new TypeError("sin conexión");
     });
     renderClosure();
     await screen.findByRole("button", { name: "Ana Ficticia" });
@@ -428,16 +441,19 @@ describe("ClosurePage", () => {
     await click("Finalizar orden");
 
     expect(
-      await screen.findByText(
-        "No se pudo enviar el cierre. Revisá la conexión e intentá de nuevo.",
-      ),
+      await screen.findByRole("heading", {
+        name: "Lista: Sin señal. El cierre de la orden N° 3 quedó pendiente y se envía solo cuando vuelva la señal.",
+      }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Ana Ficticia", pressed: true })).toBeInTheDocument();
-
-    await click("Finalizar orden");
-    await screen.findByRole("heading", { name: /Lista/ });
-    expect(sent).toHaveLength(2);
-    expect(sent[1].idempotency_key).toBe(sent[0].idempotency_key);
+    const pending = storedFor(USER_ID, ORDER_ID);
+    expect(pending?.status).toBe("pending");
+    // El reintento usa la misma clave (E05-12): no duplica el cierre.
+    expect(pending?.idempotencyKey).toBe(sent[0].idempotency_key);
+    expect(pending?.order).toEqual({
+      number: 3,
+      workTypeName: "Reparación",
+      clientName: "Sanatorio Ficticio",
+    });
   });
 
   it("una clave usada en otra orden se cambia por una nueva", async () => {
@@ -481,18 +497,17 @@ describe("ClosurePage", () => {
     ).toBeInTheDocument();
   });
 
-  it("si al enviar la orden ya no está en curso, lo avisa", async () => {
-    stubApi(() =>
-      json({ detail: { code: "order_not_found", message: "No se encontró la orden." } }, 404),
-    );
+  // E05-13, criterio 6: la oficina canceló o reasignó mientras se cargaba.
+  it("si al enviar la orden ya no está en curso, lo marca rechazado y lo guarda", async () => {
+    stubApi(NOT_FOUND);
     renderClosure();
     await screen.findByRole("button", { name: "Ana Ficticia" });
     await fillResolved();
     await click("Finalizar orden");
 
-    expect(
-      await screen.findByText("Esta orden ya no está en curso para tu escuadrilla."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Rechazado: avisale a la oficina")).toBeInTheDocument();
+    expect(screen.getByText(/La oficina canceló o reasignó la orden/)).toBeInTheDocument();
+    expect(storedFor(USER_ID, ORDER_ID)?.status).toBe("rejected");
   });
 
   it("vuelve al detalle de la orden", async () => {
@@ -568,7 +583,7 @@ describe("ClosurePage", () => {
   });
 
   // E05-06, criterio 5: con mala señal no se pierde ni se duplica la foto.
-  it("si falla la subida de una foto, el reintento no vuelve a subir las que llegaron", async () => {
+  it("si falla la subida de una foto, queda pendiente con las que llegaron", async () => {
     let puts = 0;
     const sent = stubApi(undefined, undefined, (request) => {
       if (request.method === "PUT" && ++puts === 2) {
@@ -586,19 +601,12 @@ describe("ClosurePage", () => {
     await screen.findAllByRole("img", { name: /Foto \d/ });
     await click("Finalizar orden");
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo subir una foto");
+    await screen.findByRole("heading", { name: /quedó pendiente/ });
     expect(sent).toHaveLength(0);
-    expect(screen.getAllByRole("img", { name: /Foto \d/ })).toHaveLength(2);
-
-    calls = [];
-    await click("Finalizar orden");
-    await screen.findByRole("heading", { name: /Lista/ });
-    // Solo la segunda foto se vuelve a pedir: la primera ya estaba confirmada.
-    expect(calls.filter((call) => call === "POST /api/files")).toHaveLength(1);
-    expect(sent).toHaveLength(1);
-    expect(sent[0].photo_ids).toEqual([
-      "f0000000-0000-4000-8000-000000000001",
-      "f0000000-0000-4000-8000-000000000003",
+    // La primera foto quedó confirmada: el reintento no la vuelve a subir (closureSender).
+    expect(storedFor(USER_ID, ORDER_ID)?.photos.map((photo) => photo.uploaded)).toEqual([
+      true,
+      false,
     ]);
   });
 
@@ -649,7 +657,7 @@ describe("ClosurePage", () => {
     await user.upload(screen.getByLabelText("Elegir de la galería"), jpeg("a.jpg"));
     await screen.findByRole("img", { name: /Foto 1/ });
 
-    const saved = drafts.get(`${USER_ID}/${ORDER_ID}`);
+    const saved = storedFor(USER_ID, ORDER_ID);
     expect(saved?.draft).toMatchObject({ technicianIds: [ANA], observation: "Filtro sucio" });
     expect(saved?.idempotencyKey).toMatch(/^[0-9a-f-]{36}$/);
     expect(saved?.photos).toHaveLength(1);
@@ -661,34 +669,24 @@ describe("ClosurePage", () => {
     renderClosure();
     await screen.findByRole("button", { name: "Ana Ficticia" });
 
-    expect(drafts.size).toBe(0);
+    expect(memory.size).toBe(0);
   });
 
   // E05-13, criterios 2 y 4: al volver, todo sigue ahí y el envío usa la misma clave.
   it("al volver a entrar recupera el borrador, sus fotos y su clave", async () => {
-    drafts.set(`${USER_ID}/${ORDER_ID}`, {
-      userId: USER_ID,
-      orderId: ORDER_ID,
-      draft: {
-        ...EMPTY_DRAFT,
-        technicianIds: [ANA],
-        taskIds: [TASK],
-        outcome: "done",
-        failure: FAILURE,
-        repair: REPAIR,
-        equipmentCondition: "working",
-        observation: "Filtro sucio",
-      },
-      idempotencyKey: "7c000000-0000-4000-8000-000000000001",
-      photos: [
-        {
-          key: "foto-1",
-          blob: new Blob(["foto"], { type: "image/jpeg" }),
-          fileId: "f0000000-0000-4000-8000-000000000009",
-          uploaded: true,
-        },
-      ],
-    });
+    memory.set(
+      `${USER_ID}/${ORDER_ID}`,
+      saved({
+        photos: [
+          {
+            key: "foto-1",
+            blob: new Blob(["foto"], { type: "image/jpeg" }),
+            fileId: "f0000000-0000-4000-8000-000000000009",
+            uploaded: true,
+          },
+        ],
+      }),
+    );
     const sent = stubApi();
     renderClosure();
 
@@ -721,56 +719,108 @@ describe("ClosurePage", () => {
     renderClosure();
     await screen.findByRole("button", { name: "Ana Ficticia" });
     await fillResolved();
-    expect(drafts.size).toBe(1);
+    expect(memory.size).toBe(1);
 
     await click("Finalizar orden");
 
     await screen.findByRole("heading", { name: /Lista/ });
-    expect(drafts.size).toBe(0);
-  });
-
-  it("si no se pudo enviar, el borrador queda", async () => {
-    stubApi(() => {
-      throw new TypeError("Failed to fetch");
-    });
-    renderClosure();
-    await screen.findByRole("button", { name: "Ana Ficticia" });
-    await fillResolved();
-
-    await click("Finalizar orden");
-
-    expect(await screen.findByText(/No se pudo enviar el cierre/)).toBeInTheDocument();
-    expect(drafts.get(`${USER_ID}/${ORDER_ID}`)?.draft.outcome).toBe("done");
-  });
-
-  // E05-13, criterio 6: si la oficina canceló o reasignó, lo cargado no se pierde.
-  it("si la orden ya no está en curso, no borra el borrador", async () => {
-    stubApi(() =>
-      json({ detail: { code: "order_not_found", message: "No se encontró la orden." } }, 404),
-    );
-    renderClosure();
-    await screen.findByRole("button", { name: "Ana Ficticia" });
-    await fillResolved();
-    await click("Finalizar orden");
-
-    await screen.findByText("Esta orden ya no está en curso para tu escuadrilla.");
-    expect(drafts.size).toBe(1);
+    expect(memory.size).toBe(0);
   });
 
   // Notas técnicas: el borrador de otro usuario del mismo celular no aparece.
   it("no recupera el borrador de otro usuario", async () => {
-    drafts.set(`otro-usuario/${ORDER_ID}`, {
-      userId: "otro-usuario",
-      orderId: ORDER_ID,
-      draft: { ...EMPTY_DRAFT, observation: "Ajeno" },
-      idempotencyKey: "7c000000-0000-4000-8000-000000000002",
-      photos: [],
-    });
+    memory.set(
+      `otro-usuario/${ORDER_ID}`,
+      saved({ userId: "otro-usuario", draft: { ...EMPTY_DRAFT, observation: "Ajeno" } }),
+    );
     stubApi();
     renderClosure();
     await screen.findByRole("button", { name: "Ana Ficticia" });
 
     expect(screen.getByRole("textbox", { name: /Observación/ })).toHaveValue("");
     expect(screen.queryByText(/Se recuperó/)).not.toBeInTheDocument();
+  });
+
+  // E05-13, criterio 6: el rechazado se ve al volver, aunque la orden ya no tenga cierre.
+  it("un cierre rechazado se muestra con el motivo y se descarta con confirmación", async () => {
+    memory.set(
+      `${USER_ID}/${ORDER_ID}`,
+      saved({ status: "rejected", problem: { field: "", message: "La oficina la canceló." } }),
+    );
+    stubApi(undefined, NOT_FOUND);
+    renderClosure();
+
+    expect(await screen.findByText("Rechazado: avisale a la oficina")).toBeInTheDocument();
+    expect(screen.getByText("La oficina la canceló.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Cerrar orden N° 3" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Volver a la lista" })).toHaveAttribute("href", "/");
+
+    await click("Descartar cierre");
+    await click("Cancelar");
+    expect(memory.size).toBe(1);
+
+    await click("Descartar cierre");
+    await click("Sí, descartar");
+    expect(
+      await screen.findByRole("heading", { name: "Lista: Cierre descartado." }),
+    ).toBeInTheDocument();
+    expect(memory.size).toBe(0);
+  });
+
+  it("un borrador de una orden que ya no está en curso también se puede descartar", async () => {
+    memory.set(`${USER_ID}/${ORDER_ID}`, saved());
+    stubApi(undefined, NOT_FOUND);
+    renderClosure();
+
+    expect(await screen.findByText("Rechazado: avisale a la oficina")).toBeInTheDocument();
+    expect(
+      screen.getByText("Esta orden ya no está en curso para tu escuadrilla."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Descartar cierre" })).toBeInTheDocument();
+  });
+
+  // Criterio 3: un pendiente se ve como tal y se puede mandar en el momento.
+  it("un cierre pendiente avisa que se envía solo y se puede enviar ya", async () => {
+    memory.set(`${USER_ID}/${ORDER_ID}`, saved({ status: "pending" }));
+    const sent = stubApi();
+    renderClosure();
+
+    expect(await screen.findByText(/Pendiente de enviar/)).toBeInTheDocument();
+    await click("Finalizar orden");
+
+    await screen.findByRole("heading", { name: "Lista: Orden N° 3 cerrada." });
+    expect(sent[0].idempotency_key).toBe("7c000000-0000-4000-8000-000000000001");
+    expect(memory.size).toBe(0);
+  });
+
+  it("cambiar un cierre pendiente lo vuelve borrador", async () => {
+    memory.set(`${USER_ID}/${ORDER_ID}`, saved({ status: "pending" }));
+    stubApi();
+    renderClosure();
+    await screen.findByText(/Pendiente de enviar/);
+
+    await user.type(screen.getByRole("textbox", { name: /Observación/ }), " y gas");
+
+    expect(storedFor(USER_ID, ORDER_ID)).toMatchObject({
+      status: "draft",
+      draft: { observation: "Filtro sucio y gas" },
+    });
+  });
+
+  // Criterio 7: un 422 del reintento vuelve al formulario con el campo marcado.
+  it("un cierre que la API rechazó por un dato abre con el campo marcado", async () => {
+    memory.set(
+      `${USER_ID}/${ORDER_ID}`,
+      saved({
+        problem: { field: "technician_ids", message: "Uno de los técnicos no está activo." },
+      }),
+    );
+    stubApi();
+    renderClosure();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Uno de los técnicos no está activo.",
+    );
+    expect(document.getElementById("closure-technicians")).toHaveClass("closure__section--invalid");
   });
 });
