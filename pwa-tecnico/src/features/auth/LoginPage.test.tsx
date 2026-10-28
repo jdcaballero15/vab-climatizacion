@@ -61,6 +61,7 @@ describe("LoginPage", () => {
         email: "tecnico@ot-demo.com",
         full_name: "Juan Pérez",
         role: "technician",
+        must_change_password: false,
       },
     };
     mockFetch(200, session);

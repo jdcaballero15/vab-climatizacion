@@ -115,6 +115,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change Password
+         * @description Cambia la contraseña propia; con una temporal, es lo único que se puede hacer.
+         */
+        post: operations["change_password_auth_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -150,6 +170,23 @@ export interface paths {
         head?: never;
         /** Update User */
         patch: operations["update_user_admin_users__user_id__patch"];
+        trace?: never;
+    };
+    "/admin/users/{user_id}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset Password */
+        post: operations["reset_password_admin_users__user_id__password_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/admin/work-types": {
@@ -1588,6 +1625,21 @@ export interface components {
             site: components["schemas"]["ClientSiteTechnicianOut"];
             equipment: components["schemas"]["EquipmentTechnicianOut"] | null;
         };
+        /** PasswordChange */
+        PasswordChange: {
+            /** Current Password */
+            current_password: string;
+            /** New Password */
+            new_password: string;
+        };
+        /**
+         * PasswordResetOut
+         * @description La contraseña temporal: solo viaja en esta respuesta (E01-05).
+         */
+        PasswordResetOut: {
+            /** Temporary Password */
+            temporary_password: string;
+        };
         /** RefreshResponse */
         RefreshResponse: {
             /** Access Token */
@@ -1798,6 +1850,8 @@ export interface components {
             role: components["schemas"]["UserRole"];
             /** Is Active */
             is_active: boolean;
+            /** Must Change Password */
+            must_change_password: boolean;
         };
         /** UserCreate */
         UserCreate: {
@@ -1827,6 +1881,8 @@ export interface components {
             /** Full Name */
             full_name: string;
             role: components["schemas"]["UserRole"];
+            /** Must Change Password */
+            must_change_password: boolean;
         };
         /**
          * UserRole
@@ -2111,6 +2167,39 @@ export interface operations {
             };
         };
     };
+    change_password_auth_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_users_admin_users_get: {
         parameters: {
             query?: never;
@@ -2246,6 +2335,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_password_admin_users__user_id__password_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordResetOut"];
                 };
             };
             /** @description Validation Error */
