@@ -49,6 +49,7 @@ export type ClosureField =
   | "repair_id"
   | "repair_other_text"
   | "equipment_condition"
+  | "photo_ids"
   | "observation";
 
 export type ClosureErrors = Partial<Record<ClosureField, string>>;
@@ -107,8 +108,12 @@ export function missingFields(draft: ClosureDraft, options: ClosureOptions): Clo
   return errors;
 }
 
-/** Arma el pedido de cierre. Solo se llama con un borrador sin faltantes. */
-export function toClosurePayload(draft: ClosureDraft, idempotencyKey: string): ClosureCreate {
+/** Arma el pedido de cierre. Solo se llama con un borrador sin faltantes y las fotos subidas. */
+export function toClosurePayload(
+  draft: ClosureDraft,
+  idempotencyKey: string,
+  photoIds: string[] = [],
+): ClosureCreate {
   const outcome = draft.outcome ?? "done";
   const pick = (value: string) => (value === "" || value === OTHER ? null : value);
   const text = (value: string) => value.trim() || null;
@@ -124,7 +129,6 @@ export function toClosurePayload(draft: ClosureDraft, idempotencyKey: string): C
     equipment_condition: outcome === "not_done" ? null : draft.equipmentCondition,
     not_done_reason: outcome === "not_done" ? draft.notDoneReason : null,
     observation: text(draft.observation),
-    // Las fotos las suma la PWA en el PR siguiente de E05-06.
-    photo_ids: [],
+    photo_ids: photoIds,
   };
 }
