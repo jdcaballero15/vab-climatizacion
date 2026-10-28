@@ -51,7 +51,7 @@ async def create_first_admin(session: AsyncSession, data: UserCreate) -> User:
 
 
 async def list_users(session: AsyncSession) -> Sequence[User]:
-    return await UserRepository(session).list()
+    return await UserRepository(session).list_by_name()
 
 
 async def get_user(session: AsyncSession, user_id: uuid.UUID) -> User:
