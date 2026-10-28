@@ -5,6 +5,7 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from app.api.deps import SessionDep, require_role
 from app.api.schemas.auth import (
     LoginRequest,
+    PasswordChange,
     RefreshResponse,
     TokenResponse,
     UserOut,
@@ -12,14 +13,24 @@ from app.api.schemas.auth import (
 from app.core.config import get_settings
 from app.core.security import create_access_token
 from app.db.models.user import User, UserRole
+from app.services import auth as auth_service
 from app.services import session as session_service
 from app.services.auth import authenticate
 
 router = APIRouter(prefix="/auth", tags=["acceso"])
 
-# El propio perfil lo puede ver cualquier rol autenticado.
+# El propio perfil lo puede ver cualquier rol autenticado, incluso con una
+# contraseña temporal: así los clientes saben que tienen que pedir cambiarla (E01-05).
 AnyRole = Annotated[
-    User, Depends(require_role(UserRole.admin, UserRole.technician, UserRole.owner))
+    User,
+    Depends(
+        require_role(
+            UserRole.admin,
+            UserRole.technician,
+            UserRole.owner,
+            allow_temporary_password=True,
+        )
+    ),
 ]
 
 # Cookie httpOnly con el refresh token (ADR 0010, E01-07).
@@ -111,3 +122,29 @@ async def logout(
 async def me(current_user: AnyRole) -> User:
     """Devuelve el usuario autenticado."""
     return current_user
+
+
+@router.post("/password", response_model=UserOut)
+async def change_password(
+    payload: PasswordChange, session: SessionDep, current_user: AnyRole
+) -> User:
+    """Cambia la contraseña propia; con una temporal, es lo único que se puede hacer."""
+    try:
+        return await auth_service.change_password(
+            session, current_user, payload.current_password, payload.new_password
+        )
+    except auth_service.InvalidCurrentPasswordError:
+        raise _password_error(
+            "invalid_current_password", "La contraseña actual no es correcta."
+        ) from None
+    except auth_service.PasswordUnchangedError:
+        raise _password_error(
+            "password_unchanged", "La contraseña nueva tiene que ser distinta de la actual."
+        ) from None
+
+
+def _password_error(code: str, message: str) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail={"code": code, "message": message},
+    )

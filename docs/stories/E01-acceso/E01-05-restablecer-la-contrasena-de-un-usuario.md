@@ -4,7 +4,7 @@ title: "Restablecer la contraseña de un usuario"
 epic: E01
 phase: 1
 priority: should
-status: ready
+status: in_progress
 roles: [admin, technician, owner]
 size: M
 areas: [backend, web-admin, pwa]
@@ -41,3 +41,8 @@ assumes: []
 - `POST /auth/password` (cualquier rol autenticado): contraseña actual y nueva; limpia `must_change_password`.
 - `require_role` niega con 403 `password_change_required` si el usuario tiene `must_change_password`, salvo `/auth/me`, `/auth/password`, `/auth/refresh` y `/auth/logout`. `UserOut` suma `must_change_password` para que los clientes muestren la pantalla al entrar o al recargar.
 - La pantalla de cambio es igual en web-admin y en la PWA (cada app la suya, como el resto del acceso).
+
+## Notas de implementación
+
+- Se entrega en tres PR: backend (este), web-admin (botón en Usuarios y pantalla de cambio) y pwa-tecnico (pantalla de cambio).
+- **Backend (hecho):** migración `c5e9a3d7b214` (`must_change_password`, `password_reset_at`, `password_reset_by` en `app_user`). `POST /admin/users/{id}/password-reset` responde `{temporary_password}` con `Cache-Control: no-store`, revoca todos los refresh tokens del usuario y guarda solo el hash. `require_role` niega con 403 `password_change_required` mientras la marca esté puesta, salvo en las rutas declaradas con `allow_temporary_password=True` (`/auth/me` y `/auth/password`); refresh y logout no usan rol y siguen andando. `POST /auth/password` (`current_password`, `new_password` de 8 a 128) responde el `UserOut`; 422 `invalid_current_password` o `password_unchanged`. `UserOut` y `UserAdminOut` suman `must_change_password`. La repetición de la contraseña nueva se valida solo en los clientes.

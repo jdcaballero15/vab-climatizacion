@@ -25,3 +25,10 @@ class UserAdminOut(BaseModel):
     full_name: str
     role: UserRole
     is_active: bool
+    must_change_password: bool
+
+
+class PasswordResetOut(BaseModel):
+    """La contraseña temporal: solo viaja en esta respuesta (E01-05)."""
+
+    temporary_password: str

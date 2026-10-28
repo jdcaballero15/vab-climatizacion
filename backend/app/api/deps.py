@@ -49,14 +49,28 @@ async def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-def require_role(*roles: UserRole) -> Callable[[User], Awaitable[User]]:
-    """Dependencia que exige que el usuario tenga uno de los roles dados (403 si no)."""
+def require_role(
+    *roles: UserRole, allow_temporary_password: bool = False
+) -> Callable[[User], Awaitable[User]]:
+    """Dependencia que exige que el usuario tenga uno de los roles dados (403 si no).
+
+    Con una contraseña temporal (E01-05) también da 403, salvo en las rutas que la
+    permiten explícitamente: ver el propio perfil y cambiarla.
+    """
 
     async def dependency(user: CurrentUser) -> User:
         if user.role not in roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={"code": "forbidden", "message": "No tenés permiso para esta acción."},
+            )
+        if user.must_change_password and not allow_temporary_password:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "code": "password_change_required",
+                    "message": "Tenés que elegir una contraseña nueva antes de seguir.",
+                },
             )
         return user
 
