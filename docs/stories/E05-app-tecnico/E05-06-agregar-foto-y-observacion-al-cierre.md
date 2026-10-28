@@ -4,7 +4,7 @@ title: "Agregar foto y observación al cierre"
 epic: E05
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [technician, admin]
 size: M
 areas: [backend, pwa, web-admin]
@@ -43,3 +43,8 @@ assumes: []
 - Orden de envío: subir cada foto (pedir subida, `PUT`, confirmar) y después el `POST` del cierre con los ids. Con la idempotencia de E05-12, reenviar el cierre con las mismas fotos no duplica nada.
 - `ClosureAdminOut` suma las fotos con URL firmada de descarga (5 minutos). `ClosureTechnicianOut` no las devuelve.
 - Medición fuera de rango como motivo para exigir observación queda para E07-07 (todavía no hay mediciones).
+
+## Notas de implementación
+
+- Se entrega en tres PR: backend (este), pwa-tecnico (sacar o elegir, comprimir, subir y enviar) y web-admin (ver las fotos en la Terminada).
+- **Backend (hecho):** `ClosureCreate.photo_ids` (hasta 5, en orden), tabla `work_order_closure_photo` (migración `f4b8d2a6c731`, `file_id` único). Al cerrar se valida que cada foto sea del mismo usuario, de uso `closure_photo`, confirmada y no usada en otro cierre (422 en `photo_ids`: `too_many_photos`, `photo_repeated`, `photo_not_available`, `photo_already_used`). Un reenvío con la misma clave no vuelve a validar ni duplica (E05-12). `GET /admin/orders/{id}/closure` suma `photos` con URL firmada de 5 minutos; la respuesta al celular no trae fotos.

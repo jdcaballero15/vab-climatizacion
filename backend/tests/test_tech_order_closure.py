@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import AsyncGenerator, Callable, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -14,12 +14,14 @@ from app.db.models.catalog import EquipmentType, Failure, Repair, Task, WorkType
 from app.db.models.client import Client, ClientContact, ClientSite
 from app.db.models.crew import Crew, FieldTechnician
 from app.db.models.equipment import Equipment
+from app.db.models.stored_file import StoredFile
 from app.db.models.user import User, UserRole
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
     WorkOrderCancellation,
     WorkOrderClosure,
+    WorkOrderClosurePhoto,
     WorkOrderClosureTask,
     WorkOrderClosureTechnician,
     WorkOrderEvent,
@@ -51,6 +53,8 @@ TABLES = [
     WorkOrderClosureTechnician.__table__,
     WorkOrderClosureTask.__table__,
     WorkOrderCancellation.__table__,
+    StoredFile.__table__,
+    WorkOrderClosurePhoto.__table__,
 ]
 HOY = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")).date()
 
@@ -825,3 +829,119 @@ async def test_otros_roles_reciben_403(mundo: Mundo, role: UserRole) -> None:
 
     assert (await _opciones(user, orden.id)).status_code == 403
     assert (await _cerrar(user, orden.id, _resuelta(m))).status_code == 403
+
+
+# E05-06: fotos del cierre (subidas antes con E00-09).
+
+
+async def _foto(
+    user: User, *, confirmada: bool = True, purpose: str = "closure_photo"
+) -> StoredFile:
+    foto = StoredFile(
+        purpose=purpose,
+        object_key=f"closures/photos/{uuid.uuid4()}",
+        content_type="image/jpeg",
+        size_bytes=1000,
+        uploaded_by=user.id,
+        confirmed_at=datetime.now(UTC) if confirmada else None,
+    )
+    await _seed([foto])
+    return foto
+
+
+async def _fotos_del_cierre(order_id: uuid.UUID) -> list[uuid.UUID]:
+    async with SessionLocal() as session:
+        rows = await session.scalars(
+            select(WorkOrderClosurePhoto.file_id)
+            .join(WorkOrderClosure, WorkOrderClosure.id == WorkOrderClosurePhoto.closure_id)
+            .where(WorkOrderClosure.work_order_id == order_id)
+            .order_by(WorkOrderClosurePhoto.position)
+        )
+        return list(rows)
+
+
+# Criterios 2 y 3: el cierre queda con sus fotos, en el orden enviado.
+async def test_cierre_con_fotos_las_guarda_en_orden(mundo: Mundo) -> None:
+    orden = await _orden(mundo)
+    fotos = [await _foto(mundo.celular) for _ in range(3)]
+    ids = [str(f.id) for f in reversed(fotos)]
+
+    response = await _cerrar(mundo.celular, orden.id, _resuelta(mundo, photo_ids=ids))
+
+    assert response.status_code == 201
+    # Criterio 7: la respuesta al celular no trae fotos.
+    assert "photos" not in response.json()
+    assert [str(f) for f in await _fotos_del_cierre(orden.id)] == ids
+
+
+# Criterio 2: las fotos son opcionales en cualquier resultado.
+async def test_cierre_sin_fotos_sigue_funcionando(mundo: Mundo) -> None:
+    orden = await _orden(mundo)
+
+    response = await _cerrar(mundo.celular, orden.id, _resuelta(mundo))
+
+    assert response.status_code == 201
+    assert await _fotos_del_cierre(orden.id) == []
+
+
+# Criterio 5 (y E05-12): reenviar el mismo cierre con las mismas fotos no duplica nada.
+async def test_reenvio_con_las_mismas_fotos_no_duplica(mundo: Mundo) -> None:
+    orden = await _orden(mundo)
+    foto = await _foto(mundo.celular)
+    payload = _resuelta(mundo, photo_ids=[str(foto.id)])
+
+    primero = await _cerrar(mundo.celular, orden.id, payload)
+    segundo = await _cerrar(mundo.celular, orden.id, payload)
+
+    assert (primero.status_code, segundo.status_code) == (201, 200)
+    assert await _fotos_del_cierre(orden.id) == [foto.id]
+
+
+# Criterio 4: fotos que no son del usuario, sin confirmar, de otro uso o inexistentes.
+@pytest.mark.parametrize("caso", ["ajena", "sin_confirmar", "otro_uso", "inexistente"])
+async def test_foto_no_disponible_se_rechaza(mundo: Mundo, caso: str) -> None:
+    orden = await _orden(mundo)
+    otro = make_user(email="esc2@ot-demo.com", role=UserRole.technician)
+    await _seed([otro])
+    fotos = {
+        "ajena": lambda: _foto(otro),
+        "sin_confirmar": lambda: _foto(mundo.celular, confirmada=False),
+        "otro_uso": lambda: _foto(mundo.celular, purpose="signature"),
+    }
+    foto_id = (await fotos[caso]()).id if caso in fotos else uuid.uuid4()
+
+    response = await _cerrar(mundo.celular, orden.id, _resuelta(mundo, photo_ids=[str(foto_id)]))
+
+    assert response.status_code == 422
+    assert _detail(response)["code"] == "photo_not_available"
+    assert _detail(response)["field"] == "photo_ids"
+    assert (await _leer(orden.id))[0] == OrderStatus.in_progress
+
+
+# Criterio 4: una foto ya usada en otro cierre se rechaza.
+async def test_foto_de_otro_cierre_se_rechaza(mundo: Mundo) -> None:
+    primera = await _orden(mundo)
+    segunda = await _orden(mundo)
+    foto = await _foto(mundo.celular)
+    await _cerrar(mundo.celular, primera.id, _resuelta(mundo, photo_ids=[str(foto.id)]))
+
+    response = await _cerrar(mundo.celular, segunda.id, _resuelta(mundo, photo_ids=[str(foto.id)]))
+
+    assert response.status_code == 422
+    assert _detail(response)["code"] == "photo_already_used"
+
+
+# Criterio 2: hasta 5 fotos, y sin repetir.
+async def test_mas_de_cinco_fotos_o_repetidas_se_rechazan(mundo: Mundo) -> None:
+    orden = await _orden(mundo)
+    fotos = [str((await _foto(mundo.celular)).id) for _ in range(6)]
+
+    seis = await _cerrar(mundo.celular, orden.id, _resuelta(mundo, photo_ids=fotos))
+    repetida = await _cerrar(
+        mundo.celular, orden.id, _resuelta(mundo, photo_ids=[fotos[0], fotos[0]])
+    )
+    cinco = await _cerrar(mundo.celular, orden.id, _resuelta(mundo, photo_ids=fotos[:5]))
+
+    assert _detail(seis)["code"] == "too_many_photos"
+    assert _detail(repetida)["code"] == "photo_repeated"
+    assert cinco.status_code == 201

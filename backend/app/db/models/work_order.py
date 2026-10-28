@@ -10,6 +10,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Index,
+    Integer,
     Sequence,
     String,
     Text,
@@ -189,6 +190,20 @@ class WorkOrderClosureTask(Base):
         ForeignKey("work_order_closure.id"), primary_key=True
     )
     task_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("task.id"), primary_key=True)
+
+
+class WorkOrderClosurePhoto(Base):
+    """Fotos del cierre, hasta 5 (E05-06). Cada archivo pertenece a un solo cierre."""
+
+    __tablename__ = "work_order_closure_photo"
+
+    closure_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("work_order_closure.id"), primary_key=True
+    )
+    file_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("stored_file.id"), primary_key=True, unique=True
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
 class WorkOrderCancellation(TimestampedBase):

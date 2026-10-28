@@ -10,12 +10,14 @@ from app.db.models.catalog import EquipmentType, Task, WorkType
 from app.db.models.client import Client, ClientSite
 from app.db.models.crew import Crew, FieldTechnician
 from app.db.models.equipment import Equipment
+from app.db.models.stored_file import StoredFile
 from app.db.models.user import User
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
     WorkOrderCancellation,
     WorkOrderClosure,
+    WorkOrderClosurePhoto,
     WorkOrderClosureTask,
     WorkOrderClosureTechnician,
     WorkOrderEvent,
@@ -253,6 +255,22 @@ class WorkOrderClosureRepository(BaseRepository[WorkOrderClosure]):
             .order_by(Task.name)
         )
         return list(await self.session.scalars(stmt))
+
+    async def photos(self, closure_id: uuid.UUID) -> list[StoredFile]:
+        stmt = (
+            select(StoredFile)
+            .join(WorkOrderClosurePhoto, WorkOrderClosurePhoto.file_id == StoredFile.id)
+            .where(WorkOrderClosurePhoto.closure_id == closure_id)
+            .order_by(WorkOrderClosurePhoto.position)
+        )
+        return list(await self.session.scalars(stmt))
+
+    async def used_photo_ids(self, file_ids: Sequence[uuid.UUID]) -> set[uuid.UUID]:
+        """Los archivos de la lista que ya son foto de algún cierre."""
+        stmt = select(WorkOrderClosurePhoto.file_id).where(
+            WorkOrderClosurePhoto.file_id.in_(file_ids)
+        )
+        return set(await self.session.scalars(stmt))
 
     async def crew_name(self, closure: WorkOrderClosure) -> str | None:
         """La escuadrilla de la última asignación anterior al cierre: la que lo hizo."""

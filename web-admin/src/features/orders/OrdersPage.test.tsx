@@ -123,6 +123,7 @@ const CIERRE: ClosureDetail = {
   equipment_condition: "working_with_notes",
   not_done_reason: null,
   observation: "Revisar en un mes.",
+  photos: [],
 };
 const CANCELADA: OrderListItem = {
   ...PENDIENTE,

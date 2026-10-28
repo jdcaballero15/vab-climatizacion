@@ -467,10 +467,31 @@ def test_migracion_del_cierre_es_reversible() -> None:
             "equipment_condition",
             "not_done_reason",
             "work_order_closure",
+            "work_order_closure_photo",
             "work_order_closure_task",
             "work_order_closure_technician",
         ]
         command.downgrade(cfg, "a1f3c5e7b902")
         assert _names(objetos) == []
+    finally:
+        command.downgrade(cfg, "base")
+
+
+def test_migraciones_de_archivos_y_fotos_son_reversibles() -> None:
+    """E00-09 y E05-06: stored_file y las fotos del cierre se crean y se deshacen."""
+    cfg = _alembic_config()
+    _reset_database()
+
+    tablas = (
+        "SELECT tablename FROM pg_tables "
+        "WHERE tablename IN ('stored_file', 'work_order_closure_photo')"
+    )
+    command.upgrade(cfg, "head")
+    try:
+        assert _names(tablas) == ["stored_file", "work_order_closure_photo"]
+        command.downgrade(cfg, "e2a7c9d4f816")
+        assert _names(tablas) == ["stored_file"]
+        command.downgrade(cfg, "d9f1b3a7c520")
+        assert _names(tablas) == []
     finally:
         command.downgrade(cfg, "base")

@@ -3,10 +3,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.deps import SessionDep, require_role
+from app.api.deps import SessionDep, StorageDep, require_role
 from app.api.schemas.files import DownloadOut, FileOut, UploadOut, UploadRequest
 from app.core.config import get_settings
-from app.core.storage import ObjectStorage, get_storage
 from app.db.models.stored_file import StoredFile
 from app.db.models.user import User, UserRole
 from app.services import files as files_service
@@ -16,7 +15,6 @@ router = APIRouter(prefix="/files", tags=["archivos"])
 AnyRole = Annotated[
     User, Depends(require_role(UserRole.admin, UserRole.technician, UserRole.owner))
 ]
-StorageDep = Annotated[ObjectStorage, Depends(get_storage)]
 
 
 @router.post("", response_model=UploadOut, status_code=status.HTTP_201_CREATED)

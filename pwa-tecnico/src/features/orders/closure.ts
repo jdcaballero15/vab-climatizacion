@@ -124,5 +124,7 @@ export function toClosurePayload(draft: ClosureDraft, idempotencyKey: string): C
     equipment_condition: outcome === "not_done" ? null : draft.equipmentCondition,
     not_done_reason: outcome === "not_done" ? draft.notDoneReason : null,
     observation: text(draft.observation),
+    // Las fotos las suma la PWA en el PR siguiente de E05-06.
+    photo_ids: [],
   };
 }

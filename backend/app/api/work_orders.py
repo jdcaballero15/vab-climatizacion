@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.deps import SessionDep, require_role
+from app.api.deps import SessionDep, StorageDep, require_role
 from app.api.schemas.closure import ClosureAdminOut
 from app.api.schemas.work_order import (
     AssignmentAdminOut,
@@ -214,10 +214,10 @@ async def cancel_work_order(
 
 @router.get("/{order_id}/closure", response_model=ClosureAdminOut)
 async def get_work_order_closure(
-    order_id: uuid.UUID, session: SessionDep, _: AdminOnly
+    order_id: uuid.UUID, session: SessionDep, storage: StorageDep, _: AdminOnly
 ) -> ClosureAdminOut:
     try:
-        return await closures_service.get_last_closure(session, order_id)
+        return await closures_service.get_last_closure(session, storage, order_id)
     except work_orders_service.WorkOrderNotFoundError:
         raise _error(404, "order_not_found", "No se encontró la orden.") from None
     except closures_service.ClosureNotFoundError:

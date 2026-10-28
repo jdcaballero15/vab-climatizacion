@@ -12,19 +12,24 @@ from app.api.schemas.closure import (
     ClosureChoiceTechnicianOut,
     ClosureCreate,
     ClosureOptionsTechnicianOut,
+    ClosurePhotoAdminOut,
     ClosureTechnicianOut,
     FailureChoiceTechnicianOut,
 )
+from app.core.storage import ObjectStorage
 from app.db.models.catalog import Failure, Repair
+from app.db.models.stored_file import StoredFile
 from app.db.models.user import User
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderClosure,
+    WorkOrderClosurePhoto,
     WorkOrderClosureTask,
     WorkOrderClosureTechnician,
 )
 from app.db.repositories.catalog import FailureRepository, RepairRepository
 from app.db.repositories.crew import FieldTechnicianRepository
+from app.db.repositories.stored_file import StoredFileRepository
 from app.db.repositories.work_order import WorkOrderClosureRepository, WorkOrderRepository
 from app.domain.work_order import (
     NOT_DONE_REASON_LABELS,
@@ -54,6 +59,8 @@ class IdempotencyKeyReusedError(Exception):
 class ClosureNotFoundError(Exception):
     """La orden todavía no tiene un cierre de la escuadrilla."""
 
+
+MAX_PHOTOS = 5
 
 # Estado en que queda la orden según el resultado (máquina de estados, E05-08).
 _STATUS_AFTER = {
@@ -106,6 +113,7 @@ async def close_order(
     order, equipment_type_id = await _order_in_progress(session, user, order_id)
     outcome = ClosureOutcome(data.outcome)
     await _validate(session, order, equipment_type_id, outcome, data)
+    await _validate_photos(session, user, data.photo_ids)
 
     action = (
         OrderAction.close_done if outcome == ClosureOutcome.done else OrderAction.request_revisit
@@ -148,6 +156,10 @@ async def close_order(
             WorkOrderClosureTask(closure_id=closure.id, task_id=task_id)
             for task_id in dict.fromkeys(data.task_ids)
         ]
+        + [
+            WorkOrderClosurePhoto(closure_id=closure.id, file_id=file_id, position=position)
+            for position, file_id in enumerate(data.photo_ids)
+        ]
     )
     try:
         await session.commit()
@@ -163,8 +175,13 @@ async def close_order(
     return _out(closure), True
 
 
-async def get_last_closure(session: AsyncSession, order_id: uuid.UUID) -> ClosureAdminOut:
-    """El último cierre de la orden, con nombres en lugar de ids (E04-08, criterio 1)."""
+async def get_last_closure(
+    session: AsyncSession, storage: ObjectStorage, order_id: uuid.UUID
+) -> ClosureAdminOut:
+    """El último cierre de la orden, con nombres en lugar de ids (E04-08, criterio 1).
+
+    Las fotos vienen con URL firmada de corta duración (E05-06, criterio 6).
+    """
     await work_orders_service.get_work_order(session, order_id)
     repo = WorkOrderClosureRepository(session)
     closure = await repo.last_for_order(order_id)
@@ -185,6 +202,14 @@ async def get_last_closure(session: AsyncSession, order_id: uuid.UUID) -> Closur
         equipment_condition=closure.equipment_condition,
         not_done_reason=closure.not_done_reason,
         observation=closure.observation,
+        photos=[
+            ClosurePhotoAdminOut(
+                id=photo.id,
+                content_type=photo.content_type,
+                url=storage.download_url(photo.object_key),
+            )
+            for photo in await repo.photos(closure.id)
+        ],
     )
 
 
@@ -328,6 +353,35 @@ async def _validate(
     if needs_observation and data.observation is None:
         raise ClosureValidationError(
             "observation_required", "observation", "Escribí una observación."
+        )
+
+
+async def _validate_photos(session: AsyncSession, user: User, photo_ids: list[uuid.UUID]) -> None:
+    """Fotos del mismo usuario, ya confirmadas y sin usar en otro cierre (E05-06, criterio 4)."""
+    if not photo_ids:
+        return
+    if len(photo_ids) > MAX_PHOTOS:
+        raise ClosureValidationError(
+            "too_many_photos", "photo_ids", f"Se pueden adjuntar hasta {MAX_PHOTOS} fotos."
+        )
+    if len(set(photo_ids)) != len(photo_ids):
+        raise ClosureValidationError("photo_repeated", "photo_ids", "Hay una foto repetida.")
+
+    files = StoredFileRepository(session)
+    for file_id in photo_ids:
+        file: StoredFile | None = await files.get(file_id)
+        if (
+            file is None
+            or file.purpose != "closure_photo"
+            or file.uploaded_by != user.id
+            or file.confirmed_at is None
+        ):
+            raise ClosureValidationError(
+                "photo_not_available", "photo_ids", "Una de las fotos no se subió bien."
+            )
+    if await WorkOrderClosureRepository(session).used_photo_ids(photo_ids):
+        raise ClosureValidationError(
+            "photo_already_used", "photo_ids", "Una de las fotos ya está en otro cierre."
         )
 
 

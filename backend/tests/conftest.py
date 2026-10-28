@@ -21,3 +21,11 @@ async def _dispose_engine() -> AsyncGenerator[None, None]:
     from app.db.session import engine
 
     await engine.dispose()
+
+
+@pytest.fixture(scope="session")
+def bucket() -> None:
+    """El bucket S3 compatible real (MinIO en local y en el CI), como la base: sin mocks."""
+    from app.core.storage import get_storage
+
+    get_storage().ensure_bucket()

@@ -4,21 +4,25 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient, Response
 from sqlalchemy import text
 
 from app.core.security import create_access_token
+from app.core.storage import get_storage
 from app.db.models.catalog import EquipmentType, Failure, Repair, Task, WorkType
 from app.db.models.client import Client, ClientContact, ClientSite
 from app.db.models.crew import Crew, FieldTechnician
 from app.db.models.equipment import Equipment
+from app.db.models.stored_file import StoredFile
 from app.db.models.user import User, UserRole
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
     WorkOrderCancellation,
     WorkOrderClosure,
+    WorkOrderClosurePhoto,
     WorkOrderClosureTask,
     WorkOrderClosureTechnician,
     WorkOrderEvent,
@@ -55,6 +59,8 @@ TABLES = [
     WorkOrderClosureTechnician.__table__,
     WorkOrderClosureTask.__table__,
     WorkOrderCancellation.__table__,
+    StoredFile.__table__,
+    WorkOrderClosurePhoto.__table__,
 ]
 ORDERS_URL = "/admin/orders"
 AYER = datetime.now(UTC) - timedelta(days=1)
@@ -244,7 +250,51 @@ async def test_cierre_con_todo_lo_que_cargo_la_escuadrilla(mundo: Mundo) -> None
         "equipment_condition": "working_with_notes",
         "not_done_reason": None,
         "observation": "Revisar en un mes.",
+        "photos": [],
     }
+
+
+# E05-06, criterio 6: la administración ve las fotos del cierre con URLs firmadas.
+@pytest.mark.usefixtures("bucket")
+async def test_cierre_con_fotos_trae_urls_firmadas_que_funcionan(mundo: Mundo) -> None:
+    m = mundo
+    orden = await _orden(m, OrderStatus.done)
+    await _cierre(m, orden)
+    contenidos = [b"\xff\xd8primera", b"\xff\xd8segunda"]
+    fotos = []
+    storage = get_storage()
+    for contenido in contenidos:
+        foto = StoredFile(
+            purpose="closure_photo",
+            object_key=f"closures/photos/{uuid.uuid4()}",
+            content_type="image/jpeg",
+            size_bytes=len(contenido),
+            uploaded_by=m.celular.id,
+            confirmed_at=AYER,
+        )
+        url = storage.upload_url(foto.object_key, foto.content_type, foto.size_bytes)
+        async with httpx.AsyncClient() as bucket_client:
+            subida = await bucket_client.put(
+                url, content=contenido, headers={"Content-Type": "image/jpeg"}
+            )
+        assert subida.status_code == 200
+        fotos.append(foto)
+    await _seed(fotos)
+    async with SessionLocal() as session:
+        closure_id = (await session.execute(text("select id from work_order_closure"))).scalar()
+    await _seed(
+        [
+            WorkOrderClosurePhoto(closure_id=closure_id, file_id=foto.id, position=i)
+            for i, foto in enumerate(fotos)
+        ]
+    )
+
+    body = (await _get(m.admin, f"{ORDERS_URL}/{orden.id}/closure")).json()
+
+    assert [p["id"] for p in body["photos"]] == [str(f.id) for f in fotos]
+    async with httpx.AsyncClient() as bucket_client:
+        descargas = [await bucket_client.get(p["url"]) for p in body["photos"]]
+    assert [d.content for d in descargas] == contenidos
 
 
 async def test_devuelve_el_ultimo_cierre(mundo: Mundo) -> None:

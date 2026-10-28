@@ -238,6 +238,7 @@ describe("ClosurePage", () => {
       equipment_condition: "working",
       not_done_reason: null,
       observation: null,
+      photo_ids: [],
     });
   });
 
