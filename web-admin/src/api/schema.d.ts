@@ -726,6 +726,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tech/orders/done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List My Done Orders */
+        get: operations["list_my_done_orders_tech_orders_done_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tech/orders/{order_id}": {
         parameters: {
             query?: never;
@@ -1239,6 +1256,12 @@ export interface components {
             /** App User Id */
             app_user_id?: string | null;
         };
+        /** CrewDoneOrdersTechnicianOut */
+        CrewDoneOrdersTechnicianOut: {
+            crew: components["schemas"]["CrewTechnicianOut"] | null;
+            /** Orders */
+            orders: components["schemas"]["DoneOrderTechnicianOut"][];
+        };
         /** CrewOrdersTechnicianOut */
         CrewOrdersTechnicianOut: {
             crew: components["schemas"]["CrewTechnicianOut"] | null;
@@ -1296,6 +1319,34 @@ export interface components {
              * Format: date
              */
             scheduled_for: string;
+        };
+        /**
+         * DoneOrderTechnicianOut
+         * @description Un cierre de la escuadrilla en "Hechas esta semana" (E05-14): solo el resultado.
+         */
+        DoneOrderTechnicianOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            /** Work Type Name */
+            work_type_name: string;
+            /** Description */
+            description: string | null;
+            /** Client Name */
+            client_name: string;
+            /** Address */
+            address: string;
+            outcome: components["schemas"]["ClosureOutcome"];
+            not_done_reason: components["schemas"]["NotDoneReason"] | null;
+            /**
+             * Closed At
+             * Format: date-time
+             */
+            closed_at: string;
         };
         /** DownloadOut */
         DownloadOut: {
@@ -4057,6 +4108,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CrewOrdersTechnicianOut"];
+                };
+            };
+        };
+    };
+    list_my_done_orders_tech_orders_done_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrewDoneOrdersTechnicianOut"];
                 };
             };
         };

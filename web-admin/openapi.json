@@ -3252,6 +3252,32 @@
         ]
       }
     },
+    "/tech/orders/done": {
+      "get": {
+        "tags": [
+          "app del técnico"
+        ],
+        "summary": "List My Done Orders",
+        "operationId": "list_my_done_orders_tech_orders_done_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrewDoneOrdersTechnicianOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/tech/orders/{order_id}": {
       "get": {
         "tags": [
@@ -4785,6 +4811,33 @@
         ],
         "title": "CrewCreate"
       },
+      "CrewDoneOrdersTechnicianOut": {
+        "properties": {
+          "crew": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CrewTechnicianOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/DoneOrderTechnicianOut"
+            },
+            "type": "array",
+            "title": "Orders"
+          }
+        },
+        "type": "object",
+        "required": [
+          "crew",
+          "orders"
+        ],
+        "title": "CrewDoneOrdersTechnicianOut"
+      },
       "CrewOrdersTechnicianOut": {
         "properties": {
           "crew": {
@@ -4924,6 +4977,74 @@
         ],
         "title": "CurrentAssignmentOut",
         "description": "Escuadrilla y fecha prevista de una orden Asignada o En curso."
+      },
+      "DoneOrderTechnicianOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "work_type_name": {
+            "type": "string",
+            "title": "Work Type Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/ClosureOutcome"
+          },
+          "not_done_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NotDoneReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "closed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Closed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "work_type_name",
+          "description",
+          "client_name",
+          "address",
+          "outcome",
+          "not_done_reason",
+          "closed_at"
+        ],
+        "title": "DoneOrderTechnicianOut",
+        "description": "Un cierre de la escuadrilla en \"Hechas esta semana\" (E05-14): solo el resultado."
       },
       "DownloadOut": {
         "properties": {

@@ -29,6 +29,8 @@ from app.domain.work_order import CREW_OPEN_STATUSES, OrderStatus, WorkOrderEven
 # Orden abierta de una escuadrilla: orden, fecha prevista, cliente, domicilio, tipo de
 # trabajo, equipo y nombre de su tipo (estos dos, nulos sin equipo).
 type OpenCrewOrderRow = Row[WorkOrder, date, str, ClientSite, str, Equipment | None, str | None]
+# Cierre de una escuadrilla: el cierre, su orden, tipo de trabajo, cliente y dirección.
+type CrewClosureRow = Row[WorkOrderClosure, WorkOrder, str, str, str]
 # Orden en un estado: orden, fecha de creación, cliente, rótulo y dirección del domicilio,
 # tipo de trabajo, su último cierre; fecha, escuadrilla (nombre e id) y fecha prevista de
 # su última asignación; su cancelación y quién canceló (nulos si no tiene).
@@ -193,6 +195,43 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         )
         if order_id is not None:
             stmt = stmt.where(self.model.id == order_id)
+        result = await self.session.execute(stmt)
+        return result.all()
+
+    async def list_closures_for_crew(
+        self, crew_id: uuid.UUID, *, since: datetime
+    ) -> Sequence[CrewClosureRow]:
+        """Cierres de la escuadrilla desde `since`, el más reciente primero (E05-14).
+
+        La escuadrilla de un cierre es la de la última asignación anterior a él, como en
+        `crew_name`: cuenta el cierre aunque después la orden se reasigne o se cancele.
+        """
+        closure_crew = (
+            select(WorkOrderAssignment.crew_id)
+            .where(
+                WorkOrderAssignment.work_order_id == WorkOrderClosure.work_order_id,
+                WorkOrderAssignment.assigned_at <= WorkOrderClosure.closed_at,
+                WorkOrderAssignment.deleted_at.is_(None),
+            )
+            .order_by(WorkOrderAssignment.assigned_at.desc())
+            .limit(1)
+            .correlate(WorkOrderClosure)
+            .scalar_subquery()
+        )
+        stmt = (
+            select(WorkOrderClosure, self.model, WorkType.name, Client.name, ClientSite.address)
+            .join(self.model, self.model.id == WorkOrderClosure.work_order_id)
+            .join(WorkType, WorkType.id == self.model.work_type_id)
+            .join(Client, Client.id == self.model.client_id)
+            .join(ClientSite, ClientSite.id == self.model.client_site_id)
+            .where(
+                WorkOrderClosure.closed_at >= since,
+                WorkOrderClosure.deleted_at.is_(None),
+                self.model.deleted_at.is_(None),
+                closure_crew == crew_id,
+            )
+            .order_by(WorkOrderClosure.closed_at.desc())
+        )
         result = await self.session.execute(stmt)
         return result.all()
 
