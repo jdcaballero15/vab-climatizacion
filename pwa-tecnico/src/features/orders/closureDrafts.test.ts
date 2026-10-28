@@ -36,6 +36,7 @@ function stored(overrides: Partial<StoredClosure> = {}): StoredClosure {
         uploaded: false,
       },
     ],
+    signature: null,
     ...overrides,
   };
 }
@@ -104,6 +105,45 @@ describe("closureDrafts", () => {
   });
 
   // Criterio 8: solo lo que carga el técnico. Nada de precios, mano de obra ni historial.
+  // E05-07, criterio 5: la firma trazada viaja en el borrador con el nombre o el motivo.
+  it("guarda la firma con el nombre de quien firma", async () => {
+    const signature = {
+      key: "firma",
+      blob: new Blob(["png"], { type: "image/png" }),
+      fileId: null,
+      uploaded: false,
+    };
+    await saveClosureDraft(
+      stored({ signature, draft: { ...stored().draft, signerName: "Rosa Ficticia" } }),
+    );
+
+    const loaded = await loadClosureDraft(CELULAR1, ORDER);
+
+    expect(loaded?.signature).toMatchObject({ key: "firma", fileId: null, uploaded: false });
+    expect(loaded?.signature?.blob.size).toBe(3);
+    expect(loaded?.draft.signerName).toBe("Rosa Ficticia");
+  });
+
+  it("un borrador guardado antes de la firma vuelve sin firma ni motivo", async () => {
+    const old = { ...stored(), draft: { ...stored().draft } } as Record<string, unknown> & {
+      draft: Record<string, unknown>;
+    };
+    delete old.signature;
+    delete old.draft.signerName;
+    delete old.draft.noSignatureReason;
+    delete old.draft.noSignatureText;
+    await saveClosureDraft(old as unknown as StoredClosure);
+
+    const loaded = await loadClosureDraft(CELULAR1, ORDER);
+
+    expect(loaded?.signature).toBeNull();
+    expect(loaded?.draft).toMatchObject({
+      signerName: "",
+      noSignatureReason: null,
+      noSignatureText: "",
+    });
+  });
+
   it("guarda solo los campos del cierre aunque reciba otros", async () => {
     const extra = {
       ...stored(),
@@ -113,6 +153,7 @@ describe("closureDrafts", () => {
       order: { ...stored().order, address: "Calle 1", price: 1000 },
       draft: { ...stored().draft, price: 1000 },
       photos: [{ ...stored().photos[0], previewUrl: "blob:preview" }],
+      signature: { ...stored().photos[0], key: "firma", previewUrl: "blob:firma" },
     } as unknown as StoredClosure;
     await saveClosureDraft(extra);
 
@@ -126,6 +167,7 @@ describe("closureDrafts", () => {
         "orderId",
         "photos",
         "problem",
+        "signature",
         "status",
         "userId",
       ].sort(),

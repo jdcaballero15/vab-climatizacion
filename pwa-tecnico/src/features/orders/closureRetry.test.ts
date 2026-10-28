@@ -24,6 +24,7 @@ function stored(orderId: string, status: ClosureState): StoredClosure {
     },
     idempotencyKey: `clave-${orderId}`,
     photos: [],
+    signature: null,
   };
 }
 

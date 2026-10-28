@@ -7,7 +7,7 @@ import {
   type ClosureProblem,
   type StoredClosure,
 } from "./closureDrafts";
-import { PhotoUploadError, uploadPhotos } from "./photos";
+import { PhotoUploadError, SIGNATURE, uploadOne, uploadPhotos } from "./photos";
 
 type Closure = components["schemas"]["ClosureTechnicianOut"];
 
@@ -76,9 +76,28 @@ async function send(start: StoredClosure): Promise<SendResult> {
     return { kind: "offline" };
   }
 
+  // E05-07: con un motivo elegido, el trazo queda en el celular pero no se sube.
+  let signatureId: string | null = null;
+  const signature = closure.draft.noSignatureReason === null ? closure.signature : null;
+  if (signature) {
+    try {
+      signatureId = await uploadOne(
+        signature,
+        (_key, changes) =>
+          void persist({ signature: { ...(closure.signature ?? signature), ...changes } }),
+        SIGNATURE,
+      );
+    } catch (error) {
+      if (error instanceof PhotoUploadError && !error.offline) {
+        return invalid({ field: "signature", message: error.message });
+      }
+      return { kind: "offline" };
+    }
+  }
+
   let result: Awaited<ReturnType<typeof postClosure>>;
   try {
-    result = await postClosure(closure, photoIds);
+    result = await postClosure(closure, photoIds, signatureId);
   } catch {
     return { kind: "offline" };
   }
@@ -101,6 +120,10 @@ async function send(start: StoredClosure): Promise<SendResult> {
       // La API no acepta alguna foto: el próximo envío las sube de nuevo.
       changes.photos = closure.photos.map((photo) => ({ ...photo, fileId: null, uploaded: false }));
     }
+    if (detail.field === "signature" && closure.signature) {
+      // La API no acepta la firma subida: el próximo envío la sube de nuevo.
+      changes.signature = { ...closure.signature, fileId: null, uploaded: false };
+    }
     return invalid(
       { field: detail.field ?? "", message: detail.message ?? "Revisá los datos del cierre." },
       changes,
@@ -109,9 +132,9 @@ async function send(start: StoredClosure): Promise<SendResult> {
   return { kind: "offline" };
 }
 
-function postClosure(closure: StoredClosure, photoIds: string[]) {
+function postClosure(closure: StoredClosure, photoIds: string[], signatureId: string | null) {
   return api.POST("/tech/orders/{order_id}/closure", {
     params: { path: { order_id: closure.orderId } },
-    body: toClosurePayload(closure.draft, closure.idempotencyKey, photoIds),
+    body: toClosurePayload(closure.draft, closure.idempotencyKey, photoIds, signatureId),
   });
 }

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -141,9 +141,11 @@ function saved(overrides: Partial<StoredClosure> = {}): StoredClosure {
       repair: REPAIR,
       equipmentCondition: "working",
       observation: "Filtro sucio",
+      noSignatureReason: "refused",
     },
     idempotencyKey: "7c000000-0000-4000-8000-000000000001",
     photos: [],
+    signature: null,
     ...overrides,
   };
 }
@@ -181,6 +183,7 @@ async function fillResolved() {
   await user.selectOptions(screen.getByRole("combobox", { name: /Falla/ }), "No enfría");
   await user.selectOptions(screen.getByRole("combobox", { name: /Reparación/ }), "Carga de gas");
   await click("Funcionando bien");
+  await click("No quiso firmar");
 }
 
 beforeEach(() => {
@@ -191,6 +194,8 @@ beforeEach(() => {
   // jsdom no trae estas dos funciones.
   URL.createObjectURL = vi.fn(() => `blob:preview-${++previews}`);
   URL.revokeObjectURL = vi.fn();
+  // jsdom no tiene canvas: sin contexto, el lienzo de la firma no dibuja.
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -282,6 +287,7 @@ describe("ClosurePage", () => {
     await user.click(await screen.findByRole("button", { name: "Ana Ficticia" }));
     await click("Resuelta");
     await click("Funcionando bien");
+    await click("No quiso firmar");
     await click("Finalizar orden");
 
     expect(await screen.findByRole("heading", { name: /Lista/ })).toBeInTheDocument();
@@ -314,6 +320,9 @@ describe("ClosurePage", () => {
       not_done_reason: null,
       observation: null,
       photo_ids: [],
+      signature: null,
+      no_signature_reason: "refused",
+      no_signature_text: null,
     });
   });
 
@@ -326,6 +335,7 @@ describe("ClosurePage", () => {
     await user.selectOptions(screen.getByRole("combobox", { name: /Falla/ }), "Otro");
     await user.selectOptions(screen.getByRole("combobox", { name: /Reparación/ }), "Otro");
     await click("Funcionando bien");
+    await click("No quiso firmar");
     await click("Finalizar orden");
 
     const missing = screen.getByRole("alert");
@@ -369,6 +379,7 @@ describe("ClosurePage", () => {
     await user.click(await screen.findByRole("button", { name: "Ana Ficticia" }));
     await click("Requiere otra visita");
     await click("Funcionando bien");
+    await click("No quiso firmar");
     await click("Finalizar orden");
 
     expect(screen.getByRole("alert")).toHaveTextContent("Escribí qué falta.");
@@ -822,5 +833,172 @@ describe("ClosurePage", () => {
       "Uno de los técnicos no está activo.",
     );
     expect(document.getElementById("closure-technicians")).toHaveClass("closure__section--invalid");
+  });
+});
+
+// E05-07: firma del cliente o motivo por el que no hay.
+describe("ClosurePage, firma del cliente", () => {
+  const PAD = "Espacio para la firma del cliente";
+  const NAME = "Aclaración (nombre de quien firma)";
+
+  // En jsdom no hay canvas: se simula el contexto y el PNG que exporta.
+  function fakeCanvas() {
+    const context = {
+      clearRect: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      drawImage: vi.fn(),
+    };
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      context as unknown as CanvasRenderingContext2D,
+    );
+    vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((done) =>
+      done(new Blob(["firma"], { type: "image/png" })),
+    );
+  }
+
+  function sign() {
+    const pad = screen.getByRole("img", { name: PAD });
+    fireEvent.pointerDown(pad, { clientX: 10, clientY: 10, pointerId: 1 });
+    fireEvent.pointerMove(pad, { clientX: 40, clientY: 20, pointerId: 1 });
+    fireEvent.pointerUp(pad, { clientX: 40, clientY: 20, pointerId: 1 });
+  }
+
+  /** Un cierre resuelto completo, sin firma ni motivo. */
+  async function fillUnsigned() {
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+    await fillResolved();
+    // Volver a tocar el motivo lo deselecciona.
+    await click("No quiso firmar");
+  }
+
+  // Criterio 2.
+  it("sin firma ni motivo no envía y lo pide", async () => {
+    const sent = stubApi();
+    renderClosure();
+    await fillUnsigned();
+
+    await click("Finalizar orden");
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Pedile la firma al cliente o elegí por qué no firma.",
+    );
+    expect(document.activeElement).toHaveAttribute("id", "closure-signature");
+    expect(sent).toEqual([]);
+  });
+
+  // Criterios 1, 3 y 5.
+  it("firma con el dedo, pide el nombre y sube la firma con el cierre", async () => {
+    fakeCanvas();
+    const sent = stubApi();
+    renderClosure();
+    await fillUnsigned();
+
+    sign();
+    expect(await screen.findByRole("img", { name: "Firma del cliente" })).toBeInTheDocument();
+    expect(storedFor(USER_ID, ORDER_ID)?.signature?.blob.type).toBe("image/png");
+
+    await click("Finalizar orden");
+    expect(screen.getByRole("alert")).toHaveTextContent("Escribí el nombre de quien firma.");
+    expect(sent).toEqual([]);
+
+    await user.type(screen.getByRole("textbox", { name: NAME }), "Rosa Ficticia");
+    await click("Finalizar orden");
+
+    await screen.findByRole("heading", { name: /Lista/ });
+    expect(calls).toEqual([
+      "POST /api/files",
+      "PUT bucket",
+      expect.stringMatching(/confirm$/),
+      "POST closure",
+    ]);
+    expect(sent[0]).toMatchObject({
+      signature: { file_id: "f0000000-0000-4000-8000-000000000001", signer_name: "Rosa Ficticia" },
+      no_signature_reason: null,
+      no_signature_text: null,
+    });
+  });
+
+  // Criterio 5: "Borrar" limpia para firmar de nuevo.
+  it("borrar limpia la firma", async () => {
+    fakeCanvas();
+    stubApi();
+    renderClosure();
+    await fillUnsigned();
+    sign();
+    await screen.findByRole("img", { name: "Firma del cliente" });
+
+    await click("Borrar");
+
+    expect(screen.getByRole("img", { name: PAD })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Borrar" })).toBeDisabled();
+    expect(storedFor(USER_ID, ORDER_ID)?.signature).toBeNull();
+  });
+
+  // Criterio 5: la firma vuelve con el borrador.
+  it("al volver a entrar recupera la firma y el nombre", async () => {
+    memory.set(
+      `${USER_ID}/${ORDER_ID}`,
+      saved({
+        draft: { ...saved().draft, noSignatureReason: null, signerName: "Rosa Ficticia" },
+        signature: {
+          key: "firma",
+          blob: new Blob(["firma"], { type: "image/png" }),
+          fileId: null,
+          uploaded: false,
+        },
+      }),
+    );
+    stubApi();
+    renderClosure();
+
+    expect(await screen.findByRole("img", { name: "Firma del cliente" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: NAME })).toHaveValue("Rosa Ficticia");
+  });
+
+  // Criterio 4.
+  it("con cliente ausente el motivo ya viene elegido y se puede cambiar", async () => {
+    stubApi();
+    renderClosure();
+    await user.click(await screen.findByRole("button", { name: "Cliente ausente o sin acceso" }));
+
+    expect(screen.getByRole("button", { name: "Cliente ausente" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.queryByRole("img", { name: PAD })).not.toBeInTheDocument();
+
+    await click("No quiso firmar");
+    expect(screen.getByRole("button", { name: "Cliente ausente" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByRole("button", { name: "No quiso firmar" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  // Criterio 2: "Otro" pide el texto.
+  it('con "Otro" pide por qué no firma y lo manda', async () => {
+    const sent = stubApi();
+    renderClosure();
+    await fillUnsigned();
+    await click("Otro");
+
+    await click("Finalizar orden");
+    expect(screen.getByRole("alert")).toHaveTextContent("Escribí por qué no firma.");
+
+    await user.type(screen.getByRole("textbox", { name: "¿Por qué no firma?" }), "Se fue antes");
+    await click("Finalizar orden");
+
+    await screen.findByRole("heading", { name: /Lista/ });
+    expect(sent[0]).toMatchObject({
+      signature: null,
+      no_signature_reason: "other",
+      no_signature_text: "Se fue antes",
+    });
   });
 });

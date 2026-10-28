@@ -34,3 +34,12 @@ export const EQUIPMENT_CONDITIONS: [EquipmentCondition, string][] = [
   ["working_with_notes", "Funciona con observaciones"],
   ["not_working", "No funciona"],
 ];
+
+type NoSignatureReason = components["schemas"]["NoSignatureReason"];
+
+/** Por qué no hay firma del cliente (E05-07, D-011). */
+export const NO_SIGNATURE_REASONS: [NoSignatureReason, string][] = [
+  ["client_absent", "Cliente ausente"],
+  ["refused", "No quiso firmar"],
+  ["other", "Otro"],
+];

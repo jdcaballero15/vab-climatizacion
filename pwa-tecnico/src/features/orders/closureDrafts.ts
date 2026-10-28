@@ -16,6 +16,9 @@ export interface StoredPhoto {
   uploaded: boolean;
 }
 
+/** La firma del cliente (E05-07): el PNG del lienzo, que se sube como una foto. */
+export type StoredSignature = StoredPhoto;
+
 /**
  * Borrador que se está cargando, cierre pendiente de enviar (se reintenta solo) o cierre
  * que el servidor rechazó porque la orden ya no está en curso (E05-13, criterios 3 y 6).
@@ -44,6 +47,7 @@ export interface StoredClosure {
   draft: ClosureDraft;
   idempotencyKey: string;
   photos: StoredPhoto[];
+  signature: StoredSignature | null;
 }
 
 /**
@@ -72,6 +76,10 @@ function pick(closure: StoredClosure): StoredClosure {
       repairOther: draft.repairOther,
       equipmentCondition: draft.equipmentCondition,
       observation: draft.observation,
+      // Los guardados antes de la firma (E05-07) no tienen estos campos.
+      signerName: draft.signerName ?? "",
+      noSignatureReason: draft.noSignatureReason ?? null,
+      noSignatureText: draft.noSignatureText ?? "",
     },
     idempotencyKey: closure.idempotencyKey,
     photos: closure.photos.map(({ key, blob, fileId, uploaded }) => ({
@@ -80,6 +88,14 @@ function pick(closure: StoredClosure): StoredClosure {
       fileId,
       uploaded,
     })),
+    signature: closure.signature
+      ? {
+          key: closure.signature.key,
+          blob: closure.signature.blob,
+          fileId: closure.signature.fileId,
+          uploaded: closure.signature.uploaded,
+        }
+      : null,
   };
 }
 

@@ -5,6 +5,7 @@ export type ClosureCreate = components["schemas"]["ClosureCreate"];
 export type ClosureOutcome = ClosureCreate["outcome"];
 export type EquipmentCondition = components["schemas"]["EquipmentCondition"];
 export type NotDoneReason = components["schemas"]["NotDoneReason"];
+export type NoSignatureReason = components["schemas"]["NoSignatureReason"];
 
 /** Valor de los selectores de falla y reparación para "Otro" (no es del catálogo). */
 export const OTHER = "__other__";
@@ -23,6 +24,11 @@ export interface ClosureDraft {
   repairOther: string;
   equipmentCondition: EquipmentCondition | null;
   observation: string;
+  /** Aclaración de quien firma (E05-07). El trazo viaja aparte, como las fotos. */
+  signerName: string;
+  /** Por qué no hay firma. Con un motivo elegido, el trazo no se manda. */
+  noSignatureReason: NoSignatureReason | null;
+  noSignatureText: string;
 }
 
 export const EMPTY_DRAFT: ClosureDraft = {
@@ -36,6 +42,9 @@ export const EMPTY_DRAFT: ClosureDraft = {
   repairOther: "",
   equipmentCondition: null,
   observation: "",
+  signerName: "",
+  noSignatureReason: null,
+  noSignatureText: "",
 };
 
 /** Campos que se marcan en el formulario. Los de la API coinciden con su `field` (422). */
@@ -50,7 +59,10 @@ export type ClosureField =
   | "repair_other_text"
   | "equipment_condition"
   | "photo_ids"
-  | "observation";
+  | "observation"
+  | "signature"
+  | "signer_name"
+  | "no_signature_text";
 
 export type ClosureErrors = Partial<Record<ClosureField, string>>;
 
@@ -102,8 +114,15 @@ export function restoreDraft(saved: ClosureDraft, options: ClosureOptions): Clos
   return restored;
 }
 
-/** Lo que falta para cerrar, con las mismas reglas que la API (services/closures.py). */
-export function missingFields(draft: ClosureDraft, options: ClosureOptions): ClosureErrors {
+/**
+ * Lo que falta para cerrar, con las mismas reglas que la API (services/closures.py).
+ * `signed`: hay un trazo de firma en el lienzo.
+ */
+export function missingFields(
+  draft: ClosureDraft,
+  options: ClosureOptions,
+  signed = false,
+): ClosureErrors {
   const errors: ClosureErrors = {};
   if (draft.technicianIds.length === 0) {
     errors.technician_ids = "Tildá quiénes fueron.";
@@ -129,14 +148,28 @@ export function missingFields(draft: ClosureDraft, options: ClosureOptions): Clo
     errors.observation =
       draft.outcome === "needs_revisit" ? "Escribí qué falta." : "Escribí una observación.";
   }
+  // E05-07, criterios 2 y 3: la firma con su nombre, o el motivo por el que no hay.
+  if (draft.noSignatureReason === null) {
+    if (!signed) {
+      errors.signature = "Pedile la firma al cliente o elegí por qué no firma.";
+    } else if (!draft.signerName.trim()) {
+      errors.signer_name = "Escribí el nombre de quien firma.";
+    }
+  } else if (draft.noSignatureReason === "other" && !draft.noSignatureText.trim()) {
+    errors.no_signature_text = "Escribí por qué no firma.";
+  }
   return errors;
 }
 
-/** Arma el pedido de cierre. Solo se llama con un borrador sin faltantes y las fotos subidas. */
+/**
+ * Arma el pedido de cierre. Solo se llama con un borrador sin faltantes y las fotos y la
+ * firma subidas. Con un motivo elegido va el motivo, aunque haya un trazo en el lienzo.
+ */
 export function toClosurePayload(
   draft: ClosureDraft,
   idempotencyKey: string,
   photoIds: string[] = [],
+  signatureFileId: string | null = null,
 ): ClosureCreate {
   const outcome = draft.outcome ?? "done";
   const pick = (value: string) => (value === "" || value === OTHER ? null : value);
@@ -154,5 +187,25 @@ export function toClosurePayload(
     not_done_reason: outcome === "not_done" ? draft.notDoneReason : null,
     observation: text(draft.observation),
     photo_ids: photoIds,
+    ...signaturePart(draft, signatureFileId),
+  };
+}
+
+function signaturePart(
+  draft: ClosureDraft,
+  fileId: string | null,
+): Pick<ClosureCreate, "signature" | "no_signature_reason" | "no_signature_text"> {
+  const reason = draft.noSignatureReason;
+  if (reason !== null || fileId === null) {
+    return {
+      signature: null,
+      no_signature_reason: reason,
+      no_signature_text: reason === "other" ? draft.noSignatureText.trim() || null : null,
+    };
+  }
+  return {
+    signature: { file_id: fileId, signer_name: draft.signerName.trim() || null },
+    no_signature_reason: null,
+    no_signature_text: null,
   };
 }

@@ -7,6 +7,16 @@ const MAX_SIDE = 1600;
 const JPEG_QUALITY = 0.8;
 const PHOTO_TYPE = "image/jpeg";
 
+/** Qué se sube: el propósito y el tipo que acepta la API para cada uno (E00-09). */
+interface FileKind {
+  purpose: "closure_photo" | "closure_signature";
+  contentType: string;
+}
+
+const PHOTO: FileKind = { purpose: "closure_photo", contentType: PHOTO_TYPE };
+/** La firma del cliente (E05-07): la API la acepta solo en PNG. */
+export const SIGNATURE: FileKind = { purpose: "closure_signature", contentType: "image/png" };
+
 /** Una foto del cierre, desde que se elige hasta que queda confirmada en el bucket. */
 export interface ClosurePhoto {
   key: string;
@@ -80,19 +90,31 @@ export async function uploadPhotos(photos: UploadablePhoto[], save: SavePhoto): 
   return ids;
 }
 
-async function uploadOne(photo: UploadablePhoto, save: SavePhoto): Promise<string> {
+/**
+ * Sube una sola imagen y devuelve su id. Mismos pasos que las fotos: si ya llegó no se
+ * vuelve a subir. Sirve para la firma del cliente con `SIGNATURE`.
+ */
+export async function uploadOne(
+  photo: UploadablePhoto,
+  save: SavePhoto,
+  kind: FileKind = PHOTO,
+): Promise<string> {
   if (photo.fileId && photo.uploaded) {
     return photo.fileId;
   }
-  const fileId = photo.fileId ?? (await sendToBucket(photo, save));
+  const fileId = photo.fileId ?? (await sendToBucket(photo, save, kind));
   await confirm(photo.key, fileId, save);
   return fileId;
 }
 
-async function sendToBucket(photo: UploadablePhoto, save: SavePhoto): Promise<string> {
+async function sendToBucket(
+  photo: UploadablePhoto,
+  save: SavePhoto,
+  kind: FileKind,
+): Promise<string> {
   const { data, error, response } = await guard(() =>
     api.POST("/files", {
-      body: { purpose: "closure_photo", content_type: PHOTO_TYPE, size_bytes: photo.blob.size },
+      body: { purpose: kind.purpose, content_type: kind.contentType, size_bytes: photo.blob.size },
     }),
   );
   if (!data) {
@@ -102,7 +124,7 @@ async function sendToBucket(photo: UploadablePhoto, save: SavePhoto): Promise<st
   const put = await guard(() =>
     globalThis.fetch(data.upload_url, {
       method: "PUT",
-      headers: { "Content-Type": PHOTO_TYPE },
+      headers: { "Content-Type": kind.contentType },
       body: photo.blob,
     }),
   );

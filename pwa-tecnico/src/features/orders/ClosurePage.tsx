@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { ClosurePhotos } from "./ClosurePhotos";
+import { SignaturePad } from "./SignaturePad";
 import {
   EMPTY_DRAFT,
   OTHER,
@@ -17,6 +18,8 @@ import {
   type ClosureErrors,
   type ClosureField,
   type ClosureOptions,
+  type NoSignatureReason,
+  type NotDoneReason,
 } from "./closure";
 import {
   deleteClosureDraft,
@@ -24,10 +27,11 @@ import {
   type ClosureProblem,
   type StoredClosure,
   type StoredOrderSummary,
+  type StoredSignature,
 } from "./closureDrafts";
 import { schedulePendingClosures } from "./closureRetry";
 import { sendClosure } from "./closureSender";
-import { EQUIPMENT_CONDITIONS, NOT_DONE_REASONS } from "./labels";
+import { EQUIPMENT_CONDITIONS, NOT_DONE_REASONS, NO_SIGNATURE_REASONS } from "./labels";
 import { MAX_PHOTOS, PhotoUploadError, compressImage, type ClosurePhoto } from "./photos";
 import { useStoredClosure } from "./useClosureDrafts";
 import { useClosureOptions } from "./useClosureOptions";
@@ -57,6 +61,9 @@ const SECTION_OF: Record<ClosureField, string> = {
   equipment_condition: "closure-equipment",
   photo_ids: "closure-photos",
   observation: "closure-observation",
+  signature: "closure-signature",
+  signer_name: "closure-signature",
+  no_signature_text: "closure-signature",
 };
 const FIELD_ORDER = Object.keys(SECTION_OF) as ClosureField[];
 
@@ -242,6 +249,7 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
       ...photo,
       previewUrl: URL.createObjectURL(photo.blob),
     })),
+    signature: stored?.signature ?? null,
   }));
   const [draft, setDraft] = useState<ClosureDraft>(initial.draft);
   const [idempotencyKey, setIdempotencyKey] = useState(initial.idempotencyKey);
@@ -252,6 +260,7 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
   const [photos, setPhotos] = useState<ClosurePhoto[]>(initial.photos);
   const [addingPhotos, setAddingPhotos] = useState(false);
   const [photoNotice, setPhotoNotice] = useState<string | null>(null);
+  const [signature, setSignature] = useState<StoredSignature | null>(initial.signature);
   const [sending, setSending] = useState(false);
 
   // Las miniaturas ocupan memoria hasta que se liberan: al salir del formulario se sueltan.
@@ -270,6 +279,7 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
     const unchanged =
       draft === initial.draft &&
       photos === initial.photos &&
+      signature === initial.signature &&
       idempotencyKey === initial.idempotencyKey;
     if (unchanged || handedOff.current) {
       return;
@@ -283,14 +293,16 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
       draft,
       idempotencyKey,
       photos,
+      signature,
     });
-  }, [userId, orderId, summary, draft, photos, idempotencyKey, serverError, initial]);
+  }, [userId, orderId, summary, draft, photos, signature, idempotencyKey, serverError, initial]);
 
   if (rejected) {
     return <RejectedClosure userId={userId} orderId={orderId} problem={rejected} />;
   }
 
-  const errors: ClosureErrors = submitted ? missingFields(draft, options) : {};
+  const signed = signature !== null;
+  const errors: ClosureErrors = submitted ? missingFields(draft, options, signed) : {};
   if (serverError && isClosureField(serverError.field) && !errors[serverError.field]) {
     errors[serverError.field] = serverError.message;
   }
@@ -350,11 +362,33 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
     });
   };
 
+  // Cada trazo es un PNG nuevo: hay que subirlo de nuevo.
+  const changeSignature = (blob: Blob | null) => {
+    setServerError(null);
+    setSignature(blob && { key: crypto.randomUUID(), blob, fileId: null, uploaded: false });
+  };
+
+  const chooseNoSignature = (reason: NoSignatureReason) =>
+    update({
+      noSignatureReason: draft.noSignatureReason === reason ? null : reason,
+      noSignatureText: "",
+    });
+
+  // E05-07, criterio 4: si el cliente no estaba, el motivo sin firma ya viene elegido.
+  const chooseNotDone = (reason: NotDoneReason) =>
+    update({
+      outcome: "not_done",
+      notDoneReason: reason,
+      ...(reason === "client_absent" && !signed && draft.noSignatureReason === null
+        ? { noSignatureReason: "client_absent" as const }
+        : {}),
+    });
+
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setSubmitted(true);
     setServerError(null);
-    const missing = missingFields(draft, options);
+    const missing = missingFields(draft, options, signed);
     if (Object.keys(missing).length > 0) {
       focusFirst(missing);
       return;
@@ -370,6 +404,7 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
       draft,
       idempotencyKey,
       photos,
+      signature,
     });
     const number = summary ? ` N° ${summary.number}` : "";
     if (result.kind === "closed") {
@@ -399,6 +434,11 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
           const match = saved.photos.find((item) => item.key === photo.key);
           return match ? { ...photo, fileId: match.fileId, uploaded: match.uploaded } : photo;
         }),
+      );
+      setSignature((current) =>
+        current && saved.signature?.key === current.key
+          ? { ...current, fileId: saved.signature.fileId, uploaded: saved.signature.uploaded }
+          : current,
       );
       setServerError(saved.problem);
       handedOff.current = false;
@@ -507,7 +547,7 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
               single
               fail
               pressed={draft.outcome === "not_done" && draft.notDoneReason === reason}
-              onClick={() => update({ outcome: "not_done", notDoneReason: reason })}
+              onClick={() => chooseNotDone(reason)}
             >
               {label}
             </Choice>
@@ -615,6 +655,55 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
           aria-invalid={errors.observation ? true : undefined}
           onChange={(event) => update({ observation: event.target.value })}
         />
+      </Section>
+
+      <Section
+        id="closure-signature"
+        error={errors.signature ?? errors.signer_name ?? errors.no_signature_text}
+      >
+        {title("Firma del cliente")}
+        {draft.noSignatureReason === null && (
+          <>
+            <SignaturePad
+              blob={signature?.blob ?? null}
+              disabled={busy}
+              invalid={Boolean(errors.signature)}
+              onChange={changeSignature}
+            />
+            <label className="closure__other">
+              Aclaración (nombre de quien firma)
+              <input
+                type="text"
+                className="closure__input"
+                maxLength={255}
+                autoComplete="off"
+                value={draft.signerName}
+                aria-invalid={errors.signer_name ? true : undefined}
+                onChange={(event) => update({ signerName: event.target.value })}
+              />
+            </label>
+          </>
+        )}
+        <p className="closure__group">Si no firma, elegí por qué</p>
+        <div className="closure__choices">
+          {NO_SIGNATURE_REASONS.map(([reason, label]) => (
+            <Choice
+              key={reason}
+              single
+              pressed={draft.noSignatureReason === reason}
+              onClick={() => chooseNoSignature(reason)}
+            >
+              {label}
+            </Choice>
+          ))}
+        </div>
+        {draft.noSignatureReason === "other" && (
+          <OtherText
+            label="¿Por qué no firma?"
+            value={draft.noSignatureText}
+            onChange={(noSignatureText) => update({ noSignatureText })}
+          />
+        )}
       </Section>
 
       {errorList.length > 0 && (
