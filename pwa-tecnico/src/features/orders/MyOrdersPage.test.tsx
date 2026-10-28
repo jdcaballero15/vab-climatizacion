@@ -67,9 +67,41 @@ function json(body: unknown, status = 200) {
   });
 }
 
+type CrewDone = components["schemas"]["CrewDoneOrdersTechnicianOut"];
+type DoneOrder = components["schemas"]["DoneOrderTechnicianOut"];
+
+function doneOrder(overrides: Partial<DoneOrder> = {}): DoneOrder {
+  return {
+    id: crypto.randomUUID(),
+    number: 5,
+    work_type_name: "Service",
+    description: "Limpieza de filtros",
+    client_name: "Clínica Ficticia",
+    address: "Calle 2",
+    outcome: "done",
+    not_done_reason: null,
+    // 17:30 del 26/10 en Argentina, el día de TODAY.
+    closed_at: "2026-10-26T20:30:00Z",
+    ...overrides,
+  };
+}
+
+// "Hechas esta semana" (E05-14) se pide aparte; por defecto, sin cierres.
+let doneResponse: () => Response;
+
+function stubDone(orders: DoneOrder[], crew: CrewDone["crew"] = { name: "Escuadrilla 1" }) {
+  doneResponse = () => json({ crew, orders } satisfies CrewDone);
+}
+
+/** Responde la lista de abiertas en el orden dado; devuelve las llamadas a esa lista. */
 function stubOrders(...responses: (() => Response)[]) {
   const fetchMock = vi.fn(async () => (responses.length > 1 ? responses.shift()! : responses[0])());
-  vi.stubGlobal("fetch", fetchMock);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: Request) =>
+      new URL(input.url).pathname.endsWith("/tech/orders/done") ? doneResponse() : fetchMock(),
+    ),
+  );
   return fetchMock;
 }
 
@@ -94,7 +126,10 @@ function DetailStub() {
   return <h1>Detalle {orderId}</h1>;
 }
 
-beforeEach(() => memory.clear());
+beforeEach(() => {
+  memory.clear();
+  stubDone([]);
+});
 afterEach(() => vi.restoreAllMocks());
 
 describe("MyOrdersPage", () => {
@@ -377,5 +412,94 @@ describe("MyOrdersPage", () => {
     renderPage({ notice: "Sin señal. Quedó pendiente.", pending: true });
 
     expect(await screen.findByRole("status")).toHaveClass("orders__notice--pending");
+  });
+});
+
+// E05-14: los cierres de la escuadrilla en los últimos 7 días.
+describe("MyOrdersPage, hechas esta semana", () => {
+  // Criterio 1: las dos pestañas con su contador.
+  it("muestra las pestañas con cuántas hay en cada una", async () => {
+    stubOrders(() => json(payload([order({ number: 7 })])));
+    stubDone([doneOrder(), doneOrder({ number: 6 })]);
+    renderPage();
+
+    expect(await screen.findByRole("button", { name: "Hechas esta semana (2)" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Para hacer (1)" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  // Criterios 1 y 2: cada cierre con su resultado y la hora, sin abrirse.
+  it("lista los cierres con el resultado y la hora, sin link", async () => {
+    stubOrders(() => json(payload([order({ number: 7 })])));
+    stubDone([
+      doneOrder(),
+      doneOrder({
+        number: 4,
+        outcome: "not_done",
+        not_done_reason: "client_absent",
+        closed_at: "2026-10-25T12:05:00Z",
+      }),
+      doneOrder({ number: 3, outcome: "needs_revisit", closed_at: "2026-10-21T21:00:00Z" }),
+    ]);
+    renderPage();
+
+    await userEvent.click(await screen.findByRole("button", { name: /Hechas esta semana/ }));
+
+    const lista = screen.getByRole("list", { name: "Hechas esta semana" });
+    const [resuelta, ausente, otraVisita] = within(lista).getAllByRole("article");
+    expect(within(resuelta).getByText("N° 5")).toBeInTheDocument();
+    expect(within(resuelta).getByText("Resuelta")).toBeInTheDocument();
+    expect(within(resuelta).getByText("Hoy 17:30")).toBeInTheDocument();
+    expect(within(resuelta).getByText("Clínica Ficticia")).toBeInTheDocument();
+    expect(within(resuelta).getByText("Calle 2")).toBeInTheDocument();
+    expect(within(ausente).getByText("No se pudo hacer")).toBeInTheDocument();
+    expect(within(ausente).getByText("Cliente ausente o sin acceso")).toBeInTheDocument();
+    expect(within(ausente).getByText("Ayer 09:05")).toBeInTheDocument();
+    expect(within(otraVisita).getByText("Requiere otra visita")).toBeInTheDocument();
+    expect(within(otraVisita).getByText("21/10/2026 18:00")).toBeInTheDocument();
+    expect(within(lista).queryByRole("link")).not.toBeInTheDocument();
+    // Las abiertas no se ven en esta pestaña.
+    expect(screen.queryByText("N° 7")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /Para hacer/ }));
+    expect(screen.getByText("N° 7")).toBeInTheDocument();
+  });
+
+  // Criterio 6: sin cierres en la semana.
+  it("avisa si no cerraron órdenes en los últimos 7 días", async () => {
+    stubOrders(() => json(payload([order()])));
+    renderPage();
+
+    await userEvent.click(await screen.findByRole("button", { name: "Hechas esta semana (0)" }));
+
+    expect(screen.getByText("No cerraron órdenes en los últimos 7 días.")).toBeInTheDocument();
+  });
+
+  it("avisa si no se pudieron cargar las hechas", async () => {
+    stubOrders(() => json(payload([order()])));
+    doneResponse = () => json({ detail: "error" }, 500);
+    renderPage();
+
+    await userEvent.click(await screen.findByRole("button", { name: "Hechas esta semana" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "No se pudieron cargar las órdenes hechas.",
+    );
+  });
+
+  // Criterio 6: sin escuadrilla no hay pestañas, como en "Para hacer".
+  it("sin escuadrilla no muestra las pestañas", async () => {
+    stubOrders(() => json(payload([], null)));
+    stubDone([], null);
+    renderPage();
+
+    expect(
+      await screen.findByText(
+        "Este usuario no tiene una escuadrilla asignada. Avisale a administración.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Hechas esta semana/ })).not.toBeInTheDocument();
   });
 });

@@ -445,6 +445,78 @@ button:disabled {
   color: var(--in-progress);
 }
 
+/* Pestañas "Para hacer" y "Hechas esta semana" (E05-14). */
+.orders__tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0 0 1rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.orders__tabs button {
+  flex: 1;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 4px);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.orders__tabs button[aria-pressed="true"] {
+  background: var(--surface-strong);
+  box-shadow: 0 2px 8px -4px rgb(30 41 59 / 25%);
+  color: var(--text);
+}
+
+/* Un cierre ya enviado: no se abre (E05-14). */
+.order-card--done {
+  --status-color: var(--success);
+}
+
+.order-card--outcome-needs_revisit,
+.order-card--outcome-needs_pickup {
+  --status-color: var(--in-progress);
+}
+
+.order-card--outcome-not_done {
+  --status-color: var(--text-muted);
+}
+
+.order-card__reason {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+}
+
+.order-card__outcome {
+  flex-shrink: 0;
+  padding: 0.1875rem 0.625rem;
+  border-radius: 999px;
+  background: var(--success-bg);
+  color: var(--success);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.order-card__outcome--needs_revisit,
+.order-card__outcome--needs_pickup {
+  background: var(--in-progress-bg);
+  color: var(--in-progress);
+}
+
+.order-card__outcome--not_done {
+  background: #f1f5f9;
+  color: var(--text-secondary);
+}
+
 /* Hasta dos líneas de descripción; el resto se ve en el detalle (E05-02). */
 .order-card__description {
   display: -webkit-box;
