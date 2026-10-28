@@ -38,6 +38,7 @@ const PENDIENTE: OrderListItem = {
   status: "pending",
   client_id: "c1",
   client_name: "Sanatorio Ficticio",
+  client_site_id: "s1",
   site_label: "Central",
   site_address: "Av. Belgrano 123",
   work_type_name: "Reparación",
@@ -47,6 +48,7 @@ const PENDIENTE: OrderListItem = {
   assignment: null,
   cancellation: null,
   completed: null,
+  equipment: null,
 };
 const OTRA_PENDIENTE: OrderListItem = {
   ...PENDIENTE,
@@ -80,6 +82,7 @@ const CREADA: WorkOrder = {
   description: "Pierde agua",
   requester_name: null,
   requester_area: null,
+  equipment_id: null,
   created_at: "2026-10-26T13:00:00Z",
 };
 

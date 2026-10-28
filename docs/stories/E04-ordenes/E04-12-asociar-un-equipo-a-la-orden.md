@@ -4,7 +4,7 @@ title: "Asociar un equipo a la orden"
 epic: E04
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [admin]
 size: S
 areas: [backend, web-admin, pwa]
@@ -43,3 +43,4 @@ assumes: [D-002]
 - Backend: `WorkOrderCreate` suma `equipment_id` opcional. `PUT /admin/orders/{id}/equipment` con `{"equipment_id": uuid | null}`, solo administración (como crear la orden), 409 `order_not_editable` fuera de `Pendiente` y `Asignada`. Validación común al crear y al cambiar: el equipo existe, no está dado de baja y es del domicilio de la orden (422 `equipment_not_available`, campo `equipment_id`). Evento sin cambio de estado `equipment_changed` en la línea de tiempo, con el código anterior y el nuevo (suma un valor al CHECK `ck_work_order_event_type`: migración reversible). `OrderListItemOut` suma `equipment` (código y ubicación), nulo sin equipo.
 - web-admin: en "Nueva orden", selector de equipo debajo del domicilio con los equipos de `GET /admin/clients/{id}/equipment?site_id=`, "Sin equipo" por defecto. En la tarjeta de la orden, el equipo, y en "Más acciones" de Pendientes y Asignadas, "Cambiar equipo" con el mismo selector.
 - Implementación en dos PR: backend y web-admin.
+- Hecho en el backend (PR 1): `WorkOrderCreate.equipment_id`, `PUT /admin/orders/{id}/equipment` (`EquipmentChange`), validación común `_check_equipment` (equipo vigente del domicilio de la orden), cambio condicionado al estado con `update_equipment_if` (si la escuadrilla la inicia en el medio, 409), evento `equipment_changed` con nota "Equipo: EA1 -> EA2" (o "sin equipo"); elegir el mismo no registra nada. `WorkOrderAdminOut.equipment_id` y `OrderListItemOut.equipment` (id, código y ubicación). Migración `e7b3c9d1f024` (solo el CHECK de `work_order_event`; al volver atrás queda `NOT VALID` y conserva los eventos).

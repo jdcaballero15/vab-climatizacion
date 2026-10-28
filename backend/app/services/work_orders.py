@@ -18,6 +18,7 @@ from app.api.schemas.work_order import (
     DoneOrderTechnicianOut,
     EquipmentTechnicianOut,
     OrderDetailTechnicianOut,
+    OrderEquipmentOut,
     OrderListItemOut,
     OrderTechnicianOut,
     ReturnedFromCrewOut,
@@ -27,6 +28,7 @@ from app.api.schemas.work_order import (
 )
 from app.core.dates import business_today, format_date
 from app.db.models.crew import Crew
+from app.db.models.equipment import Equipment
 from app.db.models.user import User
 from app.db.models.work_order import (
     WorkOrder,
@@ -37,6 +39,7 @@ from app.db.models.work_order import (
 )
 from app.db.repositories.client import ClientContactRepository
 from app.db.repositories.crew import CrewRepository
+from app.db.repositories.equipment import EquipmentRepository
 from app.db.repositories.work_order import OpenCrewOrderRow, WorkOrderRepository
 from app.domain.work_order import (
     CANCEL_REASON_LABELS,
@@ -63,6 +66,14 @@ class OrderStatusConflictError(Exception):
 
     code = "order_status_conflict"
     message = "La orden cambió mientras la mirabas. Volvé a cargarla e intentá de nuevo."
+
+
+class EquipmentNotAvailableError(Exception):
+    """El equipo no existe, está dado de baja o no es del domicilio de la orden (E04-12)."""
+
+
+class OrderNotEditableError(Exception):
+    """La orden ya se inició: su equipo no se cambia (E04-12)."""
 
 
 class WorkTypeInactiveError(Exception):
@@ -104,6 +115,8 @@ async def create_work_order(
     work_type = await catalog_service.get_work_type(session, data.work_type_id)
     if not work_type.is_active:
         raise WorkTypeInactiveError
+    if data.equipment_id is not None:
+        await _check_equipment(session, data.equipment_id, data.client_site_id)
 
     order = WorkOrder(status=OrderStatus.pending, source=OrderSource.manual, **data.model_dump())
     session.add(order)
@@ -121,6 +134,66 @@ async def create_work_order(
     return WorkOrderAdminOut.model_validate({**_columns(order), "created_at": event.occurred_at})
 
 
+# El equipo se elige o se cambia hasta que la escuadrilla inicia la orden (E04-12).
+EQUIPMENT_EDITABLE_STATUSES = frozenset({OrderStatus.pending, OrderStatus.assigned})
+NO_EQUIPMENT = "sin equipo"
+
+
+async def _check_equipment(
+    session: AsyncSession, equipment_id: uuid.UUID, site_id: uuid.UUID
+) -> Equipment:
+    """Un equipo vigente del domicilio de la orden (E04-12, criterio 4)."""
+    equipment = await EquipmentRepository(session).get(equipment_id)
+    if equipment is None or equipment.client_site_id != site_id:
+        raise EquipmentNotAvailableError
+    return equipment
+
+
+async def change_equipment(
+    session: AsyncSession, order_id: uuid.UUID, equipment_id: uuid.UUID | None, actor: User
+) -> WorkOrderAdminOut:
+    """Agrega, cambia o saca el equipo de una orden Pendiente o Asignada (E04-12).
+
+    Cada cambio queda en la línea de tiempo con el código anterior y el nuevo. Elegir el
+    que ya tiene no es un cambio.
+    """
+    repo = WorkOrderRepository(session)
+    order = await get_work_order(session, order_id)
+    if order.status not in EQUIPMENT_EDITABLE_STATUSES:
+        raise OrderNotEditableError
+    new = (
+        await _check_equipment(session, equipment_id, order.client_site_id)
+        if equipment_id is not None
+        else None
+    )
+    if order.equipment_id != equipment_id:
+        old = (
+            await EquipmentRepository(session).get(order.equipment_id, include_deleted=True)
+            if order.equipment_id is not None
+            else None
+        )
+        # Si la escuadrilla la inició mientras tanto, ya no se cambia.
+        if not await repo.update_equipment_if(
+            order.id, equipment_id, statuses=EQUIPMENT_EDITABLE_STATUSES
+        ):
+            raise OrderNotEditableError
+        repo.add_event(
+            WorkOrderEvent(
+                work_order_id=order.id,
+                event_type=WorkOrderEventType.equipment_changed,
+                actor_id=actor.id,
+                note=(
+                    f"Equipo: {old.internal_code if old else NO_EQUIPMENT}"
+                    f" -> {new.internal_code if new else NO_EQUIPMENT}"
+                ),
+            )
+        )
+        await session.commit()
+        await session.refresh(order)
+    created_at = await repo.created_at(order.id)
+    return WorkOrderAdminOut.model_validate({**_columns(order), "created_at": created_at})
+
+
 async def list_by_status(
     session: AsyncSession, status: OrderStatus, *, limit: int, offset: int
 ) -> tuple[list[OrderListItemOut], int]:
@@ -134,6 +207,7 @@ async def list_by_status(
             status=order.status,
             client_id=order.client_id,
             client_name=client_name,
+            client_site_id=order.client_site_id,
             site_label=site_label,
             site_address=site_address,
             work_type_name=work_type_name,
@@ -161,6 +235,15 @@ async def list_by_status(
                 if status == OrderStatus.done and closure is not None
                 else None
             ),
+            equipment=(
+                OrderEquipmentOut(
+                    id=equipment.id,
+                    internal_code=equipment.internal_code,
+                    location_note=equipment.location_note,
+                )
+                if equipment is not None
+                else None
+            ),
         )
         for (
             order,
@@ -176,6 +259,7 @@ async def list_by_status(
             scheduled_for,
             cancellation,
             cancelled_by_name,
+            equipment,
         ) in rows
     ]
     return items, total

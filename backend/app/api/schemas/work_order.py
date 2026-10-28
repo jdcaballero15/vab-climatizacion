@@ -41,6 +41,24 @@ class WorkOrderCreate(BaseModel):
     description: Description
     requester_name: RequesterText = None
     requester_area: RequesterText = None
+    # Opcional: un equipo del domicilio elegido (E04-12).
+    equipment_id: uuid.UUID | None = None
+
+
+class EquipmentChange(BaseModel):
+    """El equipo de una orden Pendiente o Asignada; nulo para sacarlo (E04-12)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    equipment_id: uuid.UUID | None
+
+
+class OrderEquipmentOut(BaseModel):
+    """El equipo de la orden en el listado de la oficina (E04-12)."""
+
+    id: uuid.UUID
+    internal_code: str
+    location_note: str
 
 
 class WorkOrderAdminOut(BaseModel):
@@ -58,6 +76,7 @@ class WorkOrderAdminOut(BaseModel):
     description: str | None
     requester_name: str | None
     requester_area: str | None
+    equipment_id: uuid.UUID | None
     # Del evento de creación (ADR 0005), no de la columna técnica created_at.
     created_at: datetime
 
@@ -103,6 +122,8 @@ class OrderListItemOut(BaseModel):
     status: OrderStatus
     client_id: uuid.UUID
     client_name: str
+    # Para listar los equipos del domicilio al cambiar el de la orden (E04-12).
+    client_site_id: uuid.UUID
     site_label: str | None
     site_address: str
     work_type_name: str
@@ -116,6 +137,8 @@ class OrderListItemOut(BaseModel):
     cancellation: CancellationAdminOut | None
     # Solo en terminadas.
     completed: CompletedOut | None
+    # Nulo si la orden no tiene equipo (E04-12).
+    equipment: OrderEquipmentOut | None
 
 
 class OrderListPage(BaseModel):
