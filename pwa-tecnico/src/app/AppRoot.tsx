@@ -8,6 +8,7 @@ import { onSessionExpired } from "../features/auth/session";
 import { setAccessToken } from "../features/auth/token";
 import type { Session } from "../features/auth/types";
 import { useLogout } from "../features/auth/useLogout";
+import { WrongRolePage } from "../features/auth/WrongRolePage";
 import { ClosurePage } from "../features/orders/ClosurePage";
 import { MyOrdersPage } from "../features/orders/MyOrdersPage";
 import { OrderDetailPage } from "../features/orders/OrderDetailPage";
@@ -67,6 +68,10 @@ export function AppRoot() {
     setSession(null);
     logout.mutate();
   };
+
+  if (session.user.role !== "technician") {
+    return <WrongRolePage onLogout={onLogout} />;
+  }
 
   return (
     <Routes>
