@@ -4,7 +4,7 @@ title: "Firma del cliente en pantalla con su nombre"
 epic: E05
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [technician, admin]
 size: M
 areas: [backend, pwa, web-admin]
@@ -43,6 +43,7 @@ assumes: []
 - `ClosureCreate` suma `signature` (`file_id` y `signer_name`) o `no_signature_reason` con su texto. La imagen sigue las reglas de las fotos de E05-06: subida por el mismo usuario, confirmada y sin usar en otro cierre. Propósito de archivo nuevo `closure_signature`, solo `image/png`.
 - PWA: lienzo con eventos de puntero (dedo, lápiz o mouse) que exporta un PNG chico. El trazo se guarda como `Blob` en el borrador de E05-13 junto con el nombre o el motivo, y se sube con las fotos antes de mandar el cierre (`closureSender`). Se agregan los campos al copiado de `closureDrafts.ts` (criterio 8 de E05-13).
 - Web-admin: la firma en el detalle de la orden terminada, con la misma URL firmada que las fotos.
+- Hecho en el backend (PR 1): migración `d1a4f7c2e958`, modelo `Signature`, enums `no_signature_reason` y `signature_purpose`, CHECK del texto con "Otro". Errores con campo: `signature` (`signature_required`, `signature_ambiguous`, `signature_not_available`, `signature_already_used`), `signer_name` (`signer_name_required`) y `no_signature_text` (`no_signature_text_required`, `no_signature_text_not_allowed`). `GET /admin/orders/{id}/closure` suma `signature` (nombre, hora y URL firmada), `no_signature_reason` y `no_signature_text`.
 
 ## Preguntas abiertas
 

@@ -1038,6 +1038,10 @@ export interface components {
             observation: string | null;
             /** Photos */
             photos: components["schemas"]["ClosurePhotoAdminOut"][];
+            signature: components["schemas"]["ClosureSignatureAdminOut"] | null;
+            no_signature_reason: components["schemas"]["NoSignatureReason"] | null;
+            /** No Signature Text */
+            no_signature_text: string | null;
         };
         /** ClosureChoiceTechnicianOut */
         ClosureChoiceTechnicianOut: {
@@ -1085,6 +1089,10 @@ export interface components {
              * @default []
              */
             photo_ids: string[];
+            signature?: components["schemas"]["SignatureIn"] | null;
+            no_signature_reason?: components["schemas"]["NoSignatureReason"] | null;
+            /** No Signature Text */
+            no_signature_text?: string | null;
         };
         /** ClosureOptionsTechnicianOut */
         ClosureOptionsTechnicianOut: {
@@ -1112,6 +1120,18 @@ export interface components {
             id: string;
             /** Content Type */
             content_type: string;
+            /** Url */
+            url: string;
+        };
+        /** ClosureSignatureAdminOut */
+        ClosureSignatureAdminOut: {
+            /** Signer Name */
+            signer_name: string;
+            /**
+             * Signed At
+             * Format: date-time
+             */
+            signed_at: string;
             /** Url */
             url: string;
         };
@@ -1494,6 +1514,12 @@ export interface components {
             password: string;
         };
         /**
+         * NoSignatureReason
+         * @description Por qué un cierre no tiene la firma del cliente (E05-07, D-011). Lista a validar.
+         * @enum {string}
+         */
+        NoSignatureReason: "client_absent" | "refused" | "other";
+        /**
          * NotDoneReason
          * @description Por qué no se pudo hacer el trabajo (E05-08). Lista fija, como el prototipo.
          * @enum {string}
@@ -1711,6 +1737,19 @@ export interface components {
             /** Observation */
             observation: string | null;
         };
+        /**
+         * SignatureIn
+         * @description Firma ya subida al bucket (E00-09) y el nombre de quien firma. Sin DNI (D-008).
+         */
+        SignatureIn: {
+            /**
+             * File Id
+             * Format: uuid
+             */
+            file_id: string;
+            /** Signer Name */
+            signer_name?: string | null;
+        };
         /** SiteAdminOut */
         SiteAdminOut: {
             /**
@@ -1825,9 +1864,9 @@ export interface components {
         UploadRequest: {
             /**
              * Purpose
-             * @constant
+             * @enum {string}
              */
-            purpose: "closure_photo";
+            purpose: "closure_photo" | "closure_signature";
             /** Content Type */
             content_type: string;
             /** Size Bytes */

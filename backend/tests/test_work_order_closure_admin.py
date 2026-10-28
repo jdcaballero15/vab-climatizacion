@@ -15,6 +15,7 @@ from app.db.models.catalog import EquipmentType, Failure, Repair, Task, WorkType
 from app.db.models.client import Client, ClientContact, ClientSite
 from app.db.models.crew import Crew, FieldTechnician
 from app.db.models.equipment import Equipment
+from app.db.models.signature import Signature
 from app.db.models.stored_file import StoredFile
 from app.db.models.user import User, UserRole
 from app.db.models.work_order import (
@@ -31,8 +32,10 @@ from app.db.session import SessionLocal, engine
 from app.domain.work_order import (
     ClosureOutcome,
     EquipmentCondition,
+    NoSignatureReason,
     NotDoneReason,
     OrderStatus,
+    SignaturePurpose,
     WorkOrderEventType,
 )
 from app.main import app
@@ -61,6 +64,7 @@ TABLES = [
     WorkOrderCancellation.__table__,
     StoredFile.__table__,
     WorkOrderClosurePhoto.__table__,
+    Signature.__table__,
 ]
 ORDERS_URL = "/admin/orders"
 AYER = datetime.now(UTC) - timedelta(days=1)
@@ -85,6 +89,8 @@ async def schema() -> AsyncGenerator[None, None]:
             "equipment_condition",
             "not_done_reason",
             "cancel_reason",
+            "no_signature_reason",
+            "signature_purpose",
         ):
             await conn.execute(text(f"DROP TYPE IF EXISTS {enum_type}"))
         await conn.execute(text("DROP SEQUENCE IF EXISTS work_order_number_seq"))
@@ -251,6 +257,10 @@ async def test_cierre_con_todo_lo_que_cargo_la_escuadrilla(mundo: Mundo) -> None
         "not_done_reason": None,
         "observation": "Revisar en un mes.",
         "photos": [],
+        # Un cierre anterior a E05-07: sin firma ni motivo.
+        "signature": None,
+        "no_signature_reason": None,
+        "no_signature_text": None,
     }
 
 
@@ -295,6 +305,71 @@ async def test_cierre_con_fotos_trae_urls_firmadas_que_funcionan(mundo: Mundo) -
     async with httpx.AsyncClient() as bucket_client:
         descargas = [await bucket_client.get(p["url"]) for p in body["photos"]]
     assert [d.content for d in descargas] == contenidos
+
+
+# E05-07, criterio 6: la firma con el nombre, la hora y una URL firmada que funciona.
+@pytest.mark.usefixtures("bucket")
+async def test_cierre_con_firma_trae_nombre_hora_y_url(mundo: Mundo) -> None:
+    m = mundo
+    orden = await _orden(m, OrderStatus.done)
+    await _cierre(m, orden)
+    contenido = b"\x89PNGfirma"
+    imagen = StoredFile(
+        purpose="closure_signature",
+        object_key=f"closures/signatures/{uuid.uuid4()}",
+        content_type="image/png",
+        size_bytes=len(contenido),
+        uploaded_by=m.celular.id,
+        confirmed_at=AYER,
+    )
+    url = get_storage().upload_url(imagen.object_key, imagen.content_type, imagen.size_bytes)
+    async with httpx.AsyncClient() as bucket_client:
+        subida = await bucket_client.put(
+            url, content=contenido, headers={"Content-Type": "image/png"}
+        )
+    assert subida.status_code == 200
+    await _seed([imagen])
+    async with SessionLocal() as session:
+        closure_id = (await session.execute(text("select id from work_order_closure"))).scalar()
+    await _seed(
+        [
+            Signature(
+                closure_id=closure_id,
+                purpose=SignaturePurpose.closure,
+                signer_name="Marta Ficticia",
+                image_file_id=imagen.id,
+                signed_at=AYER,
+            )
+        ]
+    )
+
+    body = (await _get(m.admin, f"{ORDERS_URL}/{orden.id}/closure")).json()
+
+    firma = body["signature"]
+    assert firma["signer_name"] == "Marta Ficticia"
+    assert datetime.fromisoformat(firma["signed_at"]) == AYER
+    assert body["no_signature_reason"] is None
+    async with httpx.AsyncClient() as bucket_client:
+        assert (await bucket_client.get(firma["url"])).content == contenido
+
+
+async def test_cierre_sin_firma_trae_el_motivo(mundo: Mundo) -> None:
+    m = mundo
+    orden = await _orden(m, OrderStatus.done)
+    await _cierre(
+        m,
+        orden,
+        no_signature_reason=NoSignatureReason.other,
+        no_signature_text="Firmó en el remito de papel",
+    )
+
+    body = (await _get(m.admin, f"{ORDERS_URL}/{orden.id}/closure")).json()
+
+    assert body["signature"] is None
+    assert (body["no_signature_reason"], body["no_signature_text"]) == (
+        "other",
+        "Firmó en el remito de papel",
+    )
 
 
 async def test_devuelve_el_ultimo_cierre(mundo: Mundo) -> None:

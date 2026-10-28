@@ -124,6 +124,9 @@ const CIERRE: ClosureDetail = {
   not_done_reason: null,
   observation: "Revisar en un mes.",
   photos: [],
+  signature: null,
+  no_signature_reason: null,
+  no_signature_text: null,
 };
 const CANCELADA: OrderListItem = {
   ...PENDIENTE,

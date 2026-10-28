@@ -496,3 +496,30 @@ def test_migraciones_de_archivos_y_fotos_son_reversibles() -> None:
         assert _names(tablas) == []
     finally:
         command.downgrade(cfg, "base")
+
+
+def test_migracion_de_la_firma_es_reversible() -> None:
+    """E05-07: la tabla de firmas, el motivo sin firma y sus enums se crean y se deshacen."""
+    cfg = _alembic_config()
+    _reset_database()
+
+    objetos = (
+        "SELECT tablename FROM pg_tables WHERE tablename = 'signature' "
+        "UNION ALL SELECT typname FROM pg_type "
+        "WHERE typname IN ('no_signature_reason', 'signature_purpose') "
+        "UNION ALL SELECT column_name FROM information_schema.columns "
+        "WHERE table_name = 'work_order_closure' AND column_name LIKE 'no_signature%'"
+    )
+    command.upgrade(cfg, "head")
+    try:
+        assert _names(objetos) == [
+            "no_signature_reason",
+            "no_signature_reason",
+            "no_signature_text",
+            "signature",
+            "signature_purpose",
+        ]
+        command.downgrade(cfg, "c5e9a3d7b214")
+        assert _names(objetos) == []
+    finally:
+        command.downgrade(cfg, "base")

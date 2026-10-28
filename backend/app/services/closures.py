@@ -13,11 +13,13 @@ from app.api.schemas.closure import (
     ClosureCreate,
     ClosureOptionsTechnicianOut,
     ClosurePhotoAdminOut,
+    ClosureSignatureAdminOut,
     ClosureTechnicianOut,
     FailureChoiceTechnicianOut,
 )
 from app.core.storage import ObjectStorage
 from app.db.models.catalog import Failure, Repair
+from app.db.models.signature import Signature
 from app.db.models.stored_file import StoredFile
 from app.db.models.user import User
 from app.db.models.work_order import (
@@ -35,8 +37,10 @@ from app.domain.work_order import (
     NOT_DONE_REASON_LABELS,
     ClosureOutcome,
     EquipmentCondition,
+    NoSignatureReason,
     OrderAction,
     OrderStatus,
+    SignaturePurpose,
 )
 from app.services import catalog as catalog_service
 from app.services import work_orders as work_orders_service
@@ -114,6 +118,7 @@ async def close_order(
     outcome = ClosureOutcome(data.outcome)
     await _validate(session, order, equipment_type_id, outcome, data)
     await _validate_photos(session, user, data.photo_ids)
+    await _validate_signature(session, user, data)
 
     action = (
         OrderAction.close_done if outcome == ClosureOutcome.done else OrderAction.request_revisit
@@ -143,6 +148,8 @@ async def close_order(
         equipment_condition=data.equipment_condition,
         not_done_reason=data.not_done_reason,
         observation=data.observation,
+        no_signature_reason=data.no_signature_reason,
+        no_signature_text=data.no_signature_text,
         idempotency_key=data.idempotency_key,
     )
     session.add(closure)
@@ -161,6 +168,15 @@ async def close_order(
             for position, file_id in enumerate(data.photo_ids)
         ]
     )
+    if data.signature is not None and data.signature.signer_name is not None:
+        session.add(
+            Signature(
+                closure_id=closure.id,
+                purpose=SignaturePurpose.closure,
+                signer_name=data.signature.signer_name,
+                image_file_id=data.signature.file_id,
+            )
+        )
     try:
         await session.commit()
     except IntegrityError:
@@ -180,7 +196,7 @@ async def get_last_closure(
 ) -> ClosureAdminOut:
     """El último cierre de la orden, con nombres en lugar de ids (E04-08, criterio 1).
 
-    Las fotos vienen con URL firmada de corta duración (E05-06, criterio 6).
+    Las fotos y la firma vienen con URL firmada de corta duración (E05-06 y E05-07).
     """
     await work_orders_service.get_work_order(session, order_id)
     repo = WorkOrderClosureRepository(session)
@@ -190,6 +206,16 @@ async def get_last_closure(
     closed_by = await session.get(User, closure.closed_by)
     failure = await session.get(Failure, closure.failure_id) if closure.failure_id else None
     repair = await session.get(Repair, closure.repair_id) if closure.repair_id else None
+    signed = await repo.signature(closure.id)
+    signature = (
+        ClosureSignatureAdminOut(
+            signer_name=signed[0].signer_name,
+            signed_at=signed[0].signed_at,
+            url=storage.download_url(signed[1].object_key),
+        )
+        if signed
+        else None
+    )
     return ClosureAdminOut(
         outcome=closure.outcome,
         closed_at=closure.closed_at,
@@ -210,6 +236,9 @@ async def get_last_closure(
             )
             for photo in await repo.photos(closure.id)
         ],
+        signature=signature,
+        no_signature_reason=closure.no_signature_reason,
+        no_signature_text=closure.no_signature_text,
     )
 
 
@@ -382,6 +411,53 @@ async def _validate_photos(session: AsyncSession, user: User, photo_ids: list[uu
     if await WorkOrderClosureRepository(session).used_photo_ids(photo_ids):
         raise ClosureValidationError(
             "photo_already_used", "photo_ids", "Una de las fotos ya está en otro cierre."
+        )
+
+
+async def _validate_signature(session: AsyncSession, user: User, data: ClosureCreate) -> None:
+    """La firma del cliente o un motivo, nunca las dos ni ninguna (E05-07, D-011)."""
+    signature, reason = data.signature, data.no_signature_reason
+    if signature is None:
+        if reason is None:
+            raise ClosureValidationError(
+                "signature_required",
+                "signature",
+                "Pedile la firma al cliente o elegí por qué no firma.",
+            )
+        if reason == NoSignatureReason.other and data.no_signature_text is None:
+            raise ClosureValidationError(
+                "no_signature_text_required", "no_signature_text", "Escribí por qué no firma."
+            )
+        if reason != NoSignatureReason.other and data.no_signature_text is not None:
+            raise ClosureValidationError(
+                "no_signature_text_not_allowed",
+                "no_signature_text",
+                'El texto va solo con "Otro".',
+            )
+        return
+    if reason is not None:
+        raise ClosureValidationError(
+            "signature_ambiguous",
+            "signature",
+            "Va la firma o el motivo por el que no hay, no las dos.",
+        )
+    if signature.signer_name is None:
+        raise ClosureValidationError(
+            "signer_name_required", "signer_name", "Escribí el nombre de quien firma."
+        )
+    file: StoredFile | None = await StoredFileRepository(session).get(signature.file_id)
+    if (
+        file is None
+        or file.purpose != "closure_signature"
+        or file.uploaded_by != user.id
+        or file.confirmed_at is None
+    ):
+        raise ClosureValidationError(
+            "signature_not_available", "signature", "La firma no se subió bien. Firmá de nuevo."
+        )
+    if await WorkOrderClosureRepository(session).signature_file_used(signature.file_id):
+        raise ClosureValidationError(
+            "signature_already_used", "signature", "Esa firma ya está en otro cierre."
         )
 
 

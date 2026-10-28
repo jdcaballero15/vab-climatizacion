@@ -5,7 +5,13 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, BeforeValidator, ConfigDict, StringConstraints
 
 from app.api.schemas.client import blank_to_none
-from app.domain.work_order import ClosureOutcome, EquipmentCondition, NotDoneReason, OrderStatus
+from app.domain.work_order import (
+    ClosureOutcome,
+    EquipmentCondition,
+    NoSignatureReason,
+    NotDoneReason,
+    OrderStatus,
+)
 
 # Texto opcional del cierre: vacío o solo espacios cuenta como no cargado.
 OtherText = Annotated[
@@ -13,6 +19,10 @@ OtherText = Annotated[
 ]
 Observation = Annotated[
     Annotated[str, StringConstraints(max_length=2000)] | None, BeforeValidator(blank_to_none)
+]
+SignerName = Annotated[
+    Annotated[str, StringConstraints(max_length=120)] | None,
+    BeforeValidator(blank_to_none),
 ]
 
 
@@ -34,6 +44,16 @@ class ClosureOptionsTechnicianOut(BaseModel):
     failures: list[FailureChoiceTechnicianOut]
 
 
+class SignatureIn(BaseModel):
+    """Firma ya subida al bucket (E00-09) y el nombre de quien firma. Sin DNI (D-008)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    file_id: uuid.UUID
+    # Vacío llega como None: el servicio lo marca con su campo (E05-07, criterio 3).
+    signer_name: SignerName = None
+
+
 # extra="forbid": un campo de más (por ejemplo, un precio) es un error, no se ignora.
 class ClosureCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -52,6 +72,10 @@ class ClosureCreate(BaseModel):
     observation: Observation = None
     # Fotos ya subidas y confirmadas (E00-09), en el orden en que se muestran (E05-06).
     photo_ids: list[uuid.UUID] = []
+    # La firma del cliente o por qué no hay: una de las dos (E05-07, D-011).
+    signature: SignatureIn | None = None
+    no_signature_reason: NoSignatureReason | None = None
+    no_signature_text: OtherText = None
 
 
 class ClosureTechnicianOut(BaseModel):
@@ -66,6 +90,13 @@ class ClosurePhotoAdminOut(BaseModel):
     id: uuid.UUID
     content_type: str
     # URL firmada de corta duración (E00-09): se pide de nuevo si vence.
+    url: str
+
+
+class ClosureSignatureAdminOut(BaseModel):
+    signer_name: str
+    signed_at: datetime
+    # URL firmada de corta duración (E00-09), como las fotos.
     url: str
 
 
@@ -87,3 +118,7 @@ class ClosureAdminOut(BaseModel):
     not_done_reason: NotDoneReason | None
     observation: str | None
     photos: list[ClosurePhotoAdminOut]
+    # La firma, o el motivo por el que no hay. Los cierres anteriores a E05-07 no tienen ninguna.
+    signature: ClosureSignatureAdminOut | None
+    no_signature_reason: NoSignatureReason | None
+    no_signature_text: str | None

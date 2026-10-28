@@ -4,8 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-# Usos permitidos; cada uno define sus tipos en el servicio. La firma llega con E05-07.
-FilePurpose = Literal["closure_photo"]
+# Usos permitidos; cada uno define sus tipos en el servicio.
+FilePurpose = Literal["closure_photo", "closure_signature"]
 
 
 class UploadRequest(BaseModel):
