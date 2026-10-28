@@ -733,6 +733,66 @@ describe("OrdersPage", () => {
       expect(link).toHaveAttribute("target", "_blank");
     });
 
+    async function verCierre(cierre: ClosureDetail) {
+      const user = userEvent.setup();
+      porEstado(cierre);
+      renderOrders();
+      await screen.findByRole("list", { name: "Órdenes pendientes" });
+      await user.click(screen.getByRole("button", { name: "Terminadas" }));
+      await user.click(
+        await screen.findByRole("button", { name: "Ver el cierre de la orden N° 3" }),
+      );
+      return screen.findByLabelText("Cierre de la orden N° 3");
+    }
+
+    // E05-07, criterio 6: la firma con el nombre y la hora, con su URL firmada.
+    it("muestra la firma del cliente con el nombre y la hora", async () => {
+      const url = "http://bucket.test/ot-files/closures/signatures/1?X-Amz-Signature=s";
+      const detalle = await verCierre({
+        ...CIERRE,
+        signature: {
+          signer_name: "Rosa Ficticia",
+          signed_at: "2026-10-28T20:18:01Z",
+          url,
+        },
+      });
+
+      const firma = within(detalle).getByRole("img", { name: "Firma de Rosa Ficticia" });
+      expect(firma).toHaveAttribute("src", url);
+      expect(within(detalle).getByRole("link", { name: "Firma de Rosa Ficticia" })).toHaveAttribute(
+        "href",
+        url,
+      );
+      // 20:18 UTC son las 17:18 en la hora de la empresa.
+      expect(within(detalle).getByText("Rosa Ficticia · 28/10/2026 17:18")).toBeInTheDocument();
+      expect(within(detalle).queryByText("Sin firma")).not.toBeInTheDocument();
+    });
+
+    it("muestra por qué no hay firma, con el texto si es Otro", async () => {
+      const ausente = await verCierre({ ...CIERRE, no_signature_reason: "client_absent" });
+      expect(within(ausente).getByText("Sin firma").nextSibling).toHaveTextContent(
+        "Cliente ausente",
+      );
+      expect(within(ausente).queryByRole("img")).not.toBeInTheDocument();
+    });
+
+    it('con "Otro" muestra el texto de por qué no firma', async () => {
+      const otro = await verCierre({
+        ...CIERRE,
+        no_signature_reason: "other",
+        no_signature_text: "Se fue antes de terminar",
+      });
+      expect(within(otro).getByText("Sin firma").nextSibling).toHaveTextContent(
+        "Se fue antes de terminar",
+      );
+    });
+
+    it("un cierre anterior a la firma no muestra firma ni motivo", async () => {
+      const detalle = await verCierre(CIERRE);
+      expect(within(detalle).queryByText("Firma")).not.toBeInTheDocument();
+      expect(within(detalle).queryByText("Sin firma")).not.toBeInTheDocument();
+    });
+
     it("muestra las canceladas con motivo, quién y cuándo, sin acciones", async () => {
       const user = userEvent.setup();
       porEstado();

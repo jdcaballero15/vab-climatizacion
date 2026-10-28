@@ -71,6 +71,19 @@ export function formatDate(isoDate: string): string {
   return DATE_FORMAT.format(new Date(isoDate));
 }
 
+const TIME_FORMAT = new Intl.DateTimeFormat("es-AR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: BUSINESS_TZ,
+});
+
+/** Fecha con hora, "dd/mm/aaaa hh:mm" en la hora de la empresa. */
+export function formatDateTime(isoDate: string): string {
+  const date = new Date(isoDate);
+  return `${DATE_FORMAT.format(date)} ${TIME_FORMAT.format(date)}`;
+}
+
 /** Un día sin hora ("2026-10-26") como dd/mm/aaaa, sin pasar por Date (evita el corrimiento UTC). */
 export function formatDay(isoDay: string): string {
   const [year, month, day] = isoDay.split("-");
@@ -120,3 +133,12 @@ export function initials(name: string): string {
     .map((word) => (/^\d+$/.test(word) ? word : word[0]?.toUpperCase()))
     .join("");
 }
+
+type NoSignatureReason = NonNullable<ClosureDetail["no_signature_reason"]>;
+
+/** Por qué el cierre no tiene firma del cliente (E05-07, D-011). */
+export const NO_SIGNATURE_REASON_LABELS: Record<NoSignatureReason, string> = {
+  client_absent: "Cliente ausente",
+  refused: "No quiso firmar",
+  other: "Otro",
+};
