@@ -41,7 +41,7 @@ Reemplaza a "Eliminar" del prototipo del cliente: nada se borra, la orden queda 
 Validadas con negocio el 2026-10-27, con el prototipo del cliente y lo que se usaba en Persat:
 
 - **Cancelar reemplaza a "Eliminar"** del prototipo, con borrado lógico.
-- **Lista fija de motivos más "Otro"**: en Persat el motivo era texto libre y, agrupado, casi todo era una orden mal cargada, duplicada o que el cliente ya no quería. La lista queda **a validar con la oficina**; si cambia, es un cambio de la lista, no de la historia.
+- **Lista fija de motivos más "Otro"**: en Persat el motivo era texto libre y, agrupado, casi todo era una orden mal cargada, duplicada o que el cliente ya no quería. La lista la **confirmó el cliente** el 2026-10-28; si cambia, es un cambio de la lista, no de la historia.
 - **"No se pudo realizar" no es una cancelación**: cliente ausente, clima o equipo no listo son resultados de la visita que informa la escuadrilla (E05-08). La orden vuelve a `Pendiente` y la oficina decide si reprograma (E04-04) o cancela.
 - **Se puede cancelar una orden `En curso`**, con confirmación.
 

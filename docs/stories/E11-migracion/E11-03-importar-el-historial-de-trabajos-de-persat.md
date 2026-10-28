@@ -36,5 +36,5 @@ assumes: []
 
 ## Preguntas abiertas
 
-- Falla y reparación no se mapean a las listas del sistema nuevo: en Persat son texto libre y quedan en el detalle. ¿Alcanza con eso para el historial?
+- Respondida (cliente, 2026-10-28): falla y reparación de Persat quedan como texto, tal cual las escribieron los técnicos, en la ficha del cliente. Le alcanza así para consultar.
 - En casi 9 de cada 10 reparaciones no hay código de equipo: esas órdenes quedan en el historial del cliente pero no en el de un equipo.

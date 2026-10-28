@@ -64,7 +64,7 @@ Lo que se sabe (relevamiento de Gonza con los datos de Persat):
 Consecuencias:
 
 - El cliente necesita un **número de cliente** (`client.number`), porque forma parte del código. Es texto y único. En la migración se toma el número de Persat tal cual; los clientes sin número reciben uno nuevo. En los clientes nuevos lo asigna el sistema siguiendo la serie numérica (el siguiente al máximo).
-- Que el técnico dé de alta un equipo desde la app no está en ninguna historia (E03-03 es de administración). Queda como pregunta abierta; si se confirma, va en una historia nueva. Según el relevamiento las cuadrillas siempre tienen señal (ver `D-001`), así que el código se puede generar en el momento.
+- El técnico no da de alta equipos desde la app: lo confirmó el cliente el 2026-10-28 (los carga solo la oficina).
 - El QR por equipo (E99-01) sigue en el icebox; si vuelve, se apoya en el código interno.
 
 Respondido por Gonza (2026-10-26, refinamiento de E03-03):
@@ -73,12 +73,17 @@ Respondido por Gonza (2026-10-26, refinamiento de E03-03):
 - **Un equipo puede pasar a otro domicilio del mismo cliente**, además de cambiar de ubicación, y conserva código e historial.
 - Datos opcionales del equipo: marca, modelo, número de serie de fábrica y observaciones.
 
+Respondido por el cliente (2026-10-28):
+
+- **No hay etiquetas pegadas en los equipos.** Según el cliente, el único que hoy usa los códigos es un cliente industrial (el de las siglas de sector). El código lo sigue generando el sistema; en el resto de los clientes la gente identifica el equipo por la ubicación (confirmado por Gonza el mismo día).
+- **El técnico no da de alta equipos.** Los carga solo la oficina, para no tener repetidos con distinto nombre. Si la escuadrilla encuentra un equipo que no está cargado, lo avisa (por ejemplo, en la observación del cierre).
+- **Un equipo puede pasar de un cliente a otro** (venta o traslado). Va en una historia nueva, E03-09 (`draft`).
+
 Preguntas abiertas para el cliente:
 
-- ¿Quién asigna hoy los códigos? ¿Hay etiquetas físicas pegadas en los equipos?
-- ¿Un equipo puede pasar de un cliente a otro? Si pasa, la propuesta es que conserve el historial, pero hay que confirmarlo.
 - ¿Las siglas como `FAB` son sectores de la planta? ¿Hay que seguir usándolas en los equipos nuevos de ese cliente?
-- ¿El técnico tiene que poder dar de alta un equipo que no encuentra en la lista?
+
+Respondido por Gonza (2026-10-28): al pasar a otro cliente el equipo **recibe un código nuevo** con el número del cliente nuevo, y queda registro del traslado y del código anterior (E03-09).
 
 ### D-003 Edición de catálogos
 

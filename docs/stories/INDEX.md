@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 121 historias.** done: 32, draft: 75, icebox: 8, in_progress: 4, ready: 2
+**Total: 123 historias.** done: 32, draft: 77, icebox: 8, in_progress: 4, ready: 2
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -61,6 +61,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E03-06](E03-clientes-equipos/E03-06-buscar-clientes-y-equipos.md) | Buscar clientes y equipos | Debe | S | draft | admin, owner | - | - | E03-01 |
 | [E03-07](E03-clientes-equipos/E03-07-baja-logica-y-restauracion-de-clientes-y-equipos.md) | Baja lógica y restauración de clientes y equipos | Debería | S | draft | admin | - | - | E03-01, E03-03 |
 | [E03-08](E03-clientes-equipos/E03-08-unificar-dos-clientes.md) | Unificar dos clientes | Debería | M | draft | admin | - | D-002 | E03-02, E03-03, E03-07 |
+| [E03-09](E03-clientes-equipos/E03-09-pasar-un-equipo-a-otro-cliente.md) | Pasar un equipo a otro cliente | Debería | M | draft | admin | - | D-002 | E03-03 |
 
 ## E04 Órdenes de trabajo (administración)
 
@@ -78,6 +79,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E04-10](E04-ordenes/E04-10-registrar-el-cobro-de-una-orden.md) | Registrar el cobro de una orden | Debe | S | draft | admin | - | - | E04-09 |
 | [E04-11](E04-ordenes/E04-11-registrar-mano-de-obra-y-otros-cargos-de-una-orden.md) | Registrar mano de obra y otros cargos de una orden | Debería | M | draft | admin | - | - | E04-06, E00-04 |
 | [E04-12](E04-ordenes/E04-12-asociar-un-equipo-a-la-orden.md) | Asociar un equipo a la orden | Debe | S | draft | admin | - | D-002 | E04-02, E03-03 |
+| [E04-13](E04-ordenes/E04-13-abrir-una-orden-de-reparacion-desde-un-cierre.md) | Abrir una orden de reparación desde un cierre | Debería | S | draft | admin | - | - | E04-02, E04-08 |
 
 ## E05 App del técnico
 

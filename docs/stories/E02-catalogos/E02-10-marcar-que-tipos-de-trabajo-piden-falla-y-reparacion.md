@@ -39,4 +39,5 @@ assumes: []
 
 - Migración `a1f3c5e7b902`: agrega `requires_failure_repair` con `false` por defecto y marca por nombre (sin distinguir mayúsculas) "Reparación" y "Service". Si alguno fue renombrado, queda sin marcar. El downgrade quita la columna.
 - `WorkTypeUpdate` y `WorkTypeAdminOut` suman el campo; cambiar otro campo no toca la marca.
+- Cliente, 2026-10-28: el "Service" **no** pide falla y reparación. Si aparece una falla, se anota en la observación del cierre y desde ahí se puede abrir una orden de reparación (E04-13). Una migración de datos aparte desmarca "Service".
 - Web-admin: casilla "Pide falla y reparación al cerrar" en cada tipo de trabajo de la pantalla de catálogos; se guarda al tocarla.
