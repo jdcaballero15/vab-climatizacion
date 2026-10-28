@@ -353,7 +353,9 @@ async def test_listado_muestra_el_equipo(
     async with _client() as client:
         response = await client.get(f"{ORDERS_URL}?status=pending", headers=_auth(admin))
 
-    por_numero = {item["number"]: item["equipment"] for item in response.json()["items"]}
+    items = response.json()["items"]
+    assert {item["client_site_id"] for item in items} == {str(sede.id)}
+    por_numero = {item["number"]: item["equipment"] for item in items}
     assert por_numero[con_equipo.number] == {
         "id": str(equipo.id),
         "internal_code": "EA1",

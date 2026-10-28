@@ -38,6 +38,7 @@ const PENDIENTE: OrderListItem = {
   status: "pending",
   client_id: "c1",
   client_name: "Sanatorio Ficticio",
+  client_site_id: "s1",
   site_label: "Central",
   site_address: "Av. Belgrano 123",
   work_type_name: "Reparación",

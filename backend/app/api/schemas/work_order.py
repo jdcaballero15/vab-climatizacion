@@ -122,6 +122,8 @@ class OrderListItemOut(BaseModel):
     status: OrderStatus
     client_id: uuid.UUID
     client_name: str
+    # Para listar los equipos del domicilio al cambiar el de la orden (E04-12).
+    client_site_id: uuid.UUID
     site_label: str | None
     site_address: str
     work_type_name: str

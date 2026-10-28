@@ -207,6 +207,7 @@ async def list_by_status(
             status=order.status,
             client_id=order.client_id,
             client_name=client_name,
+            client_site_id=order.client_site_id,
             site_label=site_label,
             site_address=site_address,
             work_type_name=work_type_name,

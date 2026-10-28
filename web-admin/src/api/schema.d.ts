@@ -1679,6 +1679,11 @@ export interface components {
             client_id: string;
             /** Client Name */
             client_name: string;
+            /**
+             * Client Site Id
+             * Format: uuid
+             */
+            client_site_id: string;
             /** Site Label */
             site_label: string | null;
             /** Site Address */
