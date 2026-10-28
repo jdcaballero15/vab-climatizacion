@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { memory, storedFor } from "../../test/memoryClosureDrafts";
 import { EMPTY_DRAFT } from "./closure";
+import type { ClosureCreate } from "./closure";
 import type { StoredClosure } from "./closureDrafts";
 import { REJECTED_MESSAGE, sendClosure } from "./closureSender";
 
@@ -32,6 +33,7 @@ function stored(overrides: Partial<StoredClosure> = {}): StoredClosure {
       fileId: null,
       uploaded: false,
     })),
+    signature: null,
     ...overrides,
   };
 }
@@ -43,6 +45,24 @@ function json(body: unknown, status = 200) {
   });
 }
 
+const SIGNATURE = {
+  key: "firma",
+  blob: new Blob(["png"], { type: "image/png" }),
+  fileId: null,
+  uploaded: false,
+};
+
+/** Un cierre firmado por el cliente, sin fotos. */
+function signed(overrides: Partial<StoredClosure> = {}): StoredClosure {
+  const base = stored();
+  return stored({
+    photos: [],
+    signature: SIGNATURE,
+    draft: { ...base.draft, signerName: "Rosa Ficticia" },
+    ...overrides,
+  });
+}
+
 const CLOSED = {
   id: "e0000000-0000-4000-8000-000000000001",
   outcome: "done",
@@ -51,7 +71,10 @@ const CLOSED = {
 };
 
 let calls: string[];
-let sent: { idempotency_key: string; photo_ids: string[] }[];
+let sent: (ClosureCreate & { idempotency_key: string; photo_ids: string[] })[];
+/** Propósito y tipo de cada archivo pedido a la API, y el tipo con que se subió al bucket. */
+let files: { purpose: string; content_type: string }[];
+let bucketTypes: (string | null)[];
 
 /**
  * Simula archivos, bucket y cierre. `closure` responde el cierre; `put` puede cortar la
@@ -61,7 +84,7 @@ function stubApi(
   closure: () => Response = () => json(CLOSED, 201),
   put: (n: number) => Response = () => new Response(null, { status: 200 }),
 ) {
-  let files = 0;
+  let fileCount = 0;
   let puts = 0;
   vi.stubGlobal(
     "fetch",
@@ -70,6 +93,7 @@ function stubApi(
       const path = new URL(input.url).pathname;
       if (input.url.startsWith(BUCKET)) {
         calls.push("PUT bucket");
+        bucketTypes.push(input.headers.get("Content-Type"));
         return put(++puts);
       }
       if (path.endsWith("/confirm")) {
@@ -78,7 +102,8 @@ function stubApi(
       }
       if (path.endsWith("/files")) {
         calls.push("POST files");
-        const id = `f0000000-0000-4000-8000-00000000000${++files}`;
+        files.push((await input.json()) as (typeof files)[number]);
+        const id = `f0000000-0000-4000-8000-00000000000${++fileCount}`;
         return json({ file_id: id, upload_url: `${BUCKET}/${id}`, expires_in: 300 }, 201);
       }
       calls.push("POST closure");
@@ -96,6 +121,8 @@ beforeEach(() => {
   memory.clear();
   calls = [];
   sent = [];
+  files = [];
+  bucketTypes = [];
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -221,6 +248,71 @@ describe("sendClosure", () => {
     await sendClosure(stored());
 
     expect(storedFor(USER, ORDER)?.photos.map((photo) => photo.fileId)).toEqual([null, null]);
+  });
+
+  // E05-07, criterio 1: la firma se sube como PNG y va en el cierre con el nombre.
+  it("sube la firma después de las fotos y la manda con el nombre", async () => {
+    stubApi();
+
+    const result = await sendClosure({ ...stored(), signature: SIGNATURE, draft: signed().draft });
+
+    expect(result.kind).toBe("closed");
+    expect(files.map((file) => file.purpose)).toEqual([
+      "closure_photo",
+      "closure_photo",
+      "closure_signature",
+    ]);
+    expect(files[2]).toMatchObject({ content_type: "image/png", size_bytes: 3 });
+    expect(bucketTypes[2]).toBe("image/png");
+    expect(sent[0]).toMatchObject({
+      signature: { file_id: "f0000000-0000-4000-8000-000000000003", signer_name: "Rosa Ficticia" },
+      no_signature_reason: null,
+    });
+  });
+
+  it("con un motivo elegido no sube la firma y manda el motivo", async () => {
+    stubApi();
+
+    await sendClosure(signed({ draft: { ...signed().draft, noSignatureReason: "refused" } }));
+
+    expect(calls).toEqual(["POST closure"]);
+    expect(sent[0]).toMatchObject({ signature: null, no_signature_reason: "refused" });
+  });
+
+  // E05-13: cortado después de subir la firma, el reintento no la vuelve a subir.
+  it("si el cierre no llegó, el reintento no resube la firma", async () => {
+    stubApi(offline);
+    await sendClosure(signed());
+    expect(storedFor(USER, ORDER)?.signature).toMatchObject({ uploaded: true });
+
+    calls = [];
+    stubApi();
+    expect((await sendClosure(storedFor(USER, ORDER)!)).kind).toBe("closed");
+    expect(calls).toEqual(["POST closure"]);
+  });
+
+  it("si la API no acepta la firma, queda para subirse de nuevo con el campo marcado", async () => {
+    stubApi(() =>
+      json(
+        {
+          detail: {
+            code: "signature_not_available",
+            field: "signature",
+            message: "La firma no se subió bien. Firmá de nuevo.",
+          },
+        },
+        422,
+      ),
+    );
+
+    const result = await sendClosure(signed());
+
+    expect(result.kind).toBe("invalid");
+    expect(storedFor(USER, ORDER)).toMatchObject({
+      status: "draft",
+      problem: { field: "signature" },
+      signature: { key: "firma", fileId: null, uploaded: false },
+    });
   });
 
   it("dos envíos a la vez del mismo cierre mandan uno solo", async () => {

@@ -29,6 +29,7 @@ function draft(overrides: Partial<ClosureDraft> = {}): ClosureDraft {
     failure: "f1",
     repair: "r1",
     equipmentCondition: "working",
+    noSignatureReason: "refused",
     ...overrides,
   };
 }
@@ -43,7 +44,28 @@ describe("missingFields", () => {
     expect(missingFields(EMPTY_DRAFT, OPTIONS)).toEqual({
       technician_ids: "Tildá quiénes fueron.",
       outcome: "Elegí el resultado.",
+      signature: "Pedile la firma al cliente o elegí por qué no firma.",
     });
+  });
+
+  // E05-07, criterio 2: la firma o el motivo, con cualquier resultado.
+  it("pide la firma o el motivo por el que no hay", () => {
+    expect(missingFields(draft({ noSignatureReason: null }), OPTIONS)).toEqual({
+      signature: "Pedile la firma al cliente o elegí por qué no firma.",
+    });
+    expect(missingFields(draft({ noSignatureReason: "client_absent" }), OPTIONS)).toEqual({});
+    expect(
+      missingFields(draft({ noSignatureReason: "other", noSignatureText: " " }), OPTIONS),
+    ).toEqual({ no_signature_text: "Escribí por qué no firma." });
+  });
+
+  // E05-07, criterio 3.
+  it("con la firma trazada pide el nombre de quien firma", () => {
+    const signed = draft({ noSignatureReason: null, signerName: " " });
+    expect(missingFields(signed, OPTIONS, true)).toEqual({
+      signer_name: "Escribí el nombre de quien firma.",
+    });
+    expect(missingFields({ ...signed, signerName: "Rosa Ficticia" }, OPTIONS, true)).toEqual({});
   });
 
   // E05-04, criterio 4.
@@ -126,7 +148,34 @@ describe("toClosurePayload", () => {
       not_done_reason: null,
       observation: null,
       photo_ids: [],
+      signature: null,
+      no_signature_reason: "refused",
+      no_signature_text: null,
     });
+  });
+
+  // E05-07, criterio 1.
+  it("manda la firma subida con el nombre de quien firma", () => {
+    const signed = draft({ noSignatureReason: null, signerName: " Rosa Ficticia " });
+    expect(toClosurePayload(signed, "key", [], "s1")).toMatchObject({
+      signature: { file_id: "s1", signer_name: "Rosa Ficticia" },
+      no_signature_reason: null,
+      no_signature_text: null,
+    });
+  });
+
+  it("con un motivo elegido manda el motivo aunque haya firma, y el texto solo con Otro", () => {
+    expect(
+      toClosurePayload(
+        draft({ noSignatureReason: "other", noSignatureText: " Lluvia " }),
+        "key",
+        [],
+        "s1",
+      ),
+    ).toMatchObject({ signature: null, no_signature_reason: "other", no_signature_text: "Lluvia" });
+    expect(
+      toClosurePayload(draft({ noSignatureReason: "client_absent", noSignatureText: "x" }), "key"),
+    ).toMatchObject({ no_signature_reason: "client_absent", no_signature_text: null });
   });
 
   // E05-06, criterio 3: las fotos van como ids, en el orden del formulario.

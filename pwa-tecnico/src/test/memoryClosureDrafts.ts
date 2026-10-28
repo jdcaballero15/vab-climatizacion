@@ -15,6 +15,7 @@ function copy(closure: StoredClosure): StoredClosure {
     order: closure.order && { ...closure.order },
     draft: { ...closure.draft },
     photos: closure.photos.map((photo) => ({ ...photo })),
+    signature: closure.signature ? { ...closure.signature } : null,
   };
 }
 

@@ -25,6 +25,7 @@ function store(orderId: string, overrides: Partial<StoredClosure> = {}) {
     draft: EMPTY_DRAFT,
     idempotencyKey: `clave-${orderId}`,
     photos: [],
+    signature: null,
     ...overrides,
   };
   memory.set(`${closure.userId}/${orderId}`, closure);
