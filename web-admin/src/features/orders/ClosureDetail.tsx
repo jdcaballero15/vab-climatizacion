@@ -45,6 +45,23 @@ export function ClosureDetail({ order }: { order: OrderListItem }) {
             <dd>{value}</dd>
           </div>
         ))}
+      {data.photos.length > 0 && (
+        <div className="orders__closure-photos-row">
+          <dt>Fotos</dt>
+          <dd>
+            {/* E05-06, criterio 6: miniatura y, al tocarla, la foto grande en otra pestaña. */}
+            <ul className="orders__closure-photos">
+              {data.photos.map((photo, index) => (
+                <li key={photo.id}>
+                  <a href={photo.url} target="_blank" rel="noopener noreferrer">
+                    <img src={photo.url} alt={`Foto ${index + 1} del cierre`} loading="lazy" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </dd>
+        </div>
+      )}
     </dl>
   );
 }

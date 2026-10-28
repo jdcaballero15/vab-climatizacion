@@ -592,10 +592,10 @@ describe("OrdersPage", () => {
     });
   });
   describe("listado por estado", () => {
-    function porEstado() {
+    function porEstado(cierre: ClosureDetail = CIERRE) {
       return mockApi((request, url) => {
         if (url.pathname.endsWith("/admin/orders/o3/closure")) {
-          return json(CIERRE);
+          return json(cierre);
         }
         if (!(url.pathname.endsWith("/admin/orders") && request.method === "GET")) {
           return undefined;
@@ -696,6 +696,38 @@ describe("OrdersPage", () => {
 
       await user.click(ver);
       expect(screen.queryByLabelText("Cierre de la orden N° 3")).not.toBeInTheDocument();
+    });
+
+    // E05-06, criterio 6: las fotos del cierre, en miniatura y para abrir grandes.
+    it("muestra las fotos del cierre con su URL firmada", async () => {
+      const user = userEvent.setup();
+      const url = (n: number) =>
+        `http://bucket.test/ot-files/closures/photos/${n}?X-Amz-Signature=s`;
+      porEstado({
+        ...CIERRE,
+        photos: [
+          { id: "f1", content_type: "image/jpeg", url: url(1) },
+          { id: "f2", content_type: "image/jpeg", url: url(2) },
+        ],
+      });
+      renderOrders();
+
+      await screen.findByRole("list", { name: "Órdenes pendientes" });
+      await user.click(screen.getByRole("button", { name: "Terminadas" }));
+      await user.click(
+        await screen.findByRole("button", { name: "Ver el cierre de la orden N° 3" }),
+      );
+
+      const detalle = await screen.findByLabelText("Cierre de la orden N° 3");
+      const fotos = within(detalle).getAllByRole("img");
+      expect(fotos.map((img) => img.getAttribute("alt"))).toEqual([
+        "Foto 1 del cierre",
+        "Foto 2 del cierre",
+      ]);
+      expect(fotos[1]).toHaveAttribute("src", url(2));
+      const link = within(detalle).getByRole("link", { name: "Foto 1 del cierre" });
+      expect(link).toHaveAttribute("href", url(1));
+      expect(link).toHaveAttribute("target", "_blank");
     });
 
     it("muestra las canceladas con motivo, quién y cuándo, sin acciones", async () => {
