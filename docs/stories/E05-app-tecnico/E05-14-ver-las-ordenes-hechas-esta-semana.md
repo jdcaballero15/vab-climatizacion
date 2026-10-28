@@ -4,7 +4,7 @@ title: "Ver las órdenes hechas esta semana"
 epic: E05
 phase: 1
 priority: should
-status: in_progress
+status: done
 roles: [technician]
 size: S
 areas: [backend, pwa]
@@ -42,3 +42,4 @@ assumes: []
 - PWA: pestañas "Para hacer (n)" y "Hechas esta semana (n)" en `MyOrdersPage`; las dos listas se piden al abrir para tener los contadores. Las tarjetas de hechas no son links. Un cierre pendiente de enviar (E05-13) sigue en "Para hacer" hasta que llega.
 - Implementación en dos PR: backend y PWA.
 - Hecho en el backend (PR 1): `GET /tech/orders/done` (declarada antes de `/{order_id}`), `WorkOrderRepository.list_closures_for_crew` con la escuadrilla del cierre por subconsulta correlacionada, `CrewDoneOrdersTechnicianOut` con `crew` y `orders`. Sin migración.
+- Hecho en la PWA (PR 2): pestañas "Para hacer (n)" y "Hechas esta semana (n)" en `MyOrdersPage`, con la pestaña en la dirección (`?vista=hechas`) para volver a la misma. `useDoneOrders` con su propia clave (`["tech", "done"]`, aparte de las de órdenes abiertas); `forgetClosedOrder` la invalida al cerrar o al mandar un pendiente. La tarjeta muestra el resultado en una etiqueta corta, el motivo de "No se pudo hacer" en su propia línea y "Hoy 17:21" / "Ayer 09:05" / la fecha con la hora de Argentina (`relativeMoment`).

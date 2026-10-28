@@ -1,15 +1,21 @@
 import { LogOut, MapPin, RefreshCw, Snowflake } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 
 import type { components } from "../../api/schema";
 import type { StoredClosure } from "./closureDrafts";
 import type { ClosedNotice } from "./ClosurePage";
-import { dueLabel, statusLabel } from "./labels";
+import { relativeMoment } from "./dates";
+import { dueLabel, notDoneReasonLabel, outcomeLabel, statusLabel } from "./labels";
 import { useStoredClosures } from "./useClosureDrafts";
-import { useMyOrders } from "./useMyOrders";
+import { useDoneOrders, useMyOrders } from "./useMyOrders";
 
 type Order = components["schemas"]["OrderTechnicianOut"];
+type DoneOrder = components["schemas"]["DoneOrderTechnicianOut"];
+
+// Pestaña elegida en la dirección: al volver de una orden se queda donde estaba (E05-14).
+const VIEW_PARAM = "vista";
+const DONE_VIEW = "hechas";
 
 interface MyOrdersPageProps {
   /** Usuario de la sesión, para encontrar sus borradores (E05-13). */
@@ -19,6 +25,9 @@ interface MyOrdersPageProps {
 
 export function MyOrdersPage({ userId, onLogout }: MyOrdersPageProps) {
   const query = useMyOrders();
+  const done = useDoneOrders();
+  const [params, setParams] = useSearchParams();
+  const showingDone = params.get(VIEW_PARAM) === DONE_VIEW;
   const loaded = useStoredClosures(userId);
   const stored = loaded ?? [];
   const [confirmingLogout, setConfirmingLogout] = useState(false);
@@ -60,6 +69,9 @@ export function MyOrdersPage({ userId, onLogout }: MyOrdersPageProps) {
         Este usuario no tiene una escuadrilla asignada. Avisale a administración.
       </p>
     );
+  } else if (showingDone) {
+    title = data.crew.name;
+    body = <DoneOrders query={done} today={data.today} />;
   } else {
     title = data.crew.name;
     body =
@@ -93,7 +105,14 @@ export function MyOrdersPage({ userId, onLogout }: MyOrdersPageProps) {
         )}
       </header>
       <div className="orders__actions">
-        <button type="button" onClick={() => void query.refetch()} disabled={query.isFetching}>
+        <button
+          type="button"
+          onClick={() => {
+            void query.refetch();
+            void done.refetch();
+          }}
+          disabled={query.isFetching || done.isFetching}
+        >
           <RefreshCw size={18} aria-hidden="true" />
           Actualizar
         </button>
@@ -129,9 +148,100 @@ export function MyOrdersPage({ userId, onLogout }: MyOrdersPageProps) {
           No se pudo actualizar. Se muestra la última lista cargada.
         </p>
       )}
-      {unlisted.length > 0 && <UnlistedClosures closures={unlisted} />}
+      {data?.crew && (
+        <div className="orders__tabs" role="group" aria-label="Qué órdenes ver">
+          <button
+            type="button"
+            aria-pressed={!showingDone}
+            onClick={() => setParams({}, { replace: true })}
+          >
+            Para hacer ({data.orders.length})
+          </button>
+          <button
+            type="button"
+            aria-pressed={showingDone}
+            onClick={() => setParams({ [VIEW_PARAM]: DONE_VIEW }, { replace: true })}
+          >
+            Hechas esta semana{done.data?.crew ? ` (${done.data.orders.length})` : ""}
+          </button>
+        </div>
+      )}
+      {!showingDone && unlisted.length > 0 && <UnlistedClosures closures={unlisted} />}
       {body}
     </main>
+  );
+}
+
+interface DoneOrdersProps {
+  query: ReturnType<typeof useDoneOrders>;
+  today: string;
+}
+
+/** Cierres de la escuadrilla en los últimos 7 días (E05-14), sin abrirlos. */
+function DoneOrders({ query, today }: DoneOrdersProps) {
+  if (query.data === undefined) {
+    if (query.isPaused) {
+      return (
+        <p className="orders__message" role="alert">
+          No hay señal. Las órdenes hechas se cargan cuando vuelva la conexión.
+        </p>
+      );
+    }
+    if (query.isError) {
+      return (
+        <p className="orders__message" role="alert">
+          No se pudieron cargar las órdenes hechas. Revisá la conexión.
+        </p>
+      );
+    }
+    return <p className="orders__message">Cargando las órdenes hechas…</p>;
+  }
+  if (query.data.orders.length === 0) {
+    return (
+      <div className="orders__message">
+        <p>No cerraron órdenes en los últimos 7 días.</p>
+        <p>Cada cierre que envíen aparece acá.</p>
+      </div>
+    );
+  }
+  return (
+    <ul className="orders__list" aria-label="Hechas esta semana">
+      {query.data.orders.map((order, index) => (
+        // Una orden cerrada dos veces aparece dos veces: la clave lleva el cierre.
+        <li key={`${order.id}-${order.closed_at}-${index}`}>
+          <DoneCard order={order} today={today} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function DoneCard({ order, today }: { order: DoneOrder; today: string }) {
+  return (
+    <article className={`order-card order-card--done order-card--outcome-${order.outcome}`}>
+      <div className="order-card__row">
+        <span>
+          <span className="order-card__number">N° {order.number}</span>
+          {" · "}
+          <span>{order.work_type_name}</span>
+        </span>
+        <span className={`order-card__outcome order-card__outcome--${order.outcome}`}>
+          {outcomeLabel(order.outcome)}
+        </span>
+      </div>
+      {order.not_done_reason && (
+        <p className="order-card__reason">{notDoneReasonLabel(order.not_done_reason)}</p>
+      )}
+      {order.description && <p className="order-card__description">{order.description}</p>}
+      <div className="order-card__row">
+        <span className="order-card__client">{order.client_name}</span>
+        <span className="order-card__day">{relativeMoment(order.closed_at, today)}</span>
+      </div>
+      <p className="order-card__detail">
+        <MapPin size={16} aria-hidden="true" />
+        <span>{order.address}</span>
+      </p>
+    </article>
   );
 }
 

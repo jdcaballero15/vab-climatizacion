@@ -43,3 +43,22 @@ export const NO_SIGNATURE_REASONS: [NoSignatureReason, string][] = [
   ["refused", "No quiso firmar"],
   ["other", "Otro"],
 ];
+
+type ClosureOutcome = components["schemas"]["ClosureOutcome"];
+
+const OUTCOME_LABELS: Record<ClosureOutcome, string> = {
+  done: "Resuelta",
+  needs_revisit: "Requiere otra visita",
+  needs_pickup: "Retiro a taller",
+  not_done: "No se pudo hacer",
+};
+
+/** Resultado de un cierre en "Hechas esta semana" (E05-14). */
+export function outcomeLabel(outcome: ClosureOutcome): string {
+  return OUTCOME_LABELS[outcome];
+}
+
+/** Motivo de "No se pudo hacer", como se eligió al cerrar. */
+export function notDoneReasonLabel(reason: NotDoneReason): string {
+  return NOT_DONE_REASONS.find(([value]) => value === reason)?.[1] ?? reason;
+}
