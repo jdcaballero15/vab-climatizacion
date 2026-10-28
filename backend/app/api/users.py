@@ -2,10 +2,10 @@ import uuid
 from collections.abc import Sequence
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.api.deps import SessionDep, require_role
-from app.api.schemas.user import UserAdminOut, UserCreate, UserUpdate
+from app.api.schemas.user import PasswordResetOut, UserAdminOut, UserCreate, UserUpdate
 from app.db.models.user import User, UserRole
 from app.services import users as users_service
 
@@ -58,6 +58,19 @@ async def deactivate_user(user_id: uuid.UUID, session: SessionDep, _: AdminOrOwn
         await users_service.deactivate_user(session, user_id)
     except users_service.UserNotFoundError:
         raise _not_found() from None
+
+
+@router.post("/{user_id}/password-reset", response_model=PasswordResetOut)
+async def reset_password(
+    user_id: uuid.UUID, session: SessionDep, actor: AdminOrOwner, response: Response
+) -> PasswordResetOut:
+    try:
+        temporary = await users_service.reset_password(session, user_id, actor)
+    except users_service.UserNotFoundError:
+        raise _not_found() from None
+    # La temporal se muestra una sola vez: que ningún intermediario la guarde.
+    response.headers["Cache-Control"] = "no-store"
+    return PasswordResetOut(temporary_password=temporary)
 
 
 def _not_found() -> HTTPException:

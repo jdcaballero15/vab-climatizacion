@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.db.models.user import UserRole
 
@@ -17,6 +17,12 @@ class UserOut(BaseModel):
     email: EmailStr
     full_name: str
     role: UserRole
+    must_change_password: bool
+
+
+class PasswordChange(BaseModel):
+    current_password: str = Field(max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 # El refresh token no va en ninguna respuesta: solo en la cookie httpOnly (E01-07, criterio 5).

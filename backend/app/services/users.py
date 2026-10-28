@@ -5,8 +5,9 @@ from datetime import UTC, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.user import UserCreate, UserUpdate
-from app.core.security import hash_password
+from app.core.security import generate_temporary_password, hash_password
 from app.db.models.user import User, UserRole
+from app.db.repositories.refresh_token import RefreshTokenRepository
 from app.db.repositories.user import UserRepository
 
 
@@ -81,3 +82,20 @@ async def deactivate_user(session: AsyncSession, user_id: uuid.UUID) -> None:
     user.deleted_at = datetime.now(UTC)
     user.is_active = False
     await session.commit()
+
+
+async def reset_password(session: AsyncSession, user_id: uuid.UUID, actor: User) -> str:
+    """Pone una contraseña temporal, cierra las sesiones del usuario y la devuelve (E01-05).
+
+    La temporal solo vive en esta respuesta: en la base queda el hash.
+    """
+    user = await get_user(session, user_id)
+    temporary = generate_temporary_password()
+    now = datetime.now(UTC)
+    user.password_hash = hash_password(temporary)
+    user.must_change_password = True
+    user.password_reset_at = now
+    user.password_reset_by = actor.id
+    await RefreshTokenRepository(session).revoke_all_for_user(user.id, now)
+    await session.commit()
+    return temporary

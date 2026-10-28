@@ -129,6 +129,9 @@ Table app_user {
   role user_role [not null]
   password_hash varchar [not null]
   is_active boolean [not null, default: true]
+  must_change_password boolean [not null, default: false, note: 'Contraseña temporal: solo puede cambiarla (E01-05)']
+  password_reset_at timestamptz [note: 'Último restablecimiento']
+  password_reset_by uuid [ref: > app_user.id, note: 'Quién hizo el último restablecimiento']
 }
 
 // ---------- Escuadrillas (D-013) ----------

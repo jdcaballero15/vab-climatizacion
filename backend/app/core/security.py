@@ -15,6 +15,11 @@ _hasher = PasswordHasher()
 # tarde lo mismo que uno real y no se filtre por tiempo si el correo existe.
 _DUMMY_HASH = _hasher.hash("dummy-password-para-tiempo-constante")
 
+# Sin 0/O, 1/l/I: la temporal se dicta o se copia a mano en el celular (E01-05).
+_TEMPORARY_ALPHABET = "".join(
+    c for c in "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789" if c not in "0O1lI"
+)
+
 
 def hash_password(password: str) -> str:
     return _hasher.hash(password)
@@ -58,3 +63,8 @@ def generate_refresh_token() -> str:
 def hash_refresh_token(token: str) -> str:
     """Hash del token de refresco. En la base solo se guarda el hash, nunca el valor."""
     return hashlib.sha256(token.encode()).hexdigest()
+
+
+def generate_temporary_password(length: int = 12) -> str:
+    """Contraseña temporal legible para un restablecimiento (se muestra una sola vez)."""
+    return "".join(secrets.choice(_TEMPORARY_ALPHABET) for _ in range(length))
