@@ -2,10 +2,18 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useParams } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { components } from "../../api/schema";
 import { MyOrdersPage } from "./MyOrdersPage";
+
+// Órdenes con borrador en el celular, por usuario (IndexedDB se prueba en closureDrafts.test.ts).
+const drafts = vi.hoisted(() => new Map<string, string[]>());
+vi.mock("./closureDrafts", () => ({
+  listClosureDrafts: async (userId: string) => drafts.get(userId) ?? [],
+}));
+
+const USER_ID = "90000000-0000-4000-8000-000000000001";
 
 type CrewOrders = components["schemas"]["CrewOrdersTechnicianOut"];
 type Order = components["schemas"]["OrderTechnicianOut"];
@@ -56,7 +64,7 @@ function renderPage(state?: unknown) {
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[{ pathname: "/", state }]}>
         <Routes>
-          <Route path="/" element={<MyOrdersPage onLogout={onLogout} />} />
+          <Route path="/" element={<MyOrdersPage userId={USER_ID} onLogout={onLogout} />} />
           <Route path="/ordenes/:orderId" element={<DetailStub />} />
         </Routes>
       </MemoryRouter>
@@ -70,6 +78,7 @@ function DetailStub() {
   return <h1>Detalle {orderId}</h1>;
 }
 
+beforeEach(() => drafts.clear());
 afterEach(() => vi.restoreAllMocks());
 
 describe("MyOrdersPage", () => {
@@ -218,5 +227,42 @@ describe("MyOrdersPage", () => {
     renderPage({ notice: "Orden N° 3 cerrada." });
 
     expect(await screen.findByRole("status")).toHaveTextContent("Orden N° 3 cerrada.");
+  });
+
+  // E05-13, criterio 2: la tarjeta avisa que hay un cierre empezado.
+  it("marca las órdenes con un borrador del cierre", async () => {
+    const withDraft = order({ number: 5, status: "in_progress" });
+    drafts.set(USER_ID, [withDraft.id]);
+    drafts.set("otro-usuario", [withDraft.id]);
+    stubOrders(() => json(payload([withDraft, order({ number: 6 })])));
+    renderPage();
+
+    const cards = await screen.findAllByRole("article");
+    expect(await within(cards[0]).findByText("Borrador")).toBeInTheDocument();
+    expect(within(cards[1]).queryByText("Borrador")).not.toBeInTheDocument();
+  });
+
+  // E05-13, criterio 9: con un cierre sin enviar, avisa antes de cerrar sesión.
+  it("con un borrador pide confirmar antes de cerrar sesión", async () => {
+    const withDraft = order({ status: "in_progress" });
+    drafts.set(USER_ID, [withDraft.id]);
+    stubOrders(() => json(payload([withDraft])));
+    const { onLogout } = renderPage();
+    await screen.findByText("Borrador");
+
+    await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
+
+    const warning = screen.getByRole("group", { name: "Confirmar cierre de sesión" });
+    expect(warning).toHaveTextContent("Hay un cierre sin enviar.");
+    expect(onLogout).not.toHaveBeenCalled();
+    await userEvent.click(within(warning).getByRole("button", { name: "Cancelar" }));
+    expect(screen.queryByRole("group", { name: /Confirmar/ })).not.toBeInTheDocument();
+    expect(onLogout).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión igual" }));
+    expect(onLogout).toHaveBeenCalled();
+    // El borrador no se borra: queda para cuando vuelva a entrar.
+    expect(drafts.get(USER_ID)).toEqual([withDraft.id]);
   });
 });

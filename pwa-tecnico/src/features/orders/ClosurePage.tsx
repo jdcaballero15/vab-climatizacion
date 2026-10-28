@@ -11,12 +11,14 @@ import {
   missingFields,
   observationRequired,
   repairsFor,
+  restoreDraft,
   toClosurePayload,
   type ClosureDraft,
   type ClosureErrors,
   type ClosureField,
   type ClosureOptions,
 } from "./closure";
+import { deleteClosureDraft, saveClosureDraft, type StoredClosure } from "./closureDrafts";
 import { EQUIPMENT_CONDITIONS, NOT_DONE_REASONS } from "./labels";
 import {
   MAX_PHOTOS,
@@ -26,6 +28,7 @@ import {
   type ClosurePhoto,
 } from "./photos";
 import { useCloseOrder } from "./useCloseOrder";
+import { useStoredClosure } from "./useClosureDrafts";
 import { useClosureOptions } from "./useClosureOptions";
 import { useOrderDetail } from "./useOrderDetail";
 
@@ -54,13 +57,19 @@ function isClosureField(field: string): field is ClosureField {
   return field in SECTION_OF;
 }
 
-export function ClosurePage() {
+interface ClosurePageProps {
+  /** Usuario de la sesión: el borrador es suyo (E05-13). */
+  userId: string;
+}
+
+export function ClosurePage({ userId }: ClosurePageProps) {
   const { orderId = "" } = useParams();
   const order = useOrderDetail(orderId);
   const options = useClosureOptions(orderId);
+  const stored = useStoredClosure(userId, orderId);
 
   let body: ReactNode;
-  if (options.isPending) {
+  if (options.isPending || stored === undefined) {
     body = <p className="orders__message">Cargando el cierre…</p>;
   } else if (options.isError) {
     body = (
@@ -72,7 +81,13 @@ export function ClosurePage() {
     body = <NotFound />;
   } else {
     body = (
-      <ClosureForm orderId={orderId} orderNumber={order.data?.number} options={options.data} />
+      <ClosureForm
+        userId={userId}
+        orderId={orderId}
+        orderNumber={order.data?.number}
+        options={options.data}
+        stored={stored}
+      />
     );
   }
 
@@ -105,21 +120,33 @@ function NotFound() {
 }
 
 interface ClosureFormProps {
+  userId: string;
   orderId: string;
   orderNumber: number | undefined;
   options: ClosureOptions;
+  /** Lo que quedó guardado en el celular de una vez anterior (E05-13). */
+  stored: StoredClosure | null;
 }
 
-function ClosureForm({ orderId, orderNumber, options }: ClosureFormProps) {
+function ClosureForm({ userId, orderId, orderNumber, options, stored }: ClosureFormProps) {
   const navigate = useNavigate();
   const close = useCloseOrder(orderId);
-  const [draft, setDraft] = useState<ClosureDraft>(EMPTY_DRAFT);
-  // Una clave por cierre: los reintentos del mismo envío no lo duplican (E05-12).
-  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+  // Lo que se cargó al abrir: mientras nada cambie, no hay nada nuevo que guardar.
+  const [initial] = useState(() => ({
+    draft: stored ? restoreDraft(stored.draft, options) : EMPTY_DRAFT,
+    // Una clave por cierre: los reintentos del mismo envío no lo duplican (E05-12).
+    idempotencyKey: stored?.idempotencyKey ?? crypto.randomUUID(),
+    photos: (stored?.photos ?? []).map((photo): ClosurePhoto => ({
+      ...photo,
+      previewUrl: URL.createObjectURL(photo.blob),
+    })),
+  }));
+  const [draft, setDraft] = useState<ClosureDraft>(initial.draft);
+  const [idempotencyKey, setIdempotencyKey] = useState(initial.idempotencyKey);
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState<{ field: string; message: string } | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [photos, setPhotos] = useState<ClosurePhoto[]>([]);
+  const [photos, setPhotos] = useState<ClosurePhoto[]>(initial.photos);
   const [addingPhotos, setAddingPhotos] = useState(false);
   const [photoNotice, setPhotoNotice] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -132,6 +159,19 @@ function ClosureForm({ orderId, orderNumber, options }: ClosureFormProps) {
     () => () => photosRef.current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl)),
     [],
   );
+
+  // E05-13, criterio 1: cada cambio queda en el celular, sin tocar ningún botón.
+  const sent = useRef(false);
+  useEffect(() => {
+    const unchanged =
+      draft === initial.draft &&
+      photos === initial.photos &&
+      idempotencyKey === initial.idempotencyKey;
+    if (unchanged || sent.current) {
+      return;
+    }
+    void saveClosureDraft({ userId, orderId, draft, idempotencyKey, photos });
+  }, [userId, orderId, draft, photos, idempotencyKey, initial]);
 
   if (notFound) {
     return <NotFound />;
@@ -246,6 +286,9 @@ function ClosureForm({ orderId, orderNumber, options }: ClosureFormProps) {
             focusFirst({ [result.field]: result.message });
           }
         } else {
+          // E05-13, criterio 5: el servidor lo tiene, el borrador ya no hace falta.
+          sent.current = true;
+          void deleteClosureDraft(userId, orderId);
           const number = orderNumber !== undefined ? ` N° ${orderNumber}` : "";
           const notice =
             result.closure.order_status === "done"
@@ -276,6 +319,11 @@ function ClosureForm({ orderId, orderNumber, options }: ClosureFormProps) {
 
   return (
     <form className="closure" onSubmit={(event) => void onSubmit(event)} noValidate>
+      {stored && (
+        <p className="closure__restored" role="status">
+          Se recuperó lo que habías cargado en este celular.
+        </p>
+      )}
       <Section id="closure-technicians" error={errors.technician_ids}>
         {title("¿Quiénes fueron?")}
         <div className="closure__choices closure__choices--cols">

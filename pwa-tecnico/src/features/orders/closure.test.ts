@@ -5,6 +5,7 @@ import {
   OTHER,
   missingFields,
   repairsFor,
+  restoreDraft,
   toClosurePayload,
   type ClosureDraft,
   type ClosureOptions,
@@ -156,5 +157,40 @@ describe("toClosurePayload", () => {
       not_done_reason: "missing_part",
       equipment_condition: null,
     });
+  });
+});
+
+// E05-13: un borrador guardado puede tener opciones que la oficina sacó después.
+describe("restoreDraft", () => {
+  it("deja igual un borrador con opciones vigentes", () => {
+    const saved = draft({ taskIds: ["k1"], observation: "Filtro sucio" });
+    expect(restoreDraft(saved, OPTIONS)).toEqual(saved);
+  });
+
+  it("saca técnicos y tareas que ya no están en las listas", () => {
+    const saved = draft({ technicianIds: ["t1", "t9"], taskIds: ["k1", "k9"] });
+    expect(restoreDraft(saved, OPTIONS)).toMatchObject({ technicianIds: ["t1"], taskIds: ["k1"] });
+  });
+
+  it("una falla que ya no está vuelve a sin elegir, con su reparación", () => {
+    const saved = draft({ failure: "f9", repair: "r1" });
+    expect(restoreDraft(saved, OPTIONS)).toMatchObject({ failure: "", repair: "" });
+  });
+
+  it("una reparación que ya no es de la falla vuelve a sin elegir", () => {
+    expect(restoreDraft(draft({ repair: "r9" }), OPTIONS)).toMatchObject({
+      failure: "f1",
+      repair: "",
+    });
+  });
+
+  it('mantiene "Otro" con su texto', () => {
+    const saved = draft({
+      failure: OTHER,
+      failureOther: "Ruido",
+      repair: OTHER,
+      repairOther: "Ajuste",
+    });
+    expect(restoreDraft(saved, OPTIONS)).toEqual(saved);
   });
 });

@@ -87,9 +87,9 @@ export function AppRoot() {
 
   return (
     <Routes>
-      <Route path="/" element={<MyOrdersPage onLogout={onLogout} />} />
+      <Route path="/" element={<MyOrdersPage userId={session.user.id} onLogout={onLogout} />} />
       <Route path="/ordenes/:orderId" element={<OrderDetailPage />} />
-      <Route path="/ordenes/:orderId/cerrar" element={<ClosurePage />} />
+      <Route path="/ordenes/:orderId/cerrar" element={<ClosurePage userId={session.user.id} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

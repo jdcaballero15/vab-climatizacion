@@ -1,20 +1,25 @@
 import { LogOut, MapPin, RefreshCw, Snowflake } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import type { components } from "../../api/schema";
 import type { ClosedNotice } from "./ClosurePage";
 import { dueLabel, statusLabel } from "./labels";
+import { useClosureDraftIds } from "./useClosureDrafts";
 import { useMyOrders } from "./useMyOrders";
 
 type Order = components["schemas"]["OrderTechnicianOut"];
 
 interface MyOrdersPageProps {
+  /** Usuario de la sesión, para encontrar sus borradores (E05-13). */
+  userId: string;
   onLogout: () => void;
 }
 
-export function MyOrdersPage({ onLogout }: MyOrdersPageProps) {
+export function MyOrdersPage({ userId, onLogout }: MyOrdersPageProps) {
   const query = useMyOrders();
+  const drafts = useClosureDraftIds(userId);
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
   const data = query.data;
   const notice = (useLocation().state as ClosedNotice | null)?.notice;
 
@@ -46,7 +51,7 @@ export function MyOrdersPage({ onLogout }: MyOrdersPageProps) {
         <ul className="orders__list">
           {data.orders.map((order) => (
             <li key={order.id}>
-              <OrderCard order={order} today={data.today} />
+              <OrderCard order={order} today={data.today} hasDraft={drafts.has(order.id)} />
             </li>
           ))}
         </ul>
@@ -71,11 +76,23 @@ export function MyOrdersPage({ onLogout }: MyOrdersPageProps) {
           <RefreshCw size={18} aria-hidden="true" />
           Actualizar
         </button>
-        <button type="button" className="orders__logout" onClick={onLogout}>
+        <button
+          type="button"
+          className="orders__logout"
+          // E05-13, criterio 9: con un cierre sin enviar, primero se avisa.
+          onClick={() => (drafts.size > 0 ? setConfirmingLogout(true) : onLogout())}
+        >
           <LogOut size={18} aria-hidden="true" />
           Cerrar sesión
         </button>
       </div>
+      {confirmingLogout && (
+        <LogoutWarning
+          count={drafts.size}
+          onConfirm={onLogout}
+          onCancel={() => setConfirmingLogout(false)}
+        />
+      )}
       {notice && (
         <p className="orders__notice" role="status">
           {notice}
@@ -91,7 +108,46 @@ export function MyOrdersPage({ onLogout }: MyOrdersPageProps) {
   );
 }
 
-function OrderCard({ order, today }: { order: Order; today: string }) {
+interface LogoutWarningProps {
+  count: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+/** El borrador no se borra al salir: queda para cuando vuelva a entrar el mismo usuario. */
+function LogoutWarning({ count, onConfirm, onCancel }: LogoutWarningProps) {
+  return (
+    <div
+      className="order-start order-start--confirm orders__logout-warning"
+      role="group"
+      aria-label="Confirmar cierre de sesión"
+    >
+      <p className="order-start__question">
+        {count === 1 ? "Hay un cierre sin enviar." : `Hay ${count} cierres sin enviar.`}
+      </p>
+      <p className="orders__logout-hint">
+        Queda guardado en este celular y aparece cuando vuelvas a entrar con este usuario.
+      </p>
+      <div className="order-start__actions">
+        <button type="button" className="order-start__primary" onClick={onConfirm}>
+          Cerrar sesión igual
+        </button>
+        <button type="button" className="order-start__secondary" onClick={onCancel}>
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface OrderCardProps {
+  order: Order;
+  today: string;
+  /** Tiene un cierre empezado en este celular (E05-13, criterio 2). */
+  hasDraft: boolean;
+}
+
+function OrderCard({ order, today, hasDraft }: OrderCardProps) {
   const due = dueLabel(order.scheduled_for, today);
   const equipment = order.equipment
     ? `${order.equipment.location_note} · ${order.equipment.equipment_type_name}`
@@ -106,8 +162,11 @@ function OrderCard({ order, today }: { order: Order; today: string }) {
             {" · "}
             <span>{order.work_type_name}</span>
           </span>
-          <span className={`order-card__status order-card__status--${order.status}`}>
-            {statusLabel(order.status)}
+          <span className="order-card__badges">
+            {hasDraft && <span className="order-card__draft">Borrador</span>}
+            <span className={`order-card__status order-card__status--${order.status}`}>
+              {statusLabel(order.status)}
+            </span>
           </span>
         </div>
         {order.description && <p className="order-card__description">{order.description}</p>}
