@@ -4,7 +4,7 @@ title: "Ver las órdenes hechas esta semana"
 epic: E05
 phase: 1
 priority: should
-status: ready
+status: in_progress
 roles: [technician]
 size: S
 areas: [backend, pwa]
@@ -41,3 +41,4 @@ assumes: []
 - Backend: `GET /tech/orders/done`, solo técnico (403 para el resto). Cierres con `closed_at` en los últimos 7 días (desde ahora, no por día calendario) cuya escuadrilla es la del usuario. La escuadrilla de un cierre es la de la última asignación anterior al cierre, la misma regla que `WorkOrderRepository.crew_name`. Una fila por cierre: una orden que la escuadrilla cerró con "Requiere otra visita" y después resolvió aparece dos veces. Esquema nuevo `DoneOrderTechnicianOut` (id de la orden, número, tipo, descripción, cliente, dirección, `outcome`, `not_done_reason`, `closed_at`), sin datos del cierre más allá del resultado. Ordenado por `closed_at` descendente.
 - PWA: pestañas "Para hacer (n)" y "Hechas esta semana (n)" en `MyOrdersPage`; las dos listas se piden al abrir para tener los contadores. Las tarjetas de hechas no son links. Un cierre pendiente de enviar (E05-13) sigue en "Para hacer" hasta que llega.
 - Implementación en dos PR: backend y PWA.
+- Hecho en el backend (PR 1): `GET /tech/orders/done` (declarada antes de `/{order_id}`), `WorkOrderRepository.list_closures_for_crew` con la escuadrilla del cierre por subconsulta correlacionada, `CrewDoneOrdersTechnicianOut` con `crew` y `orders`. Sin migración.

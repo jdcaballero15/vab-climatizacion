@@ -5,7 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.api.deps import SessionDep, require_role
 from app.api.schemas.closure import ClosureCreate, ClosureOptionsTechnicianOut, ClosureTechnicianOut
-from app.api.schemas.work_order import CrewOrdersTechnicianOut, OrderDetailTechnicianOut
+from app.api.schemas.work_order import (
+    CrewDoneOrdersTechnicianOut,
+    CrewOrdersTechnicianOut,
+    OrderDetailTechnicianOut,
+)
 from app.db.models.user import User, UserRole
 from app.services import closures as closures_service
 from app.services import work_orders as work_orders_service
@@ -19,6 +23,12 @@ CrewUser = Annotated[User, Depends(require_role(UserRole.technician))]
 @router.get("", response_model=CrewOrdersTechnicianOut)
 async def list_my_orders(session: SessionDep, user: CrewUser) -> CrewOrdersTechnicianOut:
     return await work_orders_service.list_for_crew_user(session, user)
+
+
+# Antes de /{order_id}: si no, "done" se toma como un id y da 422.
+@router.get("/done", response_model=CrewDoneOrdersTechnicianOut)
+async def list_my_done_orders(session: SessionDep, user: CrewUser) -> CrewDoneOrdersTechnicianOut:
+    return await work_orders_service.list_done_for_crew_user(session, user)
 
 
 @router.get("/{order_id}", response_model=OrderDetailTechnicianOut)

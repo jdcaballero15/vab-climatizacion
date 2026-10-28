@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 123 historias.** done: 36, draft: 75, icebox: 8, in_progress: 3, ready: 1
+**Total: 123 historias.** done: 36, draft: 75, icebox: 8, in_progress: 4
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -95,7 +95,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E05-08](E05-app-tecnico/E05-08-elegir-el-resultado-del-trabajo.md) | Elegir el resultado del trabajo | Debe | M | done | technician | - | - | E05-04, E04-01 |
 | [E05-12](E05-app-tecnico/E05-12-cierre-de-orden-idempotente.md) | Cierre de orden idempotente | Debe | S | done | technician | - | - | E05-04, E04-01 |
 | [E05-13](E05-app-tecnico/E05-13-no-perder-un-cierre-si-se-corta-la-conexion.md) | No perder un cierre si se corta la conexión | Debe | M | done | technician | - | - | E05-04, E05-12, E05-06 |
-| [E05-14](E05-app-tecnico/E05-14-ver-las-ordenes-hechas-esta-semana.md) | Ver las órdenes hechas esta semana | Debería | S | ready | technician | - | - | E05-01, E05-04 |
+| [E05-14](E05-app-tecnico/E05-14-ver-las-ordenes-hechas-esta-semana.md) | Ver las órdenes hechas esta semana | Debería | S | in_progress | technician | - | - | E05-01, E05-04 |
 
 ## E06 Órdenes de taller
 

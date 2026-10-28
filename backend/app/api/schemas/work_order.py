@@ -193,6 +193,26 @@ class CrewTechnicianOut(BaseModel):
     name: str
 
 
+class DoneOrderTechnicianOut(BaseModel):
+    """Un cierre de la escuadrilla en "Hechas esta semana" (E05-14): solo el resultado."""
+
+    id: uuid.UUID
+    number: int
+    work_type_name: str
+    description: str | None
+    client_name: str
+    address: str
+    outcome: ClosureOutcome
+    not_done_reason: NotDoneReason | None
+    closed_at: datetime
+
+
+class CrewDoneOrdersTechnicianOut(BaseModel):
+    # Nulo si el usuario no tiene una escuadrilla activa, como en "Para hacer".
+    crew: CrewTechnicianOut | None
+    orders: list[DoneOrderTechnicianOut]
+
+
 class CrewOrdersTechnicianOut(BaseModel):
     # Nulo si el usuario no tiene una escuadrilla activa (criterio 7).
     crew: CrewTechnicianOut | None

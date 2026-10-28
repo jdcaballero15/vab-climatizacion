@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,9 +11,11 @@ from app.api.schemas.work_order import (
     CancellationAdminOut,
     CancellationCreate,
     CompletedOut,
+    CrewDoneOrdersTechnicianOut,
     CrewOrdersTechnicianOut,
     CrewTechnicianOut,
     CurrentAssignmentOut,
+    DoneOrderTechnicianOut,
     EquipmentTechnicianOut,
     OrderDetailTechnicianOut,
     OrderListItemOut,
@@ -219,6 +221,39 @@ async def list_for_crew_user(session: AsyncSession, user: User) -> CrewOrdersTec
     orders = await _technician_orders(session, rows)
     return CrewOrdersTechnicianOut(
         crew=CrewTechnicianOut(name=crew.name), today=today, orders=orders
+    )
+
+
+# "Hechas esta semana" son los últimos 7 días, no desde el lunes (E05-14).
+DONE_WINDOW = timedelta(days=7)
+
+
+async def list_done_for_crew_user(session: AsyncSession, user: User) -> CrewDoneOrdersTechnicianOut:
+    """Cierres de la escuadrilla del usuario en los últimos 7 días (E05-14).
+
+    Cualquier resultado; una fila por cierre. Sin escuadrilla activa, ninguno.
+    """
+    crew = await active_crew_of(session, user)
+    if crew is None:
+        return CrewDoneOrdersTechnicianOut(crew=None, orders=[])
+    since = datetime.now(UTC) - DONE_WINDOW
+    rows = await WorkOrderRepository(session).list_closures_for_crew(crew.id, since=since)
+    return CrewDoneOrdersTechnicianOut(
+        crew=CrewTechnicianOut(name=crew.name),
+        orders=[
+            DoneOrderTechnicianOut(
+                id=order.id,
+                number=order.number,
+                work_type_name=work_type_name,
+                description=order.description,
+                client_name=client_name,
+                address=address,
+                outcome=closure.outcome,
+                not_done_reason=closure.not_done_reason,
+                closed_at=closure.closed_at,
+            )
+            for closure, order, work_type_name, client_name, address in rows
+        ],
     )
 
 
