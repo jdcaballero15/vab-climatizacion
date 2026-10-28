@@ -56,7 +56,13 @@ describe("LoginPage", () => {
   it("entrega la sesión al iniciar sesión con éxito", async () => {
     const session: Session = {
       access_token: "token",
-      user: { id: "u1", email: "ana@ot-demo.com", full_name: "Ana Gómez", role: "admin" },
+      user: {
+        id: "u1",
+        email: "ana@ot-demo.com",
+        full_name: "Ana Gómez",
+        role: "admin",
+        must_change_password: false,
+      },
     };
     mockFetch(200, session);
     const onSuccess = vi.fn();

@@ -13,6 +13,7 @@ const CELU_1: UserAdmin = {
   full_name: "Celular 1",
   role: "technician",
   is_active: true,
+  must_change_password: false,
 };
 const CELU_2: UserAdmin = { ...CELU_1, id: "u2", email: "c2@ot-demo.com", full_name: "Celular 2" };
 const CELU_3: UserAdmin = { ...CELU_1, id: "u3", email: "c3@ot-demo.com", full_name: "Celular 3" };

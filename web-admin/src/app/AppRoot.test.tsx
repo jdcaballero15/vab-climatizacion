@@ -17,7 +17,13 @@ const NAMES: Record<Role, string> = {
 function sessionFor(role: Role) {
   return {
     access_token: "token",
-    user: { id: "u1", email: "ana@ot-demo.com", full_name: NAMES[role], role },
+    user: {
+      id: "u1",
+      email: "ana@ot-demo.com",
+      full_name: NAMES[role],
+      role,
+      must_change_password: false,
+    },
   };
 }
 
@@ -249,5 +255,90 @@ describe("AppRoot", () => {
     await waitFor(() => expect(logoutBody).toBe(""));
     // El próximo usuario entra a su pantalla de inicio, no a la del anterior.
     expect(currentPath()).toBe("/");
+  });
+
+  // E01-05, criterios 3 y 4: con una contraseña temporal, antes de seguir hay que elegir una nueva.
+  describe("con una contraseña temporal", () => {
+    function stubTemporary(
+      passwordResponse: () => Response = () => json(sessionFor("admin").user),
+    ) {
+      const bodies: unknown[] = [];
+      const temporal = {
+        ...sessionFor("admin"),
+        user: { ...sessionFor("admin").user, must_change_password: true },
+      };
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: Request | string, init?: RequestInit) => {
+          const request = toRequest(input, init);
+          const path = new URL(request.url).pathname;
+          if (path.endsWith("/auth/refresh")) {
+            return json(temporal);
+          }
+          if (path.endsWith("/auth/password")) {
+            bodies.push(await request.json());
+            return passwordResponse();
+          }
+          return path.includes("/admin/") ? json([]) : json(temporal);
+        }),
+      );
+      return bodies;
+    }
+
+    async function completar(actual: string, nueva: string, repetida = nueva) {
+      await userEvent.type(await screen.findByLabelText("Contraseña temporal"), actual);
+      await userEvent.type(screen.getByLabelText("Contraseña nueva"), nueva);
+      await userEvent.type(screen.getByLabelText("Repetir la contraseña nueva"), repetida);
+      await userEvent.click(screen.getByRole("button", { name: "Guardar y entrar" }));
+    }
+
+    it("pide elegir una nueva y después entra", async () => {
+      const bodies = stubTemporary();
+      renderApp();
+
+      expect(
+        await screen.findByRole("heading", { name: "Elegí una contraseña nueva" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("navigation", { name: "Menú principal" })).not.toBeInTheDocument();
+
+      await completar("TemporalDePrueba", "Nueva-clave-9");
+
+      expect(await screen.findByRole("heading", { name: "Órdenes" })).toBeInTheDocument();
+      expect(bodies).toEqual([
+        { current_password: "TemporalDePrueba", new_password: "Nueva-clave-9" },
+      ]);
+    });
+
+    it.each([
+      ["corta", "corta", "Tiene que tener al menos 8 caracteres."],
+      ["igual a la temporal", "TemporalDePrueba", "Tiene que ser distinta de la temporal."],
+      ["sin coincidir", "Nueva-clave-9", "Las dos contraseñas no coinciden."],
+    ])("avisa y no la guarda si es %s", async (_caso, nueva, aviso) => {
+      const bodies = stubTemporary();
+      renderApp();
+
+      await completar(
+        "TemporalDePrueba",
+        nueva,
+        nueva === "Nueva-clave-9" ? "Otra-clave-9" : nueva,
+      );
+
+      expect(await screen.findByText(aviso)).toBeInTheDocument();
+      expect(bodies).toEqual([]);
+    });
+
+    it("avisa si la temporal no es correcta", async () => {
+      stubTemporary(() =>
+        json({ detail: { code: "invalid_current_password", message: "x" } }, 422),
+      );
+      renderApp();
+
+      await completar("equivocada", "Nueva-clave-9");
+
+      expect(await screen.findByText("La contraseña temporal no es correcta.")).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: "Elegí una contraseña nueva" }),
+      ).toBeInTheDocument();
+    });
   });
 });
