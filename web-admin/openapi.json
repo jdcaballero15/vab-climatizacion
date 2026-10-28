@@ -4132,6 +4132,37 @@
             },
             "type": "array",
             "title": "Photos"
+          },
+          "signature": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClosureSignatureAdminOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "no_signature_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NoSignatureReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "no_signature_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Signature Text"
           }
         },
         "type": "object",
@@ -4147,7 +4178,10 @@
           "equipment_condition",
           "not_done_reason",
           "observation",
-          "photos"
+          "photos",
+          "signature",
+          "no_signature_reason",
+          "no_signature_text"
         ],
         "title": "ClosureAdminOut",
         "description": "Lo que cargó la escuadrilla al cerrar, para que administración lo revise (E04-08).\n\nFalla y reparación vienen como texto: el nombre del catálogo o lo escrito en \"Otro\"."
@@ -4292,6 +4326,38 @@
             "type": "array",
             "title": "Photo Ids",
             "default": []
+          },
+          "signature": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignatureIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "no_signature_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NoSignatureReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "no_signature_text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Signature Text"
           }
         },
         "additionalProperties": false,
@@ -4374,6 +4440,30 @@
           "url"
         ],
         "title": "ClosurePhotoAdminOut"
+      },
+      "ClosureSignatureAdminOut": {
+        "properties": {
+          "signer_name": {
+            "type": "string",
+            "title": "Signer Name"
+          },
+          "signed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Signed At"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "signer_name",
+          "signed_at",
+          "url"
+        ],
+        "title": "ClosureSignatureAdminOut"
       },
       "ClosureTechnicianOut": {
         "properties": {
@@ -5491,6 +5581,16 @@
         ],
         "title": "LoginRequest"
       },
+      "NoSignatureReason": {
+        "type": "string",
+        "enum": [
+          "client_absent",
+          "refused",
+          "other"
+        ],
+        "title": "NoSignatureReason",
+        "description": "Por qué un cierre no tiene la firma del cliente (E05-07, D-011). Lista a validar."
+      },
       "NotDoneReason": {
         "type": "string",
         "enum": [
@@ -6064,6 +6164,34 @@
         "title": "ReturnedFromCrewOut",
         "description": "Por qué volvió a Pendiente desde una escuadrilla (E05-08, criterio 5)."
       },
+      "SignatureIn": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "File Id"
+          },
+          "signer_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signer Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "file_id"
+        ],
+        "title": "SignatureIn",
+        "description": "Firma ya subida al bucket (E00-09) y el nombre de quien firma. Sin DNI (D-008)."
+      },
       "SiteAdminOut": {
         "properties": {
           "id": {
@@ -6376,7 +6504,10 @@
         "properties": {
           "purpose": {
             "type": "string",
-            "const": "closure_photo",
+            "enum": [
+              "closure_photo",
+              "closure_signature"
+            ],
             "title": "Purpose"
           },
           "content_type": {

@@ -25,6 +25,7 @@ from app.domain.work_order import (
     CancelReason,
     ClosureOutcome,
     EquipmentCondition,
+    NoSignatureReason,
     NotDoneReason,
     OrderChannel,
     OrderKind,
@@ -139,6 +140,13 @@ class WorkOrderClosure(TimestampedBase):
     """Cierre de la escuadrilla (E05-04, E05-08). Uno por orden en el cierre básico."""
 
     __tablename__ = "work_order_closure"
+    __table_args__ = (
+        # El texto va solo con "Otro", y con "Otro" es obligatorio (E05-07).
+        CheckConstraint(
+            "(no_signature_reason IS NOT DISTINCT FROM 'other') = (no_signature_text IS NOT NULL)",
+            name="ck_work_order_closure_no_signature_text",
+        ),
+    )
 
     work_order_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("work_order.id"), nullable=False, index=True
@@ -164,6 +172,12 @@ class WorkOrderClosure(TimestampedBase):
         Enum(NotDoneReason, name="not_done_reason"), nullable=True
     )
     observation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Por qué no hay firma del cliente (D-011). Nulo si hay firma; los cierres anteriores a
+    # E05-07 no tienen ni firma ni motivo.
+    no_signature_reason: Mapped[NoSignatureReason | None] = mapped_column(
+        Enum(NoSignatureReason, name="no_signature_reason"), nullable=True
+    )
+    no_signature_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
     # La genera el celular: reenviar el mismo cierre no lo duplica (E05-12).
     idempotency_key: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, nullable=False)
 

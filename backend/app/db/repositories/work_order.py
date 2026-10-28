@@ -10,6 +10,7 @@ from app.db.models.catalog import EquipmentType, Task, WorkType
 from app.db.models.client import Client, ClientSite
 from app.db.models.crew import Crew, FieldTechnician
 from app.db.models.equipment import Equipment
+from app.db.models.signature import Signature
 from app.db.models.stored_file import StoredFile
 from app.db.models.user import User
 from app.db.models.work_order import (
@@ -264,6 +265,21 @@ class WorkOrderClosureRepository(BaseRepository[WorkOrderClosure]):
             .order_by(WorkOrderClosurePhoto.position)
         )
         return list(await self.session.scalars(stmt))
+
+    async def signature(self, closure_id: uuid.UUID) -> tuple[Signature, StoredFile] | None:
+        """La firma del cliente del cierre con su imagen (E05-07)."""
+        stmt = (
+            select(Signature, StoredFile)
+            .join(StoredFile, StoredFile.id == Signature.image_file_id)
+            .where(Signature.closure_id == closure_id, Signature.deleted_at.is_(None))
+        )
+        row = (await self.session.execute(stmt)).first()
+        return (row[0], row[1]) if row else None
+
+    async def signature_file_used(self, file_id: uuid.UUID) -> bool:
+        """El archivo ya es la firma de algún cierre."""
+        stmt = select(Signature.id).where(Signature.image_file_id == file_id)
+        return (await self.session.scalar(stmt)) is not None
 
     async def used_photo_ids(self, file_ids: Sequence[uuid.UUID]) -> set[uuid.UUID]:
         """Los archivos de la lista que ya son foto de algún cierre."""

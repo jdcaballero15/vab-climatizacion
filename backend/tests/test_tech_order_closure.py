@@ -1,3 +1,4 @@
+import logging
 import uuid
 from collections.abc import AsyncGenerator, Callable, Sequence
 from dataclasses import dataclass
@@ -14,6 +15,7 @@ from app.db.models.catalog import EquipmentType, Failure, Repair, Task, WorkType
 from app.db.models.client import Client, ClientContact, ClientSite
 from app.db.models.crew import Crew, FieldTechnician
 from app.db.models.equipment import Equipment
+from app.db.models.signature import Signature
 from app.db.models.stored_file import StoredFile
 from app.db.models.user import User, UserRole
 from app.db.models.work_order import (
@@ -55,6 +57,7 @@ TABLES = [
     WorkOrderCancellation.__table__,
     StoredFile.__table__,
     WorkOrderClosurePhoto.__table__,
+    Signature.__table__,
 ]
 HOY = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")).date()
 
@@ -78,6 +81,8 @@ async def schema() -> AsyncGenerator[None, None]:
             "closure_outcome",
             "equipment_condition",
             "not_done_reason",
+            "no_signature_reason",
+            "signature_purpose",
         ):
             await conn.execute(text(f"DROP TYPE IF EXISTS {enum_type}"))
         await conn.execute(text("DROP SEQUENCE IF EXISTS work_order_number_seq"))
@@ -247,6 +252,10 @@ def _resuelta(m: Mundo, **cambios: Any) -> dict[str, Any]:
         "equipment_condition": "working",
         "not_done_reason": None,
         "observation": None,
+        # E05-07: firma o motivo; los tests que no son de la firma usan un motivo.
+        "signature": None,
+        "no_signature_reason": "client_absent",
+        "no_signature_text": None,
     }
     payload.update(cambios)
     return payload
@@ -945,3 +954,250 @@ async def test_mas_de_cinco_fotos_o_repetidas_se_rechazan(mundo: Mundo) -> None:
     assert _detail(seis)["code"] == "too_many_photos"
     assert _detail(repetida)["code"] == "photo_repeated"
     assert cinco.status_code == 201
+
+
+# E05-07: firma del cliente o motivo por el que no hay (D-011).
+
+
+async def _firma(
+    user: User, *, confirmada: bool = True, purpose: str = "closure_signature"
+) -> StoredFile:
+    firma = StoredFile(
+        purpose=purpose,
+        object_key=f"closures/signatures/{uuid.uuid4()}",
+        content_type="image/png",
+        size_bytes=800,
+        uploaded_by=user.id,
+        confirmed_at=datetime.now(UTC) if confirmada else None,
+    )
+    await _seed([firma])
+    return firma
+
+
+def _firmada(
+    m: Mundo, file_id: uuid.UUID, nombre: str = "Marta Ficticia", **cambios: Any
+) -> dict[str, Any]:
+    firma = {"signature": {"file_id": str(file_id), "signer_name": nombre}}
+    return _resuelta(m, **({"no_signature_reason": None} | firma | cambios))
+
+
+async def _firmas(order_id: uuid.UUID) -> list[Signature]:
+    async with SessionLocal() as session:
+        rows = await session.scalars(
+            select(Signature)
+            .join(WorkOrderClosure, WorkOrderClosure.id == Signature.closure_id)
+            .where(WorkOrderClosure.work_order_id == order_id)
+        )
+        return list(rows)
+
+
+async def _cierre_guardado(order_id: uuid.UUID) -> WorkOrderClosure:
+    async with SessionLocal() as session:
+        cierre = await session.scalar(
+            select(WorkOrderClosure).where(WorkOrderClosure.work_order_id == order_id)
+        )
+        assert cierre is not None
+        return cierre
+
+
+# Criterio 1: la firma queda con el nombre, la hora y la imagen del bucket.
+async def test_cierre_con_firma_la_guarda_con_nombre_y_hora(mundo: Mundo) -> None:
+    orden = await _orden(mundo)
+    firma = await _firma(mundo.celular)
+
+    response = await _cerrar(
+        mundo.celular, orden.id, _firmada(mundo, firma.id, "  Marta Ficticia ")
+    )
+
+    assert response.status_code == 201, response.text
+    # Criterio 7: la respuesta al celular no trae la firma.
+    assert "signature" not in response.json()
+    [guardada] = await _firmas(orden.id)
+    assert guardada.signer_name == "Marta Ficticia"
+    assert guardada.image_file_id == firma.id
+    assert guardada.purpose == "closure"
+    assert guardada.signed_at is not None
+    cierre = await _cierre_guardado(orden.id)
+    assert (cierre.no_signature_reason, cierre.no_signature_text) == (None, None)
+
+
+# Criterio 2: sin firma ni motivo no se cierra, con cualquier resultado.
+@pytest.mark.parametrize(
+    "cambios",
+    [
+        {},
+        {"outcome": "needs_revisit", "observation": "Falta repuesto"},
+        {
+            "outcome": "not_done",
+            "not_done_reason": "missing_part",
+            "equipment_condition": None,
+            "failure_id": None,
+            "repair_id": None,
+        },
+    ],
+)
+async def test_sin_firma_ni_motivo_se_rechaza(mundo: Mundo, cambios: dict[str, Any]) -> None:
+    orden = await _orden(mundo)
+
+    response = await _cerrar(
+        mundo.celular, orden.id, _resuelta(mundo, no_signature_reason=None, **cambios)
+    )
+
+    assert response.status_code == 422
+    assert _detail(response)["code"] == "signature_required"
+    assert _detail(response)["field"] == "signature"
+    assert (await _leer(orden.id))[0] == OrderStatus.in_progress
+
+
+async def test_firma_y_motivo_a_la_vez_se_rechaza(mundo: Mundo) -> None:
+    orden = await _orden(mundo)
+    firma = await _firma(mundo.celular)
+
+    response = await _cerrar(
+        mundo.celular, orden.id, _firmada(mundo, firma.id, no_signature_reason="refused")
+    )
+
+    assert response.status_code == 422
+    assert _detail(response)["code"] == "signature_ambiguous"
+
+
+# Criterio 3.
+@pytest.mark.parametrize("nombre", ["", "   "])
+async def test_firma_sin_nombre_se_rechaza(mundo: Mundo, nombre: str) -> None:
+    orden = await _orden(mundo)
+    firma = await _firma(mundo.celular)
+
+    response = await _cerrar(mundo.celular, orden.id, _firmada(mundo, firma.id, nombre))
+
+    assert response.status_code == 422
+    assert _detail(response)["code"] == "signer_name_required"
+    assert _detail(response)["field"] == "signer_name"
+
+
+# Criterio 2: los motivos, y "Otro" con texto obligatorio.
+@pytest.mark.parametrize("motivo", ["client_absent", "refused"])
+async def test_cierre_con_motivo_sin_firma(mundo: Mundo, motivo: str) -> None:
+    orden = await _orden(mundo)
+
+    response = await _cerrar(mundo.celular, orden.id, _resuelta(mundo, no_signature_reason=motivo))
+
+    assert response.status_code == 201, response.text
+    assert (await _cierre_guardado(orden.id)).no_signature_reason == motivo
+    assert await _firmas(orden.id) == []
+
+
+async def test_motivo_otro_pide_el_texto_y_lo_guarda(mundo: Mundo) -> None:
+    orden = await _orden(mundo)
+
+    sin_texto = await _cerrar(
+        mundo.celular, orden.id, _resuelta(mundo, no_signature_reason="other")
+    )
+    con_texto = await _cerrar(
+        mundo.celular,
+        orden.id,
+        _resuelta(mundo, no_signature_reason="other", no_signature_text="Firmó en papel"),
+    )
+
+    assert sin_texto.status_code == 422
+    assert _detail(sin_texto)["code"] == "no_signature_text_required"
+    assert _detail(sin_texto)["field"] == "no_signature_text"
+    assert con_texto.status_code == 201, con_texto.text
+    assert (await _cierre_guardado(orden.id)).no_signature_text == "Firmó en papel"
+
+
+async def test_texto_sin_motivo_otro_se_rechaza(mundo: Mundo) -> None:
+    orden = await _orden(mundo)
+
+    response = await _cerrar(
+        mundo.celular,
+        orden.id,
+        _resuelta(mundo, no_signature_reason="refused", no_signature_text="Texto"),
+    )
+
+    assert response.status_code == 422
+    assert _detail(response)["code"] == "no_signature_text_not_allowed"
+
+
+# La imagen sigue las reglas de las fotos (E05-06, criterio 4).
+@pytest.mark.parametrize("caso", ["de otro usuario", "sin confirmar", "es una foto", "no existe"])
+async def test_firma_que_no_corresponde_se_rechaza(mundo: Mundo, caso: str) -> None:
+    orden = await _orden(mundo)
+    otro = make_user(email="esc2@ot-demo.com", role=UserRole.technician)
+    await _seed([otro])
+    file_id = {
+        "de otro usuario": lambda: _firma(otro),
+        "sin confirmar": lambda: _firma(mundo.celular, confirmada=False),
+        "es una foto": lambda: _firma(mundo.celular, purpose="closure_photo"),
+    }
+    firma_id = (await file_id[caso]()).id if caso in file_id else uuid.uuid4()
+
+    response = await _cerrar(mundo.celular, orden.id, _firmada(mundo, firma_id))
+
+    assert response.status_code == 422
+    assert _detail(response)["code"] == "signature_not_available"
+    assert _detail(response)["field"] == "signature"
+
+
+async def test_firma_usada_en_otro_cierre_se_rechaza(mundo: Mundo) -> None:
+    primera = await _orden(mundo)
+    segunda = await _orden(mundo)
+    firma = await _firma(mundo.celular)
+    assert (await _cerrar(mundo.celular, primera.id, _firmada(mundo, firma.id))).status_code == 201
+
+    response = await _cerrar(mundo.celular, segunda.id, _firmada(mundo, firma.id))
+
+    assert response.status_code == 422
+    assert _detail(response)["code"] == "signature_already_used"
+
+
+async def test_una_foto_de_firma_no_va_como_foto(mundo: Mundo) -> None:
+    orden = await _orden(mundo)
+    firma = await _firma(mundo.celular)
+
+    response = await _cerrar(mundo.celular, orden.id, _resuelta(mundo, photo_ids=[str(firma.id)]))
+
+    assert response.status_code == 422
+    assert _detail(response)["code"] == "photo_not_available"
+
+
+# D-008: en el cierre no se pide DNI; un campo de más se rechaza.
+async def test_la_firma_no_acepta_dni(mundo: Mundo) -> None:
+    orden = await _orden(mundo)
+    firma = await _firma(mundo.celular)
+    payload = _firmada(mundo, firma.id)
+    payload["signature"]["signer_dni"] = "11111111"
+
+    response = await _cerrar(mundo.celular, orden.id, payload)
+
+    assert response.status_code == 422
+
+
+# Reenviar el mismo cierre con firma no la duplica (E05-12).
+async def test_reenviar_el_cierre_firmado_no_duplica_la_firma(mundo: Mundo) -> None:
+    orden = await _orden(mundo)
+    firma = await _firma(mundo.celular)
+    payload = _firmada(mundo, firma.id)
+
+    primero = await _cerrar(mundo.celular, orden.id, payload)
+    segundo = await _cerrar(mundo.celular, orden.id, payload)
+
+    assert (primero.status_code, segundo.status_code) == (201, 200)
+    assert len(await _firmas(orden.id)) == 1
+
+
+# Criterio 8: el nombre de quien firma no va a los logs.
+async def test_el_nombre_de_quien_firma_no_aparece_en_logs(
+    mundo: Mundo, caplog: pytest.LogCaptureFixture
+) -> None:
+    orden = await _orden(mundo)
+    firma = await _firma(mundo.celular)
+    # Los loggers de la app y del servidor; la base no loguea consultas (sin echo).
+    for name in ("app", "uvicorn", "uvicorn.access", "uvicorn.error", "fastapi"):
+        caplog.set_level(logging.DEBUG, logger=name)
+
+    response = await _cerrar(
+        mundo.celular, orden.id, _firmada(mundo, firma.id, "Nombre Rastreable")
+    )
+
+    assert response.status_code == 201
+    assert "Nombre Rastreable" not in caplog.text

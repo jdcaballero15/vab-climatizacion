@@ -14,6 +14,8 @@ from app.db.repositories.stored_file import StoredFileRepository
 # Prefijo de la clave y tipos aceptados por uso. La clave no lleva datos personales.
 _PURPOSES: dict[str, tuple[str, frozenset[str]]] = {
     "closure_photo": ("closures/photos", frozenset({"image/jpeg", "image/png", "image/webp"})),
+    # La firma la dibuja la app en un lienzo: siempre PNG (E05-07).
+    "closure_signature": ("closures/signatures", frozenset({"image/png"})),
 }
 
 

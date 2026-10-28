@@ -76,6 +76,29 @@ NOT_DONE_REASON_LABELS = {
 }
 
 
+class NoSignatureReason(StrEnum):
+    """Por qué un cierre no tiene la firma del cliente (E05-07, D-011). Lista a validar."""
+
+    client_absent = "client_absent"
+    refused = "refused"
+    other = "other"
+
+
+NO_SIGNATURE_REASON_LABELS = {
+    NoSignatureReason.client_absent: "Cliente ausente",
+    NoSignatureReason.refused: "No quiso firmar",
+    NoSignatureReason.other: "Otro",
+}
+
+
+class SignaturePurpose(StrEnum):
+    """Dónde firmó el cliente. Retiro y devolución llegan con E06-04 y E06-06."""
+
+    closure = "closure"
+    pickup = "pickup"
+    delivery = "delivery"
+
+
 class CancelReason(StrEnum):
     """Por qué administración cancela una orden (E04-07). Lista a validar con la oficina."""
 
