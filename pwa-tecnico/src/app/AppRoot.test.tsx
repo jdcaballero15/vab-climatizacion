@@ -206,4 +206,37 @@ describe("AppRoot", () => {
     expect(await screen.findByRole("heading", { name: "OT Técnico" })).toBeInTheDocument();
     expect(client.getQueryData(["datos"])).toBeUndefined();
   });
+
+  // Alguien de la oficina que entra a la app del técnico no queda trabado en "Cargando":
+  // se le avisa y puede cerrar la sesión, sin pedir la lista de órdenes (que daría 403).
+  it("a un usuario que no es de escuadrilla le avisa y lo deja salir", async () => {
+    const paths: string[] = [];
+    const admin = { ...session, user: { ...session.user, role: "admin" as const } };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: Request | string, init?: RequestInit) => {
+        const request = toRequest(input, init);
+        paths.push(pathOf(request));
+        if (pathOf(request).endsWith("/auth/refresh")) {
+          return json({ access_token: "a2", user: admin.user });
+        }
+        if (pathOf(request).endsWith("/auth/logout")) {
+          return new Response(null, { status: 204 });
+        }
+        return respond(request);
+      }),
+    );
+    renderApp();
+
+    expect(
+      await screen.findByRole("heading", { name: "Esta app es para las escuadrillas" }),
+    ).toBeInTheDocument();
+    expect(paths.some((path) => path.endsWith("/tech/orders"))).toBe(false);
+
+    await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
+
+    expect(await screen.findByRole("heading", { name: "OT Técnico" })).toBeInTheDocument();
+    await waitFor(() => expect(paths.some((path) => path.endsWith("/auth/logout"))).toBe(true));
+    expect(getAccessToken()).toBeNull();
+  });
 });
