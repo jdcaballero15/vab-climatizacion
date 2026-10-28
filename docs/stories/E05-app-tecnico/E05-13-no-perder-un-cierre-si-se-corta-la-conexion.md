@@ -4,7 +4,7 @@ title: "No perder un cierre si se corta la conexión"
 epic: E05
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [technician]
 size: M
 areas: [pwa]
@@ -44,6 +44,7 @@ assumes: []
 - El reintento escucha el evento `online`, corre al abrir la app y reintenta con espera creciente mientras la app está abierta.
 - Un borrador es de la sesión de la escuadrilla: si entra otro usuario en el mismo celular, no ve borradores ajenos (clave por usuario).
 - Cubre el criterio 3 de E01-02 (aviso al cerrar sesión), que quedó diferido por `D-001`.
+- Primera parte (criterios 1, 2, 8 y 9): `pwa-tecnico/src/features/orders/closureDrafts.ts`, módulo propio sobre IndexedDB (base `vab-ot`, almacén `closure-drafts`, clave `[userId, orderId]`). Copia campo por campo lo que carga el técnico, así no se cuela otro dato. Las operaciones van en fila para que un guardado viejo no pise uno nuevo ni el borrado. Al restaurar, lo que la oficina sacó de las listas vuelve a sin elegir (`restoreDraft`). Al cerrar sesión el borrador no se borra: queda para cuando vuelva a entrar el mismo usuario. `fake-indexeddb` solo para los tests.
 
 ## Preguntas abiertas
 

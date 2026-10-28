@@ -5,7 +5,22 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { components } from "../../api/schema";
+import { EMPTY_DRAFT } from "./closure";
+import type { StoredClosure } from "./closureDrafts";
 import { ClosurePage } from "./ClosurePage";
+
+// IndexedDB se prueba en closureDrafts.test.ts: acá alcanza con un borrador en memoria.
+const drafts = vi.hoisted(() => new Map<string, StoredClosure>());
+vi.mock("./closureDrafts", () => ({
+  saveClosureDraft: async (closure: StoredClosure) => {
+    drafts.set(`${closure.userId}/${closure.orderId}`, closure);
+  },
+  loadClosureDraft: async (userId: string, orderId: string) =>
+    drafts.get(`${userId}/${orderId}`) ?? null,
+  deleteClosureDraft: async (userId: string, orderId: string) => {
+    drafts.delete(`${userId}/${orderId}`);
+  },
+}));
 
 // En jsdom no hay canvas: la compresión se prueba en photos.test.ts.
 vi.mock("./photos", async (importOriginal) => ({
@@ -17,6 +32,7 @@ type Options = components["schemas"]["ClosureOptionsTechnicianOut"];
 type ClosureCreate = components["schemas"]["ClosureCreate"];
 
 const ORDER_ID = "6f1c2a9e-0000-4000-8000-000000000001";
+const USER_ID = "90000000-0000-4000-8000-000000000001";
 const ANA = "a0000000-0000-4000-8000-000000000001";
 const LUIS = "a0000000-0000-4000-8000-000000000002";
 const TASK = "b0000000-0000-4000-8000-000000000001";
@@ -131,7 +147,7 @@ function renderClosure() {
         <Routes>
           <Route path="/" element={<OrdersList />} />
           <Route path="/ordenes/:orderId" element={<h1>Detalle de la orden</h1>} />
-          <Route path="/ordenes/:orderId/cerrar" element={<ClosurePage />} />
+          <Route path="/ordenes/:orderId/cerrar" element={<ClosurePage userId={USER_ID} />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -151,6 +167,7 @@ async function fillResolved() {
 }
 
 beforeEach(() => {
+  drafts.clear();
   calls = [];
   uploads = 0;
   let previews = 0;
@@ -619,5 +636,141 @@ describe("ClosurePage", () => {
     await click("Finalizar orden");
     await screen.findByRole("heading", { name: /Lista/ });
     expect(sent[1].photo_ids).toEqual(["f0000000-0000-4000-8000-000000000002"]);
+  });
+
+  // E05-13, criterio 1: lo cargado queda en el celular sin tocar ningún botón.
+  it("guarda el borrador de la orden a medida que se carga", async () => {
+    stubApi();
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+
+    await click("Ana Ficticia");
+    await user.type(screen.getByRole("textbox", { name: /Observación/ }), "Filtro sucio");
+    await user.upload(screen.getByLabelText("Elegir de la galería"), jpeg("a.jpg"));
+    await screen.findByRole("img", { name: /Foto 1/ });
+
+    const saved = drafts.get(`${USER_ID}/${ORDER_ID}`);
+    expect(saved?.draft).toMatchObject({ technicianIds: [ANA], observation: "Filtro sucio" });
+    expect(saved?.idempotencyKey).toMatch(/^[0-9a-f-]{36}$/);
+    expect(saved?.photos).toHaveLength(1);
+    expect(saved?.photos[0]).toMatchObject({ fileId: null, uploaded: false });
+  });
+
+  it("solo abrir el cierre no deja un borrador", async () => {
+    stubApi();
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+
+    expect(drafts.size).toBe(0);
+  });
+
+  // E05-13, criterios 2 y 4: al volver, todo sigue ahí y el envío usa la misma clave.
+  it("al volver a entrar recupera el borrador, sus fotos y su clave", async () => {
+    drafts.set(`${USER_ID}/${ORDER_ID}`, {
+      userId: USER_ID,
+      orderId: ORDER_ID,
+      draft: {
+        ...EMPTY_DRAFT,
+        technicianIds: [ANA],
+        taskIds: [TASK],
+        outcome: "done",
+        failure: FAILURE,
+        repair: REPAIR,
+        equipmentCondition: "working",
+        observation: "Filtro sucio",
+      },
+      idempotencyKey: "7c000000-0000-4000-8000-000000000001",
+      photos: [
+        {
+          key: "foto-1",
+          blob: new Blob(["foto"], { type: "image/jpeg" }),
+          fileId: "f0000000-0000-4000-8000-000000000009",
+          uploaded: true,
+        },
+      ],
+    });
+    const sent = stubApi();
+    renderClosure();
+
+    expect(
+      await screen.findByText("Se recuperó lo que habías cargado en este celular."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ana Ficticia" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("textbox", { name: /Observación/ })).toHaveValue("Filtro sucio");
+    expect(screen.getByRole("combobox", { name: /Reparación/ })).toHaveValue(REPAIR);
+    expect(screen.getAllByRole("img", { name: /Foto \d/ })).toHaveLength(1);
+
+    await click("Finalizar orden");
+
+    await screen.findByRole("heading", { name: /Lista/ });
+    // La foto ya estaba confirmada: no se vuelve a subir.
+    expect(calls).toEqual(["POST closure"]);
+    expect(sent[0]).toMatchObject({
+      idempotency_key: "7c000000-0000-4000-8000-000000000001",
+      observation: "Filtro sucio",
+      photo_ids: ["f0000000-0000-4000-8000-000000000009"],
+    });
+  });
+
+  // E05-13, criterio 5.
+  it("al enviar con éxito borra el borrador", async () => {
+    stubApi();
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+    await fillResolved();
+    expect(drafts.size).toBe(1);
+
+    await click("Finalizar orden");
+
+    await screen.findByRole("heading", { name: /Lista/ });
+    expect(drafts.size).toBe(0);
+  });
+
+  it("si no se pudo enviar, el borrador queda", async () => {
+    stubApi(() => {
+      throw new TypeError("Failed to fetch");
+    });
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+    await fillResolved();
+
+    await click("Finalizar orden");
+
+    expect(await screen.findByText(/No se pudo enviar el cierre/)).toBeInTheDocument();
+    expect(drafts.get(`${USER_ID}/${ORDER_ID}`)?.draft.outcome).toBe("done");
+  });
+
+  // E05-13, criterio 6: si la oficina canceló o reasignó, lo cargado no se pierde.
+  it("si la orden ya no está en curso, no borra el borrador", async () => {
+    stubApi(() =>
+      json({ detail: { code: "order_not_found", message: "No se encontró la orden." } }, 404),
+    );
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+    await fillResolved();
+    await click("Finalizar orden");
+
+    await screen.findByText("Esta orden ya no está en curso para tu escuadrilla.");
+    expect(drafts.size).toBe(1);
+  });
+
+  // Notas técnicas: el borrador de otro usuario del mismo celular no aparece.
+  it("no recupera el borrador de otro usuario", async () => {
+    drafts.set(`otro-usuario/${ORDER_ID}`, {
+      userId: "otro-usuario",
+      orderId: ORDER_ID,
+      draft: { ...EMPTY_DRAFT, observation: "Ajeno" },
+      idempotencyKey: "7c000000-0000-4000-8000-000000000002",
+      photos: [],
+    });
+    stubApi();
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+
+    expect(screen.getByRole("textbox", { name: /Observación/ })).toHaveValue("");
+    expect(screen.queryByText(/Se recuperó/)).not.toBeInTheDocument();
   });
 });

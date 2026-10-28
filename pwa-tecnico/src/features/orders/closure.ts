@@ -78,6 +78,30 @@ export function repairsFor(draft: ClosureDraft, options: ClosureOptions) {
   return options.failures.find((failure) => failure.id === draft.failure)?.repairs ?? [];
 }
 
+/**
+ * Un borrador guardado en el celular (E05-13) contra las listas de hoy: lo que la oficina
+ * sacó desde entonces vuelve a sin elegir, en lugar de mandarse y volver con un 422.
+ */
+export function restoreDraft(saved: ClosureDraft, options: ClosureOptions): ClosureDraft {
+  const ids = (items: { id: string }[]) => new Set(items.map((item) => item.id));
+  const technicians = ids(options.technicians);
+  const tasks = ids(options.tasks);
+  const keeps = (value: string, items: { id: string }[]) =>
+    value === "" || value === OTHER || ids(items).has(value);
+  const restored: ClosureDraft = {
+    ...saved,
+    technicianIds: saved.technicianIds.filter((id) => technicians.has(id)),
+    taskIds: saved.taskIds.filter((id) => tasks.has(id)),
+  };
+  if (!keeps(restored.failure, options.failures)) {
+    return { ...restored, failure: "", failureOther: "", repair: "", repairOther: "" };
+  }
+  if (!keeps(restored.repair, repairsFor(restored, options))) {
+    return { ...restored, repair: "", repairOther: "" };
+  }
+  return restored;
+}
+
 /** Lo que falta para cerrar, con las mismas reglas que la API (services/closures.py). */
 export function missingFields(draft: ClosureDraft, options: ClosureOptions): ClosureErrors {
   const errors: ClosureErrors = {};
