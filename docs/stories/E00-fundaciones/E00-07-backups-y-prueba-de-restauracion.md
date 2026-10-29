@@ -4,7 +4,7 @@ title: "Backups y prueba de restauración"
 epic: E00
 phase: 1
 priority: must
-status: ready
+status: in_progress
 roles: [dev]
 size: S
 areas: [infra]
@@ -43,7 +43,17 @@ assumes: []
 - Repetir la prueba de restauración cada trimestre.
 - Se implementa con Render andando (E00-05).
 
-## Supuestos para confirmar
+## Supuestos confirmados
 
-- 30 días de copias nocturnas alcanzan.
-- Lock sin vencimiento sobre las fotos y firmas.
+- 30 días de copias nocturnas alcanzan (Gonza, 2026-10-29, al mergear el refinamiento).
+- Lock sin vencimiento sobre las fotos y firmas (ídem).
+
+## Notas de implementación
+
+- `python -m app.backup_db` (criterio 1): `pg_dump --format=custom` y subida a `db/<fecha y hora UTC>.dump` en el bucket de copias, con las filas de cada tabla en los metadatos del objeto (`table-counts`). Configuración `BACKUP_S3_*`, aparte de la del bucket de archivos.
+- `python -m app.restore_check --destino <url>` (criterio 3): baja la última copia (o `--clave`), la restaura con `pg_restore` en una base vacía (se niega si tiene tablas) y compara la migración con la última y las filas de cada tabla con las de la copia.
+- La imagen del backend trae el cliente de Postgres 16 de PGDG. El CI la construye (job `backend-image`) y comprueba que `pg_dump` sea 16.
+- `render.yaml`: cron `vab-ot-backup` a las 07:00 UTC, misma imagen que la API con otro comando. La API recibe un token de solo lectura del bucket de copias para la prueba de restauración.
+- Pasos de R2 (bucket de copias, regla de 30 días, locks) en `docs/workflow/despliegue.md`; recuperación y prueba de restauración en `docs/workflow/backups.md` (criterios 2, 4, 5 y 6).
+- Tests en `tests/test_backup.py` con Postgres y MinIO reales: crean bases temporales, así que el rol de la base necesita `CREATEDB` (en el CI y en Docker ya lo tiene).
+- **Queda `in_progress`** hasta que en Render corra la primera copia y la primera prueba de restauración, con la fecha anotada en `backups.md`.

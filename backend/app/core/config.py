@@ -9,6 +9,17 @@ MIN_SECRET_KEY_LENGTH = 32
 _ASYNC_SCHEME = "postgresql+asyncpg://"
 
 
+def async_database_url(value: str) -> str:
+    """Acepta la dirección como la da el proveedor (`postgres://`, `sslmode=`).
+
+    El driver asyncpg necesita su esquema y recibe el modo SSL como `ssl=`.
+    """
+    for scheme in ("postgres://", "postgresql://"):
+        if value.startswith(scheme):
+            value = _ASYNC_SCHEME + value.removeprefix(scheme)
+    return value.replace("sslmode=", "ssl=")
+
+
 class Settings(BaseSettings):
     """Configuración leída del entorno. Nunca poner valores reales acá."""
 
@@ -40,20 +51,20 @@ class Settings(BaseSettings):
     upload_max_bytes: int = 5 * 1024 * 1024
     upload_allowed_types: str = "image/jpeg,image/png,image/webp,application/pdf"
 
+    # Bucket aparte para las copias nocturnas de la base (E00-07), con su propio token.
+    backup_s3_endpoint_url: str = "http://localhost:9000"
+    backup_s3_access_key: str = "minio"
+    backup_s3_secret_key: str = "minio12345"  # noqa: S105 (valor de desarrollo, se pisa por entorno)
+    backup_s3_bucket: str = "ot-backups"
+    backup_s3_region: str = "us-east-1"  # R2 usa "auto"
+
     # Contraseña de los usuarios del generador de datos de prueba. Sin valor por defecto.
     seed_password: str | None = None
 
     @field_validator("database_url")
     @classmethod
     def _async_database_url(cls, value: str) -> str:
-        """Acepta la dirección como la da el proveedor (`postgres://`, `sslmode=`).
-
-        El driver asyncpg necesita su esquema y recibe el modo SSL como `ssl=`.
-        """
-        for scheme in ("postgres://", "postgresql://"):
-            if value.startswith(scheme):
-                value = _ASYNC_SCHEME + value.removeprefix(scheme)
-        return value.replace("sslmode=", "ssl=")
+        return async_database_url(value)
 
     @model_validator(mode="after")
     def _real_secret_in_production(self) -> Self:

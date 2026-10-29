@@ -6,6 +6,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Cliente de Postgres 16 para las copias y la prueba de restauración (E00-07). El de Debian
+# es otra versión: el de PGDG coincide con la base de Render.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-common \
+    && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
+    && apt-get install -y --no-install-recommends postgresql-client-16 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml alembic.ini ./
 COPY migrations ./migrations
 COPY app ./app

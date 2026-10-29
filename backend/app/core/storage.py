@@ -70,16 +70,22 @@ class ObjectStorage:
         return StoredObject(content_type=info["ContentType"], size_bytes=info["ContentLength"])
 
 
-def build_storage(ttl_seconds: int | None = None) -> ObjectStorage:
-    settings = get_settings()
-    client = boto3.client(
+def s3_client(endpoint_url: str, access_key: str, secret_key: str, region: str) -> S3Client:
+    return boto3.client(
         "s3",
-        endpoint_url=settings.s3_endpoint_url,
-        aws_access_key_id=settings.s3_access_key,
-        aws_secret_access_key=settings.s3_secret_key,
-        region_name=settings.s3_region,
+        endpoint_url=endpoint_url,
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        region_name=region,
         # Firma v4 y rutas con el bucket en el path: lo que aceptan MinIO y R2.
         config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+    )
+
+
+def build_storage(ttl_seconds: int | None = None) -> ObjectStorage:
+    settings = get_settings()
+    client = s3_client(
+        settings.s3_endpoint_url, settings.s3_access_key, settings.s3_secret_key, settings.s3_region
     )
     ttl = settings.signed_url_ttl_seconds if ttl_seconds is None else ttl_seconds
     return ObjectStorage(client, settings.s3_bucket, ttl)
