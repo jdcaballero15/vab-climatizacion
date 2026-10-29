@@ -4,7 +4,7 @@ title: "Guía de uso y práctica con datos de prueba"
 epic: E11
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin, technician]
 size: M
 areas: [datos]
@@ -38,3 +38,11 @@ assumes: []
 - Capturas del entorno local (skill `run-local`) con datos ficticios: usuarios de `make seed`, clientes y órdenes inventados.
 - Textos de la interfaz tal como aparecen en pantalla. Si un botón cambia de nombre, se corrige la guía.
 - Cuando entre facturación (E04-09), las órdenes del cliente "PRÁCTICA - no facturar" no tienen que aparecer como pendientes de facturar: anotarlo al refinar esa historia.
+
+## Notas de implementación
+
+- Hecho el 2026-10-29: dos docs con link, de Gonza (privados; los comparte él con el cliente). Guía de la oficina, con un diagrama de los estados de la orden, y guía de la escuadrilla, con 7 capturas del celular.
+- Pasos y textos tomados del código de `web-admin` y `pwa-tecnico` tal como están en `main` a esa fecha.
+- Capturas del entorno local con datos inventados ("Heladería La Inventada", "Calle Ficticia 123", "Marta Ejemplo", "Ana Ficticia"), criterio 4.
+- La práctica (criterio 1) queda explicada en la guía de la oficina. El cliente "PRÁCTICA - no facturar" lo crea la oficina en producción la primera vez.
+- Las direcciones de los sitios en las guías son las previstas en `render.yaml`. Si Render agrega un sufijo, se corrigen las guías.
