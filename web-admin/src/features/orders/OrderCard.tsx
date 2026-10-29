@@ -124,6 +124,11 @@ export function OrderCard({ order, primary, more, children }: OrderCardProps) {
             <p className="order-card__meta">
               <span>{order.work_type_name}</span>
               <span>{order.site_label ?? order.site_address}</span>
+              {order.equipment && (
+                <span title={order.equipment.location_note}>
+                  Equipo {order.equipment.internal_code} · {order.equipment.location_note}
+                </span>
+              )}
               <span className={`badge badge--${order.status}`}>{STATUS_LABELS[order.status]}</span>
             </p>
           </div>

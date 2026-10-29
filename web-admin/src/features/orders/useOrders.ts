@@ -17,6 +17,7 @@ import type {
   ClosureDetail,
   ListableStatus,
   OrderListPage,
+  EquipmentChange,
   WorkOrder,
   WorkOrderCreate,
 } from "./types";
@@ -76,6 +77,24 @@ export function useCreateOrder() {
       const { data, error } = await api.POST("/admin/orders", { body: nueva });
       if (error || !data) {
         throw saveError(error, "No se pudo crear la orden.");
+      }
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
+  });
+}
+
+/** Agrega, cambia o saca el equipo de una orden Pendiente o Asignada (E04-12). */
+export function useChangeEquipment(orderId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<WorkOrder, Error, EquipmentChange>({
+    mutationFn: async (cambio) => {
+      const { data, error } = await api.PUT("/admin/orders/{order_id}/equipment", {
+        params: { path: { order_id: orderId } },
+        body: cambio,
+      });
+      if (error || !data) {
+        throw saveError(error, "No se pudo cambiar el equipo.");
       }
       return data;
     },
