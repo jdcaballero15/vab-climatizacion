@@ -4,6 +4,7 @@ import type { ClientSummary } from "../clients/types";
 import { useSites } from "../clients/useClients";
 import { useWorkTypes } from "../work-types/useWorkTypes";
 import { ClientPicker } from "./ClientPicker";
+import { EquipmentSelect } from "./EquipmentSelect";
 import { activeSites, EMPTY_ORDER, missingFields, type OrderFormValues } from "./formValues";
 import { CHANNEL_LABELS } from "./labels";
 import { SitePicker } from "./SitePicker";
@@ -44,6 +45,7 @@ export function OrderForm() {
         description: values.description,
         requester_name: values.requesterName || null,
         requester_area: values.requesterArea || null,
+        equipment_id: values.equipmentId || null,
       },
       {
         onSuccess: (orden) => {
@@ -64,7 +66,7 @@ export function OrderForm() {
         selected={client}
         onSelect={(elegido) => {
           setClient(elegido);
-          set({ siteId: "" });
+          set({ siteId: "", equipmentId: "" });
           setCreated(null);
         }}
       />
@@ -73,11 +75,21 @@ export function OrderForm() {
           clientId={client.id}
           sites={sites}
           value={values.siteId}
-          onChange={(siteId) => set({ siteId })}
+          // El equipo es del domicilio: al cambiarlo, se vuelve a elegir (E04-12).
+          onChange={(siteId) => set({ siteId, equipmentId: "" })}
         />
       )}
 
       <form className="clients__form" onSubmit={handleSubmit} aria-label="Datos del pedido">
+        {client && values.siteId && (
+          <EquipmentSelect
+            id="order-equipment"
+            clientId={client.id}
+            siteId={values.siteId}
+            value={values.equipmentId}
+            onChange={(equipmentId) => set({ equipmentId })}
+          />
+        )}
         <label htmlFor="order-work-type">Tipo de trabajo</label>
         <select
           id="order-work-type"

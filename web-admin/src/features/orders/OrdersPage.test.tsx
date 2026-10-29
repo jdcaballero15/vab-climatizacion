@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ClientSummary, Site } from "../clients/types";
+import type { ClientSummary, Equipment, Site } from "../clients/types";
 import type { Crew } from "../crews/types";
 import { businessToday, nextDay } from "./labels";
 import { OrdersPage } from "./OrdersPage";
@@ -28,6 +28,27 @@ const CENTRAL: Site = {
 };
 const ANEXO: Site = { ...CENTRAL, id: "s2", label: "Anexo", address: "Ruta 9" };
 const VIEJO: Site = { ...CENTRAL, id: "s3", label: "Viejo", is_active: false };
+// Equipos de Central (E04-12): la API los filtra por domicilio.
+const EQUIPO_1: Equipment = {
+  id: "e1",
+  client_site_id: "s1",
+  equipment_type_id: "t1",
+  internal_code: "EA1064201",
+  location_note: "Sala de máquinas",
+  brand: "Marca Ficticia",
+  model: "X1",
+  serial_number: null,
+  notes: null,
+};
+const EQUIPO_2: Equipment = {
+  ...EQUIPO_1,
+  id: "e2",
+  internal_code: "EA1064202",
+  location_note: "Cocina",
+  brand: null,
+  model: null,
+};
+const TIPOS_EQUIPO = [{ id: "t1", name: "Aire acondicionado", is_active: true }];
 const TIPOS = [
   { id: "w1", name: "Reparación", is_active: true },
   { id: "w2", name: "Service", is_active: true },
@@ -169,6 +190,12 @@ function mockApi(handler: Handler = () => undefined, sites: Site[] = [CENTRAL]) 
     }
     if (url.pathname.endsWith("/admin/crews")) {
       return json(ESCUADRILLAS);
+    }
+    if (url.pathname.endsWith("/equipment") && request.method === "GET") {
+      return json(url.searchParams.get("site_id") === "s1" ? [EQUIPO_1, EQUIPO_2] : []);
+    }
+    if (url.pathname.endsWith("/admin/equipment-types")) {
+      return json(TIPOS_EQUIPO);
     }
     if (url.pathname.endsWith("/admin/orders") && request.method === "GET") {
       return json(pendingPage([]));
@@ -358,6 +385,7 @@ describe("OrdersPage", () => {
       description: "Pierde agua",
       requester_name: "Jefa de mantenimiento",
       requester_area: "Piso 3",
+      equipment_id: null,
     });
     // Se refresca el listado de pendientes.
     await waitFor(() => expect(listados(fetchMock, "pending")).toHaveLength(2));
@@ -1121,5 +1149,173 @@ describe("OrdersPage", () => {
       const [post] = calls(fetchMock, "POST", "/admin/orders/o1/assignment");
       expect(await post.json()).toEqual({ crew_id: "c2", scheduled_for: manana });
     });
+  });
+});
+
+// E04-12: el equipo de la orden.
+describe("OrdersPage, equipo de la orden", () => {
+  // Criterio 1: al crear, los equipos del domicilio elegido.
+  it("al crear ofrece los equipos del domicilio y manda el elegido", async () => {
+    const user = userEvent.setup();
+    const fetchMock = mockApi((request, url) =>
+      url.pathname.endsWith("/admin/orders") && request.method === "POST"
+        ? json({ ...CREADA, equipment_id: "e1" }, 201)
+        : undefined,
+    );
+    renderOrders();
+    await abrirAlta();
+    await elegirCliente(user);
+    const form = formulario();
+    await within(form).findByText("Domicilio: Central");
+    await completarPedido(user);
+
+    const equipo = await within(form).findByLabelText("Equipo (opcional)");
+    await waitFor(() =>
+      expect(
+        within(equipo)
+          .getAllByRole("option")
+          .map((option) => option.textContent),
+      ).toEqual([
+        "Sin equipo",
+        "EA1064201 · Aire acondicionado · Sala de máquinas · Marca Ficticia X1",
+        "EA1064202 · Aire acondicionado · Cocina",
+      ]),
+    );
+    expect(equipo).toHaveValue("");
+    await user.selectOptions(equipo, "e1");
+    await user.click(within(form).getByRole("button", { name: "Crear orden" }));
+
+    expect(await screen.findByText("Orden N° 9 creada.")).toBeInTheDocument();
+    const [post] = calls(fetchMock, "POST", "/admin/orders");
+    expect(await post.json()).toMatchObject({ client_site_id: "s1", equipment_id: "e1" });
+  });
+
+  // Criterio 1: el equipo es del domicilio; al cambiar de domicilio se vuelve a elegir.
+  it("al cambiar de domicilio se borra el equipo elegido", async () => {
+    const user = userEvent.setup();
+    mockApi(undefined, [CENTRAL, ANEXO]);
+    renderOrders();
+    await abrirAlta();
+    await elegirCliente(user);
+    const form = formulario();
+
+    await user.selectOptions(await within(form).findByLabelText("Domicilio"), "s1");
+    await user.selectOptions(await within(form).findByLabelText("Equipo (opcional)"), "e1");
+    await user.selectOptions(within(form).getByLabelText("Domicilio"), "s2");
+
+    const equipo = await within(form).findByLabelText("Equipo (opcional)");
+    expect(equipo).toHaveValue("");
+    expect(
+      await within(form).findByText("Este domicilio no tiene equipos cargados."),
+    ).toBeVisible();
+  });
+
+  function conOrden(orden: OrderListItem, put?: (request: Request) => Response) {
+    let guardado: OrderListItem = orden;
+    return mockApi((request, url) => {
+      if (url.pathname.endsWith(`/admin/orders/${orden.id}/equipment`)) {
+        const response = put ? put(request) : json({ ...CREADA, id: orden.id }, 200);
+        if (response.ok) {
+          guardado = {
+            ...orden,
+            equipment: { id: "e2", internal_code: "EA1064202", location_note: "Cocina" },
+          };
+        }
+        return response;
+      }
+      if (url.pathname.endsWith("/admin/orders") && request.method === "GET") {
+        return json(pendingPage(url.searchParams.get("status") === orden.status ? [guardado] : []));
+      }
+      return undefined;
+    });
+  }
+
+  // Criterio 5: el listado muestra el equipo.
+  it("la tarjeta muestra el equipo de la orden", async () => {
+    conOrden({
+      ...PENDIENTE,
+      equipment: { id: "e1", internal_code: "EA1064201", location_note: "Sala de máquinas" },
+    });
+    renderOrders();
+
+    expect(await screen.findByText("Equipo EA1064201 · Sala de máquinas")).toBeInTheDocument();
+  });
+
+  // Criterio 3: se agrega, cambia o saca en Pendientes y Asignadas.
+  it("cambia el equipo desde el menú de la tarjeta", async () => {
+    const user = userEvent.setup();
+    const fetchMock = conOrden({
+      ...PENDIENTE,
+      equipment: { id: "e1", internal_code: "EA1064201", location_note: "Sala de máquinas" },
+    });
+    renderOrders();
+
+    await abrirMenu(user, 7);
+    await user.click(screen.getByRole("button", { name: "Cambiar el equipo de la orden N° 7" }));
+    const form = screen.getByRole("form", { name: "Equipo de la orden N° 7" });
+    const equipo = await within(form).findByLabelText("Equipo (opcional)");
+    await waitFor(() => expect(equipo).toHaveValue("e1"));
+    await user.selectOptions(equipo, "e2");
+    await user.click(within(form).getByRole("button", { name: "Guardar equipo" }));
+
+    expect(await screen.findByText("Equipo de la orden N° 7 guardado.")).toBeInTheDocument();
+    const [put] = calls(fetchMock, "PUT", "/admin/orders/o1/equipment");
+    expect(await put.json()).toEqual({ equipment_id: "e2" });
+    expect(await screen.findByText("Equipo EA1064202 · Cocina")).toBeInTheDocument();
+  });
+
+  it('sin equipo ofrece agregarlo, y "Sin equipo" lo saca', async () => {
+    const user = userEvent.setup();
+    const fetchMock = conOrden(PENDIENTE);
+    renderOrders();
+
+    await abrirMenu(user, 7);
+    await user.click(screen.getByRole("button", { name: "Agregar el equipo de la orden N° 7" }));
+    const form = screen.getByRole("form", { name: "Equipo de la orden N° 7" });
+    await within(form).findByRole("option", { name: /EA1064201/ });
+    await user.click(within(form).getByRole("button", { name: "Guardar equipo" }));
+
+    const [put] = calls(fetchMock, "PUT", "/admin/orders/o1/equipment");
+    expect(await put.json()).toEqual({ equipment_id: null });
+  });
+
+  it("muestra el error del backend al cambiar el equipo", async () => {
+    const user = userEvent.setup();
+    conOrden(PENDIENTE, () =>
+      json(
+        {
+          detail: {
+            code: "order_not_editable",
+            message: "El equipo se cambia solo antes de que se inicie la orden.",
+          },
+        },
+        409,
+      ),
+    );
+    renderOrders();
+
+    await abrirMenu(user, 7);
+    await user.click(screen.getByRole("button", { name: "Agregar el equipo de la orden N° 7" }));
+    const form = screen.getByRole("form", { name: "Equipo de la orden N° 7" });
+    await user.click(within(form).getByRole("button", { name: "Guardar equipo" }));
+
+    expect(await within(form).findByRole("alert")).toHaveTextContent(
+      "El equipo se cambia solo antes de que se inicie la orden.",
+    );
+  });
+
+  // Criterio 3: en curso ya no se cambia.
+  it("en curso no ofrece cambiar el equipo", async () => {
+    const user = userEvent.setup();
+    conOrden({
+      ...PENDIENTE,
+      status: "in_progress",
+      assignment: { crew_name: "Escuadrilla 1", scheduled_for: "2026-10-28" },
+    });
+    renderOrders();
+    await user.click(await screen.findByRole("button", { name: /En curso/ }));
+
+    await abrirMenu(user, 7);
+    expect(screen.queryByRole("button", { name: /equipo de la orden/ })).not.toBeInTheDocument();
   });
 });
