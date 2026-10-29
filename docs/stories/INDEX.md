@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 123 historias.** done: 37, draft: 74, icebox: 8, in_progress: 4
+**Total: 123 historias.** done: 37, draft: 73, icebox: 8, in_progress: 4, ready: 1
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -16,7 +16,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E00-04](E00-fundaciones/E00-04-test-de-contrato-el-tecnico-no-ve-precios.md) | Test de contrato: el técnico no ve precios | Debe | S | done | dev | - | - | E00-01 |
 | [E00-05](E00-fundaciones/E00-05-elegir-proveedor-de-hosting-y-desplegar-staging.md) | Elegir proveedor de hosting y desplegar staging | Debe | M | in_progress | dev | - | D-006 | E00-01 |
 | [E00-06](E00-fundaciones/E00-06-despliegue-a-produccion-por-tag-con-aprobacion.md) | Despliegue a producción por tag con aprobación | Debe | S | draft | dev | - | - | E00-05 |
-| [E00-07](E00-fundaciones/E00-07-backups-y-prueba-de-restauracion.md) | Backups y prueba de restauración | Debe | S | draft | dev | - | - | E00-05 |
+| [E00-07](E00-fundaciones/E00-07-backups-y-prueba-de-restauracion.md) | Backups y prueba de restauración | Debe | S | ready | dev | - | - | E00-05 |
 | [E00-08](E00-fundaciones/E00-08-observabilidad-minima.md) | Observabilidad mínima | Debería | S | draft | dev | - | - | E00-05 |
 | [E00-09](E00-fundaciones/E00-09-almacenamiento-de-archivos-con-urls-firmadas.md) | Almacenamiento de archivos con URLs firmadas | Debe | M | in_progress | dev | - | - | E00-01 |
 | [E00-10](E00-fundaciones/E00-10-envio-de-mail-transaccional.md) | Envío de mail transaccional | Debe | S | draft | dev | D-009 | - | E00-01 |
