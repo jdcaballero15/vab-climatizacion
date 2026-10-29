@@ -1,4 +1,4 @@
-# Blueprint de Render (E00-05, ADR 0004): base, API, administración y app del técnico.
+# Blueprint de Render (E00-05, ADR 0004): base, API, copia nocturna, administración y app del técnico.
 # Paso a paso y lo que hay que revisar después de crearlo: docs/workflow/despliegue.md.
 # Ninguna credencial va acá: la clave la genera Render y la base se conecta sola.
 #
@@ -46,6 +46,49 @@ services:
       - key: S3_BUCKET
         value: vab-ot-files
       - key: S3_REGION
+        value: auto
+      # Para la prueba de restauración desde la Shell (python -m app.restore_check).
+      - key: BACKUP_S3_ENDPOINT_URL
+        sync: false
+      - key: BACKUP_S3_ACCESS_KEY
+        sync: false
+      - key: BACKUP_S3_SECRET_KEY
+        sync: false
+      - key: BACKUP_S3_BUCKET
+        value: vab-ot-backups
+      - key: BACKUP_S3_REGION
+        value: auto
+
+  # Copia nocturna de la base al bucket vab-ot-backups (E00-07, docs/workflow/backups.md).
+  # Misma imagen que la API, con otro comando: no corre migraciones.
+  - type: cron
+    name: vab-ot-backup
+    runtime: docker
+    plan: starter
+    region: virginia
+    schedule: "0 7 * * *" # 4 de la mañana en Argentina (Render usa UTC)
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python -m app.backup_db
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: vab-ot-db
+          property: connectionString
+      # Bucket de copias en Cloudflare R2, con su propio token. Se cargan en el panel.
+      - key: BACKUP_S3_ENDPOINT_URL
+        sync: false
+      - key: BACKUP_S3_ACCESS_KEY
+        sync: false
+      - key: BACKUP_S3_SECRET_KEY
+        sync: false
+      - key: BACKUP_S3_BUCKET
+        value: vab-ot-backups
+      - key: BACKUP_S3_REGION
         value: auto
 
   - type: web

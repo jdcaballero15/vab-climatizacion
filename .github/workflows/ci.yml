@@ -90,7 +90,20 @@ jobs:
             > "$RUNNER_TEMP/minio.log" 2>&1 &
           for i in $(seq 1 30); do curl -sf http://localhost:9000/minio/health/live && exit 0; sleep 1; done
           cat "$RUNNER_TEMP/minio.log"; exit 1
+      # Las copias de E00-07 usan pg_dump y pg_restore: tienen que ser de Postgres 16.
+      - run: pg_dump --version && pg_restore --version
       - run: pytest
+
+  backend-image:
+    name: backend-image
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # La imagen que corre en Render (API y cron de copias): que construya y traiga pg_dump 16.
+      - run: docker build -t vab-ot-api backend
+      - run: docker run --rm vab-ot-api pg_dump --version | grep -q "PostgreSQL) 16\."
 
   web-admin:
     name: web-admin
@@ -214,7 +227,7 @@ jobs:
   ci-ok:
     name: ci-ok
     if: always()
-    needs: [changes, backend, web-admin, pwa-tecnico, stories, secrets, conventions, guards]
+    needs: [changes, backend, backend-image, web-admin, pwa-tecnico, stories, secrets, conventions, guards]
     runs-on: ubuntu-latest
     steps:
       - name: Verificar resultado de los jobs
