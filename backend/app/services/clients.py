@@ -91,9 +91,17 @@ async def create_client(
 
 
 async def list_clients(
-    session: AsyncSession, *, segment: ClientSegment | None, limit: int, offset: int
+    session: AsyncSession,
+    *,
+    segment: ClientSegment | None,
+    search: str | None = None,
+    limit: int,
+    offset: int,
 ) -> tuple[Sequence[Client], int]:
-    return await ClientRepository(session).list_page(segment=segment, limit=limit, offset=offset)
+    """search filtra por parte del nombre o por el número, sin mayúsculas ni acentos."""
+    return await ClientRepository(session).list_page(
+        segment=segment, search=_normalize(search or "") or None, limit=limit, offset=offset
+    )
 
 
 async def get_client(session: AsyncSession, client_id: uuid.UUID) -> Client:

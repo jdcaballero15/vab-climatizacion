@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-query";
 
 import { api } from "../../api/client";
-import type { ClientSummary } from "../clients/types";
+import type { ClientPage } from "../clients/types";
 import type {
   Assignment,
   AssignmentCreate,
@@ -24,8 +24,8 @@ import type {
 
 const ORDERS_KEY = ["orders"] as const;
 export const PAGE_SIZE = 50;
-// Desde este largo la búsqueda del backend compara por contención (ver /admin/clients/similar).
-export const MIN_CLIENT_SEARCH = 4;
+// Clientes que muestra el selector de la orden; con más, se sigue escribiendo para filtrar.
+export const CLIENT_OPTIONS_LIMIT = 20;
 
 /** Error con el mensaje en español que manda el backend ({code, message}), si lo hay. */
 function saveError(error: unknown, fallback: string): Error {
@@ -195,20 +195,21 @@ export function useOrderClosure(orderId: string) {
 }
 
 /** Clientes cuyo nombre contiene el texto, sin distinguir mayúsculas ni acentos. */
-export function useClientSearch(text: string) {
-  const name = text.trim();
-  return useQuery<ClientSummary[]>({
-    queryKey: ["clients", "search", name],
+/** Clientes para elegir en la orden: por nombre (o parte) o número; sin texto, los primeros. */
+export function useClientOptions(text: string, enabled: boolean) {
+  const q = text.trim();
+  return useQuery<ClientPage>({
+    queryKey: ["clients", "options", q],
     queryFn: async () => {
-      const { data, error } = await api.GET("/admin/clients/similar", {
-        params: { query: { name } },
+      const { data, error } = await api.GET("/admin/clients", {
+        params: { query: { q: q || undefined, limit: CLIENT_OPTIONS_LIMIT } },
       });
       if (error || !data) {
         throw new Error("no se pudieron buscar los clientes");
       }
       return data;
     },
-    enabled: name.length >= MIN_CLIENT_SEARCH,
+    enabled,
     placeholderData: keepPreviousData,
   });
 }

@@ -3150,6 +3150,7 @@ export interface operations {
         parameters: {
             query?: {
                 segment?: components["schemas"]["ClientSegment"] | null;
+                q?: string | null;
                 limit?: number;
                 offset?: number;
             };

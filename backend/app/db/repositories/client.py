@@ -1,10 +1,13 @@
 import uuid
 from collections.abc import Collection, Sequence
 
-from sqlalchemy import BigInteger, cast, func, select
+from sqlalchemy import BigInteger, cast, func, or_, select
 
 from app.db.models.client import Client, ClientContact, ClientSegment, ClientSite
 from app.db.repository import BaseRepository
+
+_ACCENTED = "áàäâéèëêíìïîóòöôúùüûñç"
+_PLAIN = "aaaaeeeeiiiioooouuuunc"
 
 
 class ClientRepository(BaseRepository[Client]):
@@ -27,11 +30,20 @@ class ClientRepository(BaseRepository[Client]):
         return result.scalar_one_or_none()
 
     async def list_page(
-        self, *, segment: ClientSegment | None, limit: int, offset: int
+        self, *, segment: ClientSegment | None, search: str | None, limit: int, offset: int
     ) -> tuple[Sequence[Client], int]:
         stmt = self._select()
         if segment is not None:
             stmt = stmt.where(self.model.segment == segment)
+        if search:
+            # search llega en minúsculas y sin acentos; el nombre se lleva a lo mismo en SQL.
+            plain_name = func.translate(func.lower(self.model.name), _ACCENTED, _PLAIN)
+            pattern = (
+                "%" + search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+            )
+            stmt = stmt.where(
+                or_(plain_name.like(pattern, escape="\\"), func.lower(self.model.number) == search)
+            )
         total = await self.session.scalar(select(func.count()).select_from(stmt.subquery()))
         result = await self.session.execute(
             stmt.order_by(self.model.name, self.model.number).limit(limit).offset(offset)

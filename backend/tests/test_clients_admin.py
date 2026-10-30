@@ -435,6 +435,28 @@ async def test_listado_filtra_por_segmento_y_excluye_dados_de_baja(admin: User) 
     assert todos.json()["total"] == 2
 
 
+# Selector de cliente de la orden: filtra mientras se escribe, sin distinguir mayúsculas ni
+# acentos, por parte del nombre o por el número exacto.
+async def test_listado_filtra_por_texto_en_nombre_o_numero(admin: User) -> None:
+    await _seed(
+        [
+            Client(number="1", name="Heladería Ficticia"),
+            Client(number="2", name="Hotel Inventado"),
+            Client(number="12", name="Bar de Prueba"),
+        ]
+    )
+    async with _client() as client:
+        por_nombre = await client.get(URL, params={"q": "HELADERIA"}, headers=_auth(admin))
+        por_parte = await client.get(URL, params={"q": "  inv "}, headers=_auth(admin))
+        por_numero = await client.get(URL, params={"q": "12"}, headers=_auth(admin))
+        vacio = await client.get(URL, params={"q": ""}, headers=_auth(admin))
+
+    assert [c["name"] for c in por_nombre.json()["items"]] == ["Heladería Ficticia"]
+    assert [c["name"] for c in por_parte.json()["items"]] == ["Hotel Inventado"]
+    assert [c["name"] for c in por_numero.json()["items"]] == ["Bar de Prueba"]
+    assert vacio.json()["total"] == 3
+
+
 async def test_listado_rechaza_limite_fuera_de_rango(admin: User) -> None:
     async with _client() as client:
         response = await client.get(URL, params={"limit": 0}, headers=_auth(admin))

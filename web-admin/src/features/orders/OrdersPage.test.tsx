@@ -15,6 +15,8 @@ const SANATORIO: ClientSummary = {
   name: "Sanatorio Ficticio",
   segment: "healthcare",
 };
+const HOTEL: ClientSummary = { id: "c2", number: "7", name: "Hotel Inventado", segment: "hotel" };
+const CLIENTES = [HOTEL, SANATORIO];
 const MAPS = "https://www.google.com/maps/search/?api=1&query=";
 const CENTRAL: Site = {
   id: "s1",
@@ -179,8 +181,10 @@ function mockApi(handler: Handler = () => undefined, sites: Site[] = [CENTRAL]) 
     if (response) {
       return response;
     }
-    if (url.pathname.endsWith("/admin/clients/similar")) {
-      return json([SANATORIO]);
+    if (url.pathname.endsWith("/admin/clients") && request.method === "GET") {
+      const q = (url.searchParams.get("q") ?? "").toLowerCase();
+      const items = CLIENTES.filter((c) => c.name.toLowerCase().includes(q) || c.number === q);
+      return json({ items, total: items.length, limit: 20, offset: 0 });
     }
     if (url.pathname.endsWith("/sites")) {
       return json(sites);
@@ -345,16 +349,78 @@ describe("OrdersPage", () => {
     expect(await screen.findByText("No hay órdenes pendientes.")).toBeInTheDocument();
   });
 
-  it("pide al menos 4 letras para buscar el cliente", async () => {
+  it("al entrar al campo despliega los clientes sin escribir nada", async () => {
     const user = userEvent.setup();
     const fetchMock = mockApi();
     renderOrders();
     await abrirAlta();
 
-    await user.type(within(formulario()).getByLabelText("Cliente"), "san");
+    await user.click(within(formulario()).getByLabelText("Cliente"));
 
-    expect(screen.getByText("Escribí al menos 4 letras del nombre.")).toBeInTheDocument();
-    expect(calls(fetchMock, "GET", "/admin/clients/similar")).toHaveLength(0);
+    expect(await screen.findByRole("button", { name: /Elegir Hotel Inventado/ })).toBeVisible();
+    expect(screen.getByRole("button", { name: /Elegir Sanatorio Ficticio/ })).toBeVisible();
+    const [pedido] = calls(fetchMock, "GET", "/admin/clients");
+    expect(new URL(pedido.url).searchParams.get("q")).toBeNull();
+  });
+
+  it("filtra la lista mientras se escribe, también por número", async () => {
+    const user = userEvent.setup();
+    const fetchMock = mockApi();
+    renderOrders();
+    await abrirAlta();
+    const campo = within(formulario()).getByLabelText("Cliente");
+
+    await user.type(campo, "hot");
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: /Elegir Sanatorio/ })).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole("button", { name: /Elegir Hotel Inventado/ })).toBeVisible();
+
+    await user.clear(campo);
+    await user.type(campo, "10642");
+    expect(await screen.findByRole("button", { name: /Elegir Sanatorio/ })).toBeVisible();
+    const pedidos = calls(fetchMock, "GET", "/admin/clients");
+    expect(new URL(pedidos[pedidos.length - 1].url).searchParams.get("q")).toBe("10642");
+  });
+
+  it("avisa cuando hay más clientes que los que se muestran", async () => {
+    const user = userEvent.setup();
+    mockApi((request, url) =>
+      url.pathname.endsWith("/admin/clients") && request.method === "GET"
+        ? json({ items: CLIENTES, total: 45, limit: 20, offset: 0 })
+        : undefined,
+    );
+    renderOrders();
+    await abrirAlta();
+
+    await user.click(within(formulario()).getByLabelText("Cliente"));
+
+    expect(
+      await screen.findByText("Hay 43 clientes más: seguí escribiendo para encontrarlo."),
+    ).toBeInTheDocument();
+  });
+
+  it("crea el cliente desde la orden y queda elegido", async () => {
+    const user = userEvent.setup();
+    const NUEVO = { ...SANATORIO, id: "c9", number: "11", name: "Bar Nuevo" };
+    const fetchMock = mockApi((request, url) =>
+      url.pathname.endsWith("/admin/clients") && request.method === "POST"
+        ? json({ ...NUEVO, tax_id: null, tax_condition: null, notes: null }, 201)
+        : undefined,
+    );
+    renderOrders();
+    await abrirAlta();
+
+    await user.type(within(formulario()).getByLabelText("Cliente"), "Bar Nuevo");
+    expect(await screen.findByText("No hay clientes con ese nombre.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Crear cliente nuevo" }));
+    expect(screen.getByLabelText("Nombre o razón social")).toHaveValue("Bar Nuevo");
+    await user.click(screen.getByRole("button", { name: "Crear cliente" }));
+
+    expect(await screen.findByText("Bar Nuevo")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cambiar cliente" })).toBeInTheDocument();
+    const [post] = calls(fetchMock, "POST", "/admin/clients");
+    expect(await post.json()).toMatchObject({ name: "Bar Nuevo" });
   });
 
   it("crea una orden con un cliente de un solo domicilio, que se completa solo", async () => {

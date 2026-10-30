@@ -35,11 +35,12 @@ async def list_clients(
     session: SessionDep,
     _: AdminOnly,
     segment: ClientSegment | None = None,
+    q: Annotated[str | None, Query(max_length=255)] = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> ClientPage:
     items, total = await clients_service.list_clients(
-        session, segment=segment, limit=limit, offset=offset
+        session, segment=segment, search=q, limit=limit, offset=offset
     )
     return ClientPage(
         items=[ClientSummaryOut.model_validate(item) for item in items],
