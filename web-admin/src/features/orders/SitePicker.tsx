@@ -1,3 +1,4 @@
+import { MapPinPlus } from "lucide-react";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 
@@ -65,8 +66,11 @@ function NewSite({ clientId, onCreated }: { clientId: string; onCreated: (id: st
   }
 
   return (
-    <>
-      <p>El cliente no tiene domicilios activos.</p>
+    <div className="orders__inline-create">
+      <p className="orders__inline-create-note">
+        <MapPinPlus size={16} aria-hidden="true" /> El cliente no tiene domicilios activos: se
+        agrega uno a esta orden
+      </p>
       <form className="clients__form" onSubmit={handleCreate} aria-label="Agregar domicilio">
         <SiteFields idPrefix="order-new-site" values={nuevo} onChange={setNuevo} />
         {invalid && (
@@ -83,6 +87,6 @@ function NewSite({ clientId, onCreated }: { clientId: string; onCreated: (id: st
           Agregar domicilio
         </button>
       </form>
-    </>
+    </div>
   );
 }

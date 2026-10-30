@@ -1599,3 +1599,39 @@ button[type="submit"]:hover:not(:disabled),
   border-color: #1d4ed8;
   background: linear-gradient(135deg, #0284c7, #1d4ed8 60%, #4338ca);
 }
+
+/* Alta de cliente o domicilio dentro de la nueva orden: se distingue del resto del formulario. */
+.orders__inline-create {
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #bfdbfe;
+  border-left: 4px solid #2563eb;
+  border-radius: var(--radius);
+  background: rgb(239 246 255 / 92%);
+}
+
+.orders__inline-create-note {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0 0 0.75rem;
+  color: #1d4ed8;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.orders__inline-create .card,
+.orders__inline-create .form-card {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.orders__inline-create input,
+.orders__inline-create select,
+.orders__inline-create textarea {
+  border-color: #cbd5e1;
+  background: #ffffff;
+}

@@ -1,3 +1,4 @@
+import { UserPlus } from "lucide-react";
 import { useEffect, useState, type FocusEvent } from "react";
 
 import { ClientForm } from "../clients/ClientForm";
@@ -61,7 +62,10 @@ export function ClientPicker({ selected, onSelect }: ClientPickerProps) {
 
   if (creating) {
     return (
-      <div className="card form-card">
+      <div className="orders__inline-create" role="group" aria-label="Nuevo cliente de la orden">
+        <p className="orders__inline-create-note">
+          <UserPlus size={16} aria-hidden="true" /> Se agrega a esta orden
+        </p>
         <ClientForm
           idPrefix="order-new-client"
           title="Nuevo cliente"
