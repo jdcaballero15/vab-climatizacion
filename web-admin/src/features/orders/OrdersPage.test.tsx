@@ -767,6 +767,96 @@ describe("OrdersPage", () => {
       expect(within(fila).queryByRole("button", { name: /Cancelar/ })).not.toBeInTheDocument();
     });
 
+    // E04-14: importes y estado de cobro de las terminadas.
+    it("sin importes, la terminada figura pendiente de enviar a cobrar", async () => {
+      const user = userEvent.setup();
+      porEstado();
+      renderOrders();
+
+      await screen.findByRole("list", { name: "Órdenes pendientes" });
+      await user.click(screen.getByRole("button", { name: "Terminadas" }));
+
+      const tabla = await screen.findByRole("list", { name: "Órdenes terminadas" });
+      const [fila] = within(tabla).getAllByRole("listitem");
+      expect(within(fila).getByText("Pendiente de enviar a cobrar")).toBeInTheDocument();
+      expect(within(fila).getByText("Sin importes")).toBeInTheDocument();
+    });
+
+    it("filtra las terminadas por estado de cobro", async () => {
+      const user = userEvent.setup();
+      const fetchMock = porEstado();
+      renderOrders();
+
+      await screen.findByRole("list", { name: "Órdenes pendientes" });
+      await user.click(screen.getByRole("button", { name: "Terminadas" }));
+      await user.selectOptions(await screen.findByLabelText("Cobro"), "invoiced");
+
+      await waitFor(() => {
+        const [ultima] = listados(fetchMock, "done").slice(-1);
+        expect(new URL(ultima.url).searchParams.get("billing")).toBe("invoiced");
+      });
+    });
+
+    it("guarda repuestos, mano de obra y facturada desde el cierre", async () => {
+      const user = userEvent.setup();
+      const fetchMock = porEstado();
+      const original = fetchMock.getMockImplementation()!;
+      fetchMock.mockImplementation(async (request: Request) =>
+        request.method === "PUT"
+          ? json({
+              parts_amount: "1500.50",
+              labor_amount: "2000.00",
+              total: "3500.50",
+              status: "invoiced",
+              invoice_number: "A-1",
+              updated_by_name: "Admin Ficticia",
+              updated_at: "2026-10-30T15:00:00Z",
+            })
+          : original(request),
+      );
+      renderOrders();
+
+      await screen.findByRole("list", { name: "Órdenes pendientes" });
+      await user.click(screen.getByRole("button", { name: "Terminadas" }));
+      await user.click(
+        await screen.findByRole("button", { name: "Ver el cierre de la orden N° 3" }),
+      );
+      const form = await screen.findByRole("form", { name: "Importes y cobro de la orden N° 3" });
+      await user.type(within(form).getByLabelText("Repuestos ($)"), "1500,50");
+      await user.type(within(form).getByLabelText("Mano de obra ($)"), "2000");
+      expect(within(form).getByText(/3\.500,50/)).toBeInTheDocument();
+      await user.selectOptions(within(form).getByLabelText("Estado de cobro"), "invoiced");
+      await user.type(within(form).getByLabelText("N° de factura (opcional)"), "A-1");
+      await user.click(within(form).getByRole("button", { name: "Guardar importes" }));
+
+      expect(await within(form).findByText("Importes guardados.")).toBeInTheDocument();
+      const [put] = calls(fetchMock, "PUT", "/admin/orders/o3/billing");
+      expect(await put.json()).toEqual({
+        parts_amount: "1500.50",
+        labor_amount: "2000",
+        status: "invoiced",
+        invoice_number: "A-1",
+      });
+    });
+
+    it("no envía importes inválidos", async () => {
+      const user = userEvent.setup();
+      const fetchMock = porEstado();
+      renderOrders();
+
+      await screen.findByRole("list", { name: "Órdenes pendientes" });
+      await user.click(screen.getByRole("button", { name: "Terminadas" }));
+      await user.click(
+        await screen.findByRole("button", { name: "Ver el cierre de la orden N° 3" }),
+      );
+      const form = await screen.findByRole("form", { name: "Importes y cobro de la orden N° 3" });
+      await user.type(within(form).getByLabelText("Repuestos ($)"), "-5");
+      await user.click(within(form).getByRole("button", { name: "Guardar importes" }));
+
+      expect(within(form).getByRole("alert")).toHaveTextContent("Revisá los importes");
+      expect(calls(fetchMock, "PUT", "/billing")).toHaveLength(0);
+    });
+
     it("muestra lo que cargó la escuadrilla al cerrar", async () => {
       const user = userEvent.setup();
       porEstado();
@@ -792,7 +882,7 @@ describe("OrdersPage", () => {
         "Funciona con observaciones",
         "Revisar en un mes.",
       ]);
-      expect(ver).toHaveTextContent("Ocultar cierre");
+      expect(ver).toHaveTextContent("Ocultar cierre y cobro");
 
       await user.click(ver);
       expect(screen.queryByLabelText("Cierre de la orden N° 3")).not.toBeInTheDocument();

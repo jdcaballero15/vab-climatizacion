@@ -21,6 +21,7 @@ from app.db.models.user import User, UserRole
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
+    WorkOrderBilling,
     WorkOrderCancellation,
     WorkOrderClosure,
     WorkOrderClosurePhoto,
@@ -65,6 +66,8 @@ TABLES = [
     StoredFile.__table__,
     WorkOrderClosurePhoto.__table__,
     Signature.__table__,
+    # El listado de terminadas trae el cobro (E04-14).
+    WorkOrderBilling.__table__,
 ]
 ORDERS_URL = "/admin/orders"
 AYER = datetime.now(UTC) - timedelta(days=1)
@@ -91,6 +94,7 @@ async def schema() -> AsyncGenerator[None, None]:
             "cancel_reason",
             "no_signature_reason",
             "signature_purpose",
+            "billing_status",
         ):
             await conn.execute(text(f"DROP TYPE IF EXISTS {enum_type}"))
         await conn.execute(text("DROP SEQUENCE IF EXISTS work_order_number_seq"))

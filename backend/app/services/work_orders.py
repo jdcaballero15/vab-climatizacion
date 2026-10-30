@@ -45,6 +45,7 @@ from app.domain.work_order import (
     CANCEL_REASON_LABELS,
     CREW_OPEN_STATUSES,
     STATUSLESS_EVENT_TYPES,
+    BillingStatus,
     CancelReason,
     ClosureOutcome,
     OrderAction,
@@ -195,10 +196,15 @@ async def change_equipment(
 
 
 async def list_by_status(
-    session: AsyncSession, status: OrderStatus, *, limit: int, offset: int
+    session: AsyncSession,
+    status: OrderStatus,
+    *,
+    billing: BillingStatus | None = None,
+    limit: int,
+    offset: int,
 ) -> tuple[list[OrderListItemOut], int]:
     rows, total = await WorkOrderRepository(session).list_by_status_page(
-        status, limit=limit, offset=offset
+        status, billing=billing, limit=limit, offset=offset
     )
     items = [
         OrderListItemOut(

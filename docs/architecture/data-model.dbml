@@ -91,6 +91,11 @@ Enum cancel_reason {
   other              [note: 'Otro, con texto obligatorio (E04-07). Lista a validar con la oficina']
 }
 
+Enum billing_status {
+  pending  [note: 'Pendiente de enviar a cobrar (también sin fila de cobro)']
+  invoiced [note: 'Facturada (E04-14, versión mínima; no es el estado de la orden)']
+}
+
 Enum no_signature_reason {
   client_absent [note: 'Cliente ausente']
   refused       [note: 'No quiso firmar']
@@ -334,6 +339,18 @@ Table work_order_cancellation {
   cancelled_at timestamptz [not null]
 
   Note: 'Cancelación de la orden por administración (E04-07). El evento de la línea de tiempo guarda el motivo legible'
+}
+
+Table work_order_billing {
+  id uuid [pk]
+  work_order_id uuid [ref: > work_order.id, not null, note: 'Única por orden (índice parcial sin borradas); se reemplaza al editar']
+  parts_amount numeric(12,2) [not null, note: 'Repuestos, un total en pesos (CHECK >= 0)']
+  labor_amount numeric(12,2) [not null, note: 'Mano de obra en pesos (CHECK >= 0)']
+  status billing_status [not null]
+  invoice_number varchar(50)
+  updated_by uuid [ref: > app_user.id, not null, note: 'Último usuario de administración que lo cargó']
+
+  Note: 'Importes y estado de cobro de una orden Terminada (E04-14). Provisorio hasta E04-09 a E04-11: la orden sigue Terminada'
 }
 
 Table work_order_closure_technician {

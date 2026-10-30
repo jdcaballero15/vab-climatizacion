@@ -1,7 +1,15 @@
 import { ClipboardList, MoreHorizontal } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { cancelReasonText, formatDate, formatDay, initials, returnedText } from "./labels";
+import {
+  BILLING_STATUS_LABELS,
+  cancelReasonText,
+  formatDate,
+  formatDay,
+  formatMoney,
+  initials,
+  returnedText,
+} from "./labels";
 import type { OrderListItem } from "./types";
 
 export interface CardAction {
@@ -186,6 +194,7 @@ export function OrderCard({ order, primary, more, children }: OrderCardProps) {
             Motivo: <span>{cancelReasonText(order.cancellation)}</span>
           </p>
         )}
+        {order.status === "done" && <BillingLine order={order} />}
 
         <div className="order-card__footer">
           <span className="order-card__who">
@@ -204,5 +213,20 @@ export function OrderCard({ order, primary, more, children }: OrderCardProps) {
         {children && <div className="order-card__panel">{children}</div>}
       </article>
     </li>
+  );
+}
+
+/** Estado de cobro y total de una terminada (E04-14); sin importes, pendiente. */
+function BillingLine({ order }: { order: OrderListItem }) {
+  const billing = order.billing ?? null;
+  const status = billing?.status ?? "pending";
+  return (
+    <p className={`order-card__billing order-card__billing--${status}`}>
+      <span className="order-card__billing-status">{BILLING_STATUS_LABELS[status]}</span>
+      <span>
+        {billing ? formatMoney(billing.total) : "Sin importes"}
+        {billing?.invoice_number && ` · Factura ${billing.invoice_number}`}
+      </span>
+    </p>
   );
 }

@@ -1,11 +1,13 @@
 import uuid
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, StringConstraints
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StringConstraints
 
 from app.api.schemas.client import ClientSiteTechnicianOut, blank_to_none
 from app.domain.work_order import (
+    BillingStatus,
     CancelReason,
     ClosureOutcome,
     NotDoneReason,
@@ -116,6 +118,34 @@ class CompletedOut(BaseModel):
     closed_at: datetime
 
 
+# Pesos con centavos, desde 0 (E04-14).
+Amount = Annotated[Decimal, Field(ge=0, max_digits=12, decimal_places=2)]
+
+
+class BillingUpdate(BaseModel):
+    """Importes y estado de cobro de una orden terminada (E04-14, versión mínima)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    parts_amount: Amount
+    labor_amount: Amount
+    status: BillingStatus
+    invoice_number: Annotated[
+        Annotated[str, StringConstraints(max_length=50)] | None,
+        BeforeValidator(blank_to_none),
+    ] = None
+
+
+class BillingAdminOut(BaseModel):
+    parts_amount: Decimal
+    labor_amount: Decimal
+    total: Decimal
+    status: BillingStatus
+    invoice_number: str | None
+    updated_by_name: str
+    updated_at: datetime
+
+
 class OrderListItemOut(BaseModel):
     id: uuid.UUID
     number: int
@@ -137,6 +167,8 @@ class OrderListItemOut(BaseModel):
     cancellation: CancellationAdminOut | None
     # Solo en terminadas.
     completed: CompletedOut | None
+    # Solo en terminadas; nulo sin importes cargados (pendiente de enviar a cobrar, E04-14).
+    billing: BillingAdminOut | None = None
     # Nulo si la orden no tiene equipo (E04-12).
     equipment: OrderEquipmentOut | None
 

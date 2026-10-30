@@ -8,6 +8,8 @@ from app.api.schemas.closure import ClosureAdminOut
 from app.api.schemas.work_order import (
     AssignmentAdminOut,
     AssignmentCreate,
+    BillingAdminOut,
+    BillingUpdate,
     CancellationAdminOut,
     CancellationCreate,
     EquipmentChange,
@@ -19,12 +21,14 @@ from app.api.schemas.work_order import (
 from app.db.models.user import User, UserRole
 from app.db.models.work_order import WorkOrderAssignment
 from app.domain.work_order import (
+    BillingStatus,
     InvalidTransitionError,
     OrderStatus,
     ReasonRequiredError,
     TransitionRoleError,
     WorkOrderRuleError,
 )
+from app.services import billing as billing_service
 from app.services import catalog as catalog_service
 from app.services import clients as clients_service
 from app.services import closures as closures_service
@@ -160,13 +164,32 @@ async def list_work_orders(
     session: SessionDep,
     _: AdminOnly,
     status: ListableStatus,
+    # Estado de cobro de las terminadas (E04-14).
+    billing: BillingStatus | None = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> OrderListPage:
     items, total = await work_orders_service.list_by_status(
-        session, OrderStatus(status), limit=limit, offset=offset
+        session, OrderStatus(status), billing=billing, limit=limit, offset=offset
     )
+    if status == "done":
+        billings = await billing_service.billing_by_order(session, [item.id for item in items])
+        for item in items:
+            item.billing = billings.get(item.id)
     return OrderListPage(items=items, total=total, limit=limit, offset=offset)
+
+
+@router.put("/{order_id}/billing", response_model=BillingAdminOut)
+async def save_work_order_billing(
+    order_id: uuid.UUID, payload: BillingUpdate, session: SessionDep, admin: AdminOnly
+) -> BillingAdminOut:
+    """Importes y estado de cobro de una orden terminada (E04-14, versión mínima)."""
+    try:
+        return await billing_service.save_billing(session, order_id, payload, admin)
+    except work_orders_service.WorkOrderNotFoundError:
+        raise _error(404, "order_not_found", "No se encontró la orden.") from None
+    except billing_service.OrderNotDoneError as exc:
+        raise _error(409, exc.code, exc.message) from None
 
 
 @router.post(

@@ -1,4 +1,5 @@
 import type {
+  BillingStatus,
   Cancellation,
   CancelReason,
   ClosureDetail,
@@ -142,3 +143,16 @@ export const NO_SIGNATURE_REASON_LABELS: Record<NoSignatureReason, string> = {
   refused: "No quiso firmar",
   other: "Otro",
 };
+
+/** Estado de cobro de una terminada (E04-14); sin importes cargados está pendiente. */
+export const BILLING_STATUS_LABELS: Record<BillingStatus, string> = {
+  pending: "Pendiente de enviar a cobrar",
+  invoiced: "Facturada",
+};
+
+const MONEY = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
+
+/** Importe en pesos como lo manda la API ("15000.50"). */
+export function formatMoney(amount: string | number): string {
+  return MONEY.format(Number(amount));
+}

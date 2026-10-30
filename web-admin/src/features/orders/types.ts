@@ -14,5 +14,8 @@ export type Cancellation = components["schemas"]["CancellationAdminOut"];
 export type CancellationCreate = components["schemas"]["CancellationCreate"];
 export type CancelReason = components["schemas"]["CancelReason"];
 export type ClosureDetail = components["schemas"]["ClosureAdminOut"];
+export type Billing = components["schemas"]["BillingAdminOut"];
+export type BillingUpdate = components["schemas"]["BillingUpdate"];
+export type BillingStatus = components["schemas"]["BillingStatus"];
 /** Los estados que lista hoy la API; Facturadas y Cobradas llegan con E04-05. */
 export type ListableStatus = "pending" | "assigned" | "in_progress" | "done" | "cancelled";
