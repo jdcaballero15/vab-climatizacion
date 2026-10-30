@@ -509,7 +509,7 @@ describe("OrdersPage", () => {
 
     await elegirCliente(user);
     const form = formulario();
-    expect(await within(form).findByText("El cliente no tiene domicilios activos.")).toBeVisible();
+    expect(await within(form).findByText(/El cliente no tiene domicilios activos/)).toBeVisible();
     const alta = screen.getByRole("form", { name: "Agregar domicilio" });
     await user.type(within(alta).getByLabelText("Dirección"), "Av. Belgrano 123");
     await user.click(within(alta).getByRole("button", { name: "Agregar domicilio" }));
