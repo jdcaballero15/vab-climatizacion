@@ -282,6 +282,70 @@ describe("OrderDetailPage", () => {
     });
   });
 
+  // Si se olvidaron de iniciarla: se inicia y se pasa directo al cierre.
+  describe("Ya la terminé", () => {
+    function stubStart(post: () => Response | Promise<Response>) {
+      const posts: string[] = [];
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (request: Request) => {
+          if (request.method === "POST") {
+            posts.push(new URL(request.url).pathname);
+            return post();
+          }
+          return json(detail());
+        }),
+      );
+      return posts;
+    }
+
+    it("pide confirmar, inicia la orden y abre el cierre", async () => {
+      const posts = stubStart(() => json(detail({ status: "in_progress" })));
+      renderDetail();
+
+      await userEvent.click(await screen.findByRole("button", { name: "Ya la terminé" }));
+      expect(
+        screen.getByText("¿La orden N° 3 ya está hecha? Se marca iniciada y pasás al cierre."),
+      ).toBeInTheDocument();
+      expect(posts).toEqual([]);
+      await userEvent.click(screen.getByRole("button", { name: "Sí, cerrarla" }));
+
+      expect(
+        await screen.findByRole("heading", { name: "Formulario de cierre" }),
+      ).toBeInTheDocument();
+      expect(posts).toHaveLength(1);
+      expect(posts[0]).toMatch(new RegExp(`/tech/orders/${ORDER_ID}/start$`));
+    });
+
+    it("cancelar no envía nada", async () => {
+      const posts = stubStart(() => json(detail({ status: "in_progress" })));
+      renderDetail();
+
+      await userEvent.click(await screen.findByRole("button", { name: "Ya la terminé" }));
+      await userEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+
+      expect(screen.getByRole("button", { name: "Ya la terminé" })).toBeInTheDocument();
+      expect(posts).toEqual([]);
+    });
+
+    it("si falla avisa y se queda en el detalle", async () => {
+      stubStart(() => {
+        throw new TypeError("sin conexión");
+      });
+      renderDetail();
+
+      await userEvent.click(await screen.findByRole("button", { name: "Ya la terminé" }));
+      await userEvent.click(screen.getByRole("button", { name: "Sí, cerrarla" }));
+
+      expect(
+        await screen.findByText(
+          "No se pudo iniciar la orden. Revisá la conexión e intentá de nuevo.",
+        ),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: "Formulario de cierre" })).toBeNull();
+    });
+  });
+
   // E05-04, criterio 1: el cierre se abre desde una orden En curso.
   describe("Cerrar orden", () => {
     it("una orden En curso muestra el botón que abre el cierre", async () => {

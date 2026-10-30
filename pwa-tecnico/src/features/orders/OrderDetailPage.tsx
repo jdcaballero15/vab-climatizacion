@@ -1,6 +1,6 @@
 import { ChevronLeft } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import type { components } from "../../api/schema";
 import { dueLabel, statusLabel } from "./labels";
@@ -127,24 +127,41 @@ function OrderDetail({ order }: { order: OrderDetail }) {
   );
 }
 
-/** Botón "Iniciar" con confirmación dentro de la app (sin diálogos del navegador). */
+/**
+ * Botones "Iniciar" y "Ya la terminé" con confirmación dentro de la app (sin diálogos del
+ * navegador). "Ya la terminé" es para cuando se olvidaron de iniciarla: la inicia y abre
+ * el cierre.
+ */
 function StartOrder({ order }: { order: OrderDetail }) {
-  const [confirming, setConfirming] = useState(false);
+  const [confirming, setConfirming] = useState<"start" | "finish" | null>(null);
   const start = useStartOrder(order.id);
+  const navigate = useNavigate();
 
-  if (!confirming) {
+  if (confirming === null) {
     return (
       <div className="order-start">
-        <button
-          type="button"
-          className="order-start__primary"
-          onClick={() => {
-            start.reset();
-            setConfirming(true);
-          }}
-        >
-          Iniciar
-        </button>
+        <div className="order-start__actions">
+          <button
+            type="button"
+            className="order-start__primary"
+            onClick={() => {
+              start.reset();
+              setConfirming("start");
+            }}
+          >
+            Iniciar
+          </button>
+          <button
+            type="button"
+            className="order-start__secondary"
+            onClick={() => {
+              start.reset();
+              setConfirming("finish");
+            }}
+          >
+            Ya la terminé
+          </button>
+        </div>
         {start.isError && (
           <p className="order-start__error" role="alert">
             No se pudo iniciar la orden. Revisá la conexión e intentá de nuevo.
@@ -154,23 +171,38 @@ function StartOrder({ order }: { order: OrderDetail }) {
     );
   }
 
+  const finishing = confirming === "finish";
   return (
     <div className="order-start order-start--confirm" role="group" aria-label="Confirmar inicio">
-      <p className="order-start__question">¿Empezar la orden N° {order.number}?</p>
+      <p className="order-start__question">
+        {finishing
+          ? `¿La orden N° ${order.number} ya está hecha? Se marca iniciada y pasás al cierre.`
+          : `¿Empezar la orden N° ${order.number}?`}
+      </p>
       <div className="order-start__actions">
         <button
           type="button"
           className="order-start__primary"
           disabled={start.isPending}
-          onClick={() => start.mutate(undefined, { onError: () => setConfirming(false) })}
+          onClick={() =>
+            start.mutate(undefined, {
+              onSuccess: (data) => {
+                // Con null la orden ya no es de la escuadrilla: el detalle lo avisa.
+                if (finishing && data) {
+                  navigate(`/ordenes/${order.id}/cerrar`);
+                }
+              },
+              onError: () => setConfirming(null),
+            })
+          }
         >
-          {start.isPending ? "Iniciando…" : "Sí, empezar"}
+          {start.isPending ? "Iniciando…" : finishing ? "Sí, cerrarla" : "Sí, empezar"}
         </button>
         <button
           type="button"
           className="order-start__secondary"
           disabled={start.isPending}
-          onClick={() => setConfirming(false)}
+          onClick={() => setConfirming(null)}
         >
           Cancelar
         </button>
