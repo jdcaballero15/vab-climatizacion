@@ -36,7 +36,7 @@ assumes: []
 
 ## Notas técnicas
 
-- **Trabajo de copia:** cron job de Render en `render.yaml` (`type: cron`, todas las noches, por ejemplo `0 7 * * *` en UTC, las 4 de Argentina), con `DATABASE_URL` desde `vab-ot-db`. Corre `pg_dump --format=custom` con el cliente de Postgres 16 y sube el archivo con `boto3` (ya es dependencia). Cuesta como mínimo US$ 1 por mes.
+- **Trabajo de copia:** cron job de Render en `render.yaml` (`type: cron`, todas las noches, por ejemplo `0 7 * * *` en UTC, las 4 de Argentina), con `DATABASE_URL` desde `vab-ot-db`. Corre `pg_dump --format=custom` con el cliente de Postgres 18 (la versión de la base) y sube el archivo con `boto3` (ya es dependencia). Cuesta como mínimo US$ 1 por mes.
 - **Bucket `vab-ot-backups`:** aparte del de archivos, privado, con su propio token (*Object Read & Write* solo para ese bucket). Variables del cron: `BACKUP_S3_ENDPOINT_URL`, `BACKUP_S3_ACCESS_KEY`, `BACKUP_S3_SECRET_KEY`, `BACKUP_S3_BUCKET`, cargadas en Render, nunca en el repo. Regla de ciclo de vida: borrar a los 30 días. Lock de 30 días, así una clave filtrada no puede borrar las copias antes de tiempo.
 - **Lock de `closures/`:** la app nunca borra ni sobrescribe fotos ni firmas. Cada subida usa una clave nueva (`closures/<uso>/<uuid>`), y si se pierde la respuesta del `PUT`, la PWA pide otra subida. `check_storage` usa `checks/`, fuera del lock.
 - Las copias tienen datos reales: no se bajan al repositorio ni se pegan en el chat. La prueba de restauración se hace contra una base temporal de Render, que se borra al terminar.
@@ -52,7 +52,7 @@ assumes: []
 
 - `python -m app.backup_db` (criterio 1): `pg_dump --format=custom` y subida a `db/<fecha y hora UTC>.dump` en el bucket de copias, con las filas de cada tabla en los metadatos del objeto (`table-counts`). Configuración `BACKUP_S3_*`, aparte de la del bucket de archivos.
 - `python -m app.restore_check --destino <url>` (criterio 3): baja la última copia (o `--clave`), la restaura con `pg_restore` en una base vacía (se niega si tiene tablas) y compara la migración con la última y las filas de cada tabla con las de la copia.
-- La imagen del backend trae el cliente de Postgres 16 de PGDG. El CI la construye (job `backend-image`) y comprueba que `pg_dump` sea 16.
+- La imagen del backend trae el cliente de Postgres 18 de PGDG, la versión de `vab-ot-db` en Render (pg_dump no copia una base más nueva que él). El CI la construye (job `backend-image`) y comprueba que `pg_dump` sea 18. Los tests del backend, en el CI y en local, siguen con Postgres 16.
 - `render.yaml`: cron `vab-ot-backup` a las 07:00 UTC, misma imagen que la API con otro comando. La API recibe un token de solo lectura del bucket de copias para la prueba de restauración.
 - Pasos de R2 (bucket de copias, regla de 30 días, locks) en `docs/workflow/despliegue.md`; recuperación y prueba de restauración en `docs/workflow/backups.md` (criterios 2, 4, 5 y 6).
 - Tests en `tests/test_backup.py` con Postgres y MinIO reales: crean bases temporales, así que el rol de la base necesita `CREATEDB` (en el CI y en Docker ya lo tiene).

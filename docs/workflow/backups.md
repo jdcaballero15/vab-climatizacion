@@ -35,7 +35,7 @@ Para un error descubierto enseguida (por ejemplo, datos borrados o pisados hace 
 
 Para un error descubierto días después, o para la prueba de cada trimestre. Se hace todo dentro de Render: la copia no sale de ahí.
 
-1. Crear una base temporal: *New* > *Postgres*, nombre `vab-ot-restore-prueba`, Postgres 16, región Virginia, plan *Free*. Copiar su *Internal Database URL*.
+1. Crear una base temporal: *New* > *Postgres*, nombre `vab-ot-restore-prueba`, Postgres 18, región Virginia, plan *Free*. Copiar su *Internal Database URL*.
 2. En `vab-ot-api` > *Shell*:
 
    ```bash

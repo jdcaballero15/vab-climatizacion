@@ -8,7 +8,7 @@ Hoy hay **un solo entorno**, que es el de producción. Staging y la publicación
 
 | Servicio | Tipo | Qué es |
 |---|---|---|
-| `vab-ot-db` | Postgres 16 | La base. Solo acepta conexiones desde Render, salvo que se habilite una IP (ver importación). |
+| `vab-ot-db` | Postgres 18 | La base. Solo acepta conexiones desde Render, salvo que se habilite una IP (ver importación). |
 | `vab-ot-api` | Web, Docker (`backend/Dockerfile`) | La API. Corre las migraciones al arrancar. Chequeo de salud en `/health/ready`. |
 | `vab-ot-backup` | Cron, Docker (misma imagen que la API) | Copia nocturna de la base al bucket `vab-ot-backups` ([backups.md](backups.md)). |
 | `vab-ot-admin` | Sitio estático (`web-admin`) | La administración, para la PC de la oficina. |
