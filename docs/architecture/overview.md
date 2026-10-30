@@ -39,7 +39,7 @@ flowchart LR
 | `backend` | Python 3.12, FastAPI, SQLAlchemy 2, Alembic | API REST, reglas de negocio, autorización por rol, jobs |
 | `web-admin` | React, TypeScript, Vite | Administración: órdenes, fichas, catálogos, stock, tablero |
 | `pwa-tecnico` | React, TypeScript, Vite, service worker | Técnico: órdenes asignadas, cierre, firma, foto, borrador del cierre si se corta la señal |
-| Base de datos | PostgreSQL 16 administrado | Fuente de verdad, backups con restauración a un punto en el tiempo |
+| Base de datos | PostgreSQL 18 administrado | Fuente de verdad, backups con restauración a un punto en el tiempo |
 | Almacenamiento | S3 compatible (Cloudflare R2, Backblaze B2 o S3) | Fotos, firmas y PDF, con URLs firmadas |
 | Mail | Proveedor transaccional (a definir, `D-009`) | Informe mensual y comprobantes |
 

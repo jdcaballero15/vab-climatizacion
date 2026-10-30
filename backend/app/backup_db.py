@@ -36,7 +36,7 @@ class MissingToolError(Exception):
 def postgres_tool(name: str) -> str:
     path = shutil.which(name)
     if path is None:
-        raise MissingToolError(f"No se encontró {name}: hace falta el cliente de Postgres 16.")
+        raise MissingToolError(f"No se encontró {name}: hace falta el cliente de Postgres 18.")
     return path
 
 

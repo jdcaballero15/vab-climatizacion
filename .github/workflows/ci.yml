@@ -101,9 +101,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      # La imagen que corre en Render (API y cron de copias): que construya y traiga pg_dump 16.
+      # La imagen que corre en Render (API y cron de copias): que construya y traiga pg_dump 18, la versión de la base.
       - run: docker build -t vab-ot-api backend
-      - run: docker run --rm vab-ot-api pg_dump --version | grep -q "PostgreSQL) 16\."
+      - run: docker run --rm vab-ot-api pg_dump --version | grep -q "PostgreSQL) 18\."
 
   web-admin:
     name: web-admin
