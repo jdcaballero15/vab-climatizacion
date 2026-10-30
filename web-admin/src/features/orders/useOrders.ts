@@ -10,6 +10,9 @@ import { api } from "../../api/client";
 import type { ClientPage } from "../clients/types";
 import type {
   Assignment,
+  Billing,
+  BillingStatus,
+  BillingUpdate,
   AssignmentCreate,
   UnassignmentCreate,
   Cancellation,
@@ -33,12 +36,12 @@ function saveError(error: unknown, fallback: string): Error {
   return new Error(typeof detail?.message === "string" ? detail.message : fallback);
 }
 
-export function useOrderList(status: ListableStatus, offset: number) {
+export function useOrderList(status: ListableStatus, offset: number, billing?: BillingStatus) {
   return useQuery<OrderListPage>({
-    queryKey: [...ORDERS_KEY, status, { offset }],
+    queryKey: [...ORDERS_KEY, status, { offset, billing }],
     queryFn: async () => {
       const { data, error } = await api.GET("/admin/orders", {
-        params: { query: { status, limit: PAGE_SIZE, offset } },
+        params: { query: { status, limit: PAGE_SIZE, offset, billing } },
       });
       if (error || !data) {
         throw new Error("no se pudieron cargar las órdenes");
@@ -77,6 +80,24 @@ export function useCreateOrder() {
       const { data, error } = await api.POST("/admin/orders", { body: nueva });
       if (error || !data) {
         throw saveError(error, "No se pudo crear la orden.");
+      }
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
+  });
+}
+
+/** Guarda los importes y el estado de cobro de una terminada (E04-14). */
+export function useSaveBilling(orderId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<Billing, Error, BillingUpdate>({
+    mutationFn: async (cobro) => {
+      const { data, error } = await api.PUT("/admin/orders/{order_id}/billing", {
+        params: { path: { order_id: orderId } },
+        body: cobro,
+      });
+      if (error || !data) {
+        throw saveError(error, "No se pudieron guardar los importes.");
       }
       return data;
     },

@@ -14,6 +14,11 @@ FORBIDDEN_TECHNICIAN_FIELDS: frozenset[str] = frozenset(
         "amount",
         "charge",
         "total",
+        # Cobro de la orden (E04-14).
+        "billing",
+        "parts_amount",
+        "labor_amount",
+        "invoice_number",
         "history",
         # Datos de contacto del cliente: el técnico ve solo el nombre (E03-02).
         "phone",

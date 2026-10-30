@@ -1,5 +1,6 @@
 import uuid
 from datetime import date, datetime
+from decimal import Decimal
 
 from sqlalchemy import (
     BigInteger,
@@ -11,6 +12,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Numeric,
     Sequence,
     String,
     Text,
@@ -22,6 +24,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampedBase
 from app.domain.work_order import (
+    BillingStatus,
     CancelReason,
     ClosureOutcome,
     EquipmentCondition,
@@ -247,3 +250,32 @@ class WorkOrderCancellation(TimestampedBase):
     cancelled_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+
+class WorkOrderBilling(TimestampedBase):
+    """Importes y estado de cobro de una orden terminada (E04-14, versión mínima).
+
+    Una por orden; se reemplaza al editar. Provisoria hasta definir E04-09 a E04-11.
+    """
+
+    __tablename__ = "work_order_billing"
+    __table_args__ = (
+        Index(
+            "uq_work_order_billing_work_order",
+            "work_order_id",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+        CheckConstraint(
+            "parts_amount >= 0 AND labor_amount >= 0", name="ck_work_order_billing_amounts"
+        ),
+    )
+
+    work_order_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("work_order.id"), nullable=False)
+    parts_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    labor_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    status: Mapped[BillingStatus] = mapped_column(
+        Enum(BillingStatus, name="billing_status"), nullable=False
+    )
+    invoice_number: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    updated_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_user.id"), nullable=False)

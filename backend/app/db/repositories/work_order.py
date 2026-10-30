@@ -16,6 +16,7 @@ from app.db.models.user import User
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
+    WorkOrderBilling,
     WorkOrderCancellation,
     WorkOrderClosure,
     WorkOrderClosurePhoto,
@@ -24,7 +25,12 @@ from app.db.models.work_order import (
     WorkOrderEvent,
 )
 from app.db.repository import BaseRepository
-from app.domain.work_order import CREW_OPEN_STATUSES, OrderStatus, WorkOrderEventType
+from app.domain.work_order import (
+    CREW_OPEN_STATUSES,
+    BillingStatus,
+    OrderStatus,
+    WorkOrderEventType,
+)
 
 # Orden abierta de una escuadrilla: orden, fecha prevista, cliente, domicilio, tipo de
 # trabajo, equipo y nombre de su tipo (estos dos, nulos sin equipo).
@@ -106,7 +112,12 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         self.session.add(event)
 
     async def list_by_status_page(
-        self, status: OrderStatus, *, limit: int, offset: int
+        self,
+        status: OrderStatus,
+        *,
+        billing: BillingStatus | None = None,
+        limit: int,
+        offset: int,
     ) -> tuple[Sequence[StatusOrderRow], int]:
         """Órdenes en un estado, en el orden en que se las trabaja.
 
@@ -118,6 +129,9 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         cancelación (E04-07).
         """
         filtered = self._select().where(self.model.status == status)
+        billing_filter = self._billing_filter(billing)
+        if billing_filter is not None:
+            filtered = filtered.where(billing_filter)
         total = await self.session.scalar(select(func.count()).select_from(filtered.subquery()))
         last_closure = (
             select(WorkOrderClosure)
@@ -185,12 +199,25 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             # Un equipo dado de baja después sigue siendo el de la orden.
             .outerjoin(Equipment, Equipment.id == self.model.equipment_id)
             .where(self.model.status == status, self.model.deleted_at.is_(None))
+            .where(billing_filter if billing_filter is not None else true())
             .order_by(*order_by)
             .limit(limit)
             .offset(offset)
         )
         result = await self.session.execute(stmt)
         return result.all(), total or 0
+
+    def _billing_filter(self, billing: BillingStatus | None) -> ColumnElement[bool] | None:
+        """Sin cobro cargado, la orden está pendiente de enviar a cobrar (E04-14)."""
+        if billing is None:
+            return None
+        invoiced = select(WorkOrderBilling.work_order_id).where(
+            WorkOrderBilling.status == BillingStatus.invoiced,
+            WorkOrderBilling.deleted_at.is_(None),
+        )
+        if billing == BillingStatus.invoiced:
+            return self.model.id.in_(invoiced)
+        return self.model.id.not_in(invoiced)
 
     async def list_open_for_crew(
         self, crew_id: uuid.UUID, *, order_id: uuid.UUID | None = None

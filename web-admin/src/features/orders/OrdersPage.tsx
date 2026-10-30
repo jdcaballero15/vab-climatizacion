@@ -14,12 +14,13 @@ import { useCrews } from "../crews/useCrews";
 import { AssignOrderForm, type AssignMode } from "./AssignOrderForm";
 import { CancelOrderForm } from "./CancelOrderForm";
 import { ChangeEquipmentForm } from "./ChangeEquipmentForm";
+import { BillingForm } from "./BillingForm";
 import { ClosureDetail } from "./ClosureDetail";
-import { formatDay, initials, LIST_STATUS_LABELS } from "./labels";
+import { BILLING_STATUS_LABELS, formatDay, initials, LIST_STATUS_LABELS } from "./labels";
 import { OrderCard, type CardAction } from "./OrderCard";
 import { OrderForm } from "./OrderForm";
 import { UnassignOrderForm } from "./UnassignOrderForm";
-import type { ListableStatus, OrderListItem } from "./types";
+import type { BillingStatus, ListableStatus, OrderListItem } from "./types";
 import { PAGE_SIZE, useOrderCounts, useOrderList } from "./useOrders";
 
 type RowAction = {
@@ -61,7 +62,7 @@ function cardActions(
     const showing = current?.orderId === order.id && current.kind === "closure";
     return {
       primary: {
-        label: showing ? "Ocultar cierre" : "Ver cierre",
+        label: showing ? "Ocultar cierre y cobro" : "Ver cierre y cobro",
         name: `Ver el cierre de ${n}`,
         onClick: showing ? close : () => open("closure"),
         expanded: showing,
@@ -120,10 +121,12 @@ function cardActions(
 export function OrdersPage() {
   const [status, setStatus] = useState<ListableStatus>("pending");
   const [offset, setOffset] = useState(0);
+  // Filtro de cobro de las terminadas (E04-14).
+  const [billing, setBilling] = useState<BillingStatus | "">("");
   const [action, setAction] = useState<RowAction | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const page = useOrderList(status, offset);
+  const page = useOrderList(status, offset, (status === "done" && billing) || undefined);
   const counts = useOrderCounts(STATUSES.map((item) => item.status));
   const crews = useCrews(false);
   const total = page.data?.total ?? 0;
@@ -143,7 +146,12 @@ export function OrdersPage() {
     }
     const close = () => setAction(null);
     if (action.kind === "closure") {
-      return <ClosureDetail order={order} />;
+      return (
+        <>
+          <ClosureDetail order={order} />
+          <BillingForm order={order} />
+        </>
+      );
     }
     if (action.kind === "unassign") {
       return (
@@ -291,6 +299,27 @@ export function OrdersPage() {
             <h3 id="orders-list-title">Órdenes {statusName}</h3>
             {page.data && <span className="muted">{total} en total</span>}
           </div>
+          {status === "done" && (
+            <div className="orders__billing-filter">
+              <label htmlFor="billing-filter">Cobro</label>
+              <select
+                id="billing-filter"
+                value={billing}
+                onChange={(event) => {
+                  setBilling(event.target.value as BillingStatus | "");
+                  setOffset(0);
+                  setAction(null);
+                }}
+              >
+                <option value="">Todas</option>
+                {(Object.keys(BILLING_STATUS_LABELS) as BillingStatus[]).map((value) => (
+                  <option key={value} value={value}>
+                    {BILLING_STATUS_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           {notice && <p role="status">{notice}</p>}
           {page.isLoading && <p className="muted">Cargando órdenes…</p>}
           {page.isError && <p role="alert">No se pudieron cargar las órdenes {statusName}.</p>}

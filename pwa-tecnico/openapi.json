@@ -2569,6 +2569,22 @@
             }
           },
           {
+            "name": "billing",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BillingStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Billing"
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -2657,6 +2673,65 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WorkOrderAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/billing": {
+      "put": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Save Work Order Billing",
+        "description": "Importes y estado de cobro de una orden terminada (E04-14, versión mínima).",
+        "operationId": "save_work_order_billing_admin_orders__order_id__billing_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAdminOut"
                 }
               }
             }
@@ -3770,6 +3845,117 @@
           "scheduled_for"
         ],
         "title": "AssignmentCreate"
+      },
+      "BillingAdminOut": {
+        "properties": {
+          "parts_amount": {
+            "type": "string",
+            "title": "Parts Amount"
+          },
+          "labor_amount": {
+            "type": "string",
+            "title": "Labor Amount"
+          },
+          "total": {
+            "type": "string",
+            "title": "Total"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BillingStatus"
+          },
+          "invoice_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Number"
+          },
+          "updated_by_name": {
+            "type": "string",
+            "title": "Updated By Name"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "parts_amount",
+          "labor_amount",
+          "total",
+          "status",
+          "invoice_number",
+          "updated_by_name",
+          "updated_at"
+        ],
+        "title": "BillingAdminOut"
+      },
+      "BillingStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "invoiced"
+        ],
+        "title": "BillingStatus",
+        "description": "Estado de cobro de una orden terminada (E04-14, versión mínima)."
+      },
+      "BillingUpdate": {
+        "properties": {
+          "parts_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Parts Amount"
+          },
+          "labor_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Labor Amount"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BillingStatus"
+          },
+          "invoice_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Number"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "parts_amount",
+          "labor_amount",
+          "status"
+        ],
+        "title": "BillingUpdate",
+        "description": "Importes y estado de cobro de una orden terminada (E04-14, versión mínima)."
       },
       "CancelReason": {
         "type": "string",
@@ -6053,6 +6239,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/CompletedOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "billing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BillingAdminOut"
               },
               {
                 "type": "null"

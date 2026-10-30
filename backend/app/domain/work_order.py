@@ -99,6 +99,13 @@ class SignaturePurpose(StrEnum):
     delivery = "delivery"
 
 
+class BillingStatus(StrEnum):
+    """Estado de cobro de una orden terminada (E04-14, versión mínima)."""
+
+    pending = "pending"
+    invoiced = "invoiced"
+
+
 class CancelReason(StrEnum):
     """Por qué administración cancela una orden (E04-07). Lista a validar con la oficina."""
 

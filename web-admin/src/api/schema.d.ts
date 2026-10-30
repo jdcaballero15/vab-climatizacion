@@ -570,6 +570,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/orders/{order_id}/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save Work Order Billing
+         * @description Importes y estado de cobro de una orden terminada (E04-14, versión mínima).
+         */
+        put: operations["save_work_order_billing_admin_orders__order_id__billing_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/orders/{order_id}/assignment": {
         parameters: {
             query?: never;
@@ -925,6 +945,44 @@ export interface components {
             scheduled_for: string;
             /** Reason */
             reason?: string | null;
+        };
+        /** BillingAdminOut */
+        BillingAdminOut: {
+            /** Parts Amount */
+            parts_amount: string;
+            /** Labor Amount */
+            labor_amount: string;
+            /** Total */
+            total: string;
+            status: components["schemas"]["BillingStatus"];
+            /** Invoice Number */
+            invoice_number: string | null;
+            /** Updated By Name */
+            updated_by_name: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * BillingStatus
+         * @description Estado de cobro de una orden terminada (E04-14, versión mínima).
+         * @enum {string}
+         */
+        BillingStatus: "pending" | "invoiced";
+        /**
+         * BillingUpdate
+         * @description Importes y estado de cobro de una orden terminada (E04-14, versión mínima).
+         */
+        BillingUpdate: {
+            /** Parts Amount */
+            parts_amount: number | string;
+            /** Labor Amount */
+            labor_amount: number | string;
+            status: components["schemas"]["BillingStatus"];
+            /** Invoice Number */
+            invoice_number?: string | null;
         };
         /**
          * CancelReason
@@ -1701,6 +1759,7 @@ export interface components {
             assignment: components["schemas"]["CurrentAssignmentOut"] | null;
             cancellation: components["schemas"]["CancellationAdminOut"] | null;
             completed: components["schemas"]["CompletedOut"] | null;
+            billing?: components["schemas"]["BillingAdminOut"] | null;
             equipment: components["schemas"]["OrderEquipmentOut"] | null;
         };
         /** OrderListPage */
@@ -3683,6 +3742,7 @@ export interface operations {
         parameters: {
             query: {
                 status: "pending" | "assigned" | "in_progress" | "done" | "cancelled";
+                billing?: components["schemas"]["BillingStatus"] | null;
                 limit?: number;
                 offset?: number;
             };
@@ -3767,6 +3827,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkOrderAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_work_order_billing_admin_orders__order_id__billing_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BillingUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingAdminOut"];
                 };
             };
             /** @description Validation Error */
