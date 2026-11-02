@@ -1,7 +1,8 @@
 """Materiales y su lista de precios (E02-05, E02-06)."""
 
 import uuid
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
 from decimal import Decimal
 
 from sqlalchemy.exc import IntegrityError
@@ -92,6 +93,29 @@ async def current_price_map(
 async def list_active_choices(session: AsyncSession) -> list[PartChoiceTechnicianOut]:
     parts = await PartRepository(session).list_by_status(include_inactive=False)
     return [PartChoiceTechnicianOut(id=p.id, name=p.name, unit=p.unit) for p in parts]
+
+
+@dataclass(frozen=True)
+class ImportResult:
+    created: int
+    skipped: int
+
+
+async def import_parts(session: AsyncSession, rows: Iterable[tuple[str, str]]) -> ImportResult:
+    """Carga inicial de la lista: crea los que faltan con precio 0 y saltea los que ya están.
+
+    Se puede repetir sin duplicar. Sin unidad, queda "unidad".
+    """
+    created = skipped = 0
+    for name, unit in rows:
+        data = PartCreate(name=name, unit=unit.strip() or "unidad")
+        try:
+            await create_part(session, data, None)
+        except PartNameAlreadyExistsError:
+            skipped += 1
+        else:
+            created += 1
+    return ImportResult(created=created, skipped=skipped)
 
 
 async def _get(session: AsyncSession, part_id: uuid.UUID) -> Part:
