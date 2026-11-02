@@ -38,3 +38,9 @@ Hecho el 2026-10-28, para que administración vea las terminadas en la prueba de
 - **Criterio 1, en su versión mínima.** `GET /admin/orders?status=done` lista las terminadas (la última cerrada primero) con escuadrilla y fecha de cierre (`completed`). `GET /admin/orders/{id}/closure` devuelve el último cierre con nombres: resultado, quién y cuándo cerró, escuadrilla, técnicos que fueron, tareas, falla y reparación (catálogo o texto de "Otro"), estado del equipo, motivo y observación. 404 si la orden no existe o no tiene cierre; solo administración.
 - Web-admin: "Terminadas" en el selector de estado de Órdenes, con "Ver cierre" que despliega el detalle debajo de la fila. Sin acción de cancelar (R3).
 - Falta: aprobar y devolver (criterios 2 y 3), bloquear la factura sin revisión (criterio 4), destacar mediciones y "Otro" (criterio 5), fotos y firma (con E00-09) y la pantalla de detalle de E04-06.
+
+Hecho el 2026-11-02 con E05-05 (materiales en la orden):
+
+- **Criterio 2, aprobar:** `POST /admin/orders/{id}/approval` registra `review_approved` (sin cambio de estado) y estampa el precio de los materiales. Solo desde `Terminada`, una sola vez y sin materiales "Otro" pendientes. En web-admin, "Aprobar orden" en la sección Materiales.
+- **Criterio 4, en la versión mínima de cobro (E04-14):** marcar "Facturada" exige la orden aprobada (409 `order_not_approved`).
+- Falta: devolver a la escuadrilla (criterio 3), destacar mediciones y "Otro" de falla y reparación (criterio 5) y la pantalla de detalle de E04-06. Cuando exista devolver, tiene que volver a habilitar la edición de materiales.

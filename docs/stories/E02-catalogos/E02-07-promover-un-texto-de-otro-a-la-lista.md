@@ -28,3 +28,4 @@ assumes: []
 ## Notas técnicas
 
 - La propuesta al cliente dice: "lo que se repite se suma a la lista".
+- Para **materiales** ya se hizo una versión por orden con E05-05: en la orden, administración toca "Pasar a la lista" en una línea "Otro", se crea el material y esa línea pasa a referenciarlo. Falta la pantalla de textos repetidos (para fallas, reparaciones y materiales).
