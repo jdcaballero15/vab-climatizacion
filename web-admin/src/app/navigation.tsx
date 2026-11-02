@@ -3,6 +3,7 @@ import {
   Building2,
   ClipboardList,
   Hammer,
+  Package,
   TriangleAlert,
   Truck,
   Users,
@@ -17,6 +18,7 @@ import { CrewsPage } from "../features/crews/CrewsPage";
 import { EquipmentTypesPage } from "../features/equipment-types/EquipmentTypesPage";
 import { FailuresPage } from "../features/failures/FailuresPage";
 import { OrdersPage } from "../features/orders/OrdersPage";
+import { PartsPage } from "../features/parts/PartsPage";
 import { RepairsPage } from "../features/repairs/RepairsPage";
 import { UsersPage } from "../features/users/UsersPage";
 import { WorkTypesPage } from "../features/work-types/WorkTypesPage";
@@ -107,6 +109,14 @@ export const NAV_SECTIONS: NavSection[] = [
     roles: ["admin"],
     icon: Hammer,
     element: <RepairsPage />,
+  },
+  {
+    path: "/catalogos/materiales",
+    label: "Materiales y precios",
+    group: "Catálogos",
+    roles: ["admin"],
+    icon: Package,
+    element: <PartsPage />,
   },
 ];
 

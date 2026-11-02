@@ -1694,3 +1694,76 @@ button[type="submit"]:hover:not(:disabled),
   background: #ecfdf5;
   color: #15803d;
 }
+
+/* Materiales y precios (E02-05, E02-06) */
+.parts__new .parts__similar,
+.parts__new .catalog__error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.parts__new input[aria-label="Unidad"] {
+  flex: 0 1 8rem;
+}
+
+.parts__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.parts__filters input:not([type="checkbox"]) {
+  flex: 1 1 14rem;
+  width: auto;
+}
+
+.parts__filters .catalog__toggle {
+  margin: 0;
+}
+
+.parts__table-wrap {
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.parts__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.parts__table th,
+.parts__table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.parts__table tbody tr:last-child > * {
+  border-bottom: none;
+}
+
+.parts__table thead th {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.parts__price {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.parts__price input {
+  width: 8rem;
+}
+
+.parts__table .muted {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+}

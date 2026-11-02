@@ -146,6 +146,7 @@ describe("AppRoot", () => {
       "Tipos de equipo",
       "Fallas",
       "Reparaciones",
+      "Materiales y precios",
     ]);
   });
 
