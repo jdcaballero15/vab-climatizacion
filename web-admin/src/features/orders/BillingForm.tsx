@@ -1,16 +1,8 @@
 import { useState, type FormEvent } from "react";
 
-import { BILLING_STATUS_LABELS, formatDateTime, formatMoney } from "./labels";
+import { BILLING_STATUS_LABELS, formatDateTime, formatMoney, toAmount } from "./labels";
 import type { BillingStatus, OrderListItem } from "./types";
 import { useSaveBilling } from "./useOrders";
-
-// Pesos con hasta dos decimales; se acepta coma o punto para los centavos.
-const AMOUNT = /^\d{1,10}([.,]\d{1,2})?$/;
-
-function toAmount(text: string): string | null {
-  const clean = text.trim();
-  return AMOUNT.test(clean) ? clean.replace(",", ".") : null;
-}
 
 /**
  * Importes de repuestos y mano de obra y estado de cobro de una terminada (E04-14,

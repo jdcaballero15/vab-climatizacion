@@ -523,3 +523,31 @@ def test_migracion_de_la_firma_es_reversible() -> None:
         assert _names(objetos) == []
     finally:
         command.downgrade(cfg, "base")
+
+
+# E02-05 y E02-06: materiales con nombre único sin mayúsculas y precios nunca negativos.
+def test_migracion_crea_materiales_y_precios() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    command.upgrade(cfg, "head")
+    try:
+        assert _names(
+            "SELECT tablename FROM pg_tables WHERE tablename IN ('part', 'part_price')"
+        ) == ["part", "part_price"]
+        _execute(
+            "INSERT INTO part (id, name, unit, is_active) "
+            "VALUES (gen_random_uuid(), 'Gas', 'kg', true)"
+        )
+        with pytest.raises(Exception, match="uq_part_name"):
+            _execute(
+                "INSERT INTO part (id, name, unit, is_active) "
+                "VALUES (gen_random_uuid(), 'GAS', 'kg', true)"
+            )
+        with pytest.raises(Exception, match="ck_part_price_list_price"):
+            _execute(
+                "INSERT INTO part_price (id, part_id, list_price) "
+                "SELECT gen_random_uuid(), id, -1 FROM part"
+            )
+    finally:
+        command.downgrade(cfg, "base")

@@ -375,6 +375,58 @@ export interface paths {
         patch: operations["update_repair_admin_repairs__repair_id__patch"];
         trace?: never;
     };
+    "/admin/parts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Parts */
+        get: operations["list_parts_admin_parts_get"];
+        put?: never;
+        /** Create Part */
+        post: operations["create_part_admin_parts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/parts/{part_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Part */
+        patch: operations["update_part_admin_parts__part_id__patch"];
+        trace?: never;
+    };
+    "/admin/parts/{part_id}/price": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set Part Price */
+        put: operations["set_part_price_admin_parts__part_id__price_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/clients": {
         parameters: {
             query?: never;
@@ -1807,6 +1859,54 @@ export interface components {
             site: components["schemas"]["ClientSiteTechnicianOut"];
             equipment: components["schemas"]["EquipmentTechnicianOut"] | null;
         };
+        /**
+         * PartAdminOut
+         * @description Material con su precio de lista vigente (E02-05, E02-06). Solo administración.
+         */
+        PartAdminOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Unit */
+            unit: string;
+            /** Is Active */
+            is_active: boolean;
+            /** List Price */
+            list_price: string;
+            /**
+             * Price Updated At
+             * Format: date-time
+             */
+            price_updated_at: string;
+        };
+        /** PartCreate */
+        PartCreate: {
+            /** Name */
+            name: string;
+            /**
+             * Unit
+             * @default unidad
+             */
+            unit: string;
+        };
+        /** PartPriceUpdate */
+        PartPriceUpdate: {
+            /** List Price */
+            list_price: number | string;
+        };
+        /** PartUpdate */
+        PartUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Unit */
+            unit?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
         /** PasswordChange */
         PasswordChange: {
             /** Current Password */
@@ -3192,6 +3292,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RepairAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_parts_admin_parts_get: {
+        parameters: {
+            query?: {
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_part_admin_parts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_part_admin_parts__part_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                part_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_part_price_admin_parts__part_id__price_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                part_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartPriceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartAdminOut"];
                 };
             };
             /** @description Validation Error */

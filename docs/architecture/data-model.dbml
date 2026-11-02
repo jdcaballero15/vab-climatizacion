@@ -413,8 +413,8 @@ Table work_order_closure_photo {
 
 Table part {
   id uuid [pk]
-  name varchar [not null]
-  unit varchar [not null, default: 'unidad']
+  name varchar [not null, note: 'Único sin distinguir mayúsculas (uq_part_name). En la interfaz, "material"']
+  unit varchar(20) [not null, default: 'unidad', note: 'kg, metro, unidad, etc.']
   code varchar [note: 'Hoy los repuestos no tienen código']
   is_active boolean [default: true]
 }
@@ -422,8 +422,9 @@ Table part {
 Table part_price {
   id uuid [pk]
   part_id uuid [ref: > part.id, not null]
-  list_price numeric(14,2) [not null, note: 'ADMIN']
-  valid_from timestamptz [not null]
+  list_price numeric(14,2) [not null, note: 'ADMIN. >= 0. Nunca se edita: un cambio agrega una fila']
+  valid_from timestamptz [not null, note: 'El vigente es el último']
+  created_by uuid [ref: > app_user.id, note: 'Nulo en la carga inicial por script']
 }
 
 Table part_usage {

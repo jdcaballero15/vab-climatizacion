@@ -156,3 +156,12 @@ const MONEY = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS
 export function formatMoney(amount: string | number): string {
   return MONEY.format(Number(amount));
 }
+
+// Pesos con hasta dos decimales; se acepta coma o punto para los centavos.
+const AMOUNT = /^\d{1,10}([.,]\d{1,2})?$/;
+
+/** Importe escrito a mano ("1800,5") como lo espera la API ("1800.5"), o null si no vale. */
+export function toAmount(text: string): string | null {
+  const clean = text.trim();
+  return AMOUNT.test(clean) ? clean.replace(",", ".") : null;
+}
