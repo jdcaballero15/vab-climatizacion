@@ -25,7 +25,7 @@ from app.db.repositories.part import PartRepository
 from app.db.repositories.work_order import WorkOrderRepository
 from app.domain.work_order import OrderStatus, WorkOrderEventType
 from app.services import parts as parts_service
-from app.services.work_orders import get_work_order
+from app.services.work_orders import WorkOrderNotFoundError, get_work_order
 
 
 class OrderApprovedError(Exception):
@@ -152,7 +152,7 @@ async def approve(
     session: AsyncSession, order_id: uuid.UUID, actor: User
 ) -> OrderMaterialsAdminOut:
     """Aprueba la orden terminada y estampa el precio vigente en cada material (E04-08)."""
-    order = await get_work_order(session, order_id)
+    order = await _locked_order(session, order_id)
     if await _approval(session, order.id) is not None:
         raise OrderApprovedError
     if order.status != OrderStatus.done:
@@ -240,8 +240,24 @@ async def _approval(session: AsyncSession, order_id: uuid.UUID) -> WorkOrderEven
     )
 
 
+async def _locked_order(session: AsyncSession, order_id: uuid.UUID) -> WorkOrder:
+    """La orden con su fila bloqueada hasta el commit: aprobar y editar no se cruzan.
+
+    Sin esto, dos aprobaciones a la vez quedarían las dos, o una línea agregada mientras
+    otra pestaña aprueba quedaría sin precio estampado en una orden ya aprobada.
+    """
+    order = await session.scalar(
+        select(WorkOrder)
+        .where(WorkOrder.id == order_id, WorkOrder.deleted_at.is_(None))
+        .with_for_update()
+    )
+    if order is None:
+        raise WorkOrderNotFoundError
+    return order
+
+
 async def _editable(session: AsyncSession, order_id: uuid.UUID) -> WorkOrder:
-    order = await get_work_order(session, order_id)
+    order = await _locked_order(session, order_id)
     if await _approval(session, order.id) is not None:
         raise OrderApprovedError
     if order.status in _CLOSED:

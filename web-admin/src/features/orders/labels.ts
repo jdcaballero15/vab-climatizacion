@@ -173,7 +173,8 @@ const QUANTITY = /^\d{1,9}([.,]\d{1,3})?$/;
 /** Cantidad escrita ("2,25") como la espera la API ("2.25"), o null si no vale. */
 export function toQuantity(text: string): string | null {
   const clean = text.trim();
-  if (!QUANTITY.test(clean)) {
+  // "1.500" puede ser mil quinientos o uno y medio: se pide con coma o sin punto.
+  if (!QUANTITY.test(clean) || /\.\d{3}$/.test(clean)) {
     return null;
   }
   const value = clean.replace(",", ".");

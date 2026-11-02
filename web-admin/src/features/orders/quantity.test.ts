@@ -14,7 +14,7 @@ describe("cantidades de materiales", () => {
   });
 
   it("rechaza cero, letras y más de tres decimales", () => {
-    for (const text of ["0", "abc", "1,2345", ""]) {
+    for (const text of ["0", "abc", "1,2345", "", "1.500"]) {
       expect(toQuantity(text)).toBeNull();
     }
   });

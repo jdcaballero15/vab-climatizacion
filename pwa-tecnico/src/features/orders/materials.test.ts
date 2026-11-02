@@ -14,7 +14,8 @@ describe("parseQuantity", () => {
   });
 
   it("rechaza cero, vacío, letras y más de tres decimales", () => {
-    for (const text of ["0", "0,0", "", "abc", "1,2345", "-1", "1,"]) {
+    // "1.500" puede ser mil quinientos o uno y medio: se pide con coma o sin punto.
+    for (const text of ["0", "0,0", "", "abc", "1,2345", "-1", "1,", "1.500", "0.125"]) {
       expect(parseQuantity(text)).toBeNull();
     }
   });

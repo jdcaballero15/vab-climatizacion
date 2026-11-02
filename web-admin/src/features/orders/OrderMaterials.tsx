@@ -299,7 +299,7 @@ function AddMaterialForm({ orderId }: { orderId: string }) {
       <input
         aria-label="Cantidad a agregar"
         inputMode="decimal"
-        placeholder="Cantidad"
+        placeholder="Cantidad (ej: 1,5)"
         value={quantity}
         onChange={(event) => setQuantity(event.target.value)}
       />

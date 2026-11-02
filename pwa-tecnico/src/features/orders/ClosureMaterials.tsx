@@ -60,7 +60,7 @@ export function ClosureMaterials({ parts, materials, onChange }: ClosureMaterial
                         ? `Cantidad de ${part.name} (${part.unit})`
                         : "Cantidad del otro material"
                     }
-                    placeholder="Cantidad"
+                    placeholder="Cantidad (ej: 1,5)"
                     value={line.quantity}
                     onChange={(event) => change(line.key, { quantity: event.target.value })}
                   />
