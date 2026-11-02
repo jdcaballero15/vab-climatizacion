@@ -1,4 +1,5 @@
 import type { components } from "../../api/schema";
+import { parseQuantity, type MaterialDraft } from "./materials";
 
 export type ClosureOptions = components["schemas"]["ClosureOptionsTechnicianOut"];
 export type ClosureCreate = components["schemas"]["ClosureCreate"];
@@ -29,6 +30,8 @@ export interface ClosureDraft {
   /** Por qué no hay firma. Con un motivo elegido, el trazo no se manda. */
   noSignatureReason: NoSignatureReason | null;
   noSignatureText: string;
+  /** Materiales usados (E05-05). Sin precios: la escuadrilla nunca los ve. */
+  materials: MaterialDraft[];
 }
 
 export const EMPTY_DRAFT: ClosureDraft = {
@@ -45,6 +48,7 @@ export const EMPTY_DRAFT: ClosureDraft = {
   signerName: "",
   noSignatureReason: null,
   noSignatureText: "",
+  materials: [],
 };
 
 /** Campos que se marcan en el formulario. Los de la API coinciden con su `field` (422). */
@@ -58,6 +62,7 @@ export type ClosureField =
   | "repair_id"
   | "repair_other_text"
   | "equipment_condition"
+  | "parts"
   | "photo_ids"
   | "observation"
   | "signature"
@@ -100,10 +105,15 @@ export function restoreDraft(saved: ClosureDraft, options: ClosureOptions): Clos
   const tasks = ids(options.tasks);
   const keeps = (value: string, items: { id: string }[]) =>
     value === "" || value === OTHER || ids(items).has(value);
+  const parts = ids(options.parts);
   const restored: ClosureDraft = {
     ...saved,
     technicianIds: saved.technicianIds.filter((id) => technicians.has(id)),
     taskIds: saved.taskIds.filter((id) => tasks.has(id)),
+    // Un borrador guardado antes de E05-05 no tiene materiales.
+    materials: (saved.materials ?? []).filter(
+      (line) => line.part === OTHER || parts.has(line.part),
+    ),
   };
   if (!keeps(restored.failure, options.failures)) {
     return { ...restored, failure: "", failureOther: "", repair: "", repairOther: "" };
@@ -144,6 +154,10 @@ export function missingFields(
   if (draft.outcome !== null && asksEquipmentCondition(draft) && !draft.equipmentCondition) {
     errors.equipment_condition = "Elegí cómo quedó el equipo.";
   }
+  const materialError = materialsError(draft, options);
+  if (materialError) {
+    errors.parts = materialError;
+  }
   if (observationRequired(draft) && !draft.observation.trim()) {
     errors.observation =
       draft.outcome === "needs_revisit" ? "Escribí qué falta." : "Escribí una observación.";
@@ -159,6 +173,22 @@ export function missingFields(
     errors.no_signature_text = "Escribí por qué no firma.";
   }
   return errors;
+}
+
+function materialsError(draft: ClosureDraft, options: ClosureOptions): string | null {
+  for (const line of draft.materials) {
+    if (line.part === OTHER && !line.otherText.trim()) {
+      return "Escribí qué material es.";
+    }
+    if (parseQuantity(line.quantity) === null) {
+      const name =
+        line.part === OTHER
+          ? line.otherText.trim()
+          : (options.parts.find((part) => part.id === line.part)?.name ?? "un material");
+      return `Revisá la cantidad de ${name}.`;
+    }
+  }
+  return null;
 }
 
 /**
@@ -188,6 +218,11 @@ export function toClosurePayload(
     observation: text(draft.observation),
     photo_ids: photoIds,
     ...signaturePart(draft, signatureFileId),
+    parts: draft.materials.map((line) => ({
+      part_id: line.part === OTHER ? null : line.part,
+      other_text: line.part === OTHER ? line.otherText.trim() : null,
+      quantity: parseQuantity(line.quantity) ?? line.quantity,
+    })),
   };
 }
 

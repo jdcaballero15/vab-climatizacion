@@ -144,6 +144,31 @@ describe("closureDrafts", () => {
     });
   });
 
+  // E05-05: los guardados antes de los materiales vuelven sin materiales.
+  it("un borrador guardado antes de los materiales vuelve con la lista vacía", async () => {
+    const old = { ...stored(), draft: { ...stored().draft } } as Record<string, unknown> & {
+      draft: Record<string, unknown>;
+    };
+    delete old.draft.materials;
+    await saveClosureDraft(old as unknown as StoredClosure);
+
+    const loaded = await loadClosureDraft(CELULAR1, ORDER);
+
+    expect(loaded?.draft.materials).toEqual([]);
+  });
+
+  it("guarda los materiales sin campos de más", async () => {
+    const line = { key: "m1", part: "p1", otherText: "", quantity: "1,5" };
+    await saveClosureDraft({
+      ...stored(),
+      draft: { ...stored().draft, materials: [{ ...line, price: 1000 } as typeof line] },
+    });
+
+    const loaded = await loadClosureDraft(CELULAR1, ORDER);
+
+    expect(loaded?.draft.materials).toEqual([line]);
+  });
+
   it("guarda solo los campos del cierre aunque reciba otros", async () => {
     const extra = {
       ...stored(),
