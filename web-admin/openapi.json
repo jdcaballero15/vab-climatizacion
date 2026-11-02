@@ -3234,6 +3234,352 @@
         }
       }
     },
+    "/admin/orders/{order_id}/materials": {
+      "get": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Get Order Materials",
+        "operationId": "get_order_materials_admin_orders__order_id__materials_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderMaterialsAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Add Material Line",
+        "operationId": "add_material_line_admin_orders__order_id__materials_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaterialLineCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderMaterialsAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/materials/{line_id}": {
+      "patch": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Update Material Line",
+        "operationId": "update_material_line_admin_orders__order_id__materials__line_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "line_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Line Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaterialLineUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderMaterialsAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/materials/{line_id}/removal": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Remove Material Line",
+        "operationId": "remove_material_line_admin_orders__order_id__materials__line_id__removal_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "line_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Line Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderMaterialsAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/materials/{line_id}/promotion": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Promote Material Line",
+        "operationId": "promote_material_line_admin_orders__order_id__materials__line_id__promotion_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "line_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Line Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaterialLinePromotion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderMaterialsAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/approval": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Approve Order",
+        "operationId": "approve_order_admin_orders__order_id__approval_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderMaterialsAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/crews": {
       "get": {
         "tags": [
@@ -4119,18 +4465,6 @@
       },
       "BillingUpdate": {
         "properties": {
-          "parts_amount": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": 0.0
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "title": "Parts Amount"
-          },
           "labor_amount": {
             "anyOf": [
               {
@@ -4162,7 +4496,6 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "parts_amount",
           "labor_amount",
           "status"
         ],
@@ -4857,6 +5190,14 @@
               }
             ],
             "title": "No Signature Text"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/PartUsageIn"
+            },
+            "type": "array",
+            "title": "Parts",
+            "default": []
           }
         },
         "additionalProperties": false,
@@ -4894,6 +5235,13 @@
             },
             "type": "array",
             "title": "Failures"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/PartChoiceTechnicianOut"
+            },
+            "type": "array",
+            "title": "Parts"
           }
         },
         "type": "object",
@@ -4901,7 +5249,8 @@
           "technicians",
           "tasks",
           "requires_failure_repair",
-          "failures"
+          "failures",
+          "parts"
         ],
         "title": "ClosureOptionsTechnicianOut"
       },
@@ -6198,6 +6547,186 @@
         ],
         "title": "LoginRequest"
       },
+      "MaterialLineAdminOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "part_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Part Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "is_other": {
+            "type": "boolean",
+            "title": "Is Other"
+          },
+          "quantity": {
+            "type": "string",
+            "title": "Quantity"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price"
+          },
+          "subtotal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subtotal"
+          },
+          "visit_closed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visit Closed At"
+          },
+          "added_by_name": {
+            "type": "string",
+            "title": "Added By Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "part_id",
+          "name",
+          "unit",
+          "is_other",
+          "quantity",
+          "unit_price",
+          "subtotal",
+          "visit_closed_at",
+          "added_by_name"
+        ],
+        "title": "MaterialLineAdminOut"
+      },
+      "MaterialLineCreate": {
+        "properties": {
+          "part_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Part Id"
+          },
+          "other_text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Other Text"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "quantity"
+        ],
+        "title": "MaterialLineCreate"
+      },
+      "MaterialLinePromotion": {
+        "properties": {
+          "part_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Part Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "part_id"
+        ],
+        "title": "MaterialLinePromotion",
+        "description": "Pasa una línea \"Otro\" a un material de la lista."
+      },
+      "MaterialLineUpdate": {
+        "properties": {
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "quantity"
+        ],
+        "title": "MaterialLineUpdate"
+      },
       "NoSignatureReason": {
         "type": "string",
         "enum": [
@@ -6530,6 +7059,45 @@
         ],
         "title": "OrderListPage"
       },
+      "OrderMaterialsAdminOut": {
+        "properties": {
+          "approved": {
+            "type": "boolean",
+            "title": "Approved"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialLineAdminOut"
+            },
+            "type": "array",
+            "title": "Lines"
+          },
+          "total": {
+            "type": "string",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "approved",
+          "approved_at",
+          "lines",
+          "total"
+        ],
+        "title": "OrderMaterialsAdminOut"
+      },
       "OrderSource": {
         "type": "string",
         "enum": [
@@ -6658,6 +7226,30 @@
         "title": "PartAdminOut",
         "description": "Material con su precio de lista vigente (E02-05, E02-06). Solo administración."
       },
+      "PartChoiceTechnicianOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "unit"
+        ],
+        "title": "PartChoiceTechnicianOut"
+      },
       "PartCreate": {
         "properties": {
           "name": {
@@ -6744,6 +7336,53 @@
         },
         "type": "object",
         "title": "PartUpdate"
+      },
+      "PartUsageIn": {
+        "properties": {
+          "part_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Part Id"
+          },
+          "other_text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Other Text"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "quantity"
+        ],
+        "title": "PartUsageIn",
+        "description": "Un material usado: de la lista (part_id) o escrito en \"Otro\" (other_text)."
       },
       "PasswordChange": {
         "properties": {

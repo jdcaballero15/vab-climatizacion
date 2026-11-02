@@ -25,13 +25,13 @@ import type {
   WorkOrderCreate,
 } from "./types";
 
-const ORDERS_KEY = ["orders"] as const;
+export const ORDERS_KEY = ["orders"] as const;
 export const PAGE_SIZE = 50;
 // Clientes que muestra el selector de la orden; con más, se sigue escribiendo para filtrar.
 export const CLIENT_OPTIONS_LIMIT = 20;
 
 /** Error con el mensaje en español que manda el backend ({code, message}), si lo hay. */
-function saveError(error: unknown, fallback: string): Error {
+export function saveError(error: unknown, fallback: string): Error {
   const detail = (error as { detail?: { message?: unknown } } | undefined)?.detail;
   return new Error(typeof detail?.message === "string" ? detail.message : fallback);
 }

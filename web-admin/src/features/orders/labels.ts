@@ -165,3 +165,28 @@ export function toAmount(text: string): string | null {
   const clean = text.trim();
   return AMOUNT.test(clean) ? clean.replace(",", ".") : null;
 }
+
+// Cantidad de un material: mayor que cero, coma o punto, hasta tres decimales (E05-05).
+// Misma regla que el celular (pwa-tecnico/src/features/orders/materials.ts).
+const QUANTITY = /^\d{1,9}([.,]\d{1,3})?$/;
+
+/** Cantidad escrita ("2,25") como la espera la API ("2.25"), o null si no vale. */
+export function toQuantity(text: string): string | null {
+  const clean = text.trim();
+  if (!QUANTITY.test(clean)) {
+    return null;
+  }
+  const value = clean.replace(",", ".");
+  return Number(value) > 0 ? value : null;
+}
+
+// Sin separador de miles: "1.500" se leería como 1,5 al volver a guardarla.
+const QUANTITY_FORMAT = new Intl.NumberFormat("es-AR", {
+  maximumFractionDigits: 3,
+  useGrouping: false,
+});
+
+/** Cantidad como la manda la API ("1.500") para mostrarla ("1,5"). */
+export function formatQuantity(quantity: string): string {
+  return QUANTITY_FORMAT.format(Number(quantity));
+}

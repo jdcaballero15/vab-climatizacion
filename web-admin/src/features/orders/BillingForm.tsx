@@ -2,16 +2,17 @@ import { useState, type FormEvent } from "react";
 
 import { BILLING_STATUS_LABELS, formatDateTime, formatMoney, toAmount } from "./labels";
 import type { BillingStatus, OrderListItem } from "./types";
+import { useOrderMaterials } from "./useOrderMaterials";
 import { useSaveBilling } from "./useOrders";
 
 /**
- * Importes de repuestos y mano de obra y estado de cobro de una terminada (E04-14,
- * versión mínima). Sin nada cargado, la orden está pendiente de enviar a cobrar.
+ * Mano de obra y estado de cobro de una terminada (E04-14, versión mínima). Los repuestos
+ * son el total de materiales de la orden (E05-05). Sin nada cargado, la orden está
+ * pendiente de enviar a cobrar.
  */
 export function BillingForm({ order }: { order: OrderListItem }) {
   const saved = order.billing ?? null;
   const save = useSaveBilling(order.id);
-  const [parts, setParts] = useState(saved ? String(Number(saved.parts_amount)) : "");
   const [labor, setLabor] = useState(saved ? String(Number(saved.labor_amount)) : "");
   const [status, setStatus] = useState<BillingStatus>(saved?.status ?? "pending");
   const [invoice, setInvoice] = useState(saved?.invoice_number ?? "");
@@ -19,22 +20,21 @@ export function BillingForm({ order }: { order: OrderListItem }) {
   const [done, setDone] = useState(false);
   const id = (field: string) => `billing-${order.id}-${field}`;
 
-  const partsAmount = toAmount(parts || "0");
+  const materials = useOrderMaterials(order.id);
+  const partsAmount = materials.data?.total ?? saved?.parts_amount ?? "0";
   const laborAmount = toAmount(labor || "0");
-  const total =
-    partsAmount !== null && laborAmount !== null ? Number(partsAmount) + Number(laborAmount) : null;
+  const total = laborAmount !== null ? Number(partsAmount) + Number(laborAmount) : null;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setDone(false);
-    if (partsAmount === null || laborAmount === null) {
+    if (laborAmount === null) {
       setInvalid(true);
       return;
     }
     setInvalid(false);
     save.mutate(
       {
-        parts_amount: partsAmount,
         labor_amount: laborAmount,
         status,
         invoice_number: status === "invoiced" ? invoice : null,
@@ -52,14 +52,8 @@ export function BillingForm({ order }: { order: OrderListItem }) {
       <h4>Importes y cobro</h4>
       <div className="orders__billing-amounts">
         <div>
-          <label htmlFor={id("parts")}>Repuestos ($)</label>
-          <input
-            id={id("parts")}
-            inputMode="decimal"
-            value={parts}
-            onChange={(event) => setParts(event.target.value)}
-            placeholder="0"
-          />
+          <span className="orders__billing-label">Repuestos (materiales)</span>
+          <p className="orders__billing-parts">{formatMoney(partsAmount)}</p>
         </div>
         <div>
           <label htmlFor={id("labor")}>Mano de obra ($)</label>
