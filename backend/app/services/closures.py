@@ -19,6 +19,7 @@ from app.api.schemas.closure import (
 )
 from app.core.storage import ObjectStorage
 from app.db.models.catalog import Failure, Repair
+from app.db.models.part import PartUsage
 from app.db.models.signature import Signature
 from app.db.models.stored_file import StoredFile
 from app.db.models.user import User
@@ -43,6 +44,7 @@ from app.domain.work_order import (
     SignaturePurpose,
 )
 from app.services import catalog as catalog_service
+from app.services import parts as parts_service
 from app.services import work_orders as work_orders_service
 
 
@@ -100,6 +102,7 @@ async def get_closure_options(
             )
             for f in failures
         ],
+        parts=await parts_service.list_active_choices(session),
     )
 
 
@@ -119,6 +122,7 @@ async def close_order(
     await _validate(session, order, equipment_type_id, outcome, data)
     await _validate_photos(session, user, data.photo_ids)
     await _validate_signature(session, user, data)
+    await _validate_parts(session, data)
 
     action = (
         OrderAction.close_done if outcome == ClosureOutcome.done else OrderAction.request_revisit
@@ -166,6 +170,17 @@ async def close_order(
         + [
             WorkOrderClosurePhoto(closure_id=closure.id, file_id=file_id, position=position)
             for position, file_id in enumerate(data.photo_ids)
+        ]
+        + [
+            PartUsage(
+                work_order_id=order.id,
+                closure_id=closure.id,
+                part_id=line.part_id,
+                other_text=line.other_text,
+                quantity=line.quantity,
+                created_by=user.id,
+            )
+            for line in data.parts
         ]
     )
     if data.signature is not None and data.signature.signer_name is not None:
@@ -458,6 +473,31 @@ async def _validate_signature(session: AsyncSession, user: User, data: ClosureCr
     if await WorkOrderClosureRepository(session).signature_file_used(signature.file_id):
         raise ClosureValidationError(
             "signature_already_used", "signature", "Esa firma ya está en otro cierre."
+        )
+
+
+async def _validate_parts(session: AsyncSession, data: ClosureCreate) -> None:
+    """Cada línea: un material activo de la lista u "Otro" con texto, sin repetir (E05-05)."""
+    if not data.parts:
+        return
+    seen: set[uuid.UUID] = set()
+    for line in data.parts:
+        if line.part_id is not None and line.other_text is not None:
+            raise ClosureValidationError(
+                "part_ambiguous", "parts", 'Elegí un material de la lista u "Otro", no las dos.'
+            )
+        if line.part_id is None and line.other_text is None:
+            raise ClosureValidationError("part_required", "parts", "Escribí qué material es.")
+        if line.part_id is not None:
+            if line.part_id in seen:
+                raise ClosureValidationError(
+                    "part_repeated", "parts", "Ese material ya está cargado: sumá la cantidad."
+                )
+            seen.add(line.part_id)
+    active = {choice.id for choice in await parts_service.list_active_choices(session)}
+    if not seen <= active:
+        raise ClosureValidationError(
+            "part_not_available", "parts", "Uno de los materiales ya no está en la lista."
         )
 
 
