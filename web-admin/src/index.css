@@ -1883,3 +1883,12 @@ button[type="submit"]:hover:not(:disabled),
   margin: 0.25rem 0 0;
   font-weight: 600;
 }
+
+.order-materials__warning {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  color: #92400e;
+  background: #fef3c7;
+  border-radius: var(--radius-sm);
+}

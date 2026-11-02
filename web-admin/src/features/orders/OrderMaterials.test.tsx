@@ -253,6 +253,24 @@ describe("OrderMaterials", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/antes de aprobar/);
   });
 
+  it("avisa antes de aprobar si hay materiales con precio $0", async () => {
+    const enCero = { ...GAS_LINEA, unit_price: "0.00", subtotal: "0.00" };
+    stubApi({ ...MATERIALES, lines: [enCero, CANO_LINEA], total: "640.00" });
+    renderMaterials();
+
+    expect(
+      await screen.findByText(/1 material con precio \$0: si aprobás ahora, queda en \$0/),
+    ).toBeInTheDocument();
+  });
+
+  it("sin materiales en $0 no hay aviso", async () => {
+    stubApi();
+    renderMaterials();
+
+    await screen.findByRole("button", { name: "Aprobar orden" });
+    expect(screen.queryByText(/precio \$0/)).not.toBeInTheDocument();
+  });
+
   it("aprobada queda en solo lectura con la fecha", async () => {
     stubApi({ ...MATERIALES, approved: true, approved_at: "2026-11-02T15:00:00Z" });
     renderMaterials();

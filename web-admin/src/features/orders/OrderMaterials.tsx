@@ -36,6 +36,8 @@ export function OrderMaterials({ orderId, orderNumber }: OrderMaterialsProps) {
   }
   const { approved, approved_at: approvedAt, lines, total } = materials.data;
   const editable = !approved;
+  // Los precios arrancan en $0: aprobar con uno así lo deja en $0 para siempre.
+  const atZero = lines.filter((line) => line.unit_price !== null && Number(line.unit_price) === 0);
 
   return (
     <section
@@ -83,6 +85,13 @@ export function OrderMaterials({ orderId, orderNumber }: OrderMaterialsProps) {
           <p className="muted">
             Al aprobar, cada material queda con el precio de hoy y ya no se puede cambiar.
           </p>
+          {atZero.length > 0 && (
+            <p className="order-materials__warning">
+              Ojo: {atZero.length} {atZero.length === 1 ? "material" : "materiales"} con precio $0:
+              si aprobás ahora, queda en $0. Cargá el precio en Materiales y precios antes de
+              aprobar.
+            </p>
+          )}
           <button type="button" disabled={approve.isPending} onClick={() => approve.mutate()}>
             Aprobar orden
           </button>
