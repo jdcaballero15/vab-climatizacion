@@ -1767,3 +1767,119 @@ button[type="submit"]:hover:not(:disabled),
   margin: 0.25rem 0 0;
   font-size: 0.8rem;
 }
+
+/* Materiales de la orden y aprobación (E05-05, E04-08) */
+.order-materials {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.order-materials h4 {
+  margin: 0 0 0.75rem;
+}
+
+.order-materials__wrap {
+  overflow-x: auto;
+}
+
+.order-materials__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.order-materials__table th,
+.order-materials__table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.order-materials__table thead th {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.order-materials__visit {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: normal;
+  color: var(--text-muted);
+}
+
+.order-materials__other th {
+  color: #b45309;
+}
+
+.order-materials__qty,
+.order-materials__actions,
+.order-materials__add,
+.order-materials__promote {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.order-materials__qty input {
+  width: 6rem;
+}
+
+.order-materials__promote {
+  margin-top: 0.5rem;
+  font-weight: normal;
+}
+
+.order-materials__promote .muted {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.order-materials__add {
+  margin-top: 0.75rem;
+}
+
+.order-materials__add select {
+  flex: 1 1 14rem;
+  width: auto;
+}
+
+.order-materials__add input {
+  width: 7rem;
+}
+
+.order-materials__total {
+  margin: 0.75rem 0 0;
+  text-align: right;
+}
+
+.order-materials__approve {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.order-materials__approve .muted {
+  flex: 1 1 18rem;
+  margin: 0;
+}
+
+.order-materials__approved {
+  margin: 1rem 0 0;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.orders__billing-label {
+  font-size: 0.85rem;
+}
+
+.orders__billing-parts {
+  margin: 0.25rem 0 0;
+  font-weight: 600;
+}

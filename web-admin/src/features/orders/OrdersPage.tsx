@@ -16,6 +16,7 @@ import { CancelOrderForm } from "./CancelOrderForm";
 import { ChangeEquipmentForm } from "./ChangeEquipmentForm";
 import { BillingForm } from "./BillingForm";
 import { ClosureDetail } from "./ClosureDetail";
+import { OrderMaterials } from "./OrderMaterials";
 import { BILLING_STATUS_LABELS, formatDay, initials, LIST_STATUS_LABELS } from "./labels";
 import { OrderCard, type CardAction } from "./OrderCard";
 import { OrderForm } from "./OrderForm";
@@ -149,6 +150,7 @@ export function OrdersPage() {
       return (
         <>
           <ClosureDetail order={order} />
+          <OrderMaterials orderId={order.id} orderNumber={order.number} />
           <BillingForm order={order} />
         </>
       );

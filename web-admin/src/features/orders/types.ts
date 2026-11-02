@@ -19,3 +19,6 @@ export type BillingUpdate = components["schemas"]["BillingUpdate"];
 export type BillingStatus = components["schemas"]["BillingStatus"];
 /** Los estados que lista hoy la API; Facturadas y Cobradas llegan con E04-05. */
 export type ListableStatus = "pending" | "assigned" | "in_progress" | "done" | "cancelled";
+export type OrderMaterials = components["schemas"]["OrderMaterialsAdminOut"];
+export type MaterialLine = components["schemas"]["MaterialLineAdminOut"];
+export type MaterialLineCreate = components["schemas"]["MaterialLineCreate"];
