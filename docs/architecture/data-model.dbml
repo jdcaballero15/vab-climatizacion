@@ -429,12 +429,16 @@ Table part_price {
 
 Table part_usage {
   id uuid [pk]
-  closure_id uuid [ref: > work_order_closure.id, not null]
-  part_id uuid [ref: > part.id, not null]
-  quantity numeric(12,3) [not null]
-  unit_price numeric(14,2) [not null, note: 'ADMIN. Estampado al usar, no cambia si cambia la lista']
-  stock_location_id uuid [ref: > stock_location.id]
-  used_at timestamptz [not null]
+  work_order_id uuid [ref: > work_order.id, not null, note: 'El total de la orden suma todas sus visitas']
+  closure_id uuid [ref: > work_order_closure.id, note: 'Nulo si lo agregó administración al revisar']
+  part_id uuid [ref: > part.id, note: 'Material de la lista, o nulo si es "Otro"']
+  other_text varchar(255) [note: 'Texto de "Otro". Uno de los dos: part_id u other_text']
+  quantity numeric(12,3) [not null, note: '> 0']
+  unit_price numeric(14,2) [note: 'ADMIN. Nulo hasta aprobar la orden; ahí se estampa el vigente y no cambia']
+  stock_location_id uuid [ref: > stock_location.id, note: 'Con E08; hoy no existe la columna']
+  created_by uuid [ref: > app_user.id, not null]
+  created_at timestamptz [not null]
+  deleted_at timestamptz [note: 'Administración sacó la línea']
 }
 
 Table work_order_charge {

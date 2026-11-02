@@ -35,7 +35,7 @@ cd backend && pytest -k <nombre>   # un test puntual
 1. **El técnico nunca ve precios, mano de obra ni historial de clientes.** Se resuelve en la API con esquemas distintos por rol (`*TechnicianOut`), no ocultando en la interfaz. Hay un test de contrato que lo verifica. Ante la duda sobre si un campo es sensible, no lo incluyas en el esquema del técnico.
 2. **Borrado lógico.** Nada de `DELETE` físico. Todo repositorio filtra `deleted_at IS NULL`.
 3. **Fechas de negocio y precios en tablas de transacción**, no en la entidad padre (ver ADR 0005).
-4. **Precio de repuesto estampado al usarlo** (`part_usage.unit_price`).
+4. **Precio de repuesto estampado al aprobar la orden** (`part_usage.unit_price`). Hasta entonces la orden toma el precio vigente de la lista (E05-05).
 5. **Fotos y firmas en el bucket**, nunca en la base. Se sirven con URLs firmadas.
 6. **Stock por movimientos.** Nunca se edita un saldo directamente.
 7. **Una orden de taller es una sola orden con etapas** (retiro, taller, devolución), no tres órdenes.
