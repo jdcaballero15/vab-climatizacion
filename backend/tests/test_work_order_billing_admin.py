@@ -2,6 +2,7 @@
 
 import uuid
 from collections.abc import AsyncGenerator
+from decimal import Decimal
 from typing import Any
 
 import pytest
@@ -11,6 +12,7 @@ from sqlalchemy import text
 from app.db.models.catalog import WorkType
 from app.db.models.client import Client, ClientSite
 from app.db.models.crew import Crew
+from app.db.models.part import Part, PartPrice, PartUsage
 from app.db.models.user import User, UserRole
 from app.db.session import engine
 from app.domain.work_order import OrderStatus
@@ -76,22 +78,43 @@ async def _put(user: User, order_id: uuid.UUID, body: dict[str, Any]) -> Respons
         return await client.put(f"{ORDERS_URL}/{order_id}/billing", json=body, headers=_auth(user))
 
 
-async def _terminada(m: Mundo) -> Any:
+async def _terminada(m: Mundo, materiales: str | None = "15000.50") -> Any:
+    """Terminada con un material usado que, al precio de lista, suma ese importe."""
     orden = await _orden(m, OrderStatus.done)
     await _cierre(m, orden)
+    if materiales is not None:
+        part = Part(name=f"Material {uuid.uuid4().hex[:6]}", unit="unidad")
+        await _seed([part])
+        await _seed(
+            [
+                PartPrice(part_id=part.id, list_price=Decimal(materiales)),
+                PartUsage(
+                    work_order_id=orden.id,
+                    part_id=part.id,
+                    quantity=Decimal("1"),
+                    created_by=m.celular.id,
+                ),
+            ]
+        )
     return orden
 
 
-# Como lo manda la administración: sin factura, el número va en null.
+async def _aprobar(m: Mundo, order_id: uuid.UUID) -> None:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(f"{ORDERS_URL}/{order_id}/approval", headers=_auth(m.admin))
+    assert response.status_code == 200, response.text
+
+
+# Como lo manda la administración: sin factura, el número va en null. Los repuestos no se
+# cargan: salen del total de materiales de la orden (E05-05).
 IMPORTES = {
-    "parts_amount": "15000.50",
     "labor_amount": "20000",
     "status": "pending",
     "invoice_number": None,
 }
 
 
-# Criterio 1: guarda repuestos y mano de obra, con quién y cuándo, y el total.
+# Criterio 1: guarda la mano de obra, con quién y cuándo; repuestos y total se calculan.
 async def test_carga_importes_de_una_terminada(mundo: Mundo) -> None:
     m = mundo
     orden = await _terminada(m)
@@ -108,10 +131,30 @@ async def test_carga_importes_de_una_terminada(mundo: Mundo) -> None:
     assert body["updated_by_name"] == "Admin Ficticia"
 
 
+# E05-05: los repuestos ya no se cargan a mano.
+async def test_repuestos_a_mano_se_rechazan(mundo: Mundo) -> None:
+    orden = await _terminada(mundo)
+
+    response = await _put(mundo.admin, orden.id, {**IMPORTES, "parts_amount": "1"})
+
+    assert response.status_code == 422
+
+
+# E04-08, criterio 4: no se factura sin aprobar.
+async def test_facturada_exige_la_orden_aprobada(mundo: Mundo) -> None:
+    orden = await _terminada(mundo)
+
+    response = await _put(mundo.admin, orden.id, {**IMPORTES, "status": "invoiced"})
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "order_not_approved"
+
+
 # Criterio 2: se marca facturada con número y se puede volver atrás; reemplaza lo anterior.
 async def test_marca_facturada_y_reemplaza(mundo: Mundo) -> None:
     m = mundo
     orden = await _terminada(m)
+    await _aprobar(m, orden.id)
     await _put(m.admin, orden.id, IMPORTES)
 
     facturada = await _put(
@@ -131,6 +174,7 @@ async def test_listado_muestra_y_filtra_por_estado_de_cobro(mundo: Mundo) -> Non
     sin_datos = await _terminada(m)
     pendiente = await _terminada(m)
     facturada = await _terminada(m)
+    await _aprobar(m, facturada.id)
     await _put(m.admin, pendiente.id, IMPORTES)
     await _put(m.admin, facturada.id, {**IMPORTES, "status": "invoiced"})
 
@@ -164,7 +208,7 @@ async def test_orden_inexistente_da_404(mundo: Mundo) -> None:
 
 
 # Criterio 5: importes válidos.
-@pytest.mark.parametrize(("campo", "valor"), [("parts_amount", "-1"), ("labor_amount", "10.123")])
+@pytest.mark.parametrize(("campo", "valor"), [("labor_amount", "-1"), ("labor_amount", "10.123")])
 async def test_rechaza_importes_invalidos(mundo: Mundo, campo: str, valor: str) -> None:
     orden = await _terminada(mundo)
 

@@ -15,6 +15,7 @@ from app.db.models.catalog import EquipmentType, Failure, Repair, Task, WorkType
 from app.db.models.client import Client, ClientContact, ClientSite
 from app.db.models.crew import Crew, FieldTechnician
 from app.db.models.equipment import Equipment
+from app.db.models.part import Part, PartPrice, PartUsage
 from app.db.models.signature import Signature
 from app.db.models.stored_file import StoredFile
 from app.db.models.user import User, UserRole
@@ -68,6 +69,10 @@ TABLES = [
     Signature.__table__,
     # El listado de terminadas trae el cobro (E04-14).
     WorkOrderBilling.__table__,
+    # Los materiales de la orden suman al cobro (E05-05).
+    Part.__table__,
+    PartPrice.__table__,
+    PartUsage.__table__,
 ]
 ORDERS_URL = "/admin/orders"
 AYER = datetime.now(UTC) - timedelta(days=1)

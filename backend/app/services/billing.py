@@ -1,11 +1,13 @@
 """Importes y estado de cobro de una orden terminada (E04-14, versión mínima).
 
 Provisorio hasta definir con la oficina la factura, el cobro y la mano de obra (E04-09 a
-E04-11): no cambia el estado de la orden, que sigue Terminada.
+E04-11): no cambia el estado de la orden, que sigue Terminada. Los repuestos son el total
+de materiales de la orden (E05-05); la columna parts_amount guarda el último calculado.
 """
 
 import uuid
 from collections.abc import Sequence
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,13 +15,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.schemas.work_order import BillingAdminOut, BillingUpdate
 from app.db.models.user import User
 from app.db.models.work_order import WorkOrderBilling
-from app.domain.work_order import OrderStatus
+from app.domain.work_order import BillingStatus, OrderStatus
+from app.services import order_materials
 from app.services.work_orders import get_work_order
 
 
 class OrderNotDoneError(Exception):
     code = "order_not_done"
     message = "Solo se cargan importes en una orden terminada."
+
+
+class OrderNotApprovedError(Exception):
+    code = "order_not_approved"
+    message = "Aprobá la orden antes de marcarla facturada."
 
 
 async def save_billing(
@@ -29,11 +37,17 @@ async def save_billing(
     order = await get_work_order(session, order_id)
     if order.status != OrderStatus.done:
         raise OrderNotDoneError
+    if data.status == BillingStatus.invoiced and not await order_materials.is_approved(
+        session, order.id
+    ):
+        raise OrderNotApprovedError
+    # Antes de crear la fila: la consulta del total haría flush de una fila sin importes.
+    parts_amount = await order_materials.materials_total(session, order.id)
     billing = await _current(session, order.id)
     if billing is None:
         billing = WorkOrderBilling(work_order_id=order.id)
         session.add(billing)
-    billing.parts_amount = data.parts_amount
+    billing.parts_amount = parts_amount
     billing.labor_amount = data.labor_amount
     billing.status = data.status
     billing.invoice_number = data.invoice_number
@@ -57,7 +71,12 @@ async def billing_by_order(
             WorkOrderBilling.deleted_at.is_(None),
         )
     )
-    return {billing.work_order_id: _out(billing, name) for billing, name in result.all()}
+    out: dict[uuid.UUID, BillingAdminOut] = {}
+    for billing, name in result.all():
+        # Hasta aprobar, el total de materiales sigue la lista: se recalcula al listar.
+        parts = await order_materials.materials_total(session, billing.work_order_id)
+        out[billing.work_order_id] = _out(billing, name, parts)
+    return out
 
 
 async def _current(session: AsyncSession, order_id: uuid.UUID) -> WorkOrderBilling | None:
@@ -68,11 +87,14 @@ async def _current(session: AsyncSession, order_id: uuid.UUID) -> WorkOrderBilli
     )
 
 
-def _out(billing: WorkOrderBilling, updated_by_name: str) -> BillingAdminOut:
+def _out(
+    billing: WorkOrderBilling, updated_by_name: str, parts_amount: Decimal | None = None
+) -> BillingAdminOut:
+    parts = billing.parts_amount if parts_amount is None else parts_amount
     return BillingAdminOut(
-        parts_amount=billing.parts_amount,
+        parts_amount=parts,
         labor_amount=billing.labor_amount,
-        total=billing.parts_amount + billing.labor_amount,
+        total=parts + billing.labor_amount,
         status=billing.status,
         invoice_number=billing.invoice_number,
         updated_by_name=updated_by_name,

@@ -127,7 +127,7 @@ class BillingUpdate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    parts_amount: Amount
+    # Los repuestos no se cargan: salen del total de materiales de la orden (E05-05).
     labor_amount: Amount
     status: BillingStatus
     invoice_number: Annotated[
