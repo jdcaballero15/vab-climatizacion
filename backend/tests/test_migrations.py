@@ -551,3 +551,27 @@ def test_migracion_crea_materiales_y_precios() -> None:
             )
     finally:
         command.downgrade(cfg, "base")
+
+
+# E05-05: materiales usados en la orden. Material de la lista u "Otro", nunca los dos;
+# cantidad mayor que cero; el evento materials_changed es válido.
+def test_migracion_crea_materiales_usados() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    command.upgrade(cfg, "head")
+    try:
+        assert _names("SELECT tablename FROM pg_tables WHERE tablename = 'part_usage'") == [
+            "part_usage"
+        ]
+        assert _names(
+            "SELECT conname FROM pg_constraint WHERE conname IN "
+            "('ck_part_usage_part_or_other', 'ck_part_usage_quantity')"
+        ) == ["ck_part_usage_part_or_other", "ck_part_usage_quantity"]
+        check = _names(
+            "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
+            "WHERE conname = 'ck_work_order_event_type'"
+        )
+        assert "materials_changed" in check[0]
+    finally:
+        command.downgrade(cfg, "base")

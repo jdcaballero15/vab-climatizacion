@@ -19,6 +19,10 @@ const OPTIONS: ClosureOptions = {
     { id: "f1", name: "No enfría", repairs: [{ id: "r1", name: "Carga de gas" }] },
     { id: "f2", name: "Pierde agua", repairs: [] },
   ],
+  parts: [
+    { id: "p1", name: "Gas R410A", unit: "kg" },
+    { id: "p2", name: "Caño de cobre 1/4", unit: "metro" },
+  ],
 };
 
 function draft(overrides: Partial<ClosureDraft> = {}): ClosureDraft {
@@ -151,6 +155,7 @@ describe("toClosurePayload", () => {
       signature: null,
       no_signature_reason: "refused",
       no_signature_text: null,
+      parts: [],
     });
   });
 
@@ -241,5 +246,45 @@ describe("restoreDraft", () => {
       repairOther: "Ajuste",
     });
     expect(restoreDraft(saved, OPTIONS)).toEqual(saved);
+  });
+});
+
+// E05-05: materiales usados.
+describe("materiales", () => {
+  const gas = { key: "m1", part: "p1", otherText: "", quantity: "1,5" };
+  const otro = { key: "m2", part: OTHER, otherText: "Cinta aisladora", quantity: "2" };
+
+  it("un borrador guardado antes de los materiales vuelve con la lista vacía", () => {
+    const viejo = { ...draft() } as Partial<ClosureDraft>;
+    delete viejo.materials;
+
+    expect(restoreDraft(viejo as ClosureDraft, OPTIONS).materials).toEqual([]);
+  });
+
+  it("al restaurar saca los materiales que ya no están en la lista y conserva Otro", () => {
+    const sacado = { key: "m3", part: "p9", otherText: "", quantity: "1" };
+
+    expect(restoreDraft(draft({ materials: [gas, sacado, otro] }), OPTIONS).materials).toEqual([
+      gas,
+      otro,
+    ]);
+  });
+
+  it("marca la cantidad inválida y el Otro sin texto", () => {
+    expect(missingFields(draft({ materials: [{ ...gas, quantity: "0" }] }), OPTIONS)).toEqual({
+      parts: "Revisá la cantidad de Gas R410A.",
+    });
+    expect(missingFields(draft({ materials: [{ ...otro, otherText: " " }] }), OPTIONS)).toEqual({
+      parts: "Escribí qué material es.",
+    });
+    expect(missingFields(draft({ materials: [gas, otro] }), OPTIONS)).toEqual({});
+  });
+
+  it("los manda con punto decimal y el Otro con su texto", () => {
+    expect(toClosurePayload(draft({ materials: [gas, otro] }), "key").parts).toEqual([
+      { part_id: "p1", other_text: null, quantity: "1.5" },
+      { part_id: null, other_text: "Cinta aisladora", quantity: "2" },
+    ]);
+    expect(toClosurePayload(draft(), "key").parts).toEqual([]);
   });
 });

@@ -19,6 +19,9 @@ FORBIDDEN_TECHNICIAN_FIELDS: frozenset[str] = frozenset(
         "parts_amount",
         "labor_amount",
         "invoice_number",
+        # Materiales de la orden con precio (E05-05).
+        "subtotal",
+        "price_updated_at",
         "history",
         # Datos de contacto del cliente: el técnico ve solo el nombre (E03-02).
         "phone",

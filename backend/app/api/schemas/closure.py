@@ -1,10 +1,12 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, StringConstraints
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StringConstraints
 
 from app.api.schemas.client import blank_to_none
+from app.api.schemas.part import PartChoiceTechnicianOut
 from app.domain.work_order import (
     ClosureOutcome,
     EquipmentCondition,
@@ -42,6 +44,22 @@ class ClosureOptionsTechnicianOut(BaseModel):
     tasks: list[ClosureChoiceTechnicianOut]
     requires_failure_repair: bool
     failures: list[FailureChoiceTechnicianOut]
+    # E05-05: materiales activos, con nombre y unidad. Nunca el precio.
+    parts: list[PartChoiceTechnicianOut]
+
+
+# Cantidad de un material: mayor que cero, hasta 3 decimales (1,5 kg; 3,2 metros).
+Quantity = Annotated[Decimal, Field(gt=0, max_digits=12, decimal_places=3)]
+
+
+class PartUsageIn(BaseModel):
+    """Un material usado: de la lista (part_id) o escrito en "Otro" (other_text)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    part_id: uuid.UUID | None = None
+    other_text: OtherText = None
+    quantity: Quantity
 
 
 class SignatureIn(BaseModel):
@@ -76,6 +94,8 @@ class ClosureCreate(BaseModel):
     signature: SignatureIn | None = None
     no_signature_reason: NoSignatureReason | None = None
     no_signature_text: OtherText = None
+    # E05-05: con cualquier resultado; el total de la orden suma todas las visitas.
+    parts: list[PartUsageIn] = []
 
 
 class ClosureTechnicianOut(BaseModel):

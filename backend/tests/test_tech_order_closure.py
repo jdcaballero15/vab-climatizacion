@@ -3,6 +3,7 @@ import uuid
 from collections.abc import AsyncGenerator, Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -15,6 +16,7 @@ from app.db.models.catalog import EquipmentType, Failure, Repair, Task, WorkType
 from app.db.models.client import Client, ClientContact, ClientSite
 from app.db.models.crew import Crew, FieldTechnician
 from app.db.models.equipment import Equipment
+from app.db.models.part import Part, PartPrice, PartUsage
 from app.db.models.signature import Signature
 from app.db.models.stored_file import StoredFile
 from app.db.models.user import User, UserRole
@@ -58,6 +60,9 @@ TABLES = [
     StoredFile.__table__,
     WorkOrderClosurePhoto.__table__,
     Signature.__table__,
+    Part.__table__,
+    PartPrice.__table__,
+    PartUsage.__table__,
 ]
 HOY = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")).date()
 
@@ -1201,3 +1206,148 @@ async def test_el_nombre_de_quien_firma_no_aparece_en_logs(
 
     assert response.status_code == 201
     assert "Nombre Rastreable" not in caplog.text
+
+
+# E05-05: materiales usados. La escuadrilla elige de la lista (sin precios) o escribe "Otro".
+
+
+async def _materiales(m: Mundo) -> tuple[Part, Part, Part]:
+    gas = Part(name="Gas R410A", unit="kg")
+    cano = Part(name="Caño de cobre 1/4", unit="metro")
+    viejo = Part(name="Filtro viejo", unit="unidad", is_active=False)
+    await _seed([gas, cano, viejo])
+    await _seed([PartPrice(part_id=p.id, list_price=Decimal("1000")) for p in (gas, cano, viejo)])
+    return gas, cano, viejo
+
+
+async def _usos(order_id: object) -> list[PartUsage]:
+    async with SessionLocal() as session:
+        result = await session.scalars(
+            select(PartUsage)
+            .where(PartUsage.work_order_id == order_id)
+            .order_by(PartUsage.quantity)
+        )
+        return list(result.all())
+
+
+async def test_opciones_traen_los_materiales_activos_sin_precio(mundo: Mundo) -> None:
+    gas, cano, _ = await _materiales(mundo)
+    orden = await _orden(mundo)
+
+    response = await _opciones(mundo.celular, orden.id)
+
+    assert response.status_code == 200, response.text
+    assert response.json()["parts"] == [
+        {"id": str(cano.id), "name": "Caño de cobre 1/4", "unit": "metro"},
+        {"id": str(gas.id), "name": "Gas R410A", "unit": "kg"},
+    ]
+    assert "price" not in response.text
+
+
+async def test_cierre_guarda_materiales_y_otro(mundo: Mundo) -> None:
+    gas, _, _ = await _materiales(mundo)
+    orden = await _orden(mundo)
+    partes = [
+        {"part_id": str(gas.id), "quantity": "1.5"},
+        {"other_text": "Cinta aisladora", "quantity": 1},
+    ]
+
+    response = await _cerrar(mundo.celular, orden.id, _resuelta(mundo, parts=partes))
+
+    assert response.status_code == 201, response.text
+    usos = await _usos(orden.id)
+    assert [(u.part_id, u.other_text, u.quantity) for u in usos] == [
+        (None, "Cinta aisladora", Decimal("1.000")),
+        (gas.id, None, Decimal("1.500")),
+    ]
+    assert all(u.closure_id is not None and u.unit_price is None for u in usos)
+    assert {u.created_by for u in usos} == {mundo.celular.id}
+
+
+async def test_cierre_sin_materiales_es_valido(mundo: Mundo) -> None:
+    orden = await _orden(mundo)
+
+    response = await _cerrar(mundo.celular, orden.id, _resuelta(mundo))
+
+    assert response.status_code == 201, response.text
+    assert await _usos(orden.id) == []
+
+
+async def test_materiales_tambien_con_otra_visita(mundo: Mundo) -> None:
+    gas, _, _ = await _materiales(mundo)
+    orden = await _orden(mundo)
+    payload = _resuelta(
+        mundo,
+        outcome="needs_revisit",
+        observation="Falta un repuesto",
+        parts=[{"part_id": str(gas.id), "quantity": "0.5"}],
+    )
+
+    response = await _cerrar(mundo.celular, orden.id, payload)
+
+    assert response.status_code == 201, response.text
+    assert [u.quantity for u in await _usos(orden.id)] == [Decimal("0.500")]
+
+
+async def test_reenvio_del_cierre_no_duplica_materiales(mundo: Mundo) -> None:
+    gas, _, _ = await _materiales(mundo)
+    orden = await _orden(mundo)
+    payload = _resuelta(mundo, parts=[{"part_id": str(gas.id), "quantity": "2"}])
+
+    primero = await _cerrar(mundo.celular, orden.id, payload)
+    segundo = await _cerrar(mundo.celular, orden.id, payload)
+
+    assert (primero.status_code, segundo.status_code) == (201, 200)
+    assert len(await _usos(orden.id)) == 1
+
+
+@pytest.mark.parametrize("cantidad", [0, -1, "abc", "1.2345"])
+async def test_cantidad_invalida_se_rechaza(mundo: Mundo, cantidad: object) -> None:
+    gas, _, _ = await _materiales(mundo)
+    orden = await _orden(mundo)
+    payload = _resuelta(mundo, parts=[{"part_id": str(gas.id), "quantity": cantidad}])
+
+    response = await _cerrar(mundo.celular, orden.id, payload)
+
+    assert response.status_code == 422
+    assert await _usos(orden.id) == []
+
+
+@pytest.mark.parametrize(
+    ("linea", "code"),
+    [
+        ({"other_text": "Cinta", "quantity": 1, "con_material": True}, "part_ambiguous"),
+        ({"quantity": 1}, "part_required"),
+        ({"other_text": "   ", "quantity": 1}, "part_required"),
+        ({"inactivo": True, "quantity": 1}, "part_not_available"),
+        ({"repetido": True, "quantity": 1}, "part_repeated"),
+    ],
+)
+async def test_linea_de_material_invalida(mundo: Mundo, linea: dict[str, Any], code: str) -> None:
+    gas, _, viejo = await _materiales(mundo)
+    orden = await _orden(mundo)
+    item: dict[str, Any] = {"quantity": linea["quantity"]}
+    if "other_text" in linea:
+        item["other_text"] = linea["other_text"]
+    if linea.get("con_material") or linea.get("repetido"):
+        item["part_id"] = str(gas.id)
+    if linea.get("inactivo"):
+        item["part_id"] = str(viejo.id)
+    partes = [item, dict(item)] if linea.get("repetido") else [item]
+
+    response = await _cerrar(mundo.celular, orden.id, _resuelta(mundo, parts=partes))
+
+    assert response.status_code == 422, response.text
+    assert response.json()["detail"]["code"] == code
+    assert response.json()["detail"]["field"] == "parts"
+    assert await _usos(orden.id) == []
+
+
+async def test_linea_con_precio_se_rechaza(mundo: Mundo) -> None:
+    gas, _, _ = await _materiales(mundo)
+    orden = await _orden(mundo)
+    partes = [{"part_id": str(gas.id), "quantity": 1, "unit_price": 5}]
+
+    response = await _cerrar(mundo.celular, orden.id, _resuelta(mundo, parts=partes))
+
+    assert response.status_code == 422

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -28,6 +28,7 @@ const LUIS = "a0000000-0000-4000-8000-000000000002";
 const TASK = "b0000000-0000-4000-8000-000000000001";
 const FAILURE = "c0000000-0000-4000-8000-000000000001";
 const REPAIR = "d0000000-0000-4000-8000-000000000001";
+const GAS = "e0000000-0000-4000-8000-000000000001";
 
 function options(overrides: Partial<Options> = {}): Options {
   return {
@@ -40,6 +41,10 @@ function options(overrides: Partial<Options> = {}): Options {
     failures: [
       { id: FAILURE, name: "No enfría", repairs: [{ id: REPAIR, name: "Carga de gas" }] },
       { id: "c0000000-0000-4000-8000-000000000002", name: "Pierde agua", repairs: [] },
+    ],
+    parts: [
+      { id: GAS, name: "Gas R410A", unit: "kg" },
+      { id: "e0000000-0000-4000-8000-000000000002", name: "Caño de cobre 1/4", unit: "metro" },
     ],
     ...overrides,
   };
@@ -323,6 +328,7 @@ describe("ClosurePage", () => {
       signature: null,
       no_signature_reason: "refused",
       no_signature_text: null,
+      parts: [],
     });
   });
 
@@ -1000,5 +1006,77 @@ describe("ClosurePage, firma del cliente", () => {
       no_signature_reason: "other",
       no_signature_text: "Se fue antes",
     });
+  });
+});
+
+// E05-05: materiales usados, sin precios.
+describe("ClosurePage materiales", () => {
+  it("busca un material, carga la cantidad con coma y lo manda", async () => {
+    const sent = stubApi();
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+
+    await fillResolved();
+    await user.type(screen.getByLabelText("Buscar material"), "gas");
+    expect(screen.queryByRole("button", { name: /Caño de cobre/ })).not.toBeInTheDocument();
+    await click("Gas R410A · kg");
+    await user.type(screen.getByLabelText("Cantidad de Gas R410A (kg)"), "1,5");
+    await click("Finalizar orden");
+
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0].parts).toEqual([{ part_id: GAS, other_text: null, quantity: "1.5" }]);
+    expect(document.body.textContent).not.toContain("$");
+  });
+
+  it("Otro pide qué material es y una cantidad válida", async () => {
+    const sent = stubApi();
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+
+    await fillResolved();
+    await click("Otro (no está en la lista)");
+    await user.type(screen.getByLabelText("Cantidad del otro material"), "2");
+    await click("Finalizar orden");
+
+    expect(await screen.findAllByText("Escribí qué material es.")).not.toHaveLength(0);
+    expect(sent).toHaveLength(0);
+
+    await user.type(screen.getByLabelText("¿Qué material es?"), "Cinta aisladora");
+    await click("Finalizar orden");
+
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0].parts).toEqual([
+      { part_id: null, other_text: "Cinta aisladora", quantity: "2" },
+    ]);
+  });
+
+  it("una cantidad inválida no deja cerrar", async () => {
+    const sent = stubApi();
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+
+    await fillResolved();
+    await user.type(screen.getByLabelText("Buscar material"), "gas");
+    await click("Gas R410A · kg");
+    await user.type(screen.getByLabelText("Cantidad de Gas R410A (kg)"), "0");
+    await click("Finalizar orden");
+
+    expect(await screen.findAllByText("Revisá la cantidad de Gas R410A.")).not.toHaveLength(0);
+    expect(sent).toHaveLength(0);
+  });
+
+  it("quitar un material lo saca del envío", async () => {
+    const sent = stubApi();
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+
+    await fillResolved();
+    await user.type(screen.getByLabelText("Buscar material"), "gas");
+    await click("Gas R410A · kg");
+    await click("Quitar Gas R410A");
+    await click("Finalizar orden");
+
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0].parts).toEqual([]);
   });
 });

@@ -697,6 +697,14 @@ describe("OrdersPage", () => {
         if (url.pathname.endsWith("/admin/orders/o3/closure")) {
           return json(cierre);
         }
+        if (url.pathname.endsWith("/admin/orders/o3/materials")) {
+          return json({
+            approved: true,
+            approved_at: "2026-10-30T15:00:00Z",
+            lines: [],
+            total: "1500.50",
+          });
+        }
         if (!(url.pathname.endsWith("/admin/orders") && request.method === "GET")) {
           return undefined;
         }
@@ -822,7 +830,10 @@ describe("OrdersPage", () => {
         await screen.findByRole("button", { name: "Ver el cierre de la orden N° 3" }),
       );
       const form = await screen.findByRole("form", { name: "Importes y cobro de la orden N° 3" });
-      await user.type(within(form).getByLabelText("Repuestos ($)"), "1500,50");
+      // E05-05: los repuestos salen del total de materiales; no se escriben.
+      const repuestos = within(form).getByText("Repuestos (materiales)").nextElementSibling;
+      await waitFor(() => expect(repuestos).toHaveTextContent(/1\.500,50/));
+      expect(within(form).queryByLabelText("Repuestos ($)")).not.toBeInTheDocument();
       await user.type(within(form).getByLabelText("Mano de obra ($)"), "2000");
       expect(within(form).getByText(/3\.500,50/)).toBeInTheDocument();
       await user.selectOptions(within(form).getByLabelText("Estado de cobro"), "invoiced");
@@ -832,7 +843,6 @@ describe("OrdersPage", () => {
       expect(await within(form).findByText("Importes guardados.")).toBeInTheDocument();
       const [put] = calls(fetchMock, "PUT", "/admin/orders/o3/billing");
       expect(await put.json()).toEqual({
-        parts_amount: "1500.50",
         labor_amount: "2000",
         status: "invoiced",
         invoice_number: "A-1",
@@ -850,7 +860,7 @@ describe("OrdersPage", () => {
         await screen.findByRole("button", { name: "Ver el cierre de la orden N° 3" }),
       );
       const form = await screen.findByRole("form", { name: "Importes y cobro de la orden N° 3" });
-      await user.type(within(form).getByLabelText("Repuestos ($)"), "-5");
+      await user.type(within(form).getByLabelText("Mano de obra ($)"), "-5");
       await user.click(within(form).getByRole("button", { name: "Guardar importes" }));
 
       expect(within(form).getByRole("alert")).toHaveTextContent("Revisá los importes");

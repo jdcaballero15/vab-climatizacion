@@ -188,7 +188,7 @@ async def save_work_order_billing(
         return await billing_service.save_billing(session, order_id, payload, admin)
     except work_orders_service.WorkOrderNotFoundError:
         raise _error(404, "order_not_found", "No se encontró la orden.") from None
-    except billing_service.OrderNotDoneError as exc:
+    except (billing_service.OrderNotDoneError, billing_service.OrderNotApprovedError) as exc:
         raise _error(409, exc.code, exc.message) from None
 
 
