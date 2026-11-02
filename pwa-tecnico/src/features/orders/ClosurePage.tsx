@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+import { ClosureMaterials } from "./ClosureMaterials";
 import { ClosurePhotos } from "./ClosurePhotos";
 import { SignaturePad } from "./SignaturePad";
 import {
@@ -59,6 +60,7 @@ const SECTION_OF: Record<ClosureField, string> = {
   repair_id: "closure-repair",
   repair_other_text: "closure-repair",
   equipment_condition: "closure-equipment",
+  parts: "closure-materials",
   photo_ids: "closure-photos",
   observation: "closure-observation",
   signature: "closure-signature",
@@ -628,6 +630,15 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
           </div>
         </Section>
       )}
+
+      <Section id="closure-materials" error={errors.parts}>
+        {title("Materiales usados", optionalTag(false))}
+        <ClosureMaterials
+          parts={options.parts}
+          materials={draft.materials}
+          onChange={(materials) => update({ materials })}
+        />
+      </Section>
 
       <Section id="closure-photos" error={errors.photo_ids}>
         {title("Fotos", optionalTag(false))}

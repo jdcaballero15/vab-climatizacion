@@ -727,6 +727,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/orders/{order_id}/materials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Order Materials */
+        get: operations["get_order_materials_admin_orders__order_id__materials_get"];
+        put?: never;
+        /** Add Material Line */
+        post: operations["add_material_line_admin_orders__order_id__materials_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/materials/{line_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Material Line */
+        patch: operations["update_material_line_admin_orders__order_id__materials__line_id__patch"];
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/materials/{line_id}/removal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove Material Line */
+        post: operations["remove_material_line_admin_orders__order_id__materials__line_id__removal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/materials/{line_id}/promotion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Promote Material Line */
+        post: operations["promote_material_line_admin_orders__order_id__materials__line_id__promotion_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve Order */
+        post: operations["approve_order_admin_orders__order_id__approval_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/crews": {
         parameters: {
             query?: never;
@@ -1028,8 +1114,6 @@ export interface components {
          * @description Importes y estado de cobro de una orden terminada (E04-14, versión mínima).
          */
         BillingUpdate: {
-            /** Parts Amount */
-            parts_amount: number | string;
             /** Labor Amount */
             labor_amount: number | string;
             status: components["schemas"]["BillingStatus"];
@@ -1237,6 +1321,11 @@ export interface components {
             no_signature_reason?: components["schemas"]["NoSignatureReason"] | null;
             /** No Signature Text */
             no_signature_text?: string | null;
+            /**
+             * Parts
+             * @default []
+             */
+            parts: components["schemas"]["PartUsageIn"][];
         };
         /** ClosureOptionsTechnicianOut */
         ClosureOptionsTechnicianOut: {
@@ -1248,6 +1337,8 @@ export interface components {
             requires_failure_repair: boolean;
             /** Failures */
             failures: components["schemas"]["FailureChoiceTechnicianOut"][];
+            /** Parts */
+            parts: components["schemas"]["PartChoiceTechnicianOut"][];
         };
         /**
          * ClosureOutcome
@@ -1699,6 +1790,57 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** MaterialLineAdminOut */
+        MaterialLineAdminOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Part Id */
+            part_id: string | null;
+            /** Name */
+            name: string;
+            /** Unit */
+            unit: string | null;
+            /** Is Other */
+            is_other: boolean;
+            /** Quantity */
+            quantity: string;
+            /** Unit Price */
+            unit_price: string | null;
+            /** Subtotal */
+            subtotal: string | null;
+            /** Visit Closed At */
+            visit_closed_at: string | null;
+            /** Added By Name */
+            added_by_name: string;
+        };
+        /** MaterialLineCreate */
+        MaterialLineCreate: {
+            /** Part Id */
+            part_id?: string | null;
+            /** Other Text */
+            other_text?: string | null;
+            /** Quantity */
+            quantity: number | string;
+        };
+        /**
+         * MaterialLinePromotion
+         * @description Pasa una línea "Otro" a un material de la lista.
+         */
+        MaterialLinePromotion: {
+            /**
+             * Part Id
+             * Format: uuid
+             */
+            part_id: string;
+        };
+        /** MaterialLineUpdate */
+        MaterialLineUpdate: {
+            /** Quantity */
+            quantity: number | string;
+        };
         /**
          * NoSignatureReason
          * @description Por qué un cierre no tiene la firma del cliente (E05-07, D-011). Lista a validar.
@@ -1825,6 +1967,17 @@ export interface components {
             /** Offset */
             offset: number;
         };
+        /** OrderMaterialsAdminOut */
+        OrderMaterialsAdminOut: {
+            /** Approved */
+            approved: boolean;
+            /** Approved At */
+            approved_at: string | null;
+            /** Lines */
+            lines: components["schemas"]["MaterialLineAdminOut"][];
+            /** Total */
+            total: string;
+        };
         /**
          * OrderSource
          * @enum {string}
@@ -1883,6 +2036,18 @@ export interface components {
              */
             price_updated_at: string;
         };
+        /** PartChoiceTechnicianOut */
+        PartChoiceTechnicianOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Unit */
+            unit: string;
+        };
         /** PartCreate */
         PartCreate: {
             /** Name */
@@ -1906,6 +2071,18 @@ export interface components {
             unit?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+        };
+        /**
+         * PartUsageIn
+         * @description Un material usado: de la lista (part_id) o escrito en "Otro" (other_text).
+         */
+        PartUsageIn: {
+            /** Part Id */
+            part_id?: string | null;
+            /** Other Text */
+            other_text?: string | null;
+            /** Quantity */
+            quantity: number | string;
         };
         /** PasswordChange */
         PasswordChange: {
@@ -4265,6 +4442,207 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClosureAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_order_materials_admin_orders__order_id__materials_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderMaterialsAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_material_line_admin_orders__order_id__materials_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterialLineCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderMaterialsAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_material_line_admin_orders__order_id__materials__line_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterialLineUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderMaterialsAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_material_line_admin_orders__order_id__materials__line_id__removal_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderMaterialsAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    promote_material_line_admin_orders__order_id__materials__line_id__promotion_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterialLinePromotion"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderMaterialsAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_order_admin_orders__order_id__approval_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderMaterialsAdminOut"];
                 };
             };
             /** @description Validation Error */

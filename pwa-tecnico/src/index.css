@@ -1090,3 +1090,85 @@ button:disabled {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* Materiales usados en el cierre (E05-05) */
+.closure__materials {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.closure__material-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.closure__material {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.7rem 0.8rem;
+  background: var(--surface-strong);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.closure__material-name {
+  font-weight: 600;
+}
+
+.closure__material-qty {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.closure__material-qty .closure__input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.closure__material-unit {
+  color: var(--text-secondary);
+}
+
+.closure__material-remove,
+.closure__material-other,
+.closure__material-option {
+  min-height: 44px;
+  padding: 0.5rem 0.9rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-strong);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.closure__material-remove {
+  color: var(--danger);
+}
+
+.closure__material-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.closure__material-option {
+  text-align: left;
+}
+
+.closure__material-other {
+  align-self: flex-start;
+  color: var(--primary-dark);
+}
+
+.closure__hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}

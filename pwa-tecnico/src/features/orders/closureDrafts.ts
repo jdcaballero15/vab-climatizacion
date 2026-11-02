@@ -80,6 +80,13 @@ function pick(closure: StoredClosure): StoredClosure {
       signerName: draft.signerName ?? "",
       noSignatureReason: draft.noSignatureReason ?? null,
       noSignatureText: draft.noSignatureText ?? "",
+      // Los guardados antes de los materiales (E05-05) no los tienen.
+      materials: (draft.materials ?? []).map(({ key, part, otherText, quantity }) => ({
+        key,
+        part,
+        otherText,
+        quantity,
+      })),
     },
     idempotencyKey: closure.idempotencyKey,
     photos: closure.photos.map(({ key, blob, fileId, uploaded }) => ({
