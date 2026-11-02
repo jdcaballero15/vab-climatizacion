@@ -10,6 +10,7 @@ from app.api import (
     failures,
     files,
     health,
+    parts,
     repairs,
     tech_orders,
     users,
@@ -36,6 +37,7 @@ def create_app() -> FastAPI:
     app.include_router(equipment_types.router)
     app.include_router(failures.router)
     app.include_router(repairs.router)
+    app.include_router(parts.router)
     app.include_router(clients.router)
     app.include_router(clients.sites_router)
     app.include_router(equipment.router)
