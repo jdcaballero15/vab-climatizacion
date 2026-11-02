@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 124 historias.** done: 42, draft: 69, icebox: 8, in_progress: 4, ready: 1
+**Total: 124 historias.** done: 43, draft: 68, icebox: 8, in_progress: 4, ready: 1
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -90,7 +90,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E05-02](E05-app-tecnico/E05-02-ver-el-detalle-de-una-orden-asignada.md) | Ver el detalle de una orden asignada | Debe | S | done | technician | - | - | E05-01 |
 | [E05-03](E05-app-tecnico/E05-03-iniciar-una-orden.md) | Iniciar una orden | Debe | S | done | technician | - | - | E05-02, E04-01 |
 | [E05-04](E05-app-tecnico/E05-04-cerrar-una-orden-con-falla-y-reparacion-de-listas.md) | Cerrar una orden con falla y reparación de listas | Debe | M | done | technician | - | - | E05-03, E02-03, E02-04, E02-09, E02-10 |
-| [E05-05](E05-app-tecnico/E05-05-registrar-repuestos-usados-con-cantidades-sin-precios.md) | Registrar repuestos usados con cantidades, sin precios | Debe | M | draft | technician | - | - | E05-04, E02-06, E08-04 |
+| [E05-05](E05-app-tecnico/E05-05-registrar-repuestos-usados-con-cantidades-sin-precios.md) | Registrar repuestos usados con cantidades, sin precios | Debe | L | done | technician, admin | - | - | E05-04, E02-06 |
 | [E05-06](E05-app-tecnico/E05-06-agregar-foto-y-observacion-al-cierre.md) | Agregar foto y observación al cierre | Debe | M | done | technician, admin | - | - | E05-04, E00-09 |
 | [E05-07](E05-app-tecnico/E05-07-firma-del-cliente-en-pantalla-con-nombre-y-dni.md) | Firma del cliente en pantalla con su nombre | Debe | M | done | technician, admin | - | - | E05-04, E00-09, E05-13 |
 | [E05-08](E05-app-tecnico/E05-08-elegir-el-resultado-del-trabajo.md) | Elegir el resultado del trabajo | Debe | M | done | technician | - | - | E05-04, E04-01 |
