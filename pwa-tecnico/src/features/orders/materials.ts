@@ -18,7 +18,8 @@ const QUANTITY = /^\d{1,9}([.,]\d{1,3})?$/;
 /** La cantidad escrita ("1,5") como la espera la API ("1.5"), o null si no vale. */
 export function parseQuantity(text: string): string | null {
   const clean = text.trim();
-  if (!QUANTITY.test(clean)) {
+  // "1.500" puede ser mil quinientos o uno y medio: se pide con coma o sin punto.
+  if (!QUANTITY.test(clean) || /\.\d{3}$/.test(clean)) {
     return null;
   }
   const value = clean.replace(",", ".");

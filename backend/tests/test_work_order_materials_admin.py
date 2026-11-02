@@ -480,3 +480,43 @@ async def test_tecnico_y_direccion_reciben_403(mundo: Mundo, gas: Part, role: Us
     ]
 
     assert [r.status_code for r in respuestas] == [403] * 6
+
+
+# Revisión final: aprobar y editar bloquean la orden y recién ahí miran si está aprobada.
+# Otra sesión la aprueba mientras tiene el bloqueo: el pedido que esperaba ve esa
+# aprobación y responde 409 (sin el bloqueo, aprobaría dos veces o agregaría una línea sin
+# precio estampado a una orden ya aprobada).
+@pytest.mark.parametrize("accion", ["aprobar", "agregar"])
+async def test_aprobar_y_editar_ven_la_aprobacion_concurrente(
+    mundo: Mundo, gas: Part, accion: str
+) -> None:
+    import asyncio
+
+    orden = await _orden(mundo, OrderStatus.done)
+    await _visita(mundo, orden, [(gas, "1")])
+
+    async def pedido() -> Response:
+        if accion == "aprobar":
+            return await _aprobar(mundo.admin, orden)
+        return await _post(mundo.admin, _url(orden), {"part_id": str(gas.id), "quantity": "1"})
+
+    async with engine.connect() as otra:
+        transaccion = await otra.begin()
+        await otra.execute(
+            text("SELECT id FROM work_order WHERE id = :id FOR UPDATE"), {"id": orden.id}
+        )
+        tarea = asyncio.ensure_future(pedido())
+        await asyncio.sleep(0.5)
+        await otra.execute(
+            text(
+                "INSERT INTO work_order_event (id, work_order_id, event_type, occurred_at) "
+                "VALUES (gen_random_uuid(), :id, 'review_approved', now())"
+            ),
+            {"id": orden.id},
+        )
+        await transaccion.commit()
+    respuesta = await tarea
+
+    assert respuesta.status_code == 409, respuesta.text
+    assert respuesta.json()["detail"]["code"] == "order_already_approved"
+    assert len(await _eventos(orden, WorkOrderEventType.review_approved)) == 1
