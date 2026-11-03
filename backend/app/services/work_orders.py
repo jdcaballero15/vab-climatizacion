@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,6 +23,7 @@ from app.api.schemas.work_order import (
     OrderListItemOut,
     OrderTechnicianOut,
     ReturnedFromCrewOut,
+    ReturnToCrewCreate,
     UnassignmentCreate,
     WorkOrderAdminOut,
     WorkOrderCreate,
@@ -33,6 +35,7 @@ from app.db.models.user import User
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
+    WorkOrderBilling,
     WorkOrderCancellation,
     WorkOrderClosure,
     WorkOrderEvent,
@@ -95,6 +98,14 @@ class SameAssignmentError(Exception):
 
 class OrderRequiresApprovalError(Exception):
     """La orden es de un lote de mantenimiento sin aprobar (R6)."""
+
+
+class OrderApprovedError(Exception):
+    """La orden ya está aprobada: sus precios están estampados (E04-08)."""
+
+
+class OrderInvoicedError(Exception):
+    """La orden ya está facturada (E04-14): no vuelve a la escuadrilla."""
 
 
 class CancellationValidationError(Exception):
@@ -226,7 +237,9 @@ async def list_by_status(
             ),
             # La última asignación de una orden Asignada o En curso es la vigente.
             assignment=(
-                CurrentAssignmentOut(crew_name=crew_name, scheduled_for=scheduled_for)
+                CurrentAssignmentOut(
+                    crew_name=crew_name, scheduled_for=scheduled_for, return_reason=return_reason
+                )
                 if status in CREW_OPEN_STATUSES and crew_name and scheduled_for
                 else None
             ),
@@ -266,6 +279,7 @@ async def list_by_status(
             cancellation,
             cancelled_by_name,
             equipment,
+            return_reason,
         ) in rows
     ]
     return items, total
@@ -409,7 +423,7 @@ async def _technician_orders(
     session: AsyncSession, rows: Sequence[OpenCrewOrderRow]
 ) -> list[OrderTechnicianOut]:
     """Arma las órdenes como las ve el técnico: la lista y el detalle no se desfasan."""
-    site_ids = {site.id for _, _, _, site, _, _, _ in rows}
+    site_ids = {site.id for _, _, _, site, *_ in rows}
     contacts = await ClientContactRepository(session).list_for_sites(site_ids) if rows else []
     names_by_site: dict[uuid.UUID, list[str]] = {}
     for contact in contacts:
@@ -441,6 +455,7 @@ async def _technician_orders(
                 if equipment is not None
                 else None
             ),
+            return_reason=return_reason,
         )
         for (
             order,
@@ -450,6 +465,7 @@ async def _technician_orders(
             work_type_name,
             equipment,
             equipment_type_name,
+            return_reason,
         ) in rows
     ]
 
@@ -618,6 +634,55 @@ async def reassign_work_order(
     return await _add_assignment(session, order, crew, data)
 
 
+async def return_to_crew(
+    session: AsyncSession, order_id: uuid.UUID, data: ReturnToCrewCreate, actor: User
+) -> WorkOrderAssignment:
+    """Devuelve una Terminada a la escuadrilla que la cerró, con motivo (E04-08, R8).
+
+    Vuelve Asignada para el día elegido. Una aprobada o facturada no se devuelve: ya tiene los
+    precios estampados (decisión del 2026-11-03). La fila de la orden queda bloqueada, como al
+    aprobar, para que aprobar y devolver no se crucen.
+    """
+    order = await session.scalar(
+        select(WorkOrder)
+        .where(WorkOrder.id == order_id, WorkOrder.deleted_at.is_(None))
+        .with_for_update()
+    )
+    if order is None:
+        raise WorkOrderNotFoundError
+    approved = await session.scalar(
+        select(WorkOrderEvent.id).where(
+            WorkOrderEvent.work_order_id == order.id,
+            WorkOrderEvent.event_type == WorkOrderEventType.review_approved,
+            WorkOrderEvent.deleted_at.is_(None),
+        )
+    )
+    if approved is not None:
+        raise OrderApprovedError
+    # Las facturadas antes de exigir la aprobación (E05-05) pueden no estar aprobadas.
+    invoiced = await session.scalar(
+        select(WorkOrderBilling.id).where(
+            WorkOrderBilling.work_order_id == order.id,
+            WorkOrderBilling.status == BillingStatus.invoiced,
+            WorkOrderBilling.deleted_at.is_(None),
+        )
+    )
+    if invoiced is not None:
+        raise OrderInvoicedError
+    resolve_transition(order.status, OrderAction.return_to_technician, actor.role, data.reason)
+    # Una Terminada conserva la asignación de la escuadrilla que la cerró.
+    current = await WorkOrderRepository(session).current_assignment(order.id)
+    if current is None:
+        raise OrderStatusConflictError
+    assignment = AssignmentCreate(crew_id=current.crew_id, scheduled_for=data.scheduled_for)
+    crew = await _available_crew(session, assignment)
+
+    note = f"Motivo: {data.reason} {_assignment_note(crew, assignment)}"
+    await stage_transition(session, order, OrderAction.return_to_technician, actor, note)
+    await WorkOrderRepository(session).end_current_assignment(order.id)
+    return await _add_assignment(session, order, crew, assignment, return_reason=data.reason)
+
+
 async def unassign_work_order(
     session: AsyncSession, order_id: uuid.UUID, data: UnassignmentCreate, actor: User
 ) -> None:
@@ -644,12 +709,18 @@ def _assignment_note(crew: Crew, data: AssignmentCreate) -> str:
 
 
 async def _add_assignment(
-    session: AsyncSession, order: WorkOrder, crew: Crew, data: AssignmentCreate
+    session: AsyncSession,
+    order: WorkOrder,
+    crew: Crew,
+    data: AssignmentCreate,
+    *,
+    return_reason: str | None = None,
 ) -> WorkOrderAssignment:
     assignment = WorkOrderAssignment(
         work_order_id=order.id,
         crew_id=crew.id,
         scheduled_for=data.scheduled_for,
+        return_reason=return_reason,
     )
     session.add(assignment)
     try:

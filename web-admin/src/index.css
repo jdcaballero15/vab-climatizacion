@@ -325,6 +325,13 @@ label {
   color: var(--text-muted);
 }
 
+/* Falla o reparación escrita a mano en "Otro" (E04-08, criterio 5). */
+.badge--other {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
 .avatar {
   box-shadow:
     0 0 0 2px var(--surface),
@@ -970,6 +977,13 @@ label {
 
 .orders__closure dd {
   margin: 0;
+}
+
+.orders__closure .orders__closure-other {
+  margin: 0 -0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-bg);
 }
 
 .orders__closure-photos {

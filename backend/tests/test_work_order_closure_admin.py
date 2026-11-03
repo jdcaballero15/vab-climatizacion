@@ -262,6 +262,9 @@ async def test_cierre_con_todo_lo_que_cargo_la_escuadrilla(mundo: Mundo) -> None
         "tasks": ["Carga de gas", "Limpieza de filtros"],
         "failure": "Pérdida de gas",
         "repair": "Soldadura en la cañería",
+        # E04-08, criterio 5: lo escrito en "Otro" se destaca al revisar.
+        "failure_is_other": False,
+        "repair_is_other": True,
         "equipment_condition": "working_with_notes",
         "not_done_reason": None,
         "observation": "Revisar en un mes.",

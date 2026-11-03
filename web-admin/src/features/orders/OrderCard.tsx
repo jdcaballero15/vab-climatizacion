@@ -189,6 +189,11 @@ export function OrderCard({ order, primary, more, children }: OrderCardProps) {
 
         {order.description && <p className="order-card__description">{order.description}</p>}
         {order.returned && <p className="order-card__returned">{returnedText(order.returned)}</p>}
+        {order.assignment?.return_reason && (
+          <p className="order-card__returned">
+            Devuelta por la oficina: {order.assignment.return_reason}
+          </p>
+        )}
         {order.cancellation && (
           <p className="order-card__description">
             Motivo: <span>{cancelReasonText(order.cancellation)}</span>

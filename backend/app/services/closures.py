@@ -240,6 +240,8 @@ async def get_last_closure(
         tasks=await repo.task_names(closure.id),
         failure=failure.name if failure else closure.failure_other_text,
         repair=repair.name if repair else closure.repair_other_text,
+        failure_is_other=closure.failure_other_text is not None,
+        repair_is_other=closure.repair_other_text is not None,
         equipment_condition=closure.equipment_condition,
         not_done_reason=closure.not_done_reason,
         observation=closure.observation,
@@ -289,7 +291,7 @@ async def _order_in_progress(
     )
     if not rows or rows[0][0].status != OrderStatus.in_progress:
         raise work_orders_service.WorkOrderNotFoundError
-    order, *_, equipment, _equipment_type_name = rows[0]
+    order, *_, equipment, _equipment_type_name, _return_reason = rows[0]
     return order, equipment.equipment_type_id if equipment is not None else None
 
 

@@ -121,14 +121,14 @@ const EN_CURSO: OrderListItem = {
   id: "o4",
   number: 4,
   status: "in_progress",
-  assignment: { crew_name: "Escuadrilla 1", scheduled_for: "2026-10-27" },
+  assignment: { crew_name: "Escuadrilla 1", scheduled_for: "2026-10-27", return_reason: null },
 };
 const ASIGNADA: OrderListItem = {
   ...EN_CURSO,
   id: "o5",
   number: 5,
   status: "assigned",
-  assignment: { crew_name: "Escuadrilla 2", scheduled_for: "2026-10-29" },
+  assignment: { crew_name: "Escuadrilla 2", scheduled_for: "2026-10-29", return_reason: null },
 };
 const TERMINADA: OrderListItem = {
   ...PENDIENTE,
@@ -146,6 +146,8 @@ const CIERRE: ClosureDetail = {
   tasks: ["Carga de gas", "Limpieza de filtros"],
   failure: "Pérdida de gas",
   repair: "Soldadura en la cañería",
+  failure_is_other: false,
+  repair_is_other: false,
   equipment_condition: "working_with_notes",
   not_done_reason: null,
   observation: "Revisar en un mes.",
@@ -984,6 +986,130 @@ describe("OrdersPage", () => {
       );
     });
 
+    // E04-08, criterio 5: lo escrito a mano en "Otro" se destaca al revisar.
+    it('destaca la falla o la reparación escrita en "Otro"', async () => {
+      const detalle = await verCierre({ ...CIERRE, repair_is_other: true });
+
+      const reparacion = within(detalle).getByText("Reparación").parentElement!;
+      expect(reparacion).toHaveClass("orders__closure-other");
+      expect(within(reparacion).getByText("Otro")).toBeInTheDocument();
+      const falla = within(detalle).getByText("Falla").parentElement!;
+      expect(falla).not.toHaveClass("orders__closure-other");
+    });
+
+    // E04-08, criterio 3: devolver la terminada a la escuadrilla que la cerró.
+    describe("devolver a la escuadrilla", () => {
+      function conDevolucion(respuesta: () => Response) {
+        const fetchMock = porEstado();
+        const original = fetchMock.getMockImplementation()!;
+        fetchMock.mockImplementation(async (request: Request) =>
+          request.method === "POST" && request.url.endsWith("/admin/orders/o3/return")
+            ? respuesta()
+            : original(request),
+        );
+        return fetchMock;
+      }
+
+      async function abrirDevolver(user: ReturnType<typeof userEvent.setup>) {
+        renderOrders();
+        await screen.findByRole("list", { name: "Órdenes pendientes" });
+        await user.click(screen.getByRole("button", { name: "Terminadas" }));
+        await abrirMenu(user, 3);
+        await user.click(
+          screen.getByRole("button", { name: "Devolver la orden N° 3 a la escuadrilla" }),
+        );
+        return screen.findByRole("form", {
+          name: "Devolver la orden N° 3 a la escuadrilla",
+        });
+      }
+
+      it("pide el motivo y la devuelve para hoy a la misma escuadrilla", async () => {
+        const user = userEvent.setup();
+        const hoy = businessToday();
+        const fetchMock = conDevolucion(() =>
+          json(
+            {
+              id: "a9",
+              work_order_id: "o3",
+              crew_id: "e1",
+              scheduled_for: hoy,
+              assigned_at: "2026-11-03T12:00:00Z",
+              return_reason: "Falta la foto del equipo.",
+            },
+            201,
+          ),
+        );
+        const form = await abrirDevolver(user);
+        expect(form).toHaveTextContent("Vuelve a Asignadas a Escuadrilla 1");
+        expect(within(form).getByLabelText("Fecha prevista")).toHaveValue(hoy);
+
+        await user.click(within(form).getByRole("button", { name: "Confirmar devolución" }));
+        expect(within(form).getByRole("alert")).toHaveTextContent("Falta el motivo.");
+        expect(calls(fetchMock, "POST", "/return")).toHaveLength(0);
+
+        await user.type(within(form).getByLabelText("Motivo"), "  Falta la foto del equipo. ");
+        await user.click(within(form).getByRole("button", { name: "Confirmar devolución" }));
+
+        expect(await screen.findByRole("status")).toHaveTextContent(
+          /Orden N° 3 devuelta a Escuadrilla 1 para el/,
+        );
+        const [post] = calls(fetchMock, "POST", "/admin/orders/o3/return");
+        expect(await post.json()).toEqual({
+          reason: "Falta la foto del equipo.",
+          scheduled_for: hoy,
+        });
+      });
+
+      it("muestra el mensaje de la API si ya está aprobada", async () => {
+        const user = userEvent.setup();
+        conDevolucion(() =>
+          json(
+            {
+              detail: {
+                code: "order_approved",
+                message: "La orden ya está aprobada: no se puede devolver.",
+              },
+            },
+            409,
+          ),
+        );
+        const form = await abrirDevolver(user);
+        await user.type(within(form).getByLabelText("Motivo"), "Revisar");
+        await user.click(within(form).getByRole("button", { name: "Confirmar devolución" }));
+
+        expect(await within(form).findByRole("alert")).toHaveTextContent(
+          "La orden ya está aprobada: no se puede devolver.",
+        );
+      });
+    });
+
+    it("una asignada devuelta por la oficina muestra el motivo", async () => {
+      const user = userEvent.setup();
+      mockApi((request, url) =>
+        url.pathname.endsWith("/admin/orders") && request.method === "GET"
+          ? json(
+              pendingPage(
+                url.searchParams.get("status") === "assigned"
+                  ? [
+                      {
+                        ...ASIGNADA,
+                        assignment: { ...ASIGNADA.assignment!, return_reason: "Falta la firma." },
+                      },
+                    ]
+                  : [],
+              ),
+            )
+          : undefined,
+      );
+      renderOrders();
+
+      await user.click(await screen.findByRole("button", { name: "Asignadas" }));
+
+      expect(
+        await screen.findByText("Devuelta por la oficina: Falta la firma."),
+      ).toBeInTheDocument();
+    });
+
     it("un cierre anterior a la firma no muestra firma ni motivo", async () => {
       const detalle = await verCierre(CIERRE);
       expect(within(detalle).queryByText("Firma")).not.toBeInTheDocument();
@@ -1476,7 +1602,7 @@ describe("OrdersPage, equipo de la orden", () => {
     conOrden({
       ...PENDIENTE,
       status: "in_progress",
-      assignment: { crew_name: "Escuadrilla 1", scheduled_for: "2026-10-28" },
+      assignment: { crew_name: "Escuadrilla 1", scheduled_for: "2026-10-28", return_reason: null },
     });
     renderOrders();
     await user.click(await screen.findByRole("button", { name: /En curso/ }));

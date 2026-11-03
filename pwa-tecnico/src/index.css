@@ -489,6 +489,18 @@ button:disabled {
   --status-color: var(--text-muted);
 }
 
+/* Devuelta por la oficina después de cerrarla (E04-08): el motivo, a la vista. */
+.order-card__returned {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #fdba74;
+  border-radius: var(--radius-sm);
+  background: rgb(255 247 237 / 90%);
+  color: #9a3412;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
 .order-card__reason {
   margin: 0;
   color: var(--text-secondary);

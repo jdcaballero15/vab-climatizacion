@@ -676,6 +676,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/orders/{order_id}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Return To Crew
+         * @description Devuelve una Terminada a la escuadrilla que la cerró, con motivo (E04-08).
+         */
+        post: operations["return_to_crew_admin_orders__order_id__return_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/orders/{order_id}/unassignment": {
         parameters: {
             query?: never;
@@ -1068,6 +1088,8 @@ export interface components {
              * Format: date-time
              */
             assigned_at: string;
+            /** Return Reason */
+            return_reason: string | null;
         };
         /** AssignmentCreate */
         AssignmentCreate: {
@@ -1260,6 +1282,10 @@ export interface components {
             failure: string | null;
             /** Repair */
             repair: string | null;
+            /** Failure Is Other */
+            failure_is_other: boolean;
+            /** Repair Is Other */
+            repair_is_other: boolean;
             equipment_condition: components["schemas"]["EquipmentCondition"] | null;
             not_done_reason: components["schemas"]["NotDoneReason"] | null;
             /** Observation */
@@ -1537,6 +1563,8 @@ export interface components {
              * Format: date
              */
             scheduled_for: string;
+            /** Return Reason */
+            return_reason: string | null;
         };
         /**
          * DoneOrderTechnicianOut
@@ -1884,6 +1912,8 @@ export interface components {
             scheduled_for: string;
             site: components["schemas"]["ClientSiteTechnicianOut"];
             equipment: components["schemas"]["EquipmentTechnicianOut"] | null;
+            /** Return Reason */
+            return_reason: string | null;
             /** Requester Area */
             requester_area: string | null;
             /** Tasks */
@@ -2011,6 +2041,8 @@ export interface components {
             scheduled_for: string;
             site: components["schemas"]["ClientSiteTechnicianOut"];
             equipment: components["schemas"]["EquipmentTechnicianOut"] | null;
+            /** Return Reason */
+            return_reason: string | null;
         };
         /**
          * PartAdminOut
@@ -2147,6 +2179,19 @@ export interface components {
             name?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+        };
+        /**
+         * ReturnToCrewCreate
+         * @description Devolver una Terminada a la escuadrilla que la cerró (E04-08, criterio 3).
+         */
+        ReturnToCrewCreate: {
+            /** Reason */
+            reason: string;
+            /**
+             * Scheduled For
+             * Format: date
+             */
+            scheduled_for: string;
         };
         /**
          * ReturnedFromCrewOut
@@ -4333,6 +4378,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AssignmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    return_to_crew_admin_orders__order_id__return_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReturnToCrewCreate"];
             };
         };
         responses: {

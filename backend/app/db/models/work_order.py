@@ -137,6 +137,9 @@ class WorkOrderAssignment(TimestampedBase):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     unassigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Por qué administración se la devolvió a la escuadrilla (E04-08, criterio 3). Lo ve
+    # la escuadrilla en el celular mientras esta asignación esté vigente.
+    return_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class WorkOrderClosure(TimestampedBase):

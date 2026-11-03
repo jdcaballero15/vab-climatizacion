@@ -21,6 +21,7 @@ import type {
   ListableStatus,
   OrderListPage,
   EquipmentChange,
+  ReturnToCrewCreate,
   WorkOrder,
   WorkOrderCreate,
 } from "./types";
@@ -172,6 +173,25 @@ export function useUnassignOrder(orderId: string) {
         throw saveError(error, "No se pudo desasignar la orden.");
       }
     },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
+  });
+}
+
+/** Devuelve una Terminada a la escuadrilla que la cerró, con motivo (E04-08). */
+export function useReturnOrder(orderId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<Assignment, Error, ReturnToCrewCreate>({
+    mutationFn: async (devolucion) => {
+      const { data, error } = await api.POST("/admin/orders/{order_id}/return", {
+        params: { path: { order_id: orderId } },
+        body: devolucion,
+      });
+      if (error || !data) {
+        throw saveError(error, "No se pudo devolver la orden.");
+      }
+      return data;
+    },
+    // Pasa de Terminadas a Asignadas: se refrescan todos los listados.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
   });
 }

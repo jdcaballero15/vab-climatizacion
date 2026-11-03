@@ -4,7 +4,7 @@ title: "Revisar una orden terminada"
 epic: E04
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -44,3 +44,9 @@ Hecho el 2026-11-02 con E05-05 (materiales en la orden):
 - **Criterio 2, aprobar:** `POST /admin/orders/{id}/approval` registra `review_approved` (sin cambio de estado) y estampa el precio de los materiales. Solo desde `Terminada`, una sola vez y sin materiales "Otro" pendientes. En web-admin, "Aprobar orden" en la sección Materiales.
 - **Criterio 4, en la versión mínima de cobro (E04-14):** marcar "Facturada" exige la orden aprobada (409 `order_not_approved`).
 - Falta: devolver a la escuadrilla (criterio 3), destacar mediciones y "Otro" de falla y reparación (criterio 5) y la pantalla de detalle de E04-06. Cuando exista devolver, tiene que volver a habilitar la edición de materiales.
+
+Hecho el 2026-11-03:
+
+- **Criterio 3, devolver:** `POST /admin/orders/{id}/return` con `reason` (obligatorio, hasta 500 caracteres) y `scheduled_for` (de hoy en adelante; en web-admin, hoy por defecto). Vuelve a `Asignada` a la escuadrilla de la asignación vigente, que es la que la cerró (R8), con evento `review_returned` y el motivo. El motivo queda en `work_order_assignment.return_reason` (migración `33e9362dae73`): la escuadrilla lo ve en la tarjeta y en el detalle del celular, y la oficina en Asignadas, mientras esa asignación siga vigente (una reasignación no lo arrastra). 409 `order_approved` si ya está aprobada (decisión de Gonza: los precios ya están estampados), 409 `order_invoiced` si ya está marcada Facturada (las de antes de E05-05 pueden estar facturadas sin aprobar), 409 `invalid_transition` si no está `Terminada`, 422 `crew_not_available` si la escuadrilla se desactivó (se reasigna después de devolverla a otra). La fila de la orden se bloquea como al aprobar, para que aprobar y devolver no se crucen. Los materiales se vuelven a editar porque la orden deja de estar cerrada.
+- **Criterio 5, "Otro":** `GET /admin/orders/{id}/closure` suma `failure_is_other` y `repair_is_other`; web-admin destaca esas filas con la etiqueta "Otro". Las mediciones fuera de rango se destacan con E07-07, cuando existan las mediciones.
+- Fuera de esta historia: la pantalla de detalle con la línea de tiempo (E04-06).

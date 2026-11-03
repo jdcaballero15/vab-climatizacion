@@ -26,6 +26,8 @@ RequesterText = Annotated[
 ChangeReason = Annotated[
     Annotated[str, StringConstraints(max_length=255)] | None, BeforeValidator(blank_to_none)
 ]
+# Motivo obligatorio al devolver una Terminada a la escuadrilla (E04-08, criterio 3).
+ReturnReason = Annotated[str, BeforeValidator(blank_to_none), StringConstraints(max_length=500)]
 # El texto de "Otro" al cancelar: vacío o solo espacios cuenta como no cargado.
 CancelReasonText = Annotated[
     Annotated[str, StringConstraints(max_length=255)] | None, BeforeValidator(blank_to_none)
@@ -100,6 +102,8 @@ class CurrentAssignmentOut(BaseModel):
 
     crew_name: str
     scheduled_for: date
+    # Si es una devolución de administración (E04-08), su motivo.
+    return_reason: str | None
 
 
 class CancellationAdminOut(BaseModel):
@@ -198,6 +202,15 @@ class AssignmentCreate(BaseModel):
     reason: ChangeReason = None
 
 
+class ReturnToCrewCreate(BaseModel):
+    """Devolver una Terminada a la escuadrilla que la cerró (E04-08, criterio 3)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    reason: ReturnReason
+    scheduled_for: date
+
+
 class UnassignmentCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -212,6 +225,7 @@ class AssignmentAdminOut(BaseModel):
     crew_id: uuid.UUID
     scheduled_for: date
     assigned_at: datetime
+    return_reason: str | None
 
 
 # E05-01: lo que ve la escuadrilla en el celular. Sin quién pidió, canal ni precios (ADR 0006).
@@ -232,6 +246,8 @@ class OrderTechnicianOut(BaseModel):
     scheduled_for: date
     site: ClientSiteTechnicianOut
     equipment: EquipmentTechnicianOut | None
+    # Si la oficina la devolvió después de cerrarla, por qué (E04-08, criterio 3).
+    return_reason: str | None
 
 
 class OrderDetailTechnicianOut(OrderTechnicianOut):

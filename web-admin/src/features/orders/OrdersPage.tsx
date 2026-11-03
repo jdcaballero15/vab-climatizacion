@@ -20,13 +20,14 @@ import { OrderMaterials } from "./OrderMaterials";
 import { BILLING_STATUS_LABELS, formatDay, initials, LIST_STATUS_LABELS } from "./labels";
 import { OrderCard, type CardAction } from "./OrderCard";
 import { OrderForm } from "./OrderForm";
+import { ReturnOrderForm } from "./ReturnOrderForm";
 import { UnassignOrderForm } from "./UnassignOrderForm";
 import type { BillingStatus, ListableStatus, OrderListItem } from "./types";
 import { PAGE_SIZE, useOrderCounts, useOrderList } from "./useOrders";
 
 type RowAction = {
   orderId: string;
-  kind: AssignMode | "unassign" | "cancel" | "closure" | "equipment";
+  kind: AssignMode | "unassign" | "cancel" | "closure" | "equipment" | "return";
 };
 
 const ASSIGNED_WORD: Record<AssignMode, string> = {
@@ -68,7 +69,14 @@ function cardActions(
         onClick: showing ? close : () => open("closure"),
         expanded: showing,
       },
-      more: [],
+      // E04-08, criterio 3. Si ya está aprobada, la API lo rechaza con su mensaje.
+      more: [
+        {
+          label: "Devolver a la escuadrilla",
+          name: `Devolver ${n} a la escuadrilla`,
+          onClick: () => open("return"),
+        },
+      ],
     };
   }
   if (status === "cancelled") {
@@ -116,8 +124,8 @@ function cardActions(
 /**
  * Alta de órdenes y listado por estado: desde Pendientes se asignan (E04-03) o reprograman,
  * Asignadas y En curso se reasignan, y las Asignadas se desasignan (E04-04). Hasta En curso
- * se cancelan (E04-07). De las terminadas se ve el cierre (E04-08); las canceladas se
- * consultan sin acciones.
+ * se cancelan (E04-07). De las terminadas se ve el cierre y se devuelven a la escuadrilla
+ * (E04-08); las canceladas se consultan sin acciones.
  */
 export function OrdersPage() {
   const [status, setStatus] = useState<ListableStatus>("pending");
@@ -163,6 +171,21 @@ export function OrdersPage() {
           onUnassigned={() => {
             close();
             setNotice(`Orden N° ${order.number} desasignada: volvió a Pendientes.`);
+          }}
+        />
+      );
+    }
+    if (action.kind === "return") {
+      return (
+        <ReturnOrderForm
+          order={order}
+          onClose={close}
+          onReturned={(assignment) => {
+            close();
+            setNotice(
+              `Orden N° ${order.number} devuelta a ${order.completed?.crew_name ?? "la escuadrilla"} ` +
+                `para el ${formatDay(assignment.scheduled_for)}.`,
+            );
           }}
         />
       );

@@ -439,7 +439,11 @@ async def test_abiertas_con_escuadrilla_y_fecha(mundo: Mundo, status: OrderStatu
     assert item["id"] == str(orden.id)
     assert item["status"] == status.value
     assert item["client_name"] == "Sanatorio Ficticio"
-    assert item["assignment"] == {"crew_name": "Escuadrilla 1", "scheduled_for": HOY.isoformat()}
+    assert item["assignment"] == {
+        "crew_name": "Escuadrilla 1",
+        "scheduled_for": HOY.isoformat(),
+        "return_reason": None,
+    }
     assert item["cancellation"] is None
 
 

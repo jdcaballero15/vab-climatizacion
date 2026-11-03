@@ -3077,6 +3077,65 @@
         }
       }
     },
+    "/admin/orders/{order_id}/return": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Return To Crew",
+        "description": "Devuelve una Terminada a la escuadrilla que la cerró, con motivo (E04-08).",
+        "operationId": "return_to_crew_admin_orders__order_id__return_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReturnToCrewCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/orders/{order_id}/unassignment": {
       "post": {
         "tags": [
@@ -4359,6 +4418,17 @@
             "type": "string",
             "format": "date-time",
             "title": "Assigned At"
+          },
+          "return_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Return Reason"
           }
         },
         "type": "object",
@@ -4367,7 +4437,8 @@
           "work_order_id",
           "crew_id",
           "scheduled_for",
-          "assigned_at"
+          "assigned_at",
+          "return_reason"
         ],
         "title": "AssignmentAdminOut"
       },
@@ -4927,6 +4998,14 @@
             ],
             "title": "Repair"
           },
+          "failure_is_other": {
+            "type": "boolean",
+            "title": "Failure Is Other"
+          },
+          "repair_is_other": {
+            "type": "boolean",
+            "title": "Repair Is Other"
+          },
           "equipment_condition": {
             "anyOf": [
               {
@@ -5007,6 +5086,8 @@
           "tasks",
           "failure",
           "repair",
+          "failure_is_other",
+          "repair_is_other",
           "equipment_condition",
           "not_done_reason",
           "observation",
@@ -5790,12 +5871,24 @@
             "type": "string",
             "format": "date",
             "title": "Scheduled For"
+          },
+          "return_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Return Reason"
           }
         },
         "type": "object",
         "required": [
           "crew_name",
-          "scheduled_for"
+          "scheduled_for",
+          "return_reason"
         ],
         "title": "CurrentAssignmentOut",
         "description": "Escuadrilla y fecha prevista de una orden Asignada o En curso."
@@ -6808,6 +6901,17 @@
               }
             ]
           },
+          "return_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Return Reason"
+          },
           "requester_area": {
             "anyOf": [
               {
@@ -6843,6 +6947,7 @@
           "scheduled_for",
           "site",
           "equipment",
+          "return_reason",
           "requester_area",
           "tasks",
           "today"
@@ -7169,6 +7274,17 @@
                 "type": "null"
               }
             ]
+          },
+          "return_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Return Reason"
           }
         },
         "type": "object",
@@ -7181,7 +7297,8 @@
           "client_name",
           "scheduled_for",
           "site",
-          "equipment"
+          "equipment",
+          "return_reason"
         ],
         "title": "OrderTechnicianOut"
       },
@@ -7546,6 +7663,28 @@
         },
         "type": "object",
         "title": "RepairUpdate"
+      },
+      "ReturnToCrewCreate": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Reason"
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date",
+            "title": "Scheduled For"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason",
+          "scheduled_for"
+        ],
+        "title": "ReturnToCrewCreate",
+        "description": "Devolver una Terminada a la escuadrilla que la cerró (E04-08, criterio 3)."
       },
       "ReturnedFromCrewOut": {
         "properties": {

@@ -52,6 +52,7 @@ function order(overrides: Partial<Order> = {}): Order {
       contact_names: ["Marta Ficticia"],
     },
     equipment: null,
+    return_reason: null,
     ...overrides,
   };
 }
@@ -185,6 +186,15 @@ describe("MyOrdersPage", () => {
 
     const card = await screen.findByRole("article");
     expect(within(card).getByText("Vencida · Ayer")).toBeInTheDocument();
+  });
+
+  // E04-08, criterio 3: una orden devuelta por la oficina muestra el motivo en la tarjeta.
+  it("muestra el motivo de una orden que devolvió la oficina", async () => {
+    stubOrders(() => json(payload([order({ return_reason: "Falta la firma." })])));
+    renderPage();
+
+    const card = await screen.findByRole("article");
+    expect(within(card).getByText("La oficina la devolvió: Falta la firma.")).toBeInTheDocument();
   });
 
   // Criterio 4: al actualizar, una orden que ya no es de la escuadrilla deja de verse.
