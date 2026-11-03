@@ -14,6 +14,7 @@ from app.api.schemas.work_order import (
     CancellationCreate,
     EquipmentChange,
     OrderListPage,
+    ReturnToCrewCreate,
     UnassignmentCreate,
     WorkOrderAdminOut,
     WorkOrderCreate,
@@ -218,6 +219,31 @@ async def reassign_work_order(
 ) -> WorkOrderAssignment:
     try:
         return await work_orders_service.reassign_work_order(session, order_id, payload, admin)
+    except _ASSIGNMENT_ERRORS as exc:
+        raise _assignment_error(exc) from None
+    except WorkOrderRuleError as exc:
+        raise _error(_RULE_STATUS[type(exc)], exc.code, exc.message) from None
+
+
+@router.post(
+    "/{order_id}/return",
+    response_model=AssignmentAdminOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def return_to_crew(
+    order_id: uuid.UUID, payload: ReturnToCrewCreate, session: SessionDep, admin: AdminOnly
+) -> WorkOrderAssignment:
+    """Devuelve una Terminada a la escuadrilla que la cerró, con motivo (E04-08)."""
+    try:
+        return await work_orders_service.return_to_crew(session, order_id, payload, admin)
+    except work_orders_service.OrderApprovedError:
+        raise _error(
+            409, "order_approved", "La orden ya está aprobada: no se puede devolver."
+        ) from None
+    except work_orders_service.OrderInvoicedError:
+        raise _error(
+            409, "order_invoiced", "La orden ya está facturada: no se puede devolver."
+        ) from None
     except _ASSIGNMENT_ERRORS as exc:
         raise _assignment_error(exc) from None
     except WorkOrderRuleError as exc:

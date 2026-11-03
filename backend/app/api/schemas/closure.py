@@ -134,6 +134,9 @@ class ClosureAdminOut(BaseModel):
     tasks: list[str]
     failure: str | None
     repair: str | None
+    # Escritas a mano en "Otro": se destacan al revisar (E04-08, criterio 5).
+    failure_is_other: bool
+    repair_is_other: bool
     equipment_condition: EquipmentCondition | None
     not_done_reason: NotDoneReason | None
     observation: str | None

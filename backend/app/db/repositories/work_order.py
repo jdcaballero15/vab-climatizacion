@@ -33,14 +33,17 @@ from app.domain.work_order import (
 )
 
 # Orden abierta de una escuadrilla: orden, fecha prevista, cliente, domicilio, tipo de
-# trabajo, equipo y nombre de su tipo (estos dos, nulos sin equipo).
-type OpenCrewOrderRow = Row[WorkOrder, date, str, ClientSite, str, Equipment | None, str | None]
+# trabajo, equipo y nombre de su tipo (estos dos, nulos sin equipo) y el motivo de la
+# devolución de administración (nulo si no la devolvió, E04-08).
+type OpenCrewOrderRow = Row[
+    WorkOrder, date, str, ClientSite, str, Equipment | None, str | None, str | None
+]
 # Cierre de una escuadrilla: el cierre, su orden, tipo de trabajo, cliente y dirección.
 type CrewClosureRow = Row[WorkOrderClosure, WorkOrder, str, str, str]
 # Orden en un estado: orden, fecha de creación, cliente, rótulo y dirección del domicilio,
 # tipo de trabajo, su último cierre; fecha, escuadrilla (nombre e id) y fecha prevista de
-# su última asignación; su cancelación y quién canceló (nulos si no tiene); y su equipo
-# (nulo sin equipo, E04-12).
+# su última asignación; su cancelación y quién canceló (nulos si no tiene); su equipo
+# (nulo sin equipo, E04-12); y el motivo de devolución de la última asignación (E04-08).
 type StatusOrderRow = Row[
     WorkOrder,
     datetime,
@@ -56,6 +59,7 @@ type StatusOrderRow = Row[
     WorkOrderCancellation | None,
     str | None,
     Equipment | None,
+    str | None,
 ]
 
 
@@ -146,6 +150,7 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
                 WorkOrderAssignment.assigned_at,
                 WorkOrderAssignment.crew_id,
                 WorkOrderAssignment.scheduled_for,
+                WorkOrderAssignment.return_reason,
             )
             .where(WorkOrderAssignment.work_order_id == self.model.id)
             .order_by(WorkOrderAssignment.assigned_at.desc())
@@ -178,6 +183,7 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
                 WorkOrderCancellation,
                 cancelled_by.full_name,
                 Equipment,
+                last_assignment.c.return_reason,
             )
             .join(
                 WorkOrderEvent,
@@ -238,6 +244,7 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
                 WorkType.name,
                 Equipment,
                 EquipmentType.name,
+                WorkOrderAssignment.return_reason,
             )
             .join(WorkOrderAssignment, WorkOrderAssignment.work_order_id == self.model.id)
             .join(Client, Client.id == self.model.client_id)

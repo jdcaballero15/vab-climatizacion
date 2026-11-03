@@ -36,6 +36,7 @@ function detail(overrides: Partial<OrderDetail> = {}): OrderDetail {
       model: "X1",
     },
     tasks: ["Diagnosticar la falla", "Probar el funcionamiento"],
+    return_reason: null,
     ...overrides,
   };
 }
@@ -113,6 +114,24 @@ describe("OrderDetailPage", () => {
     expect(
       await screen.findByText("Este tipo de trabajo no tiene tareas cargadas."),
     ).toBeInTheDocument();
+  });
+
+  // E04-08, criterio 3: si la oficina la devolvió, la escuadrilla ve por qué.
+  it("muestra el motivo si la oficina la devolvió", async () => {
+    stubFetch(() => json(detail({ return_reason: "Falta la foto del equipo." })));
+    renderDetail();
+
+    expect(await screen.findByRole("note")).toHaveTextContent(
+      "La oficina la devolvió: Falta la foto del equipo.",
+    );
+  });
+
+  it("sin devolución no muestra motivo", async () => {
+    stubFetch(() => json(detail()));
+    renderDetail();
+
+    await screen.findByRole("list", { name: "Tareas" });
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 
   // Criterio 4: la dirección abre la app de mapas.

@@ -69,6 +69,12 @@ function OrderDetail({ order }: { order: OrderDetail }) {
         </span>
       </div>
       <h1 className="order-detail__client">{order.client_name}</h1>
+      {/* E04-08, criterio 3: la oficina la devolvió después de cerrarla, y por qué. */}
+      {order.return_reason && (
+        <p className="order-card__returned" role="note">
+          La oficina la devolvió: {order.return_reason}
+        </p>
+      )}
       {order.status === "assigned" && <StartOrder order={order} />}
       {order.status === "in_progress" && (
         <Link to={`/ordenes/${order.id}/cerrar`} className="order-close">

@@ -354,6 +354,9 @@ function OrderCard({ order, today, closure }: OrderCardProps) {
             </span>
           </span>
         </div>
+        {order.return_reason && (
+          <p className="order-card__returned">La oficina la devolvió: {order.return_reason}</p>
+        )}
         {order.description && <p className="order-card__description">{order.description}</p>}
         <div className="order-card__row">
           <span className="order-card__client">{order.client_name}</span>

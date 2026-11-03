@@ -21,14 +21,15 @@ export function ClosureDetail({ order }: { order: OrderListItem }) {
     return <p role="alert">No se pudo cargar el cierre.</p>;
   }
   const data = closure.data;
-  const rows: [string, string | null][] = [
+  // E04-08, criterio 5: lo escrito a mano en "Otro" se destaca para que no pase inadvertido.
+  const rows: [string, string | null, boolean?][] = [
     ["Resultado", OUTCOME_LABELS[data.outcome]],
     ["Escuadrilla", data.crew_name],
     ["Cerrada el", `${formatDate(data.closed_at)} por ${data.closed_by_name}`],
     ["Fueron", data.technicians.join(", ") || null],
     ["Tareas", data.tasks.join(", ") || null],
-    ["Falla", data.failure],
-    ["Reparación", data.repair],
+    ["Falla", data.failure, data.failure_is_other],
+    ["Reparación", data.repair, data.repair_is_other],
     [
       "Estado del equipo",
       data.equipment_condition && EQUIPMENT_CONDITION_LABELS[data.equipment_condition],
@@ -40,13 +41,22 @@ export function ClosureDetail({ order }: { order: OrderListItem }) {
   return (
     <dl className="orders__closure" aria-label={label}>
       {rows
-        .filter((row): row is [string, string] => Boolean(row[1]))
-        .map(([term, value]) => (
-          <div key={term}>
-            <dt>{term}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
+        .filter((row): row is [string, string, boolean?] => Boolean(row[1]))
+        .map(([term, value, other]) =>
+          other ? (
+            <div key={term} className="orders__closure-other">
+              <dt>{term}</dt>
+              <dd>
+                <span className="badge badge--other">Otro</span> {value}
+              </dd>
+            </div>
+          ) : (
+            <div key={term}>
+              <dt>{term}</dt>
+              <dd>{value}</dd>
+            </div>
+          ),
+        )}
       {data.photos.length > 0 && (
         <div className="orders__closure-photos-row">
           <dt>Fotos</dt>

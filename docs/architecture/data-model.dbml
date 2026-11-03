@@ -309,6 +309,7 @@ Table work_order_assignment {
   scheduled_for date [not null, note: 'Solo el día, sin hora (E04-03)']
   assigned_at timestamptz [not null]
   unassigned_at timestamptz [note: 'La vigente es la que no lo tiene: índice único parcial, una por orden']
+  return_reason text [note: 'Por qué administración devolvió la orden Terminada a la escuadrilla (E04-08). Nulo en las asignaciones comunes']
 }
 
 Table work_order_closure {
