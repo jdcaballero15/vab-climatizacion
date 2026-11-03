@@ -1,5 +1,6 @@
 import { Navigate, useRoutes, type RouteObject } from "react-router-dom";
 
+import { OrderDetailPage } from "../features/orders/OrderDetailPage";
 import { AppRoot } from "./AppRoot";
 import { NAV_SECTIONS } from "./navigation";
 import { HomeRedirect, RequireRole } from "./RouteGuards";
@@ -16,6 +17,15 @@ const routes: RouteObject[] = [
         path: section.path.slice(1),
         element: <RequireRole roles={section.roles}>{section.element}</RequireRole>,
       })),
+      // E04-06: el detalle de una orden, con el mismo permiso que Órdenes.
+      {
+        path: "ordenes/:orderId",
+        element: (
+          <RequireRole roles={["admin"]}>
+            <OrderDetailPage />
+          </RequireRole>
+        ),
+      },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },

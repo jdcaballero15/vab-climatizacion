@@ -3042,6 +3042,55 @@
         }
       }
     },
+    "/admin/orders/{order_id}": {
+      "get": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Get Work Order Detail",
+        "description": "La orden con todos sus datos y su línea de tiempo (E04-06).",
+        "operationId": "get_work_order_detail_admin_orders__order_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkOrderDetailAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/orders/{order_id}/billing": {
       "put": {
         "tags": [
@@ -7290,6 +7339,67 @@
         ],
         "title": "OrderChannel"
       },
+      "OrderDetailClientOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "string",
+            "title": "Number"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "name"
+        ],
+        "title": "OrderDetailClientOut"
+      },
+      "OrderDetailSiteOut": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "address",
+          "reference"
+        ],
+        "title": "OrderDetailSiteOut"
+      },
       "OrderDetailTechnicianOut": {
         "properties": {
           "id": {
@@ -8474,6 +8584,72 @@
         ],
         "title": "TaxCondition"
       },
+      "TimelineEntryOut": {
+        "properties": {
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "from_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "occurred_at",
+          "event_type",
+          "from_status",
+          "to_status",
+          "actor_name",
+          "note"
+        ],
+        "title": "TimelineEntryOut",
+        "description": "Un paso de la línea de tiempo (E04-06). event_type es el del evento de la orden o\n\"billing_invoiced\", que se arma con el cobro de E04-14 (no deja evento propio)."
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -8939,6 +9115,146 @@
           "description"
         ],
         "title": "WorkOrderCreate"
+      },
+      "WorkOrderDetailAdminOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/OrderKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "client": {
+            "$ref": "#/components/schemas/OrderDetailClientOut"
+          },
+          "site": {
+            "$ref": "#/components/schemas/OrderDetailSiteOut"
+          },
+          "work_type_name": {
+            "type": "string",
+            "title": "Work Type Name"
+          },
+          "equipment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderEquipmentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderChannel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requester_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requester Name"
+          },
+          "requester_area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requester Area"
+          },
+          "assignment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CurrentAssignmentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancellation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CancellationAdminOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "has_closure": {
+            "type": "boolean",
+            "title": "Has Closure"
+          },
+          "timeline": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineEntryOut"
+            },
+            "type": "array",
+            "title": "Timeline"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "kind",
+          "status",
+          "created_at",
+          "client",
+          "site",
+          "work_type_name",
+          "equipment",
+          "description",
+          "channel",
+          "requester_name",
+          "requester_area",
+          "assignment",
+          "cancellation",
+          "has_closure",
+          "timeline"
+        ],
+        "title": "WorkOrderDetailAdminOut",
+        "description": "Todo lo de una orden en una pantalla, con su línea de tiempo (E04-06).\n\nEl cierre, los materiales y el cobro se piden aparte, como en Terminadas."
       },
       "WorkTypeAdminOut": {
         "properties": {

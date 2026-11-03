@@ -1,5 +1,6 @@
 import { ClipboardList, MoreHorizontal } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 
 import {
   BILLING_STATUS_LABELS,
@@ -117,7 +118,14 @@ export function OrderCard({ order, primary, more, children }: OrderCardProps) {
           </span>
           <div className="order-card__heading">
             <h4>
-              <span className="order-card__number">N° {order.number}</span>{" "}
+              {/* E04-06: el número abre el detalle con la línea de tiempo. */}
+              <Link
+                to={`/ordenes/${order.id}`}
+                className="order-card__number"
+                aria-label={`Ver el detalle de la orden N° ${order.number}`}
+              >
+                N° {order.number}
+              </Link>{" "}
               <span>{order.client_name}</span>
             </h4>
             <p className="order-card__meta">

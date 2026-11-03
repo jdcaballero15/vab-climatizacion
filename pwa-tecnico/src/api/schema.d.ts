@@ -642,6 +642,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/orders/{order_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Work Order Detail
+         * @description La orden con todos sus datos y su línea de tiempo (E04-06).
+         */
+        get: operations["get_work_order_detail_admin_orders__order_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/orders/{order_id}/billing": {
         parameters: {
             query?: never;
@@ -2020,6 +2040,27 @@ export interface components {
          * @enum {string}
          */
         OrderChannel: "whatsapp" | "email" | "phone" | "in_person";
+        /** OrderDetailClientOut */
+        OrderDetailClientOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: string;
+            /** Name */
+            name: string;
+        };
+        /** OrderDetailSiteOut */
+        OrderDetailSiteOut: {
+            /** Label */
+            label: string | null;
+            /** Address */
+            address: string;
+            /** Reference */
+            reference: string | null;
+        };
         /**
          * OrderDetailTechnicianOut
          * @description Detalle de una orden abierta de la escuadrilla (E05-02). Sin historial ni quién pidió.
@@ -2451,6 +2492,26 @@ export interface components {
          * @enum {string}
          */
         TaxCondition: "final_consumer" | "registered_taxpayer" | "monotributo";
+        /**
+         * TimelineEntryOut
+         * @description Un paso de la línea de tiempo (E04-06). event_type es el del evento de la orden o
+         *     "billing_invoiced", que se arma con el cobro de E04-14 (no deja evento propio).
+         */
+        TimelineEntryOut: {
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Event Type */
+            event_type: string;
+            from_status: components["schemas"]["OrderStatus"] | null;
+            to_status: components["schemas"]["OrderStatus"] | null;
+            /** Actor Name */
+            actor_name: string | null;
+            /** Note */
+            note: string | null;
+        };
         /** TokenResponse */
         TokenResponse: {
             /** Access Token */
@@ -2634,6 +2695,46 @@ export interface components {
             requester_area?: string | null;
             /** Equipment Id */
             equipment_id?: string | null;
+        };
+        /**
+         * WorkOrderDetailAdminOut
+         * @description Todo lo de una orden en una pantalla, con su línea de tiempo (E04-06).
+         *
+         *     El cierre, los materiales y el cobro se piden aparte, como en Terminadas.
+         */
+        WorkOrderDetailAdminOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            kind: components["schemas"]["OrderKind"];
+            status: components["schemas"]["OrderStatus"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            client: components["schemas"]["OrderDetailClientOut"];
+            site: components["schemas"]["OrderDetailSiteOut"];
+            /** Work Type Name */
+            work_type_name: string;
+            equipment: components["schemas"]["OrderEquipmentOut"] | null;
+            /** Description */
+            description: string | null;
+            channel: components["schemas"]["OrderChannel"] | null;
+            /** Requester Name */
+            requester_name: string | null;
+            /** Requester Area */
+            requester_area: string | null;
+            assignment: components["schemas"]["CurrentAssignmentOut"] | null;
+            cancellation: components["schemas"]["CancellationAdminOut"] | null;
+            /** Has Closure */
+            has_closure: boolean;
+            /** Timeline */
+            timeline: components["schemas"]["TimelineEntryOut"][];
         };
         /** WorkTypeAdminOut */
         WorkTypeAdminOut: {
@@ -4462,6 +4563,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkOrderAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_work_order_detail_admin_orders__order_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkOrderDetailAdminOut"];
                 };
             };
             /** @description Validation Error */

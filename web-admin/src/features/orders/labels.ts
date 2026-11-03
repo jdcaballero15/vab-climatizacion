@@ -7,6 +7,7 @@ import type {
   OrderChannel,
   OrderListItem,
   ReturnedFromCrew,
+  TimelineEntry,
 } from "./types";
 
 export const CHANNEL_LABELS: Record<OrderChannel, string> = {
@@ -16,7 +17,7 @@ export const CHANNEL_LABELS: Record<OrderChannel, string> = {
   in_person: "Presencial",
 };
 
-/** El estado de una orden, en singular (tarjetas e historial del cliente). */
+/** El estado de una orden, en singular (tarjetas, detalle e historial del cliente). */
 export const ORDER_STATUS_LABELS: Record<OrderListItem["status"], string> = {
   pending: "Pendiente",
   assigned: "Asignada",
@@ -202,4 +203,36 @@ const QUANTITY_FORMAT = new Intl.NumberFormat("es-AR", {
 /** Cantidad como la manda la API ("1.500") para mostrarla ("1,5"). */
 export function formatQuantity(quantity: string): string {
   return QUANTITY_FORMAT.format(Number(quantity));
+}
+
+const EVENT_LABELS: Record<string, string> = {
+  created: "Creada",
+  assigned: "Asignada",
+  unassigned: "Desasignada",
+  reassigned: "Reasignada",
+  review_approved: "Aprobada",
+  review_returned: "Devuelta a la escuadrilla",
+  converted_to_workshop: "Pasó a taller",
+  equipment_changed: "Cambio de equipo",
+  materials_changed: "Cambio de materiales",
+  billing_invoiced: "Marcada como facturada",
+};
+
+/** Cómo se lee un paso de la línea de tiempo de la orden (E04-06). */
+export function timelineLabel(entry: TimelineEntry): string {
+  if (entry.event_type === "status_change") {
+    if (entry.to_status === "in_progress") {
+      return "Iniciada por la escuadrilla";
+    }
+    if (entry.to_status === "done") {
+      return "Cerrada por la escuadrilla";
+    }
+    if (entry.to_status === "pending") {
+      return "Volvió de la escuadrilla";
+    }
+    if (entry.to_status) {
+      return ORDER_STATUS_LABELS[entry.to_status];
+    }
+  }
+  return EVENT_LABELS[entry.event_type] ?? entry.event_type;
 }

@@ -20,6 +20,7 @@ import type {
   ClosureDetail,
   ListableStatus,
   OrderListPage,
+  OrderDetail,
   EquipmentChange,
   ReturnToCrewCreate,
   WorkOrder,
@@ -215,6 +216,22 @@ export function useCancelOrder(orderId: string) {
 }
 
 const PHOTO_URL_REFRESH_MS = 4 * 60 * 1000;
+
+/** La orden con todos sus datos y su línea de tiempo (E04-06). */
+export function useOrderDetail(orderId: string) {
+  return useQuery<OrderDetail>({
+    queryKey: [...ORDERS_KEY, "detail", orderId],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/admin/orders/{order_id}", {
+        params: { path: { order_id: orderId } },
+      });
+      if (error || !data) {
+        throw new Error("no se pudo cargar la orden");
+      }
+      return data;
+    },
+  });
+}
 
 /** Lo que cargó la escuadrilla en el último cierre (E04-08, criterio 1). */
 export function useOrderClosure(orderId: string) {
