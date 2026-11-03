@@ -928,6 +928,58 @@ label {
   width: auto;
 }
 
+/* Búsqueda de clientes y equipos (E03-06). */
+.clients__search {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.clients__search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.clients__search-bar input[type="search"] {
+  flex: 1 1 16rem;
+}
+
+.clients__search-deleted {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.clients__search h4 {
+  margin: 0;
+}
+
+.clients__search-results {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.clients__search-results button {
+  display: grid;
+  width: 100%;
+  gap: 0.125rem;
+  justify-content: start;
+  justify-items: start;
+  text-align: left;
+}
+
+.clients__search-results span {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
 /* Historial de la ficha del cliente (E03-04). */
 .clients__history-filters {
   display: flex;

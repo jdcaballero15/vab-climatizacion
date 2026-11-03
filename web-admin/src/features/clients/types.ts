@@ -18,3 +18,4 @@ export type EquipmentCreate = components["schemas"]["EquipmentCreate"];
 export type EquipmentUpdate = components["schemas"]["EquipmentUpdate"];
 export type ClientOrder = components["schemas"]["ClientOrderOut"];
 export type ClientOrderPage = components["schemas"]["ClientOrderPage"];
+export type SearchResults = components["schemas"]["SearchOut"];

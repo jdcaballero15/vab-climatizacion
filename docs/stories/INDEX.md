@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 124 historias.** done: 45, draft: 68, icebox: 8, in_progress: 3
+**Total: 124 historias.** done: 46, draft: 67, icebox: 8, in_progress: 3
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -58,7 +58,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E03-03](E03-clientes-equipos/E03-03-alta-y-edicion-de-equipos.md) | Alta y edición de equipos | Debe | M | done | admin | - | D-002 | E03-02, E02-02 |
 | [E03-04](E03-clientes-equipos/E03-04-ficha-de-cliente-con-historial.md) | Ficha de cliente con historial | Debe | M | done | admin, owner | - | - | E03-01, E04-08 |
 | [E03-05](E03-clientes-equipos/E03-05-ficha-de-equipo-con-historial-y-mediciones.md) | Ficha de equipo con historial y mediciones | Debe | M | draft | admin, owner | - | D-002 | E03-03, E04-06 |
-| [E03-06](E03-clientes-equipos/E03-06-buscar-clientes-y-equipos.md) | Buscar clientes y equipos | Debe | S | draft | admin, owner | - | - | E03-01 |
+| [E03-06](E03-clientes-equipos/E03-06-buscar-clientes-y-equipos.md) | Buscar clientes y equipos | Debe | S | done | admin, owner | - | - | E03-01 |
 | [E03-07](E03-clientes-equipos/E03-07-baja-logica-y-restauracion-de-clientes-y-equipos.md) | Baja lógica y restauración de clientes y equipos | Debería | S | draft | admin | - | - | E03-01, E03-03 |
 | [E03-08](E03-clientes-equipos/E03-08-unificar-dos-clientes.md) | Unificar dos clientes | Debería | M | draft | admin | - | D-002 | E03-02, E03-03, E03-07 |
 | [E03-09](E03-clientes-equipos/E03-09-pasar-un-equipo-a-otro-cliente.md) | Pasar un equipo a otro cliente | Debería | M | draft | admin | - | D-002 | E03-03 |

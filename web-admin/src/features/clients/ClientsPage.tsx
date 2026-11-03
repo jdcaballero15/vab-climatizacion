@@ -1,9 +1,10 @@
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ClientContacts } from "./ClientContacts";
 import { ClientEquipment } from "./ClientEquipment";
 import { ClientHistory } from "./ClientHistory";
+import { ClientSearch } from "./ClientSearch";
 import { ClientSites } from "./ClientSites";
 import { ClientForm } from "./ClientForm";
 import { EMPTY_CLIENT } from "./formValues";
@@ -21,6 +22,15 @@ import { PageHeader } from "../../app/PageHeader";
 function ClientDetail({ clientId, onClose }: { clientId: string; onClose: () => void }) {
   const client = useClient(clientId);
   const updateClient = useUpdateClient(clientId);
+  const ref = useRef<HTMLElement>(null);
+  const loaded = Boolean(client.data);
+
+  // La ficha se abre debajo de la lista: se la trae a la vista (desde la búsqueda, sobre todo).
+  useEffect(() => {
+    if (loaded) {
+      ref.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    }
+  }, [loaded]);
 
   if (client.isLoading) {
     return <p>Cargando cliente…</p>;
@@ -31,7 +41,7 @@ function ClientDetail({ clientId, onClose }: { clientId: string; onClose: () => 
 
   const { id, number, name, segment, tax_id, tax_condition, notes } = client.data;
   return (
-    <section className="clients__detail" aria-label={`Cliente ${name}`}>
+    <section className="clients__detail" aria-label={`Cliente ${name}`} ref={ref}>
       <header className="clients__detail-header">
         <h3>
           Cliente N° {number}: {name}
@@ -117,6 +127,8 @@ export function ClientsPage() {
           />
         </div>
       )}
+
+      <ClientSearch onOpen={setSelectedId} />
 
       <div className="clients__filters">
         <label htmlFor="segment-filter">Filtrar por segmento</label>

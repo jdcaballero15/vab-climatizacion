@@ -876,4 +876,98 @@ describe("ClientsPage", () => {
       expect(await historial.findByRole("table")).toBeInTheDocument();
     });
   });
+
+  describe("búsqueda (E03-06)", () => {
+    const RESULTADOS = {
+      clients: [
+        { id: "c1", number: "10642", name: "Hotel Ficticio", address: "Calle 1", deleted: false },
+      ],
+      equipment: [
+        {
+          id: "e9",
+          internal_code: "EA1064201",
+          location_note: "Habitación 12",
+          equipment_type_name: "Aire acondicionado",
+          brand: "Marca Ficticia",
+          model: null,
+          client_id: "c1",
+          client_name: "Hotel Ficticio",
+          site_label: "Sede central",
+          site_address: "Calle 1",
+          deleted: true,
+        },
+      ],
+    };
+
+    function conBusqueda(resultados = RESULTADOS) {
+      return mockApi((_request, url) => {
+        if (url.pathname.endsWith("/admin/search")) {
+          return json(
+            url.searchParams.get("q") === "zzz" ? { clients: [], equipment: [] } : resultados,
+          );
+        }
+        if (url.pathname.endsWith("/admin/clients/c1")) {
+          return json(HOTEL);
+        }
+        return undefined;
+      });
+    }
+
+    it("busca clientes y equipos y abre la ficha del cliente", async () => {
+      const user = userEvent.setup();
+      const fetchMock = conBusqueda();
+      renderClients();
+
+      await user.type(screen.getByRole("searchbox", { name: "Buscar" }), "hotel");
+
+      const clientes = await screen.findByRole("list", { name: "Clientes encontrados" });
+      expect(clientes).toHaveTextContent("Hotel Ficticio");
+      expect(clientes).toHaveTextContent("N° 10642 · Calle 1");
+      const equipos = screen.getByRole("list", { name: "Equipos encontrados" });
+      expect(equipos).toHaveTextContent("EA1064201 · Habitación 12");
+      expect(equipos).toHaveTextContent("Aire acondicionado Marca Ficticia");
+      expect(equipos).toHaveTextContent("Hotel Ficticio, Sede central · Dado de baja");
+      const [busqueda] = calls(fetchMock, "GET", "/admin/search").slice(-1);
+      expect(new URL(busqueda.url).searchParams.get("q")).toBe("hotel");
+
+      await user.click(within(equipos).getByRole("button"));
+      expect(await screen.findByText("Cliente N° 10642: Hotel Ficticio")).toBeInTheDocument();
+      expect(screen.queryByRole("list", { name: "Clientes encontrados" })).not.toBeInTheDocument();
+    });
+
+    it("avisa si no encuentra nada", async () => {
+      const user = userEvent.setup();
+      conBusqueda();
+      renderClients();
+
+      await user.type(screen.getByRole("searchbox", { name: "Buscar" }), "zzz");
+
+      expect(await screen.findByText("No se encontró nada con «zzz».")).toBeInTheDocument();
+    });
+
+    // Criterio 3: las bajas solo si se piden.
+    it("pide las bajas con la casilla", async () => {
+      const user = userEvent.setup();
+      const fetchMock = conBusqueda();
+      renderClients();
+
+      await user.click(screen.getByRole("checkbox", { name: "Incluir bajas" }));
+      await user.type(screen.getByRole("searchbox", { name: "Buscar" }), "hotel");
+
+      await screen.findByRole("list", { name: "Clientes encontrados" });
+      const [busqueda] = calls(fetchMock, "GET", "/admin/search").slice(-1);
+      expect(new URL(busqueda.url).searchParams.get("include_deleted")).toBe("true");
+    });
+
+    it("con una sola letra no busca", async () => {
+      const user = userEvent.setup();
+      const fetchMock = conBusqueda();
+      renderClients();
+
+      await user.type(screen.getByRole("searchbox", { name: "Buscar" }), "h");
+      await new Promise((resolve) => setTimeout(resolve, 400));
+
+      expect(calls(fetchMock, "GET", "/admin/search")).toHaveLength(0);
+    });
+  });
 });

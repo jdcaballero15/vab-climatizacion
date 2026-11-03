@@ -100,7 +100,7 @@ async def list_clients(
 ) -> tuple[Sequence[Client], int]:
     """search filtra por parte del nombre o por el número, sin mayúsculas ni acentos."""
     return await ClientRepository(session).list_page(
-        segment=segment, search=_normalize(search or "") or None, limit=limit, offset=offset
+        segment=segment, search=normalize_text(search or "") or None, limit=limit, offset=offset
     )
 
 
@@ -128,20 +128,21 @@ async def find_similar_clients(
 
     Se compara en Python: son unos cientos de clientes y evita depender de extensiones.
     """
-    target = _normalize(name)
+    target = normalize_text(name)
     if not target:
         return []
     similar = []
     for client in await ClientRepository(session).list():
         if client.id == exclude_id:
             continue
-        candidate = _normalize(client.name)
+        candidate = normalize_text(client.name)
         if candidate == target or _contains(candidate, target) or _contains(target, candidate):
             similar.append(client)
     return sorted(similar, key=lambda c: (c.name, c.number))
 
 
-def _normalize(value: str) -> str:
+def normalize_text(value: str) -> str:
+    """Sin mayúsculas, acentos ni espacios de más: como se compara al buscar."""
     decomposed = unicodedata.normalize("NFKD", value.casefold())
     without_accents = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
     return " ".join(without_accents.split())

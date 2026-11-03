@@ -16,6 +16,7 @@ import type {
   Equipment,
   EquipmentCreate,
   EquipmentUpdate,
+  SearchResults,
   Site,
   SiteCreate,
   SiteUpdate,
@@ -304,6 +305,24 @@ export function useClientOrders(clientId: string, filters: HistoryFilters, offse
       }
       return data;
     },
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Clientes y equipos que coinciden con lo escrito (E03-06); desde 2 letras. */
+export function useSearch(query: string, includeDeleted: boolean) {
+  return useQuery<SearchResults>({
+    queryKey: [...CLIENTS_KEY, "search", query, includeDeleted],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/admin/search", {
+        params: { query: { q: query, include_deleted: includeDeleted } },
+      });
+      if (error || !data) {
+        throw new Error("no se pudo buscar");
+      }
+      return data;
+    },
+    enabled: query.length >= 2,
     placeholderData: keepPreviousData,
   });
 }
