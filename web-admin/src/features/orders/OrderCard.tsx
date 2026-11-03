@@ -8,6 +8,7 @@ import {
   formatDay,
   formatMoney,
   initials,
+  ORDER_STATUS_LABELS,
   returnedText,
 } from "./labels";
 import type { OrderListItem } from "./types";
@@ -31,16 +32,6 @@ interface OrderCardProps {
   /** Formulario o detalle abierto debajo de la tarjeta. */
   children?: ReactNode;
 }
-
-const STATUS_LABELS: Record<OrderListItem["status"], string> = {
-  pending: "Pendiente",
-  assigned: "Asignada",
-  in_progress: "En curso",
-  done: "Terminada",
-  invoiced: "Facturada",
-  paid: "Cobrada",
-  cancelled: "Cancelada",
-};
 
 /** Quién la tiene y la fecha que importa en su estado. */
 function footer(order: OrderListItem): { person: string | null; who: ReactNode; when: ReactNode } {
@@ -137,7 +128,9 @@ export function OrderCard({ order, primary, more, children }: OrderCardProps) {
                   Equipo {order.equipment.internal_code} · {order.equipment.location_note}
                 </span>
               )}
-              <span className={`badge badge--${order.status}`}>{STATUS_LABELS[order.status]}</span>
+              <span className={`badge badge--${order.status}`}>
+                {ORDER_STATUS_LABELS[order.status]}
+              </span>
             </p>
           </div>
           <div className="order-card__actions" ref={menuRef}>

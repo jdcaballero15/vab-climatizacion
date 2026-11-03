@@ -5,6 +5,7 @@ import type {
   ClosureDetail,
   ListableStatus,
   OrderChannel,
+  OrderListItem,
   ReturnedFromCrew,
 } from "./types";
 
@@ -13,6 +14,17 @@ export const CHANNEL_LABELS: Record<OrderChannel, string> = {
   email: "Mail",
   phone: "Teléfono",
   in_person: "Presencial",
+};
+
+/** El estado de una orden, en singular (tarjetas e historial del cliente). */
+export const ORDER_STATUS_LABELS: Record<OrderListItem["status"], string> = {
+  pending: "Pendiente",
+  assigned: "Asignada",
+  in_progress: "En curso",
+  done: "Terminada",
+  invoiced: "Facturada",
+  paid: "Cobrada",
+  cancelled: "Cancelada",
 };
 
 /** Plural, como se elige en el listado de Órdenes. */

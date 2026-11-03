@@ -10,7 +10,7 @@ import type { ClosureDetail as Closure, OrderListItem } from "./types";
 import { useOrderClosure } from "./useOrders";
 
 /** Lo que cargó la escuadrilla al cerrar, para revisarlo antes de facturar (E04-08). */
-export function ClosureDetail({ order }: { order: OrderListItem }) {
+export function ClosureDetail({ order }: { order: Pick<OrderListItem, "id" | "number"> }) {
   const closure = useOrderClosure(order.id);
   const label = `Cierre de la orden N° ${order.number}`;
 

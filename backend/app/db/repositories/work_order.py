@@ -1,11 +1,12 @@
 import uuid
 from collections.abc import Sequence
-from datetime import date, datetime
+from datetime import date, datetime, time, timedelta
 from typing import Any
 
 from sqlalchemy import ColumnElement, Row, func, select, true, update
 from sqlalchemy.orm import InstrumentedAttribute, aliased
 
+from app.core.dates import BUSINESS_TZ
 from app.db.models.catalog import EquipmentType, Task, WorkType
 from app.db.models.client import Client, ClientSite
 from app.db.models.crew import Crew, FieldTechnician
@@ -37,6 +38,12 @@ from app.domain.work_order import (
 # devolución de administración (nulo si no la devolvió, E04-08).
 type OpenCrewOrderRow = Row[
     WorkOrder, date, str, ClientSite, str, Equipment | None, str | None, str | None
+]
+# Orden del historial de un cliente: orden, fecha de creación, tipo de trabajo, rótulo y
+# dirección del domicilio, equipo (nulo sin equipo), escuadrilla (asignada o la del último
+# cierre) y si tiene cierre.
+type ClientOrderRow = Row[
+    WorkOrder, datetime, str, str | None, str, Equipment | None, str | None, bool
 ]
 # Cierre de una escuadrilla: el cierre, su orden, tipo de trabajo, cliente y dirección.
 type CrewClosureRow = Row[WorkOrderClosure, WorkOrder, str, str, str]
@@ -225,6 +232,106 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             return self.model.id.in_(invoiced)
         return self.model.id.not_in(invoiced)
 
+    async def list_for_client_page(
+        self,
+        client_id: uuid.UUID,
+        *,
+        equipment_id: uuid.UUID | None,
+        work_type_id: uuid.UUID | None,
+        created_from: date | None,
+        created_to: date | None,
+        limit: int,
+        offset: int,
+    ) -> tuple[Sequence[ClientOrderRow], int]:
+        """Historial del cliente, la más nueva primero (E03-04).
+
+        Las fechas del período son días de Argentina, sobre el evento de creación.
+        La escuadrilla es la asignada o, si no hay, la que hizo el último cierre.
+        """
+        created = (
+            select(WorkOrderEvent.occurred_at)
+            .where(
+                WorkOrderEvent.work_order_id == self.model.id,
+                WorkOrderEvent.event_type == WorkOrderEventType.created,
+            )
+            .limit(1)
+            .lateral()
+        )
+        filters: list[ColumnElement[bool]] = [
+            self.model.client_id == client_id,
+            self.model.deleted_at.is_(None),
+        ]
+        if equipment_id is not None:
+            filters.append(self.model.equipment_id == equipment_id)
+        if work_type_id is not None:
+            filters.append(self.model.work_type_id == work_type_id)
+        if created_from is not None:
+            filters.append(created.c.occurred_at >= _day_start(created_from))
+        if created_to is not None:
+            filters.append(created.c.occurred_at < _day_start(created_to + timedelta(days=1)))
+
+        base = select(self.model.id).select_from(self.model).join(created, true()).where(*filters)
+        total = await self.session.scalar(select(func.count()).select_from(base.subquery()))
+
+        last_closure = (
+            select(WorkOrderClosure.closed_at)
+            .where(
+                WorkOrderClosure.work_order_id == self.model.id,
+                WorkOrderClosure.deleted_at.is_(None),
+            )
+            .order_by(WorkOrderClosure.closed_at.desc())
+            .limit(1)
+            .lateral()
+        )
+        current_crew = (
+            select(Crew.name)
+            .join(WorkOrderAssignment, WorkOrderAssignment.crew_id == Crew.id)
+            .where(
+                WorkOrderAssignment.work_order_id == self.model.id,
+                WorkOrderAssignment.unassigned_at.is_(None),
+                WorkOrderAssignment.deleted_at.is_(None),
+            )
+            .limit(1)
+            .scalar_subquery()
+        )
+        # Como en crew_name: la última asignación anterior al cierre es la que lo hizo.
+        closure_crew = (
+            select(Crew.name)
+            .join(WorkOrderAssignment, WorkOrderAssignment.crew_id == Crew.id)
+            .where(
+                WorkOrderAssignment.work_order_id == self.model.id,
+                WorkOrderAssignment.assigned_at <= last_closure.c.closed_at,
+                WorkOrderAssignment.deleted_at.is_(None),
+            )
+            .order_by(WorkOrderAssignment.assigned_at.desc())
+            .limit(1)
+            .scalar_subquery()
+        )
+        stmt = (
+            select(
+                self.model,
+                created.c.occurred_at,
+                WorkType.name,
+                ClientSite.label,
+                ClientSite.address,
+                Equipment,
+                func.coalesce(current_crew, closure_crew),
+                last_closure.c.closed_at.is_not(None),
+            )
+            .select_from(self.model)
+            .join(created, true())
+            .join(WorkType, WorkType.id == self.model.work_type_id)
+            .join(ClientSite, ClientSite.id == self.model.client_site_id)
+            .outerjoin(Equipment, Equipment.id == self.model.equipment_id)
+            .outerjoin(last_closure, true())
+            .where(*filters)
+            .order_by(created.c.occurred_at.desc(), self.model.number.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self.session.execute(stmt)
+        return result.all(), total or 0
+
     async def list_open_for_crew(
         self, crew_id: uuid.UUID, *, order_id: uuid.UUID | None = None
     ) -> Sequence[OpenCrewOrderRow]:
@@ -408,3 +515,8 @@ class WorkOrderClosureRepository(BaseRepository[WorkOrderClosure]):
             .limit(1)
         )
         return await self.session.scalar(stmt)
+
+
+def _day_start(day: date) -> datetime:
+    """El comienzo de un día de Argentina, para comparar con fechas guardadas en UTC."""
+    return datetime.combine(day, time.min, tzinfo=BUSINESS_TZ)

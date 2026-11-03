@@ -424,3 +424,16 @@ async def test_el_tecnico_no_puede_ver_el_cierre_desde_administracion(mundo: Mun
     response = await _get(mundo.celular, f"{ORDERS_URL}/{orden.id}/closure")
 
     assert response.status_code == 403
+
+
+# E03-04: dirección abre el cierre desde el historial del cliente.
+async def test_direccion_ve_el_cierre(mundo: Mundo) -> None:
+    direccion = make_user(email="direccion@ot-demo.com", role=UserRole.owner)
+    await _seed([direccion])
+    orden = await _orden(mundo, OrderStatus.done)
+    await _cierre(mundo, orden)
+
+    response = await _get(direccion, f"{ORDERS_URL}/{orden.id}/closure")
+
+    assert response.status_code == 200
+    assert response.json()["crew_name"] == "Escuadrilla 1"

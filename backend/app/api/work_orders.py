@@ -122,6 +122,8 @@ _ASSIGNMENT_ERROR_FIELD: dict[type[Exception], str] = {
 
 # Solo administración crea órdenes; dirección las ve en el panel (E04-05).
 AdminOnly = Annotated[User, Depends(require_role(UserRole.admin))]
+# Dirección ve el cierre desde el historial del cliente (E03-04).
+AdminOrOwner = Annotated[User, Depends(require_role(UserRole.admin, UserRole.owner))]
 
 
 @router.post("", response_model=WorkOrderAdminOut, status_code=status.HTTP_201_CREATED)
@@ -297,7 +299,7 @@ async def cancel_work_order(
 
 @router.get("/{order_id}/closure", response_model=ClosureAdminOut)
 async def get_work_order_closure(
-    order_id: uuid.UUID, session: SessionDep, storage: StorageDep, _: AdminOnly
+    order_id: uuid.UUID, session: SessionDep, storage: StorageDep, _: AdminOrOwner
 ) -> ClosureAdminOut:
     try:
         return await closures_service.get_last_closure(session, storage, order_id)

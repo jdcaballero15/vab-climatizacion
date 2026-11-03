@@ -16,3 +16,5 @@ export type SiteUpdate = components["schemas"]["SiteUpdate"];
 export type Equipment = components["schemas"]["EquipmentAdminOut"];
 export type EquipmentCreate = components["schemas"]["EquipmentCreate"];
 export type EquipmentUpdate = components["schemas"]["EquipmentUpdate"];
+export type ClientOrder = components["schemas"]["ClientOrderOut"];
+export type ClientOrderPage = components["schemas"]["ClientOrderPage"];

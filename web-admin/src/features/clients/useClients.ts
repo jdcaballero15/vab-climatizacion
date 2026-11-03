@@ -1,9 +1,11 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../../api/client";
+import { ORDERS_KEY } from "../orders/useOrders";
 import type {
   Client,
   ClientCreate,
+  ClientOrderPage,
   ClientPage,
   ClientSegment,
   ClientSummary,
@@ -263,5 +265,45 @@ export function useUpdateEquipment(clientId: string, equipmentId: string) {
       return data;
     },
     onSuccess: () => invalidateEquipment(queryClient, clientId),
+  });
+}
+
+export const HISTORY_PAGE_SIZE = 20;
+
+/** Filtros del historial del cliente; vacío es "todos". Fechas en formato aaaa-mm-dd. */
+export interface HistoryFilters {
+  equipmentId: string;
+  workTypeId: string;
+  from: string;
+  to: string;
+}
+
+/**
+ * Historial de órdenes del cliente (E03-04). Cuelga de las órdenes: asignar, cerrar o
+ * devolver una orden lo refresca.
+ */
+export function useClientOrders(clientId: string, filters: HistoryFilters, offset: number) {
+  return useQuery<ClientOrderPage>({
+    queryKey: [...ORDERS_KEY, "client", clientId, filters, offset],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/admin/clients/{client_id}/orders", {
+        params: {
+          path: { client_id: clientId },
+          query: {
+            equipment_id: filters.equipmentId || undefined,
+            work_type_id: filters.workTypeId || undefined,
+            created_from: filters.from || undefined,
+            created_to: filters.to || undefined,
+            limit: HISTORY_PAGE_SIZE,
+            offset,
+          },
+        },
+      });
+      if (error || !data) {
+        throw new Error("no se pudo cargar el historial");
+      }
+      return data;
+    },
+    placeholderData: keepPreviousData,
   });
 }

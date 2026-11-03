@@ -4,7 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ClientsPage } from "./ClientsPage";
-import type { Client, ClientSummary, Contact, Equipment, Site } from "./types";
+import type { ClosureDetail } from "../orders/types";
+import type { Client, ClientOrder, ClientSummary, Contact, Equipment, Site } from "./types";
 
 const HOTEL: Client = {
   id: "c1",
@@ -107,7 +108,7 @@ function mockApi(handler: Handler) {
       return response;
     }
     if (
-      ["/contacts", "/sites", "/equipment", "/equipment-types"].some((end) =>
+      ["/contacts", "/sites", "/equipment", "/equipment-types", "/work-types"].some((end) =>
         url.pathname.endsWith(end),
       )
     ) {
@@ -723,6 +724,156 @@ describe("ClientsPage", () => {
       await userEvent.click(alta.getByRole("button", { name: "Agregar equipo" }));
 
       expect(await alta.findByText("El domicilio está desactivado.")).toBeInTheDocument();
+    });
+  });
+
+  describe("historial (E03-04)", () => {
+    const TERMINADA: ClientOrder = {
+      id: "o1",
+      number: 12,
+      created_at: "2026-10-20T15:00:00Z",
+      status: "done",
+      work_type_name: "Reparación",
+      site_label: "Sede central",
+      site_address: "Av. Siempre Viva 742",
+      equipment: { id: "e1", internal_code: "EA1064201", location_note: "Habitación 12" },
+      crew_name: "Escuadrilla 1",
+      has_closure: true,
+    };
+    const PENDIENTE: ClientOrder = {
+      ...TERMINADA,
+      id: "o2",
+      number: 9,
+      created_at: "2026-10-18T15:00:00Z",
+      status: "pending",
+      equipment: null,
+      crew_name: null,
+      has_closure: false,
+    };
+    const CIERRE = {
+      outcome: "done",
+      closed_at: "2026-10-21T18:00:00Z",
+      closed_by_name: "Celular 1",
+      crew_name: "Escuadrilla 1",
+      technicians: ["Ana Ficticia"],
+      tasks: [],
+      failure: "Pérdida de gas",
+      repair: "Soldadura en la cañería",
+      equipment_condition: "working",
+      not_done_reason: null,
+      observation: null,
+      photos: [],
+      signature: null,
+      no_signature_reason: null,
+      no_signature_text: null,
+    } as unknown as ClosureDetail;
+
+    function conHistorial(ordenes: (url: URL) => Response) {
+      return mockApi((request, url) => {
+        if (url.pathname.endsWith("/admin/clients") && request.method === "GET") {
+          return json(page([HOTEL]));
+        }
+        if (url.pathname.endsWith("/admin/clients/c1")) {
+          return json(HOTEL);
+        }
+        if (url.pathname.endsWith("/c1/orders")) {
+          return ordenes(url);
+        }
+        if (url.pathname.endsWith("/admin/orders/o1/closure")) {
+          return json(CIERRE);
+        }
+        return undefined;
+      });
+    }
+
+    async function abrirHistorial() {
+      renderClients();
+      await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
+      return within(await screen.findByRole("region", { name: "Historial" }));
+    }
+
+    function pagina(items: ClientOrder[], total = items.length, offset = 0) {
+      return json({ items, total, limit: 20, offset });
+    }
+
+    // Criterios 1 y 2: cada orden con lo suyo y, si tiene cierre, "Ver cierre".
+    it("lista las órdenes del cliente y abre el cierre", async () => {
+      conHistorial(() => pagina([TERMINADA, PENDIENTE]));
+      const historial = await abrirHistorial();
+
+      const [, primera, segunda] = await historial.findAllByRole("row");
+      expect(
+        within(primera)
+          .getAllByRole("cell")
+          .map((td) => td.textContent),
+      ).toEqual([
+        "12",
+        "20/10/2026",
+        "Terminada",
+        "Reparación",
+        "Sede central",
+        "EA1064201",
+        "Escuadrilla 1",
+        "Ver cierre",
+      ]);
+      expect(within(segunda).getByText("Pendiente")).toBeInTheDocument();
+      expect(within(segunda).queryByRole("button")).not.toBeInTheDocument();
+
+      await userEvent.click(
+        historial.getByRole("button", { name: "Ver el cierre de la orden N° 12" }),
+      );
+      const cierre = await historial.findByLabelText("Cierre de la orden N° 12");
+      expect(within(cierre).getByText("Soldadura en la cañería")).toBeInTheDocument();
+    });
+
+    // Criterio 3: de a 20, con filtros que vuelven a la primera página.
+    it("pagina de a 20 y filtra por tipo de trabajo y período", async () => {
+      const fetchMock = conHistorial((url) =>
+        url.searchParams.get("offset") === "20"
+          ? pagina([PENDIENTE], 21, 20)
+          : pagina([TERMINADA], 21),
+      );
+      const historial = await abrirHistorial();
+
+      expect(await historial.findByText("1 a 1 de 21")).toBeInTheDocument();
+      await userEvent.click(historial.getByRole("button", { name: "Siguiente" }));
+      expect(await historial.findByText("21 a 21 de 21")).toBeInTheDocument();
+
+      await userEvent.type(historial.getByLabelText("Creadas desde"), "2026-10-01");
+      await waitFor(() => {
+        const [ultimo] = calls(fetchMock, "GET", "/c1/orders").slice(-1);
+        const params = new URL(ultimo.url).searchParams;
+        expect(params.get("created_from")).toBe("2026-10-01");
+        expect(params.get("offset")).toBe("0");
+        expect(params.get("limit")).toBe("20");
+      });
+    });
+
+    // Criterio 5: sin órdenes o sin resultados, un mensaje y no una tabla vacía.
+    it("avisa si el cliente no tiene órdenes", async () => {
+      conHistorial(() => pagina([]));
+      const historial = await abrirHistorial();
+
+      expect(
+        await historial.findByText("Este cliente todavía no tiene órdenes."),
+      ).toBeInTheDocument();
+      expect(historial.queryByRole("table")).not.toBeInTheDocument();
+    });
+
+    it("avisa si ninguna orden coincide con los filtros", async () => {
+      conHistorial((url) =>
+        url.searchParams.get("created_to") ? pagina([]) : pagina([TERMINADA]),
+      );
+      const historial = await abrirHistorial();
+      await historial.findByRole("table");
+
+      await userEvent.type(historial.getByLabelText("Hasta"), "2026-01-01");
+
+      expect(
+        await historial.findByText("Ninguna orden coincide con los filtros."),
+      ).toBeInTheDocument();
+      await userEvent.click(historial.getByRole("button", { name: "Limpiar filtros" }));
+      expect(await historial.findByRole("table")).toBeInTheDocument();
     });
   });
 });

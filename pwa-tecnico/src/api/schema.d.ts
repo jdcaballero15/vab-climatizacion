@@ -480,6 +480,26 @@ export interface paths {
         patch: operations["update_client_admin_clients__client_id__patch"];
         trace?: never;
     };
+    "/admin/clients/{client_id}/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Client Orders
+         * @description Historial de órdenes del cliente, la más nueva primero (E03-04).
+         */
+        get: operations["list_client_orders_admin_clients__client_id__orders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/clients/{client_id}/contacts": {
         parameters: {
             query?: never;
@@ -1199,6 +1219,47 @@ export interface components {
             tax_condition?: components["schemas"]["TaxCondition"] | null;
             /** Notes */
             notes?: string | null;
+        };
+        /**
+         * ClientOrderOut
+         * @description Una orden en el historial de la ficha del cliente (E03-04).
+         */
+        ClientOrderOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            status: components["schemas"]["OrderStatus"];
+            /** Work Type Name */
+            work_type_name: string;
+            /** Site Label */
+            site_label: string | null;
+            /** Site Address */
+            site_address: string;
+            equipment: components["schemas"]["OrderEquipmentOut"] | null;
+            /** Crew Name */
+            crew_name: string | null;
+            /** Has Closure */
+            has_closure: boolean;
+        };
+        /** ClientOrderPage */
+        ClientOrderPage: {
+            /** Items */
+            items: components["schemas"]["ClientOrderOut"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
         };
         /** ClientPage */
         ClientPage: {
@@ -3813,6 +3874,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClientAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_client_orders_admin_clients__client_id__orders_get: {
+        parameters: {
+            query?: {
+                equipment_id?: string | null;
+                work_type_id?: string | null;
+                created_from?: string | null;
+                created_to?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientOrderPage"];
                 };
             };
             /** @description Validation Error */
