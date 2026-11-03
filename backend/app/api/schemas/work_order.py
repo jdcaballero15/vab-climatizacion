@@ -15,6 +15,7 @@ from app.domain.work_order import (
     OrderKind,
     OrderSource,
     OrderStatus,
+    WorkshopStage,
 )
 
 # Obligatoria: un texto vacío pasa a None y se rechaza con 422.
@@ -47,6 +48,8 @@ class WorkOrderCreate(BaseModel):
     requester_area: RequesterText = None
     # Opcional: un equipo del domicilio elegido (E04-12).
     equipment_id: uuid.UUID | None = None
+    # Taller (E06-01): arranca en el retiro. En el lugar, si no se dice.
+    kind: OrderKind = OrderKind.on_site
 
 
 class EquipmentChange(BaseModel):
@@ -81,6 +84,7 @@ class WorkOrderAdminOut(BaseModel):
     requester_name: str | None
     requester_area: str | None
     equipment_id: uuid.UUID | None
+    workshop_stage: WorkshopStage | None
     # Del evento de creación (ADR 0005), no de la columna técnica created_at.
     created_at: datetime
 
@@ -154,6 +158,8 @@ class OrderListItemOut(BaseModel):
     id: uuid.UUID
     number: int
     status: OrderStatus
+    # Taller (E06): la etapa que toca, o la última si está Terminada. Nula en el lugar.
+    workshop_stage: WorkshopStage | None
     client_id: uuid.UUID
     client_name: str
     # Para listar los equipos del domicilio al cambiar el de la orden (E04-12).
@@ -241,6 +247,8 @@ class WorkOrderDetailAdminOut(BaseModel):
     id: uuid.UUID
     number: int
     kind: OrderKind
+    # Taller (E06): la etapa que sigue; nula en las de visita.
+    workshop_stage: WorkshopStage | None
     status: OrderStatus
     created_at: datetime
     client: OrderDetailClientOut
@@ -321,6 +329,8 @@ class OrderTechnicianOut(BaseModel):
     equipment: EquipmentTechnicianOut | None
     # Si la oficina la devolvió después de cerrarla, por qué (E04-08, criterio 3).
     return_reason: str | None
+    # Taller (E06): qué etapa le toca a la escuadrilla (retiro, galpón o devolución).
+    workshop_stage: WorkshopStage | None
 
 
 class OrderDetailTechnicianOut(OrderTechnicianOut):
@@ -348,6 +358,8 @@ class DoneOrderTechnicianOut(BaseModel):
     address: str
     outcome: ClosureOutcome
     not_done_reason: NotDoneReason | None
+    # La etapa de taller que cerró (E06); nula en el lugar.
+    workshop_stage: WorkshopStage | None
     closed_at: datetime
 
 

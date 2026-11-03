@@ -13,6 +13,7 @@ from app.domain.work_order import (
     NoSignatureReason,
     NotDoneReason,
     OrderStatus,
+    WorkshopStage,
 )
 
 # Texto opcional del cierre: vacío o solo espacios cuenta como no cargado.
@@ -46,6 +47,8 @@ class ClosureOptionsTechnicianOut(BaseModel):
     failures: list[FailureChoiceTechnicianOut]
     # E05-05: materiales activos, con nombre y unidad. Nunca el precio.
     parts: list[PartChoiceTechnicianOut]
+    # Taller (E06): qué etapa se cierra; cambia lo que pide el formulario. Nula en el lugar.
+    workshop_stage: WorkshopStage | None
 
 
 # Cantidad de un material: mayor que cero, hasta 3 decimales (1,5 kg; 3,2 metros).
@@ -77,8 +80,8 @@ class ClosureCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     idempotency_key: uuid.UUID
-    # "Requiere retiro" (needs_pickup) llega con E06-02.
-    outcome: Literal["done", "needs_revisit", "not_done"]
+    # "Requiere retiro" (E06-02) solo en el lugar; en taller, "done" es "etapa hecha".
+    outcome: Literal["done", "needs_pickup", "needs_revisit", "not_done"]
     technician_ids: list[uuid.UUID]
     task_ids: list[uuid.UUID] = []
     failure_id: uuid.UUID | None = None

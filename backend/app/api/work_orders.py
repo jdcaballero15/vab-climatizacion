@@ -184,6 +184,21 @@ async def list_work_orders(
     return OrderListPage(items=items, total=total, limit=limit, offset=offset)
 
 
+# Va antes de las rutas con /{order_id}: si no, "in-workshop" se toma como un id.
+@router.get("/in-workshop", response_model=OrderListPage)
+async def list_in_workshop(
+    session: SessionDep,
+    _: AdminOnly,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> OrderListPage:
+    """Equipos en el galpón: de taller, retirados y sin devolver (E06-07)."""
+    items, total = await work_orders_service.list_by_status(
+        session, None, in_workshop=True, limit=limit, offset=offset
+    )
+    return OrderListPage(items=items, total=total, limit=limit, offset=offset)
+
+
 @router.get("/{order_id}", response_model=WorkOrderDetailAdminOut)
 async def get_work_order_detail(
     order_id: uuid.UUID, session: SessionDep, _: AdminOrOwner

@@ -35,9 +35,11 @@ from app.domain.work_order import (
     OrderSource,
     OrderStatus,
     WorkOrderEventType,
+    WorkshopStage,
 )
 
 ORDER_STATUS = Enum(OrderStatus, name="order_status")
+WORKSHOP_STAGE = Enum(WorkshopStage, name="workshop_stage")
 WORK_ORDER_NUMBER_SEQ = Sequence("work_order_number_seq")
 
 # varchar con CHECK y no un enum de Postgres: sumar un tipo de evento no obliga a migrar
@@ -51,6 +53,13 @@ class WorkOrder(TimestampedBase):
     """Orden de trabajo. Las fechas de negocio salen de sus eventos (ADR 0005)."""
 
     __tablename__ = "work_order"
+    __table_args__ = (
+        # Una de taller siempre está en una etapa; una en el lugar, en ninguna (E06).
+        CheckConstraint(
+            "(kind = 'workshop') = (workshop_stage IS NOT NULL)",
+            name="ck_work_order_workshop_stage",
+        ),
+    )
 
     number: Mapped[int] = mapped_column(
         BigInteger,
@@ -62,6 +71,9 @@ class WorkOrder(TimestampedBase):
     kind: Mapped[OrderKind] = mapped_column(
         Enum(OrderKind, name="order_kind"), nullable=False, default=OrderKind.on_site
     )
+    # Taller (E06): la etapa que toca ahora o, si está Terminada, la última. Van en fila;
+    # entre una y otra la orden vuelve a Pendiente (opción A, 2026-11-03).
+    workshop_stage: Mapped[WorkshopStage | None] = mapped_column(WORKSHOP_STAGE, nullable=True)
     source: Mapped[OrderSource] = mapped_column(
         Enum(OrderSource, name="order_source"), nullable=False, default=OrderSource.manual
     )
@@ -184,6 +196,8 @@ class WorkOrderClosure(TimestampedBase):
         Enum(NoSignatureReason, name="no_signature_reason"), nullable=True
     )
     no_signature_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # La etapa de taller que cerró (E06); nula en una orden en el lugar.
+    workshop_stage: Mapped[WorkshopStage | None] = mapped_column(WORKSHOP_STAGE, nullable=True)
     # La genera el celular: reenviar el mismo cierre no lo duplica (E05-12).
     idempotency_key: Mapped[uuid.UUID] = mapped_column(Uuid, unique=True, nullable=False)
 

@@ -758,15 +758,6 @@ async def test_cierre_incompleto_se_rechaza_con_el_campo(
     assert (status, eventos, cierres) == (OrderStatus.in_progress, [], 0)
 
 
-async def test_resultado_retiro_todavia_no_se_acepta(mundo: Mundo) -> None:
-    m = mundo
-    orden = await _orden(m)
-
-    response = await _cerrar(m.celular, orden.id, _resuelta(m, outcome="needs_pickup"))
-
-    assert response.status_code == 422
-
-
 # ---- Idempotencia (E05-12) ----
 
 

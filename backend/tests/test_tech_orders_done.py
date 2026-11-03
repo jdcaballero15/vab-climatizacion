@@ -235,6 +235,7 @@ async def test_cada_cierre_trae_lo_de_la_tarjeta(
         "address": "Calle 1",
         "outcome": "done",
         "not_done_reason": None,
+        "workshop_stage": None,
         "closed_at": item["closed_at"],
     }
     cerrada = datetime.fromisoformat(item["closed_at"])

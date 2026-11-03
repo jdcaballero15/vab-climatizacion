@@ -29,19 +29,25 @@ from app.db.models.work_order import (
     WorkOrderClosurePhoto,
     WorkOrderClosureTask,
     WorkOrderClosureTechnician,
+    WorkOrderEvent,
 )
 from app.db.repositories.catalog import FailureRepository, RepairRepository
 from app.db.repositories.crew import FieldTechnicianRepository
 from app.db.repositories.stored_file import StoredFileRepository
 from app.db.repositories.work_order import WorkOrderClosureRepository, WorkOrderRepository
 from app.domain.work_order import (
+    NEXT_WORKSHOP_STAGE,
     NOT_DONE_REASON_LABELS,
+    SIGNED_WORKSHOP_STAGES,
     ClosureOutcome,
     EquipmentCondition,
     NoSignatureReason,
     OrderAction,
+    OrderKind,
     OrderStatus,
     SignaturePurpose,
+    WorkOrderEventType,
+    WorkshopStage,
 )
 from app.services import catalog as catalog_service
 from app.services import parts as parts_service
@@ -71,8 +77,19 @@ MAX_PHOTOS = 5
 # Estado en que queda la orden según el resultado (máquina de estados, E05-08).
 _STATUS_AFTER = {
     ClosureOutcome.done: OrderStatus.done,
+    ClosureOutcome.needs_pickup: OrderStatus.pending,
     ClosureOutcome.needs_revisit: OrderStatus.pending,
     ClosureOutcome.not_done: OrderStatus.pending,
+}
+_SIGNATURE_PURPOSE = {
+    None: SignaturePurpose.closure,
+    WorkshopStage.pickup: SignaturePurpose.pickup,
+    WorkshopStage.delivery: SignaturePurpose.delivery,
+}
+_STAGE_DONE_NOTES = {
+    WorkshopStage.pickup: "Retiro hecho: el equipo está en el galpón.",
+    WorkshopStage.workshop: "Trabajo en el galpón terminado: falta la devolución.",
+    WorkshopStage.delivery: "Devolución hecha: el cliente recibió el equipo.",
 }
 
 
@@ -103,6 +120,7 @@ async def get_closure_options(
             for f in failures
         ],
         parts=await parts_service.list_active_choices(session),
+        workshop_stage=order.workshop_stage,
     )
 
 
@@ -121,15 +139,13 @@ async def close_order(
     outcome = ClosureOutcome(data.outcome)
     await _validate(session, order, equipment_type_id, outcome, data)
     await _validate_photos(session, user, data.photo_ids)
-    await _validate_signature(session, user, data)
+    await _validate_signature(session, user, data, order.workshop_stage, outcome)
     await _validate_parts(session, data)
 
-    action = (
-        OrderAction.close_done if outcome == ClosureOutcome.done else OrderAction.request_revisit
-    )
+    stage = order.workshop_stage
     try:
         await work_orders_service.stage_transition(
-            session, order, action, user, _event_note(outcome, data)
+            session, order, _action(outcome, stage), user, _event_note(outcome, stage, data)
         )
     except work_orders_service.OrderStatusConflictError:
         # Otro pedido la cerró antes: si fue este mismo cierre, es el mismo resultado.
@@ -138,8 +154,24 @@ async def close_order(
         if replay is not None:
             return replay, False
         raise work_orders_service.WorkOrderNotFoundError from None
-    if outcome != ClosureOutcome.done:
+    finishes = outcome == ClosureOutcome.done and stage not in NEXT_WORKSHOP_STAGE
+    if not finishes:
         await WorkOrderRepository(session).end_current_assignment(order.id)
+    if outcome == ClosureOutcome.done and stage in NEXT_WORKSHOP_STAGE:
+        # Taller, opción A: vuelve a Pendiente para que la oficina asigne la etapa siguiente.
+        order.workshop_stage = NEXT_WORKSHOP_STAGE[stage]
+    if outcome == ClosureOutcome.needs_pickup:
+        # E06-02: la misma orden pasa a taller, con lo registrado y arrancando en el retiro.
+        order.kind = OrderKind.workshop
+        order.workshop_stage = WorkshopStage.pickup
+        WorkOrderRepository(session).add_event(
+            WorkOrderEvent(
+                work_order_id=order.id,
+                event_type=WorkOrderEventType.converted_to_workshop,
+                actor_id=user.id,
+                note="Pasó a taller: falta el retiro.",
+            )
+        )
 
     closure = WorkOrderClosure(
         work_order_id=order.id,
@@ -155,6 +187,7 @@ async def close_order(
         no_signature_reason=data.no_signature_reason,
         no_signature_text=data.no_signature_text,
         idempotency_key=data.idempotency_key,
+        workshop_stage=stage,
     )
     session.add(closure)
     await session.flush()
@@ -187,7 +220,7 @@ async def close_order(
         session.add(
             Signature(
                 closure_id=closure.id,
-                purpose=SignaturePurpose.closure,
+                purpose=_SIGNATURE_PURPOSE.get(stage, SignaturePurpose.closure),
                 signer_name=data.signature.signer_name,
                 image_file_id=data.signature.file_id,
             )
@@ -271,12 +304,23 @@ async def _replay(
 
 
 def _out(closure: WorkOrderClosure) -> ClosureTechnicianOut:
+    status = _STATUS_AFTER[closure.outcome]
+    if closure.outcome == ClosureOutcome.done and closure.workshop_stage in NEXT_WORKSHOP_STAGE:
+        status = OrderStatus.pending
     return ClosureTechnicianOut(
         id=closure.id,
         outcome=closure.outcome,
-        order_status=_STATUS_AFTER[closure.outcome],
+        order_status=status,
         closed_at=closure.closed_at,
     )
+
+
+def _action(outcome: ClosureOutcome, stage: WorkshopStage | None) -> OrderAction:
+    if outcome != ClosureOutcome.done:
+        return OrderAction.request_revisit
+    if stage in NEXT_WORKSHOP_STAGE:
+        return OrderAction.complete_stage
+    return OrderAction.close_done
 
 
 async def _order_in_progress(
@@ -319,6 +363,11 @@ async def _validate(
     data: ClosureCreate,
 ) -> None:
     """Valida el cierre en un orden fijo: primero lo cargado, después lo que falta."""
+    stage = order.workshop_stage
+    if outcome == ClosureOutcome.needs_pickup and order.kind == OrderKind.workshop:
+        raise ClosureValidationError(
+            "already_workshop", "outcome", "Ya es una orden de taller: cerrá la etapa."
+        )
     if not data.technician_ids:
         raise ClosureValidationError(
             "technicians_required", "technician_ids", "Tildá quiénes fueron."
@@ -366,13 +415,15 @@ async def _validate(
             )
 
     work_type = await catalog_service.get_work_type(session, order.work_type_id)
-    if outcome == ClosureOutcome.done and work_type.requires_failure_repair:
+    # Retiro y devolución no piden falla ni reparación: eso se carga en el galpón (E06).
+    handover = stage in SIGNED_WORKSHOP_STAGES
+    if outcome == ClosureOutcome.done and work_type.requires_failure_repair and not handover:
         if not has_failure:
             raise ClosureValidationError("failure_required", "failure_id", "Elegí la falla.")
         if not has_repair:
             raise ClosureValidationError("repair_required", "repair_id", "Elegí la reparación.")
 
-    if outcome != ClosureOutcome.not_done and data.equipment_condition is None:
+    if outcome != ClosureOutcome.not_done and data.equipment_condition is None and not handover:
         raise ClosureValidationError(
             "equipment_condition_required",
             "equipment_condition",
@@ -431,9 +482,31 @@ async def _validate_photos(session: AsyncSession, user: User, photo_ids: list[uu
         )
 
 
-async def _validate_signature(session: AsyncSession, user: User, data: ClosureCreate) -> None:
-    """La firma del cliente o un motivo, nunca las dos ni ninguna (E05-07, D-011)."""
+async def _validate_signature(
+    session: AsyncSession,
+    user: User,
+    data: ClosureCreate,
+    stage: WorkshopStage | None,
+    outcome: ClosureOutcome,
+) -> None:
+    """La firma del cliente o un motivo, nunca las dos ni ninguna (E05-07, D-011).
+
+    En taller (E06): el galpón no se firma; el retiro y la devolución hechos se firman sí
+    o sí, porque el cliente entrega o recibe el equipo.
+    """
     signature, reason = data.signature, data.no_signature_reason
+    if stage == WorkshopStage.workshop:
+        if signature is not None or reason is not None:
+            raise ClosureValidationError(
+                "signature_not_allowed", "signature", "El trabajo en el galpón no se firma."
+            )
+        return
+    if stage in SIGNED_WORKSHOP_STAGES and outcome == ClosureOutcome.done and signature is None:
+        raise ClosureValidationError(
+            "signature_required",
+            "signature",
+            "Pedile la firma al cliente: entrega o recibe el equipo.",
+        )
     if signature is None:
         if reason is None:
             raise ClosureValidationError(
@@ -503,9 +576,11 @@ async def _validate_parts(session: AsyncSession, data: ClosureCreate) -> None:
         )
 
 
-def _event_note(outcome: ClosureOutcome, data: ClosureCreate) -> str:
+def _event_note(outcome: ClosureOutcome, stage: WorkshopStage | None, data: ClosureCreate) -> str:
     if outcome == ClosureOutcome.done:
-        return "Resuelta."
+        return _STAGE_DONE_NOTES[stage] if stage is not None else "Resuelta."
+    if outcome == ClosureOutcome.needs_pickup:
+        return "Requiere retiro: pasa a taller."
     if outcome == ClosureOutcome.needs_revisit:
         return f"Requiere otra visita: {data.observation}"
     # _validate ya exige el motivo con "No se pudo hacer".
