@@ -208,6 +208,55 @@ class ClientOrderPage(BaseModel):
     offset: int
 
 
+class OrderDetailClientOut(BaseModel):
+    id: uuid.UUID
+    number: str
+    name: str
+
+
+class OrderDetailSiteOut(BaseModel):
+    label: str | None
+    address: str
+    reference: str | None
+
+
+class TimelineEntryOut(BaseModel):
+    """Un paso de la línea de tiempo (E04-06). event_type es el del evento de la orden o
+    "billing_invoiced", que se arma con el cobro de E04-14 (no deja evento propio)."""
+
+    occurred_at: datetime
+    event_type: str
+    from_status: OrderStatus | None
+    to_status: OrderStatus | None
+    actor_name: str | None
+    note: str | None
+
+
+class WorkOrderDetailAdminOut(BaseModel):
+    """Todo lo de una orden en una pantalla, con su línea de tiempo (E04-06).
+
+    El cierre, los materiales y el cobro se piden aparte, como en Terminadas.
+    """
+
+    id: uuid.UUID
+    number: int
+    kind: OrderKind
+    status: OrderStatus
+    created_at: datetime
+    client: OrderDetailClientOut
+    site: OrderDetailSiteOut
+    work_type_name: str
+    equipment: OrderEquipmentOut | None
+    description: str | None
+    channel: OrderChannel | None
+    requester_name: str | None
+    requester_area: str | None
+    assignment: CurrentAssignmentOut | None
+    cancellation: CancellationAdminOut | None
+    has_closure: bool
+    timeline: list[TimelineEntryOut]
+
+
 # extra="forbid": el estado y quién cancela los pone el sistema.
 class CancellationCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
