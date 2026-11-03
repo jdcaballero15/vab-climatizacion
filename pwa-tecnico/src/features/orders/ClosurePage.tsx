@@ -419,7 +419,10 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
     } else if (result.kind === "offline") {
       // E05-13, criterio 3: queda pendiente y se manda solo cuando vuelve la señal.
       schedulePendingClosures();
-      const notice = `Sin señal. El cierre de la orden${number} quedó pendiente y se envía solo cuando vuelva la señal.`;
+      const notice =
+        result.reason === "server"
+          ? `El servidor no pudo recibir el cierre de la orden${number}. Quedó guardado en el celular y se reintenta solo; si no sale, avisá a la oficina.`
+          : `Sin señal. El cierre de la orden${number} quedó pendiente y se envía solo cuando vuelva la señal.`;
       const sentNotice = `Se envió el cierre de la orden${number}.`;
       navigate("/", {
         replace: true,

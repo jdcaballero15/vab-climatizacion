@@ -29,12 +29,18 @@ export interface ClosurePhoto {
 }
 
 const NO_CONNECTION = "No se pudo subir una foto. Revisá la conexión e intentá de nuevo.";
+const SERVER_PROBLEM = "El servidor no pudo guardar una foto. Se reintenta más tarde.";
 
 /** Error con un mensaje para mostrarle al técnico. */
 export class PhotoUploadError extends Error {
   /** Sin señal o el servidor caído: se puede reintentar más tarde (E05-13). */
   get offline(): boolean {
-    return this.message === NO_CONNECTION;
+    return this.message === NO_CONNECTION || this.serverFault;
+  }
+
+  /** Hubo respuesta, pero de error: no es la señal, aunque también se reintenta. */
+  get serverFault(): boolean {
+    return this.message === SERVER_PROBLEM;
   }
 }
 
@@ -129,7 +135,7 @@ async function sendToBucket(
     }),
   );
   if (!put.ok) {
-    throw new PhotoUploadError(NO_CONNECTION);
+    throw new PhotoUploadError(SERVER_PROBLEM);
   }
   save(photo.key, { fileId: data.file_id });
   return data.file_id;
@@ -163,5 +169,5 @@ function apiMessage(error: unknown, status: number): string {
   if (status === 422 && typeof message === "string") {
     return message;
   }
-  return NO_CONNECTION;
+  return status >= 500 ? SERVER_PROBLEM : NO_CONNECTION;
 }

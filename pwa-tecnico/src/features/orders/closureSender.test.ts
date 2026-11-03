@@ -155,14 +155,22 @@ describe("sendClosure", () => {
   it("sin señal deja el cierre pendiente", async () => {
     stubApi(offline);
 
-    expect(await sendClosure(stored())).toEqual({ kind: "offline" });
+    expect(await sendClosure(stored())).toEqual({ kind: "offline", reason: "network" });
     expect(storedFor(USER, ORDER)?.status).toBe("pending");
   });
 
-  it("si el servidor falla también queda pendiente", async () => {
+  // Si el servidor responde con error no es la señal: queda pendiente, pero se avisa distinto.
+  it("si el servidor falla también queda pendiente, como error del servidor", async () => {
     stubApi(() => json({ detail: "Internal Server Error" }, 500));
 
-    expect(await sendClosure(stored())).toEqual({ kind: "offline" });
+    expect(await sendClosure(stored())).toEqual({ kind: "offline", reason: "server" });
+    expect(storedFor(USER, ORDER)?.status).toBe("pending");
+  });
+
+  it("si el bucket rechaza la foto queda pendiente, como error del servidor", async () => {
+    stubApi(undefined, () => new Response(null, { status: 403 }));
+
+    expect(await sendClosure(stored())).toEqual({ kind: "offline", reason: "server" });
     expect(storedFor(USER, ORDER)?.status).toBe("pending");
   });
 
@@ -170,7 +178,7 @@ describe("sendClosure", () => {
   it("cortado en la segunda foto, el reintento sigue desde ahí con la misma clave", async () => {
     stubApi(undefined, (n) => (n === 2 ? offline() : new Response(null, { status: 200 })));
 
-    expect(await sendClosure(stored())).toEqual({ kind: "offline" });
+    expect(await sendClosure(stored())).toEqual({ kind: "offline", reason: "network" });
     const pending = storedFor(USER, ORDER)!;
     expect(pending.photos.map((photo) => photo.uploaded)).toEqual([true, false]);
 
