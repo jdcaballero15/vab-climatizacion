@@ -46,6 +46,7 @@ function options(overrides: Partial<Options> = {}): Options {
       { id: GAS, name: "Gas R410A", unit: "kg" },
       { id: "e0000000-0000-4000-8000-000000000002", name: "Caño de cobre 1/4", unit: "metro" },
     ],
+    workshop_stage: null,
     ...overrides,
   };
 }
@@ -444,6 +445,57 @@ describe("ClosurePage", () => {
       "Uno de los técnicos no está activo.",
     );
     expect(document.getElementById("closure-technicians")).toHaveClass("closure__section--invalid");
+  });
+
+  // E06-02: en una visita, "Requiere retiro" pasa la orden a taller.
+  it("una visita puede pedir el retiro al galpón", async () => {
+    const sent = stubApi(() =>
+      json({ ...CLOSED, outcome: "needs_pickup", order_status: "pending" }, 201),
+    );
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+    await click("Ana Ficticia");
+    await click("Requiere retiro al galpón");
+    await click("Funcionando bien");
+    await click("No quiso firmar");
+    await click("Finalizar orden");
+
+    expect(
+      await screen.findByRole("heading", { name: /pasa a taller: la oficina asigna el retiro/ }),
+    ).toBeInTheDocument();
+    expect(sent[0].outcome).toBe("needs_pickup");
+  });
+
+  // E06-04: el retiro dice qué etapa es, no pide falla ni estado del equipo y se firma.
+  it("en el retiro pide la firma y no ofrece cerrar sin firma", async () => {
+    stubApi(undefined, () => json(options({ workshop_stage: "pickup" })));
+    renderClosure();
+    expect(await screen.findByRole("note")).toHaveTextContent("Taller · Retiro");
+    await click("Ana Ficticia");
+    await click("Retiro hecho");
+
+    expect(
+      screen.queryByRole("button", { name: "Requiere retiro al galpón" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Si no firma, elegí por qué")).not.toBeInTheDocument();
+    expect(screen.queryByText("¿Cómo quedó el equipo?")).not.toBeInTheDocument();
+    expect(screen.getByText("Firma del cliente (entrega el equipo)")).toBeInTheDocument();
+    await click("Terminar la etapa");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Pedile la firma al cliente: entrega o recibe el equipo.",
+    );
+  });
+
+  // E06-05: el trabajo en el galpón no se firma.
+  it("en el galpón no hay firma", async () => {
+    stubApi(undefined, () => json(options({ workshop_stage: "workshop" })));
+    renderClosure();
+    expect(await screen.findByRole("note")).toHaveTextContent("Taller · Galpón");
+
+    expect(screen.queryByText(/Firma del cliente/)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Trabajo en el galpón terminado" }),
+    ).toBeInTheDocument();
   });
 
   // E05-12: reintentar después de un corte reusa la clave; no duplica el cierre.

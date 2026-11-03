@@ -4,7 +4,7 @@ title: "Registrar el trabajo en taller"
 epic: E06
 phase: 1
 priority: must
-status: draft
+status: done
 roles: [technician]
 size: M
 areas: [backend, pwa]
@@ -25,3 +25,9 @@ assumes: []
 2. **Dado:** los repuestos. **Cuando:** se registran. **Entonces:** se estampa el precio y se descuenta stock como en un cierre normal.
 3. **Dado:** la etapa. **Cuando:** se completa. **Entonces:** no requiere firma del cliente.
 4. **Dado:** el técnico. **Cuando:** ve la etapa. **Entonces:** no ve precios ni historial.
+
+## Refinamiento y avance
+
+Acordado con Gonza el 2026-11-03 (escuadrillas en todo, firma y nombre sin DNI, nace desde la visita y desde la oficina, PDF más adelante, etapas en fila: opción A del ADR 0007) y hecho el mismo día:
+
+- "Trabajo en el galpón terminado" pide falla y reparación si el tipo de trabajo las pide, y estado del equipo; no se firma. Los materiales se cargan como en un cierre y el precio se estampa al aprobar (E05-05). El descuento de stock llega con E08-04. Vuelve a Pendiente con la etapa Devolución.

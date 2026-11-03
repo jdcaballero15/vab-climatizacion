@@ -4,7 +4,7 @@ title: "Ver qué equipos están en el galpón y en qué etapa"
 epic: E06
 phase: 1
 priority: must
-status: draft
+status: done
 roles: [admin, owner]
 size: S
 areas: [backend, web-admin]
@@ -25,3 +25,9 @@ assumes: []
 2. **Dado:** la vista. **Cuando:** filtro por cliente o etapa. **Entonces:** se actualiza.
 3. **Dado:** un equipo devuelto. **Cuando:** se completa la devolución. **Entonces:** deja de aparecer en la vista.
 4. **Dado:** el rol técnico. **Cuando:** intenta acceder. **Entonces:** recibe acceso denegado.
+
+## Refinamiento y avance
+
+Acordado con Gonza el 2026-11-03 (escuadrillas en todo, firma y nombre sin DNI, nace desde la visita y desde la oficina, PDF más adelante, etapas en fila: opción A del ADR 0007) y hecho el mismo día:
+
+- "En el galpón" en Órdenes (`GET /admin/orders/in-workshop`): las de taller con el retiro hecho y la devolución sin hacer, con cliente, equipo, etapa y escuadrilla. El filtro por etapa es el orden de la lista (primero Galpón, después Devolución); por cliente, la búsqueda de E03-06. Técnico 403.

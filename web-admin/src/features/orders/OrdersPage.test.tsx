@@ -60,6 +60,7 @@ const PENDIENTE: OrderListItem = {
   id: "o1",
   number: 7,
   status: "pending",
+  workshop_stage: null,
   client_id: "c1",
   client_name: "Sanatorio Ficticio",
   client_site_id: "s1",
@@ -107,6 +108,7 @@ const CREADA: WorkOrder = {
   requester_name: null,
   requester_area: null,
   equipment_id: null,
+  workshop_stage: null,
   created_at: "2026-10-26T13:00:00Z",
 };
 
@@ -457,6 +459,7 @@ describe("OrdersPage", () => {
       requester_name: "Jefa de mantenimiento",
       requester_area: "Piso 3",
       equipment_id: null,
+      kind: "on_site",
     });
     // Se refresca el listado de pendientes.
     await waitFor(() => expect(listados(fetchMock, "pending")).toHaveLength(2));
@@ -464,6 +467,28 @@ describe("OrdersPage", () => {
     expect(within(form).getByLabelText("Cliente")).toHaveValue("");
     expect(within(form).queryByRole("button", { name: /Elegir/ })).not.toBeInTheDocument();
     expect(within(form).getByLabelText("Descripción del pedido")).toHaveValue("");
+  });
+
+  // E06-01: la oficina crea una orden de taller.
+  it("crea una orden de taller", async () => {
+    const user = userEvent.setup();
+    const fetchMock = mockApi((request, url) =>
+      url.pathname.endsWith("/admin/orders") && request.method === "POST"
+        ? json({ ...CREADA, kind: "workshop", workshop_stage: "pickup" }, 201)
+        : undefined,
+    );
+    renderOrders();
+    await abrirAlta();
+    const form = formulario();
+    await elegirCliente(user);
+    await within(form).findByText("Domicilio: Central");
+    await completarPedido(user);
+    await user.selectOptions(within(form).getByLabelText("Tipo de orden"), "workshop");
+    await user.click(within(form).getByRole("button", { name: "Crear orden" }));
+
+    await screen.findByText(/creada\./);
+    const [post] = calls(fetchMock, "POST", "/admin/orders");
+    expect((await post.json()).kind).toBe("workshop");
   });
 
   it("con varios domicilios hay que elegir uno; los inactivos no se ofrecen", async () => {
@@ -755,6 +780,27 @@ describe("OrdersPage", () => {
 
       const link = await screen.findByRole("link", { name: "Ver el detalle de la orden N° 7" });
       expect(link).toHaveAttribute("href", `/ordenes/${PENDIENTE.id}`);
+    });
+
+    // E06-07: los equipos en el galpón, con su etapa.
+    it("muestra los equipos en el galpón con su etapa", async () => {
+      const user = userEvent.setup();
+      const fetchMock = mockApi((_request, url) =>
+        url.pathname.endsWith("/admin/orders/in-workshop")
+          ? json(pendingPage([{ ...PENDIENTE, workshop_stage: "workshop" }]))
+          : undefined,
+      );
+      renderOrders();
+
+      await user.click(await screen.findByRole("button", { name: "En el galpón" }));
+
+      const lista = await screen.findByRole("list", { name: "Órdenes en el galpón" });
+      expect(within(lista).getByText("Taller · Galpón")).toBeInTheDocument();
+      // Pendiente para la etapa siguiente: se asigna como cualquier otra.
+      expect(
+        within(lista).getByRole("button", { name: "Asignar la orden N° 7" }),
+      ).toBeInTheDocument();
+      expect(calls(fetchMock, "GET", "/admin/orders/in-workshop").length).toBeGreaterThan(0);
     });
 
     it("muestra cuántas hay en cada estado y las escuadrillas activas", async () => {

@@ -8,7 +8,7 @@ import { EquipmentSelect } from "./EquipmentSelect";
 import { activeSites, EMPTY_ORDER, missingFields, type OrderFormValues } from "./formValues";
 import { CHANNEL_LABELS } from "./labels";
 import { SitePicker } from "./SitePicker";
-import type { OrderChannel } from "./types";
+import type { OrderKind, OrderChannel } from "./types";
 import { useCreateOrder } from "./useOrders";
 
 /** Alta de una orden a partir del pedido de un cliente. Queda Pendiente. */
@@ -46,6 +46,7 @@ export function OrderForm() {
         requester_name: values.requesterName || null,
         requester_area: values.requesterArea || null,
         equipment_id: values.equipmentId || null,
+        kind: values.kind,
       },
       {
         onSuccess: (orden) => {
@@ -102,6 +103,15 @@ export function OrderForm() {
               {type.name}
             </option>
           ))}
+        </select>
+        <label htmlFor="order-kind">Tipo de orden</label>
+        <select
+          id="order-kind"
+          value={values.kind}
+          onChange={(event) => set({ kind: event.target.value as OrderKind })}
+        >
+          <option value="on_site">En el lugar</option>
+          <option value="workshop">Taller: retiro, galpón y devolución</option>
         </select>
         <label htmlFor="order-channel">Canal</label>
         <select

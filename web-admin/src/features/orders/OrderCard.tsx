@@ -11,6 +11,7 @@ import {
   initials,
   ORDER_STATUS_LABELS,
   returnedText,
+  workshopStageText,
 } from "./labels";
 import type { OrderListItem } from "./types";
 
@@ -134,6 +135,11 @@ export function OrderCard({ order, primary, more, children }: OrderCardProps) {
               {order.equipment && (
                 <span title={order.equipment.location_note}>
                   Equipo {order.equipment.internal_code} · {order.equipment.location_note}
+                </span>
+              )}
+              {order.workshop_stage && (
+                <span className="badge badge--workshop">
+                  {workshopStageText(order.workshop_stage)}
                 </span>
               )}
               <span className={`badge badge--${order.status}`}>

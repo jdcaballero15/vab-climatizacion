@@ -23,6 +23,7 @@ const OPTIONS: ClosureOptions = {
     { id: "p1", name: "Gas R410A", unit: "kg" },
     { id: "p2", name: "Caño de cobre 1/4", unit: "metro" },
   ],
+  workshop_stage: null,
 };
 
 function draft(overrides: Partial<ClosureDraft> = {}): ClosureDraft {
@@ -126,6 +127,34 @@ describe("missingFields", () => {
         OPTIONS,
       ),
     ).toEqual({});
+  });
+});
+
+// E06: taller. Retiro y devolución se firman sí o sí; el galpón no se firma.
+describe("missingFields en taller", () => {
+  const RETIRO: ClosureOptions = { ...OPTIONS, workshop_stage: "pickup" };
+  const GALPON: ClosureOptions = { ...OPTIONS, workshop_stage: "workshop" };
+
+  it("el retiro hecho pide la firma, sin falla, reparación ni estado del equipo", () => {
+    const retiro = draft({ failure: "", repair: "", equipmentCondition: null });
+    expect(missingFields(retiro, RETIRO)).toEqual({
+      signature: "Pedile la firma al cliente: entrega o recibe el equipo.",
+    });
+    expect(missingFields({ ...retiro, signerName: "Rosa Ficticia" }, RETIRO, true)).toEqual({});
+  });
+
+  it("un retiro que no se pudo hacer acepta el motivo sin firma", () => {
+    const fallido = draft({
+      outcome: "not_done",
+      notDoneReason: "client_absent",
+      noSignatureReason: "client_absent",
+      equipmentCondition: null,
+    });
+    expect(missingFields(fallido, RETIRO)).toEqual({});
+  });
+
+  it("el galpón no pide firma ni motivo", () => {
+    expect(missingFields(draft({ noSignatureReason: null }), GALPON)).toEqual({});
   });
 });
 

@@ -18,7 +18,7 @@ import type {
   Cancellation,
   CancellationCreate,
   ClosureDetail,
-  ListableStatus,
+  OrderView,
   OrderListPage,
   OrderDetail,
   EquipmentChange,
@@ -38,13 +38,23 @@ export function saveError(error: unknown, fallback: string): Error {
   return new Error(typeof detail?.message === "string" ? detail.message : fallback);
 }
 
-export function useOrderList(status: ListableStatus, offset: number, billing?: BillingStatus) {
+/** Una página de órdenes de un estado, o de las que están en el galpón (E06-07). */
+async function fetchOrders(
+  view: OrderView,
+  limit: number,
+  offset: number,
+  billing?: BillingStatus,
+) {
+  return view === "in_workshop"
+    ? api.GET("/admin/orders/in-workshop", { params: { query: { limit, offset } } })
+    : api.GET("/admin/orders", { params: { query: { status: view, limit, offset, billing } } });
+}
+
+export function useOrderList(status: OrderView, offset: number, billing?: BillingStatus) {
   return useQuery<OrderListPage>({
     queryKey: [...ORDERS_KEY, status, { offset, billing }],
     queryFn: async () => {
-      const { data, error } = await api.GET("/admin/orders", {
-        params: { query: { status, limit: PAGE_SIZE, offset, billing } },
-      });
+      const { data, error } = await fetchOrders(status, PAGE_SIZE, offset, billing);
       if (error || !data) {
         throw new Error("no se pudieron cargar las órdenes");
       }
@@ -55,14 +65,12 @@ export function useOrderList(status: ListableStatus, offset: number, billing?: B
 }
 
 /** Cuántas órdenes hay en cada estado: el total de una página de una sola orden. */
-export function useOrderCounts(statuses: ListableStatus[]) {
+export function useOrderCounts(statuses: OrderView[]) {
   const results = useQueries({
     queries: statuses.map((status) => ({
       queryKey: [...ORDERS_KEY, status, "count"],
       queryFn: async () => {
-        const { data, error } = await api.GET("/admin/orders", {
-          params: { query: { status, limit: 1, offset: 0 } },
-        });
+        const { data, error } = await fetchOrders(status, 1, 0);
         if (error || !data) {
           throw new Error("no se pudo contar las órdenes");
         }
@@ -72,7 +80,7 @@ export function useOrderCounts(statuses: ListableStatus[]) {
   });
   return Object.fromEntries(
     statuses.map((status, index) => [status, results[index]?.data]),
-  ) as Partial<Record<ListableStatus, number>>;
+  ) as Partial<Record<OrderView, number>>;
 }
 
 export function useCreateOrder() {

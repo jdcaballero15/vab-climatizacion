@@ -3042,6 +3042,68 @@
         }
       }
     },
+    "/admin/orders/in-workshop": {
+      "get": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "List In Workshop",
+        "description": "Equipos en el galpón: de taller, retirados y sin devolver (E06-07).",
+        "operationId": "list_in_workshop_admin_orders_in_workshop_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderListPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/orders/{order_id}": {
       "get": {
         "tags": [
@@ -5531,6 +5593,7 @@
             "type": "string",
             "enum": [
               "done",
+              "needs_pickup",
               "needs_revisit",
               "not_done"
             ],
@@ -5725,6 +5788,16 @@
             },
             "type": "array",
             "title": "Parts"
+          },
+          "workshop_stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkshopStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -5733,7 +5806,8 @@
           "tasks",
           "requires_failure_repair",
           "failures",
-          "parts"
+          "parts",
+          "workshop_stage"
         ],
         "title": "ClosureOptionsTechnicianOut"
       },
@@ -6342,6 +6416,16 @@
               }
             ]
           },
+          "workshop_stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkshopStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "closed_at": {
             "type": "string",
             "format": "date-time",
@@ -6358,6 +6442,7 @@
           "address",
           "outcome",
           "not_done_reason",
+          "workshop_stage",
           "closed_at"
         ],
         "title": "DoneOrderTechnicianOut",
@@ -7462,6 +7547,16 @@
             ],
             "title": "Return Reason"
           },
+          "workshop_stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkshopStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "requester_area": {
             "anyOf": [
               {
@@ -7498,6 +7593,7 @@
           "site",
           "equipment",
           "return_reason",
+          "workshop_stage",
           "requester_area",
           "tasks",
           "today"
@@ -7551,6 +7647,16 @@
           },
           "status": {
             "$ref": "#/components/schemas/OrderStatus"
+          },
+          "workshop_stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkshopStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "client_id": {
             "type": "string",
@@ -7667,6 +7773,7 @@
           "id",
           "number",
           "status",
+          "workshop_stage",
           "client_id",
           "client_name",
           "client_site_id",
@@ -7835,6 +7942,16 @@
               }
             ],
             "title": "Return Reason"
+          },
+          "workshop_stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkshopStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -7848,7 +7965,8 @@
           "scheduled_for",
           "site",
           "equipment",
-          "return_reason"
+          "return_reason",
+          "workshop_stage"
         ],
         "title": "OrderTechnicianOut"
       },
@@ -9018,6 +9136,16 @@
             ],
             "title": "Equipment Id"
           },
+          "workshop_stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkshopStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -9039,6 +9167,7 @@
           "requester_name",
           "requester_area",
           "equipment_id",
+          "workshop_stage",
           "created_at"
         ],
         "title": "WorkOrderAdminOut"
@@ -9103,6 +9232,10 @@
               }
             ],
             "title": "Equipment Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/OrderKind",
+            "default": "on_site"
           }
         },
         "additionalProperties": false,
@@ -9129,6 +9262,16 @@
           },
           "kind": {
             "$ref": "#/components/schemas/OrderKind"
+          },
+          "workshop_stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkshopStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "status": {
             "$ref": "#/components/schemas/OrderStatus"
@@ -9238,6 +9381,7 @@
           "id",
           "number",
           "kind",
+          "workshop_stage",
           "status",
           "created_at",
           "client",
@@ -9340,6 +9484,16 @@
         },
         "type": "object",
         "title": "WorkTypeUpdate"
+      },
+      "WorkshopStage": {
+        "type": "string",
+        "enum": [
+          "pickup",
+          "workshop",
+          "delivery"
+        ],
+        "title": "WorkshopStage",
+        "description": "Etapa de una orden de taller (ADR 0007, E06). Van en fila: retiro, galpón, devolución."
       }
     },
     "securitySchemes": {

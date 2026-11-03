@@ -22,6 +22,10 @@ export type BillingUpdate = components["schemas"]["BillingUpdate"];
 export type BillingStatus = components["schemas"]["BillingStatus"];
 /** Los estados que lista hoy la API; Facturadas y Cobradas llegan con E04-05. */
 export type ListableStatus = "pending" | "assigned" | "in_progress" | "done" | "cancelled";
+/** Lo que se elige en Órdenes: un estado o los equipos en el galpón (E06-07). */
+export type OrderView = ListableStatus | "in_workshop";
+export type WorkshopStage = components["schemas"]["WorkshopStage"];
+export type OrderKind = components["schemas"]["OrderKind"];
 export type OrderMaterials = components["schemas"]["OrderMaterialsAdminOut"];
 export type MaterialLine = components["schemas"]["MaterialLineAdminOut"];
 export type MaterialLineCreate = components["schemas"]["MaterialLineCreate"];

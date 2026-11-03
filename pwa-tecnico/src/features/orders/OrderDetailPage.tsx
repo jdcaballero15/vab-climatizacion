@@ -3,7 +3,7 @@ import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import type { components } from "../../api/schema";
-import { dueLabel, statusLabel } from "./labels";
+import { dueLabel, statusLabel, workshopStageText } from "./labels";
 import { useOrderDetail } from "./useOrderDetail";
 import { useStartOrder } from "./useStartOrder";
 
@@ -74,6 +74,9 @@ function OrderDetail({ order }: { order: OrderDetail }) {
         <p className="order-card__returned" role="note">
           La oficina la devolvió: {order.return_reason}
         </p>
+      )}
+      {order.workshop_stage && (
+        <p className="order-card__stage">{workshopStageText(order.workshop_stage)}</p>
       )}
       {order.status === "assigned" && <StartOrder order={order} />}
       {order.status === "in_progress" && (

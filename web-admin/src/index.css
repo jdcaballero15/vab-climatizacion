@@ -332,6 +332,13 @@ label {
   color: var(--accent);
 }
 
+/* Orden de taller con su etapa (E06). */
+.badge--workshop {
+  border-color: #c4b5fd;
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
 .avatar {
   box-shadow:
     0 0 0 2px var(--surface),

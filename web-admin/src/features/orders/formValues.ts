@@ -1,5 +1,5 @@
 import type { Site } from "../clients/types";
-import type { OrderChannel } from "./types";
+import type { OrderChannel, OrderKind } from "./types";
 
 export interface OrderFormValues {
   clientId: string | null;
@@ -11,6 +11,8 @@ export interface OrderFormValues {
   requesterArea: string;
   /** "" sin equipo (E04-12). */
   equipmentId: string;
+  /** Taller (E06-01): retiro, galpón y devolución en una sola orden. */
+  kind: OrderKind;
 }
 
 export const EMPTY_ORDER: OrderFormValues = {
@@ -22,6 +24,7 @@ export const EMPTY_ORDER: OrderFormValues = {
   requesterName: "",
   requesterArea: "",
   equipmentId: "",
+  kind: "on_site",
 };
 
 export function activeSites(sites: Site[] | undefined): Site[] {

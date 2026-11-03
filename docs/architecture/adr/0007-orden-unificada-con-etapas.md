@@ -21,3 +21,12 @@ Una orden de trabajo tiene `kind` (`on_site` o `workshop`) y, cuando es de talle
 - El estado de la orden (ver [máquina de estados](../order-state-machine.md)) se calcula a partir del avance de sus etapas.
 - El modelo de datos tiene `work_order_stage` y `work_order_assignment` con referencia opcional a la etapa.
 - El comprobante PDF de retiro y de devolución se genera por etapa.
+
+## Nota del 2026-11-03: etapas en fila (opción A)
+
+Para el arranque del 2026-11-06, Gonza eligió una versión más simple que la de arriba:
+
+- Las etapas van **en fila** y la orden tiene **una sola asignación vigente** a la vez, la de la etapa que toca. No hay tabla `work_order_stage`: la orden guarda su etapa en `work_order.workshop_stage` y cada cierre, la que cerró (`work_order_closure.workshop_stage`).
+- Al cerrar el retiro o el galpón, la orden **vuelve a Pendiente** con la etapa siguiente y la oficina la asigna como cualquier otra (acción `complete_stage`). Al cerrar la devolución queda `Terminada`. Asignar, reasignar, cancelar y devolver a la escuadrilla funcionan igual que en una orden en el lugar.
+- Retiro y devolución se firman con **firma y nombre, sin DNI**. El galpón no se firma.
+- Las etapas en paralelo (asignar las tres de una vez, orden `En curso` de punta a punta) quedan para más adelante, si hacen falta.

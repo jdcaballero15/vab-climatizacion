@@ -10,6 +10,7 @@ import {
   formatDay,
   ORDER_STATUS_LABELS,
   timelineLabel,
+  workshopStageText,
 } from "./labels";
 import { OrderMaterials } from "./OrderMaterials";
 import type { OrderDetail } from "./types";
@@ -97,6 +98,7 @@ function OrderFacts({ order }: { order: OrderDetail }) {
     ["Cliente", `${order.client.name} (N° ${order.client.number})`],
     ["Domicilio", order.site.reference ? `${site} (${order.site.reference})` : site],
     ["Tipo de trabajo", order.work_type_name],
+    ["Etapa", order.workshop_stage ? workshopStageText(order.workshop_stage) : null],
     [
       "Equipo",
       order.equipment

@@ -10,6 +10,7 @@ const DETALLE: OrderDetail = {
   id: "o3",
   number: 3,
   kind: "on_site",
+  workshop_stage: null,
   status: "done",
   created_at: "2026-10-20T12:00:00Z",
   client: { id: "c1", number: "10642", name: "Sanatorio Ficticio" },

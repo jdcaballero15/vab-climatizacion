@@ -4,7 +4,7 @@ title: "Crear una orden de taller desde la oficina"
 epic: E06
 phase: 1
 priority: must
-status: draft
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -28,3 +28,9 @@ assumes: []
 ## Notas técnicas
 
 - Ver ADR 0007.
+
+## Refinamiento y avance
+
+Acordado con Gonza el 2026-11-03 (escuadrillas en todo, firma y nombre sin DNI, nace desde la visita y desde la oficina, PDF más adelante, etapas en fila: opción A del ADR 0007) y hecho el mismo día:
+
+- En "Nueva orden", "Tipo de orden": En el lugar o Taller. La de taller arranca en el retiro (`kind = workshop`, `workshop_stage = pickup`) y es una sola orden con un solo número.

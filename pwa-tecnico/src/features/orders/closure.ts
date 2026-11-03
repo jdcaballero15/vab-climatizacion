@@ -7,6 +7,17 @@ export type ClosureOutcome = ClosureCreate["outcome"];
 export type EquipmentCondition = components["schemas"]["EquipmentCondition"];
 export type NotDoneReason = components["schemas"]["NotDoneReason"];
 export type NoSignatureReason = components["schemas"]["NoSignatureReason"];
+export type WorkshopStage = components["schemas"]["WorkshopStage"];
+
+/** Retiro o devolución de taller (E06): el cliente entrega o recibe el equipo y firma. */
+export function isHandover(options: ClosureOptions): boolean {
+  return options.workshop_stage === "pickup" || options.workshop_stage === "delivery";
+}
+
+/** El trabajo en el galpón (E06-05): no se firma. */
+export function isBench(options: ClosureOptions): boolean {
+  return options.workshop_stage === "workshop";
+}
 
 /** Valor de los selectores de falla y reparación para "Otro" (no es del catálogo). */
 export const OTHER = "__other__";
@@ -73,21 +84,30 @@ export type ClosureErrors = Partial<Record<ClosureField, string>>;
 
 /** Falla y reparación obligatorias: el tipo de trabajo las pide y el resultado es Resuelta. */
 export function failureRepairRequired(draft: ClosureDraft, options: ClosureOptions): boolean {
-  return options.requires_failure_repair && draft.outcome === "done";
+  // Retiro y devolución no las piden: eso se carga en el galpón (E06).
+  return options.requires_failure_repair && draft.outcome === "done" && !isHandover(options);
 }
 
-/** Con "No se pudo hacer" no se pregunta cómo quedó el equipo (E05-04, criterio 7). */
-export function asksEquipmentCondition(draft: ClosureDraft): boolean {
-  return draft.outcome !== "not_done";
+/**
+ * Con "No se pudo hacer" no se pregunta cómo quedó el equipo (E05-04, criterio 7), ni en
+ * el retiro o la devolución de taller (E06).
+ */
+export function asksEquipmentCondition(draft: ClosureDraft, options: ClosureOptions): boolean {
+  return draft.outcome !== "not_done" && !isHandover(options);
 }
 
-export function observationRequired(draft: ClosureDraft): boolean {
+export function observationRequired(draft: ClosureDraft, options: ClosureOptions): boolean {
   return (
     draft.failure === OTHER ||
     draft.repair === OTHER ||
-    (asksEquipmentCondition(draft) && draft.equipmentCondition === "working_with_notes") ||
+    (asksEquipmentCondition(draft, options) && draft.equipmentCondition === "working_with_notes") ||
     draft.outcome === "needs_revisit"
   );
+}
+
+/** El retiro o la devolución hechos se firman sí o sí: no se ofrece "no firma" (E06). */
+export function signatureMandatory(draft: ClosureDraft, options: ClosureOptions): boolean {
+  return isHandover(options) && draft.outcome === "done";
 }
 
 /** Reparaciones de la falla elegida. Con "Otro" o sin falla, ninguna de la lista. */
@@ -151,21 +171,31 @@ export function missingFields(
   } else if (required && draft.repair === "") {
     errors.repair_id = "Elegí la reparación.";
   }
-  if (draft.outcome !== null && asksEquipmentCondition(draft) && !draft.equipmentCondition) {
+  if (
+    draft.outcome !== null &&
+    asksEquipmentCondition(draft, options) &&
+    !draft.equipmentCondition
+  ) {
     errors.equipment_condition = "Elegí cómo quedó el equipo.";
   }
   const materialError = materialsError(draft, options);
   if (materialError) {
     errors.parts = materialError;
   }
-  if (observationRequired(draft) && !draft.observation.trim()) {
+  if (observationRequired(draft, options) && !draft.observation.trim()) {
     errors.observation =
       draft.outcome === "needs_revisit" ? "Escribí qué falta." : "Escribí una observación.";
   }
-  // E05-07, criterios 2 y 3: la firma con su nombre, o el motivo por el que no hay.
-  if (draft.noSignatureReason === null) {
+  // E05-07, criterios 2 y 3: la firma con su nombre, o el motivo por el que no hay. En el
+  // galpón no se firma; en el retiro o la devolución hechos, la firma es obligatoria (E06).
+  if (isBench(options)) {
+    return errors;
+  }
+  if (draft.noSignatureReason === null || signatureMandatory(draft, options)) {
     if (!signed) {
-      errors.signature = "Pedile la firma al cliente o elegí por qué no firma.";
+      errors.signature = signatureMandatory(draft, options)
+        ? "Pedile la firma al cliente: entrega o recibe el equipo."
+        : "Pedile la firma al cliente o elegí por qué no firma.";
     } else if (!draft.signerName.trim()) {
       errors.signer_name = "Escribí el nombre de quien firma.";
     }

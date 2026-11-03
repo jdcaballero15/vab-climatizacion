@@ -811,6 +811,19 @@ button:disabled {
   font-weight: 500;
 }
 
+/* Orden de taller (E06): qué etapa le toca a la escuadrilla. */
+.order-card__stage,
+.closure__stage {
+  margin: 0;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #c4b5fd;
+  border-radius: var(--radius-sm);
+  background: rgb(245 243 255 / 90%);
+  color: #5b21b6;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
 .closure__restored {
   margin: 0;
   padding: 0.75rem 1rem;
