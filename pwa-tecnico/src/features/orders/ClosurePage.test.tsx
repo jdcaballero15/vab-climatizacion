@@ -473,6 +473,19 @@ describe("ClosurePage", () => {
     });
   });
 
+  it("si el servidor falla no culpa a la señal, y el cierre queda pendiente", async () => {
+    stubApi(() => json({ detail: "Internal Server Error" }, 500));
+    renderClosure();
+    await screen.findByRole("button", { name: "Ana Ficticia" });
+    await fillResolved();
+    await click("Finalizar orden");
+
+    expect(
+      await screen.findByRole("heading", { name: /El servidor no pudo recibir el cierre/ }),
+    ).toHaveTextContent("avisá a la oficina");
+    expect(storedFor(USER_ID, ORDER_ID)?.status).toBe("pending");
+  });
+
   it("una clave usada en otra orden se cambia por una nueva", async () => {
     let calls = 0;
     const sent = stubApi(() => {

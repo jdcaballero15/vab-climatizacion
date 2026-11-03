@@ -180,6 +180,16 @@ describe("uploadPhotos", () => {
     expect(saved).toEqual([]);
   });
 
+  // Lo que pasó el 30/10: la API sin bucket configurado respondía 500 al confirmar.
+  it("si la API falla al confirmar, es un error del servidor y no de la señal", async () => {
+    stubFiles(undefined, () => json({ detail: "Internal Server Error" }, 500));
+
+    const error = await uploadPhotos([photo({ fileId: FILE_ID })], () => {}).catch((e) => e);
+    expect(error).toBeInstanceOf(PhotoUploadError);
+    expect(error).toMatchObject({ offline: true, serverFault: true });
+    expect(error.message).not.toContain("conexión");
+  });
+
   it("si el bucket no recibió el archivo, el reintento la sube de nuevo", async () => {
     stubFiles(undefined, () =>
       json(

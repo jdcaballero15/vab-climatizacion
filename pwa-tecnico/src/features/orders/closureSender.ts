@@ -12,17 +12,23 @@ import { PhotoUploadError, SIGNATURE, uploadOne, uploadPhotos } from "./photos";
 type Closure = components["schemas"]["ClosureTechnicianOut"];
 
 /**
- * Cómo terminó un envío. `offline`: sin señal o el servidor caído, queda pendiente.
+ * Cómo terminó un envío. `offline`: sin señal o el servidor caído, queda pendiente;
+ * `reason` dice cuál de las dos, para no culpar a la señal de un error del servidor.
  * `rejected`: la orden ya no está en curso. `invalid`: vuelve al formulario con el campo.
  */
 export type SendResult =
   | { kind: "closed"; closure: Closure }
-  | { kind: "offline" }
+  | { kind: "offline"; reason: OfflineReason }
   | { kind: "rejected"; stored: StoredClosure }
   | { kind: "invalid"; stored: StoredClosure };
 
 export const REJECTED_MESSAGE =
   "La oficina canceló o reasignó la orden, y el cierre no se pudo enviar.";
+
+export type OfflineReason = "network" | "server";
+
+const NETWORK = { kind: "offline", reason: "network" } as const;
+const SERVER = { kind: "offline", reason: "server" } as const;
 
 interface ApiErrorDetail {
   code?: string;
@@ -73,7 +79,7 @@ async function send(start: StoredClosure): Promise<SendResult> {
     if (error instanceof PhotoUploadError && !error.offline) {
       return invalid({ field: "photo_ids", message: error.message });
     }
-    return { kind: "offline" };
+    return uploadFailure(error);
   }
 
   // E05-07: con un motivo elegido, el trazo queda en el celular pero no se sube.
@@ -91,7 +97,7 @@ async function send(start: StoredClosure): Promise<SendResult> {
       if (error instanceof PhotoUploadError && !error.offline) {
         return invalid({ field: "signature", message: error.message });
       }
-      return { kind: "offline" };
+      return uploadFailure(error);
     }
   }
 
@@ -99,7 +105,7 @@ async function send(start: StoredClosure): Promise<SendResult> {
   try {
     result = await postClosure(closure, photoIds, signatureId);
   } catch {
-    return { kind: "offline" };
+    return NETWORK;
   }
   const { data, error, response } = result;
   if (data) {
@@ -129,7 +135,11 @@ async function send(start: StoredClosure): Promise<SendResult> {
       changes,
     );
   }
-  return { kind: "offline" };
+  return response.status >= 500 ? SERVER : NETWORK;
+}
+
+function uploadFailure(error: unknown): SendResult {
+  return error instanceof PhotoUploadError && error.serverFault ? SERVER : NETWORK;
 }
 
 function postClosure(closure: StoredClosure, photoIds: string[], signatureId: string | null) {

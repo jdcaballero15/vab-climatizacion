@@ -78,6 +78,26 @@ class Settings(BaseSettings):
             )
         return self
 
+    def require_storage(self) -> None:
+        """La API en producción no arranca con el bucket de MinIO local.
+
+        Sin esto arranca igual y recién fallan las fotos y firmas de los cierres. No va en el
+        validador: el cron de copias y los comandos de consola corren sin este bucket.
+        """
+        if self.app_env != "production":
+            return
+        fields = type(self).model_fields
+        missing = [
+            name.upper()
+            for name in ("s3_endpoint_url", "s3_access_key", "s3_secret_key")
+            if getattr(self, name) == fields[name].default
+        ]
+        if missing:
+            raise RuntimeError(
+                f"Falta configurar el bucket de archivos en producción: {', '.join(missing)} "
+                "(docs/workflow/despliegue.md)."
+            )
+
     @property
     def upload_allowed_type_list(self) -> list[str]:
         return [t.strip() for t in self.upload_allowed_types.split(",") if t.strip()]
