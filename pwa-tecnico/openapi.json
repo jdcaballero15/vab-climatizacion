@@ -4528,6 +4528,66 @@
           }
         }
       }
+    },
+    "/admin/search": {
+      "get": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Search",
+        "description": "Clientes y equipos por nombre, número, dirección, teléfono o código (E03-06).",
+        "operationId": "search_admin_search_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100,
+              "title": "Q"
+            }
+          },
+          {
+            "name": "include_deleted",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Deleted"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5043,6 +5103,48 @@
           "offset"
         ],
         "title": "ClientPage"
+      },
+      "ClientSearchOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "string",
+            "title": "Number"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "name",
+          "address",
+          "deleted"
+        ],
+        "title": "ClientSearchOut",
+        "description": "Un cliente encontrado (E03-06), con un domicilio para reconocerlo."
       },
       "ClientSegment": {
         "type": "string",
@@ -6421,6 +6523,93 @@
           "location_note"
         ],
         "title": "EquipmentCreate"
+      },
+      "EquipmentSearchOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "internal_code": {
+            "type": "string",
+            "title": "Internal Code"
+          },
+          "location_note": {
+            "type": "string",
+            "title": "Location Note"
+          },
+          "equipment_type_name": {
+            "type": "string",
+            "title": "Equipment Type Name"
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "client_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Id"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "site_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Label"
+          },
+          "site_address": {
+            "type": "string",
+            "title": "Site Address"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "internal_code",
+          "location_note",
+          "equipment_type_name",
+          "brand",
+          "model",
+          "client_id",
+          "client_name",
+          "site_label",
+          "site_address",
+          "deleted"
+        ],
+        "title": "EquipmentSearchOut",
+        "description": "Un equipo encontrado (E03-06), con su cliente y domicilio."
       },
       "EquipmentTechnicianOut": {
         "properties": {
@@ -7989,6 +8178,30 @@
         ],
         "title": "ReturnedFromCrewOut",
         "description": "Por qué volvió a Pendiente desde una escuadrilla (E05-08, criterio 5)."
+      },
+      "SearchOut": {
+        "properties": {
+          "clients": {
+            "items": {
+              "$ref": "#/components/schemas/ClientSearchOut"
+            },
+            "type": "array",
+            "title": "Clients"
+          },
+          "equipment": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentSearchOut"
+            },
+            "type": "array",
+            "title": "Equipment"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clients",
+          "equipment"
+        ],
+        "title": "SearchOut"
       },
       "SignatureIn": {
         "properties": {

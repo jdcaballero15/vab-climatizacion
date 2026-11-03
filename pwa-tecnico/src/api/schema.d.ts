@@ -1077,6 +1077,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search
+         * @description Clientes y equipos por nombre, número, dirección, teléfono o código (E03-06).
+         */
+        get: operations["search_admin_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1271,6 +1291,25 @@ export interface components {
             limit: number;
             /** Offset */
             offset: number;
+        };
+        /**
+         * ClientSearchOut
+         * @description Un cliente encontrado (E03-06), con un domicilio para reconocerlo.
+         */
+        ClientSearchOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: string;
+            /** Name */
+            name: string;
+            /** Address */
+            address: string | null;
+            /** Deleted */
+            deleted: boolean;
         };
         /**
          * ClientSegment
@@ -1728,6 +1767,40 @@ export interface components {
             serial_number?: string | null;
             /** Notes */
             notes?: string | null;
+        };
+        /**
+         * EquipmentSearchOut
+         * @description Un equipo encontrado (E03-06), con su cliente y domicilio.
+         */
+        EquipmentSearchOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Internal Code */
+            internal_code: string;
+            /** Location Note */
+            location_note: string;
+            /** Equipment Type Name */
+            equipment_type_name: string;
+            /** Brand */
+            brand: string | null;
+            /** Model */
+            model: string | null;
+            /**
+             * Client Id
+             * Format: uuid
+             */
+            client_id: string;
+            /** Client Name */
+            client_name: string;
+            /** Site Label */
+            site_label: string | null;
+            /** Site Address */
+            site_address: string;
+            /** Deleted */
+            deleted: boolean;
         };
         /** EquipmentTechnicianOut */
         EquipmentTechnicianOut: {
@@ -2275,6 +2348,13 @@ export interface components {
             not_done_reason: components["schemas"]["NotDoneReason"] | null;
             /** Observation */
             observation: string | null;
+        };
+        /** SearchOut */
+        SearchOut: {
+            /** Clients */
+            clients: components["schemas"]["ClientSearchOut"][];
+            /** Equipment */
+            equipment: components["schemas"]["EquipmentSearchOut"][];
         };
         /**
          * SignatureIn
@@ -5314,6 +5394,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DownloadOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_admin_search_get: {
+        parameters: {
+            query: {
+                q: string;
+                include_deleted?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchOut"];
                 };
             };
             /** @description Validation Error */
