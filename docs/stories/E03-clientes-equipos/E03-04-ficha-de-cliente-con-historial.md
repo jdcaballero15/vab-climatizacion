@@ -4,7 +4,7 @@ title: "Ficha de cliente con historial"
 epic: E03
 phase: 1
 priority: must
-status: ready
+status: done
 roles: [admin, owner]
 size: M
 areas: [backend, web-admin]
@@ -39,3 +39,11 @@ assumes: []
 - La escuadrilla sale de la asignación vigente o, si no hay, del último cierre.
 - El detalle del cierre reusa `GET /admin/orders/{id}/closure` y el componente `ClosureDetail` de Órdenes (E04-08). Hoy ese endpoint es solo de administración; dirección lo suma acá, con su test.
 - Web-admin: sección "Historial" en el detalle del cliente, debajo de Domicilios, Equipos y Contactos.
+
+## Avance
+
+Hecho el 2026-11-03:
+
+- Backend: `GET /admin/clients/{client_id}/orders` con los filtros de las notas, 20 por página por defecto (hasta 100), la más nueva primero por el evento de creación. El período compara días de Argentina. Cada orden trae número, fecha de creación, estado, tipo de trabajo, domicilio, equipo, escuadrilla (la asignada o la del último cierre) y `has_closure`. Administración y dirección; técnico 403; 404 `client_not_found`. `GET /admin/orders/{id}/closure` suma a dirección.
+- Web-admin: sección "Historial" en la ficha, con filtros (equipo, tipo de trabajo, desde y hasta), paginado de a 20, "Ver cierre" con el mismo detalle que Terminadas y mensajes sin tabla vacía. Los nombres de estado en singular pasaron a `ORDER_STATUS_LABELS` en `orders/labels.ts`.
+- Dirección no tiene todavía cómo abrir la ficha del cliente en web-admin (la ficha es de administración); el endpoint ya lo permite.

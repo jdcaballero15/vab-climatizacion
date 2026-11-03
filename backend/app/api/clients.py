@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Sequence
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -18,9 +19,11 @@ from app.api.schemas.client import (
     SiteCreate,
     SiteUpdate,
 )
+from app.api.schemas.work_order import ClientOrderPage
 from app.db.models.client import Client, ClientContact, ClientSegment
 from app.db.models.user import User, UserRole
 from app.services import clients as clients_service
+from app.services import work_orders as work_orders_service
 
 router = APIRouter(prefix="/admin/clients", tags=["clientes"])
 # Un domicilio se edita por su id, sin repetir el del cliente en la ruta.
@@ -28,6 +31,8 @@ sites_router = APIRouter(prefix="/admin/sites", tags=["clientes"])
 
 # Solo administración gestiona clientes; dirección los ve en la ficha (E03-04).
 AdminOnly = Annotated[User, Depends(require_role(UserRole.admin))]
+AdminOrOwner = Annotated[User, Depends(require_role(UserRole.admin, UserRole.owner))]
+HISTORY_PAGE_SIZE = 20
 
 
 @router.get("", response_model=ClientPage)
@@ -72,6 +77,35 @@ async def get_client(client_id: uuid.UUID, session: SessionDep, _: AdminOnly) ->
         return await clients_service.get_client(session, client_id)
     except clients_service.ClientNotFoundError:
         raise _client_not_found() from None
+
+
+@router.get("/{client_id}/orders", response_model=ClientOrderPage)
+async def list_client_orders(
+    client_id: uuid.UUID,
+    session: SessionDep,
+    _: AdminOrOwner,
+    equipment_id: uuid.UUID | None = None,
+    work_type_id: uuid.UUID | None = None,
+    created_from: date | None = None,
+    created_to: date | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = HISTORY_PAGE_SIZE,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> ClientOrderPage:
+    """Historial de órdenes del cliente, la más nueva primero (E03-04)."""
+    try:
+        items, total = await work_orders_service.list_for_client(
+            session,
+            client_id,
+            equipment_id=equipment_id,
+            work_type_id=work_type_id,
+            created_from=created_from,
+            created_to=created_to,
+            limit=limit,
+            offset=offset,
+        )
+    except clients_service.ClientNotFoundError:
+        raise _client_not_found() from None
+    return ClientOrderPage(items=items, total=total, limit=limit, offset=offset)
 
 
 @router.patch("/{client_id}", response_model=ClientAdminOut)

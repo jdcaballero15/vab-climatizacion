@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -11,6 +11,7 @@ from app.api.schemas.work_order import (
     AssignmentCreate,
     CancellationAdminOut,
     CancellationCreate,
+    ClientOrderOut,
     CompletedOut,
     CrewDoneOrdersTechnicianOut,
     CrewOrdersTechnicianOut,
@@ -280,6 +281,63 @@ async def list_by_status(
             cancelled_by_name,
             equipment,
             return_reason,
+        ) in rows
+    ]
+    return items, total
+
+
+async def list_for_client(
+    session: AsyncSession,
+    client_id: uuid.UUID,
+    *,
+    equipment_id: uuid.UUID | None,
+    work_type_id: uuid.UUID | None,
+    created_from: date | None,
+    created_to: date | None,
+    limit: int,
+    offset: int,
+) -> tuple[list[ClientOrderOut], int]:
+    """Historial de órdenes de un cliente para su ficha (E03-04). 404 si no existe."""
+    await clients_service.get_client(session, client_id)
+    rows, total = await WorkOrderRepository(session).list_for_client_page(
+        client_id,
+        equipment_id=equipment_id,
+        work_type_id=work_type_id,
+        created_from=created_from,
+        created_to=created_to,
+        limit=limit,
+        offset=offset,
+    )
+    items = [
+        ClientOrderOut(
+            id=order.id,
+            number=order.number,
+            created_at=created_at,
+            status=order.status,
+            work_type_name=work_type_name,
+            site_label=site_label,
+            site_address=site_address,
+            equipment=(
+                OrderEquipmentOut(
+                    id=equipment.id,
+                    internal_code=equipment.internal_code,
+                    location_note=equipment.location_note,
+                )
+                if equipment is not None
+                else None
+            ),
+            crew_name=crew_name,
+            has_closure=has_closure,
+        )
+        for (
+            order,
+            created_at,
+            work_type_name,
+            site_label,
+            site_address,
+            equipment,
+            crew_name,
+            has_closure,
         ) in rows
     ]
     return items, total

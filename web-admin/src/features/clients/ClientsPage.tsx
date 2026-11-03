@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { ClientContacts } from "./ClientContacts";
 import { ClientEquipment } from "./ClientEquipment";
+import { ClientHistory } from "./ClientHistory";
 import { ClientSites } from "./ClientSites";
 import { ClientForm } from "./ClientForm";
 import { EMPTY_CLIENT } from "./formValues";
@@ -54,6 +55,7 @@ function ClientDetail({ clientId, onClose }: { clientId: string; onClose: () => 
       <ClientSites clientId={id} />
       <ClientEquipment clientId={id} />
       <ClientContacts clientId={id} />
+      <ClientHistory clientId={id} />
     </section>
   );
 }

@@ -184,6 +184,30 @@ class OrderListPage(BaseModel):
     offset: int
 
 
+class ClientOrderOut(BaseModel):
+    """Una orden en el historial de la ficha del cliente (E03-04)."""
+
+    id: uuid.UUID
+    number: int
+    created_at: datetime
+    status: OrderStatus
+    work_type_name: str
+    site_label: str | None
+    site_address: str
+    equipment: OrderEquipmentOut | None
+    # La escuadrilla asignada o, si no tiene, la del último cierre.
+    crew_name: str | None
+    # Con cierre se puede abrir "Ver cierre" (Terminada, o que volvió a Pendientes).
+    has_closure: bool
+
+
+class ClientOrderPage(BaseModel):
+    items: list[ClientOrderOut]
+    total: int
+    limit: int
+    offset: int
+
+
 # extra="forbid": el estado y quién cancela los pone el sistema.
 class CancellationCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
