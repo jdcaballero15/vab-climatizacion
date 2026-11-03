@@ -58,9 +58,11 @@ from app.domain.work_order import (
     CancelReason,
     ClosureOutcome,
     OrderAction,
+    OrderKind,
     OrderSource,
     OrderStatus,
     WorkOrderEventType,
+    WorkshopStage,
     resolve_transition,
 )
 from app.services import catalog as catalog_service
@@ -136,7 +138,13 @@ async def create_work_order(
     if data.equipment_id is not None:
         await _check_equipment(session, data.equipment_id, data.client_site_id)
 
-    order = WorkOrder(status=OrderStatus.pending, source=OrderSource.manual, **data.model_dump())
+    order = WorkOrder(
+        status=OrderStatus.pending,
+        source=OrderSource.manual,
+        # E06-01: una de taller arranca en el retiro.
+        workshop_stage=WorkshopStage.pickup if data.kind == OrderKind.workshop else None,
+        **data.model_dump(),
+    )
     session.add(order)
     await session.flush()
     event = WorkOrderEvent(
@@ -267,6 +275,7 @@ async def get_detail(session: AsyncSession, order_id: uuid.UUID) -> WorkOrderDet
         id=order.id,
         number=order.number,
         kind=order.kind,
+        workshop_stage=order.workshop_stage,
         status=order.status,
         # Del evento de creación (ADR 0005), no de la columna técnica created_at.
         created_at=await repository.created_at(order.id) or order.created_at,
@@ -307,20 +316,23 @@ async def get_detail(session: AsyncSession, order_id: uuid.UUID) -> WorkOrderDet
 
 async def list_by_status(
     session: AsyncSession,
-    status: OrderStatus,
+    status: OrderStatus | None,
     *,
+    in_workshop: bool = False,
     billing: BillingStatus | None = None,
     limit: int,
     offset: int,
 ) -> tuple[list[OrderListItemOut], int]:
+    """Órdenes en un estado o, con in_workshop, los equipos en el galpón (E06-07)."""
     rows, total = await WorkOrderRepository(session).list_by_status_page(
-        status, billing=billing, limit=limit, offset=offset
+        status, in_workshop=in_workshop, billing=billing, limit=limit, offset=offset
     )
     items = [
         OrderListItemOut(
             id=order.id,
             number=order.number,
             status=order.status,
+            workshop_stage=order.workshop_stage,
             client_id=order.client_id,
             client_name=client_name,
             client_site_id=order.client_site_id,
@@ -331,7 +343,7 @@ async def list_by_status(
             created_at=created_at,
             returned=(
                 _returned(closure, assigned_at, crew_name, crew_id)
-                if status == OrderStatus.pending
+                if order.status == OrderStatus.pending
                 else None
             ),
             # La última asignación de una orden Asignada o En curso es la vigente.
@@ -339,7 +351,7 @@ async def list_by_status(
                 CurrentAssignmentOut(
                     crew_name=crew_name, scheduled_for=scheduled_for, return_reason=return_reason
                 )
-                if status in CREW_OPEN_STATUSES and crew_name and scheduled_for
+                if order.status in CREW_OPEN_STATUSES and crew_name and scheduled_for
                 else None
             ),
             cancellation=(
@@ -350,7 +362,7 @@ async def list_by_status(
             # La última asignación de una Terminada es la de la escuadrilla que la cerró.
             completed=(
                 CompletedOut(crew_name=crew_name, closed_at=closure.closed_at)
-                if status == OrderStatus.done and closure is not None
+                if order.status == OrderStatus.done and closure is not None
                 else None
             ),
             equipment=(
@@ -504,6 +516,7 @@ async def list_done_for_crew_user(session: AsyncSession, user: User) -> CrewDone
             DoneOrderTechnicianOut(
                 id=order.id,
                 number=order.number,
+                workshop_stage=closure.workshop_stage,
                 work_type_name=work_type_name,
                 description=order.description,
                 client_name=client_name,
@@ -591,6 +604,7 @@ async def _technician_orders(
             id=order.id,
             number=order.number,
             status=order.status,
+            workshop_stage=order.workshop_stage,
             work_type_name=work_type_name,
             description=order.description,
             client_name=client_name,

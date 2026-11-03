@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from datetime import date, datetime, time, timedelta
 from typing import Any
 
-from sqlalchemy import ColumnElement, Row, func, select, true, update
+from sqlalchemy import ColumnElement, Row, and_, func, select, true, update
 from sqlalchemy.orm import InstrumentedAttribute, aliased
 
 from app.core.dates import BUSINESS_TZ
@@ -29,8 +29,10 @@ from app.db.repository import BaseRepository
 from app.domain.work_order import (
     CREW_OPEN_STATUSES,
     BillingStatus,
+    OrderKind,
     OrderStatus,
     WorkOrderEventType,
+    WorkshopStage,
 )
 
 # Orden abierta de una escuadrilla: orden, fecha prevista, cliente, domicilio, tipo de
@@ -124,8 +126,9 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
 
     async def list_by_status_page(
         self,
-        status: OrderStatus,
+        status: OrderStatus | None,
         *,
+        in_workshop: bool = False,
         billing: BillingStatus | None = None,
         limit: int,
         offset: int,
@@ -139,7 +142,19 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         saber si volvió de una escuadrilla, E05-08, o a quién está asignada) y su
         cancelación (E04-07).
         """
-        filtered = self._select().where(self.model.status == status)
+        # En el galpón (E06-07): de taller, con el retiro hecho y sin devolver todavía.
+        scope = (
+            and_(
+                self.model.kind == OrderKind.workshop,
+                self.model.workshop_stage.in_([WorkshopStage.workshop, WorkshopStage.delivery]),
+                self.model.status.in_(
+                    [OrderStatus.pending, OrderStatus.assigned, OrderStatus.in_progress]
+                ),
+            )
+            if in_workshop
+            else self.model.status == status
+        )
+        filtered = self._select().where(scope)
         billing_filter = self._billing_filter(billing)
         if billing_filter is not None:
             filtered = filtered.where(billing_filter)
@@ -166,7 +181,9 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         )
         cancelled_by = aliased(User)
         order_by: tuple[ColumnElement[Any] | InstrumentedAttribute[Any], ...]
-        if status in CREW_OPEN_STATUSES:
+        if in_workshop:
+            order_by = (self.model.workshop_stage, self.model.number)
+        elif status in CREW_OPEN_STATUSES:
             order_by = (last_assignment.c.scheduled_for, self.model.number)
         elif status == OrderStatus.cancelled:
             order_by = (WorkOrderCancellation.cancelled_at.desc(), self.model.number.desc())
@@ -211,7 +228,7 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             .outerjoin(cancelled_by, cancelled_by.id == WorkOrderCancellation.cancelled_by)
             # Un equipo dado de baja después sigue siendo el de la orden.
             .outerjoin(Equipment, Equipment.id == self.model.equipment_id)
-            .where(self.model.status == status, self.model.deleted_at.is_(None))
+            .where(scope, self.model.deleted_at.is_(None))
             .where(billing_filter if billing_filter is not None else true())
             .order_by(*order_by)
             .limit(limit)

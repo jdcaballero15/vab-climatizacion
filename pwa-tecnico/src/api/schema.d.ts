@@ -642,6 +642,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/orders/in-workshop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List In Workshop
+         * @description Equipos en el galpón: de taller, retirados y sin devolver (E06-07).
+         */
+        get: operations["list_in_workshop_admin_orders_in_workshop_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/orders/{order_id}": {
         parameters: {
             query?: never;
@@ -1438,7 +1458,7 @@ export interface components {
              * Outcome
              * @enum {string}
              */
-            outcome: "done" | "needs_revisit" | "not_done";
+            outcome: "done" | "needs_pickup" | "needs_revisit" | "not_done";
             /** Technician Ids */
             technician_ids: string[];
             /**
@@ -1485,6 +1505,7 @@ export interface components {
             failures: components["schemas"]["FailureChoiceTechnicianOut"][];
             /** Parts */
             parts: components["schemas"]["PartChoiceTechnicianOut"][];
+            workshop_stage: components["schemas"]["WorkshopStage"] | null;
         };
         /**
          * ClosureOutcome
@@ -1708,6 +1729,7 @@ export interface components {
             address: string;
             outcome: components["schemas"]["ClosureOutcome"];
             not_done_reason: components["schemas"]["NotDoneReason"] | null;
+            workshop_stage: components["schemas"]["WorkshopStage"] | null;
             /**
              * Closed At
              * Format: date-time
@@ -2089,6 +2111,7 @@ export interface components {
             equipment: components["schemas"]["EquipmentTechnicianOut"] | null;
             /** Return Reason */
             return_reason: string | null;
+            workshop_stage: components["schemas"]["WorkshopStage"] | null;
             /** Requester Area */
             requester_area: string | null;
             /** Tasks */
@@ -2129,6 +2152,7 @@ export interface components {
             /** Number */
             number: number;
             status: components["schemas"]["OrderStatus"];
+            workshop_stage: components["schemas"]["WorkshopStage"] | null;
             /**
              * Client Id
              * Format: uuid
@@ -2218,6 +2242,7 @@ export interface components {
             equipment: components["schemas"]["EquipmentTechnicianOut"] | null;
             /** Return Reason */
             return_reason: string | null;
+            workshop_stage: components["schemas"]["WorkshopStage"] | null;
         };
         /**
          * PartAdminOut
@@ -2663,6 +2688,7 @@ export interface components {
             requester_area: string | null;
             /** Equipment Id */
             equipment_id: string | null;
+            workshop_stage: components["schemas"]["WorkshopStage"] | null;
             /**
              * Created At
              * Format: date-time
@@ -2695,6 +2721,8 @@ export interface components {
             requester_area?: string | null;
             /** Equipment Id */
             equipment_id?: string | null;
+            /** @default on_site */
+            kind: components["schemas"]["OrderKind"];
         };
         /**
          * WorkOrderDetailAdminOut
@@ -2711,6 +2739,7 @@ export interface components {
             /** Number */
             number: number;
             kind: components["schemas"]["OrderKind"];
+            workshop_stage: components["schemas"]["WorkshopStage"] | null;
             status: components["schemas"]["OrderStatus"];
             /**
              * Created At
@@ -2764,6 +2793,12 @@ export interface components {
             /** Requires Failure Repair */
             requires_failure_repair?: boolean | null;
         };
+        /**
+         * WorkshopStage
+         * @description Etapa de una orden de taller (ADR 0007, E06). Van en fila: retiro, galpón, devolución.
+         * @enum {string}
+         */
+        WorkshopStage: "pickup" | "workshop" | "delivery";
     };
     responses: never;
     parameters: never;
@@ -4563,6 +4598,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkOrderAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_in_workshop_admin_orders_in_workshop_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderListPage"];
                 };
             };
             /** @description Validation Error */

@@ -30,6 +30,29 @@ class OrderKind(StrEnum):
     workshop = "workshop"
 
 
+class WorkshopStage(StrEnum):
+    """Etapa de una orden de taller (ADR 0007, E06). Van en fila: retiro, galpón, devolución."""
+
+    pickup = "pickup"
+    workshop = "workshop"
+    delivery = "delivery"
+
+
+WORKSHOP_STAGE_LABELS = {
+    WorkshopStage.pickup: "Retiro",
+    WorkshopStage.workshop: "Galpón",
+    WorkshopStage.delivery: "Devolución",
+}
+
+# La que sigue al terminar una etapa. La devolución es la última: la orden queda Terminada.
+NEXT_WORKSHOP_STAGE = {
+    WorkshopStage.pickup: WorkshopStage.workshop,
+    WorkshopStage.workshop: WorkshopStage.delivery,
+}
+# Retiro y devolución se firman: el cliente entrega o recibe el equipo (sin DNI, 2026-11-03).
+SIGNED_WORKSHOP_STAGES = frozenset({WorkshopStage.pickup, WorkshopStage.delivery})
+
+
 class OrderSource(StrEnum):
     manual = "manual"
     maintenance = "maintenance"
@@ -158,6 +181,9 @@ class OrderAction(StrEnum):
     start = "start"
     close_done = "close_done"
     request_revisit = "request_revisit"
+    # Taller (E06): termina el retiro o el galpón y la orden vuelve a Pendiente para la
+    # etapa siguiente (opción A de Gonza, 2026-11-03).
+    complete_stage = "complete_stage"
     return_to_technician = "return_to_technician"
     invoice = "invoice"
     collect = "collect"
@@ -189,6 +215,7 @@ TRANSITIONS: tuple[Transition, ...] = (
     Transition(_A.start, _S.assigned, _S.in_progress, _TECH, _E.status_change),
     Transition(_A.close_done, _S.in_progress, _S.done, _TECH, _E.status_change),
     Transition(_A.request_revisit, _S.in_progress, _S.pending, _TECH, _E.status_change),
+    Transition(_A.complete_stage, _S.in_progress, _S.pending, _TECH, _E.status_change),
     Transition(
         _A.return_to_technician,
         _S.done,
@@ -224,6 +251,7 @@ ACTION_LABELS = {
     _A.start: "iniciar",
     _A.close_done: "cerrar",
     _A.request_revisit: "pedir otra visita",
+    _A.complete_stage: "terminar la etapa de",
     _A.return_to_technician: "devolver al técnico",
     _A.invoice: "facturar",
     _A.collect: "cobrar",

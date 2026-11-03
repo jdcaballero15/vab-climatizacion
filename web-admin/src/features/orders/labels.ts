@@ -3,9 +3,10 @@ import type {
   Cancellation,
   CancelReason,
   ClosureDetail,
-  ListableStatus,
   OrderChannel,
   OrderListItem,
+  OrderView,
+  WorkshopStage,
   ReturnedFromCrew,
   TimelineEntry,
 } from "./types";
@@ -29,13 +30,26 @@ export const ORDER_STATUS_LABELS: Record<OrderListItem["status"], string> = {
 };
 
 /** Plural, como se elige en el listado de Órdenes. */
-export const LIST_STATUS_LABELS: Record<ListableStatus, string> = {
+export const LIST_STATUS_LABELS: Record<OrderView, string> = {
   pending: "Pendientes",
   assigned: "Asignadas",
   in_progress: "En curso",
   done: "Terminadas",
   cancelled: "Canceladas",
+  in_workshop: "En el galpón",
 };
+
+/** Etapas de una orden de taller (E06), en el orden en que se hacen. */
+export const WORKSHOP_STAGE_LABELS: Record<WorkshopStage, string> = {
+  pickup: "Retiro",
+  workshop: "Galpón",
+  delivery: "Devolución",
+};
+
+/** "Taller · Retiro": la etapa que toca, o la última si ya está terminada. */
+export function workshopStageText(stage: WorkshopStage): string {
+  return `Taller · ${WORKSHOP_STAGE_LABELS[stage]}`;
+}
 
 // Lista a validar con la oficina (E04-07).
 export const CANCEL_REASON_LABELS: Record<CancelReason, string> = {

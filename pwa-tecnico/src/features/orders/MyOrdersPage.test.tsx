@@ -53,6 +53,7 @@ function order(overrides: Partial<Order> = {}): Order {
     },
     equipment: null,
     return_reason: null,
+    workshop_stage: null,
     ...overrides,
   };
 }
@@ -81,6 +82,7 @@ function doneOrder(overrides: Partial<DoneOrder> = {}): DoneOrder {
     address: "Calle 2",
     outcome: "done",
     not_done_reason: null,
+    workshop_stage: null,
     // 17:30 del 26/10 en Argentina, el día de TODAY.
     closed_at: "2026-10-26T20:30:00Z",
     ...overrides,

@@ -267,6 +267,7 @@ Table work_order {
   id uuid [pk]
   number bigint [unique, not null, note: 'Número correlativo legible']
   kind order_kind [not null, default: 'on_site']
+  workshop_stage workshop_stage [note: 'Taller (E06): etapa actual (pickup, workshop, delivery) o la última si está Terminada. CHECK: no nula solo si kind = workshop']
   source order_source [not null, default: 'manual']
   status order_status [not null, note: 'Derivado del último work_order_event, mantenido en la misma transacción']
   client_id uuid [ref: > client.id, not null]
@@ -328,6 +329,7 @@ Table work_order_closure {
   observation text
   no_signature_reason no_signature_reason [note: 'Por qué no hay firma (D-011, E05-07). Nulo si hay firma']
   no_signature_text varchar [note: 'Solo y obligatorio con no_signature_reason other']
+  workshop_stage workshop_stage [note: 'La etapa de taller que cerró (E06); nula en el lugar']
   idempotency_key uuid [unique, not null, note: 'Generada en el celular. Evita duplicados al sincronizar']
 }
 

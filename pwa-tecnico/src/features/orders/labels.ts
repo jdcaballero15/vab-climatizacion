@@ -62,3 +62,23 @@ export function outcomeLabel(outcome: ClosureOutcome): string {
 export function notDoneReasonLabel(reason: NotDoneReason): string {
   return NOT_DONE_REASONS.find(([value]) => value === reason)?.[1] ?? reason;
 }
+
+type WorkshopStage = components["schemas"]["WorkshopStage"];
+
+const WORKSHOP_STAGE_LABELS: Record<WorkshopStage, string> = {
+  pickup: "Retiro",
+  workshop: "Galpón",
+  delivery: "Devolución",
+};
+
+/** "Taller · Retiro": qué etapa de taller le toca a la escuadrilla (E06). */
+export function workshopStageText(stage: WorkshopStage): string {
+  return `Taller · ${WORKSHOP_STAGE_LABELS[stage]}`;
+}
+
+/** Cómo se dice "terminé" en cada etapa de taller (E06). */
+export const STAGE_DONE_LABELS: Record<WorkshopStage, string> = {
+  pickup: "Retiro hecho",
+  workshop: "Trabajo en el galpón terminado",
+  delivery: "Devolución hecha",
+};

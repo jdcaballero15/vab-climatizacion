@@ -26,6 +26,8 @@ PERMITIDAS = [
     (OrderStatus.assigned, OrderAction.start, TECH, OrderStatus.in_progress),
     (OrderStatus.in_progress, OrderAction.close_done, TECH, OrderStatus.done),
     (OrderStatus.in_progress, OrderAction.request_revisit, TECH, OrderStatus.pending),
+    # Taller (E06): terminar el retiro o el galpón vuelve a Pendiente para la etapa siguiente.
+    (OrderStatus.in_progress, OrderAction.complete_stage, TECH, OrderStatus.pending),
     (OrderStatus.done, OrderAction.return_to_technician, ADMIN, OrderStatus.assigned),
     (OrderStatus.done, OrderAction.invoice, ADMIN, OrderStatus.invoiced),
     (OrderStatus.invoiced, OrderAction.collect, ADMIN, OrderStatus.paid),

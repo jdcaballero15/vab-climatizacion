@@ -5,6 +5,7 @@ import {
   CircleX,
   Inbox,
   Plus,
+  Warehouse,
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
@@ -22,7 +23,7 @@ import { OrderCard, type CardAction } from "./OrderCard";
 import { OrderForm } from "./OrderForm";
 import { ReturnOrderForm } from "./ReturnOrderForm";
 import { UnassignOrderForm } from "./UnassignOrderForm";
-import type { BillingStatus, ListableStatus, OrderListItem } from "./types";
+import type { BillingStatus, ListableStatus, OrderListItem, OrderView } from "./types";
 import { PAGE_SIZE, useOrderCounts, useOrderList } from "./useOrders";
 
 type RowAction = {
@@ -36,14 +37,17 @@ const ASSIGNED_WORD: Record<AssignMode, string> = {
   reassign: "reasignada",
 };
 
-const STATUSES: { status: ListableStatus; icon: LucideIcon; hint: string }[] = [
+const STATUSES: { status: OrderView; icon: LucideIcon; hint: string }[] = [
   { status: "pending", icon: Inbox, hint: "Sin escuadrilla" },
   { status: "assigned", icon: CalendarClock, hint: "Esperando a la escuadrilla" },
   { status: "in_progress", icon: Activity, hint: "La escuadrilla está trabajando" },
   { status: "done", icon: CircleCheck, hint: "Cerradas, para revisar" },
   { status: "cancelled", icon: CircleX, hint: "No se van a hacer" },
+  { status: "in_workshop", icon: Warehouse, hint: "Retirados, sin devolver" },
 ];
-const KPI_STATUSES = STATUSES.filter(({ status }) => status !== "cancelled");
+const KPI_STATUSES = STATUSES.filter(
+  ({ status }) => status !== "cancelled" && status !== "in_workshop",
+);
 
 /** La acción más común de cada estado va a la vista; el resto, al menú de tres puntos. */
 function cardActions(
@@ -128,7 +132,7 @@ function cardActions(
  * (E04-08); las canceladas se consultan sin acciones.
  */
 export function OrdersPage() {
-  const [status, setStatus] = useState<ListableStatus>("pending");
+  const [status, setStatus] = useState<OrderView>("pending");
   const [offset, setOffset] = useState(0);
   // Filtro de cobro de las terminadas (E04-14).
   const [billing, setBilling] = useState<BillingStatus | "">("");
@@ -142,7 +146,7 @@ export function OrdersPage() {
   const items = page.data?.items ?? [];
   const statusName = LIST_STATUS_LABELS[status].toLowerCase();
 
-  function choose(next: ListableStatus) {
+  function choose(next: OrderView) {
     setStatus(next);
     setOffset(0);
     setAction(null);
@@ -355,9 +359,12 @@ export function OrdersPage() {
             <>
               <ul className="order-grid" aria-labelledby="orders-list-title">
                 {items.map((order) => {
+                  // En el galpón se mezclan estados: cada tarjeta, con las acciones del suyo.
+                  const cardStatus =
+                    status === "in_workshop" ? (order.status as ListableStatus) : status;
                   const { primary, more } = cardActions(
                     order,
-                    status,
+                    cardStatus,
                     action,
                     (kind) => {
                       setNotice(null);

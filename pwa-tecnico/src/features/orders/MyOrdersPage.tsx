@@ -6,7 +6,14 @@ import type { components } from "../../api/schema";
 import type { StoredClosure } from "./closureDrafts";
 import type { ClosedNotice } from "./ClosurePage";
 import { relativeMoment } from "./dates";
-import { dueLabel, notDoneReasonLabel, outcomeLabel, statusLabel } from "./labels";
+import {
+  dueLabel,
+  notDoneReasonLabel,
+  outcomeLabel,
+  statusLabel,
+  STAGE_DONE_LABELS,
+  workshopStageText,
+} from "./labels";
 import { useStoredClosures } from "./useClosureDrafts";
 import { useDoneOrders, useMyOrders } from "./useMyOrders";
 
@@ -226,7 +233,9 @@ function DoneCard({ order, today }: { order: DoneOrder; today: string }) {
           <span>{order.work_type_name}</span>
         </span>
         <span className={`order-card__outcome order-card__outcome--${order.outcome}`}>
-          {outcomeLabel(order.outcome)}
+          {order.workshop_stage && order.outcome === "done"
+            ? STAGE_DONE_LABELS[order.workshop_stage]
+            : outcomeLabel(order.outcome)}
         </span>
       </div>
       {order.not_done_reason && (
@@ -356,6 +365,9 @@ function OrderCard({ order, today, closure }: OrderCardProps) {
         </div>
         {order.return_reason && (
           <p className="order-card__returned">La oficina la devolvió: {order.return_reason}</p>
+        )}
+        {order.workshop_stage && (
+          <p className="order-card__stage">{workshopStageText(order.workshop_stage)}</p>
         )}
         {order.description && <p className="order-card__description">{order.description}</p>}
         <div className="order-card__row">

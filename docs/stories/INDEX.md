@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 124 historias.** done: 47, draft: 66, icebox: 8, in_progress: 3
+**Total: 124 historias.** done: 55, draft: 58, icebox: 8, in_progress: 3
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -102,14 +102,14 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
-| [E06-01](E06-taller/E06-01-crear-una-orden-de-taller-desde-la-oficina.md) | Crear una orden de taller desde la oficina | Debe | M | draft | admin | - | - | E04-02 |
-| [E06-02](E06-taller/E06-02-convertir-una-orden-en-el-lugar-en-orden-de-taller.md) | Convertir una orden en el lugar en orden de taller | Debe | M | draft | technician, admin | - | - | E05-08, E06-01 |
-| [E06-03](E06-taller/E06-03-asignar-cada-etapa-a-un-tecnico.md) | Asignar cada etapa a una escuadrilla | Debe | S | draft | admin | - | - | E06-01, E04-03 |
-| [E06-04](E06-taller/E06-04-registrar-el-retiro-del-equipo-con-firma-del-cliente.md) | Registrar el retiro del equipo con firma del cliente | Debe | M | draft | technician | - | - | E06-03, E05-07 |
-| [E06-05](E06-taller/E06-05-registrar-el-trabajo-en-taller.md) | Registrar el trabajo en taller | Debe | M | draft | technician | - | - | E06-04, E05-05 |
-| [E06-06](E06-taller/E06-06-registrar-la-devolucion-del-equipo-con-firma-del-client.md) | Registrar la devolución del equipo con firma del cliente | Debe | M | draft | technician | - | - | E06-05, E05-07 |
-| [E06-07](E06-taller/E06-07-ver-que-equipos-estan-en-el-galpon-y-en-que-etapa.md) | Ver qué equipos están en el galpón y en qué etapa | Debe | S | draft | admin, owner | - | - | E06-04 |
-| [E06-08](E06-taller/E06-08-estado-calculado-y-facturacion-unica-de-la-orden-de-tal.md) | Estado calculado y facturación única de la orden de taller | Debe | M | draft | admin | - | - | E06-06, E04-08 |
+| [E06-01](E06-taller/E06-01-crear-una-orden-de-taller-desde-la-oficina.md) | Crear una orden de taller desde la oficina | Debe | M | done | admin | - | - | E04-02 |
+| [E06-02](E06-taller/E06-02-convertir-una-orden-en-el-lugar-en-orden-de-taller.md) | Convertir una orden en el lugar en orden de taller | Debe | M | done | technician, admin | - | - | E05-08, E06-01 |
+| [E06-03](E06-taller/E06-03-asignar-cada-etapa-a-un-tecnico.md) | Asignar cada etapa a una escuadrilla | Debe | S | done | admin | - | - | E06-01, E04-03 |
+| [E06-04](E06-taller/E06-04-registrar-el-retiro-del-equipo-con-firma-del-cliente.md) | Registrar el retiro del equipo con firma del cliente | Debe | M | done | technician | - | - | E06-03, E05-07 |
+| [E06-05](E06-taller/E06-05-registrar-el-trabajo-en-taller.md) | Registrar el trabajo en taller | Debe | M | done | technician | - | - | E06-04, E05-05 |
+| [E06-06](E06-taller/E06-06-registrar-la-devolucion-del-equipo-con-firma-del-client.md) | Registrar la devolución del equipo con firma del cliente | Debe | M | done | technician | - | - | E06-05, E05-07 |
+| [E06-07](E06-taller/E06-07-ver-que-equipos-estan-en-el-galpon-y-en-que-etapa.md) | Ver qué equipos están en el galpón y en qué etapa | Debe | S | done | admin, owner | - | - | E06-04 |
+| [E06-08](E06-taller/E06-08-estado-calculado-y-facturacion-unica-de-la-orden-de-tal.md) | Estado calculado y facturación única de la orden de taller | Debe | M | done | admin | - | - | E06-06, E04-08 |
 
 ## E07 Mantenimiento preventivo
 

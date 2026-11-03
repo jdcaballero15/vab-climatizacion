@@ -37,6 +37,7 @@ function detail(overrides: Partial<OrderDetail> = {}): OrderDetail {
     },
     tasks: ["Diagnosticar la falla", "Probar el funcionamiento"],
     return_reason: null,
+    workshop_stage: null,
     ...overrides,
   };
 }

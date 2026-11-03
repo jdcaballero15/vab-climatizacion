@@ -11,7 +11,10 @@ import {
   OTHER,
   asksEquipmentCondition,
   failureRepairRequired,
+  isBench,
+  isHandover,
   missingFields,
+  signatureMandatory,
   observationRequired,
   repairsFor,
   restoreDraft,
@@ -32,7 +35,13 @@ import {
 } from "./closureDrafts";
 import { schedulePendingClosures } from "./closureRetry";
 import { sendClosure } from "./closureSender";
-import { EQUIPMENT_CONDITIONS, NOT_DONE_REASONS, NO_SIGNATURE_REASONS } from "./labels";
+import {
+  EQUIPMENT_CONDITIONS,
+  NOT_DONE_REASONS,
+  NO_SIGNATURE_REASONS,
+  STAGE_DONE_LABELS,
+  workshopStageText,
+} from "./labels";
 import { MAX_PHOTOS, PhotoUploadError, compressImage, type ClosurePhoto } from "./photos";
 import { useStoredClosure } from "./useClosureDrafts";
 import { useClosureOptions } from "./useClosureOptions";
@@ -414,7 +423,11 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
       const notice =
         result.closure.order_status === "done"
           ? `Orden${number} cerrada.`
-          : `Orden${number} devuelta a la oficina.`;
+          : result.closure.outcome === "done"
+            ? `Etapa terminada: la orden${number} vuelve a la oficina para la siguiente.`
+            : result.closure.outcome === "needs_pickup"
+              ? `Orden${number} pasa a taller: la oficina asigna el retiro.`
+              : `Orden${number} devuelta a la oficina.`;
       navigate("/", { replace: true, state: { notice } satisfies ClosedNotice });
     } else if (result.kind === "offline") {
       // E05-13, criterio 3: queda pendiente y se manda solo cuando vuelve la señal.
@@ -455,6 +468,9 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
   };
 
   const busy = sending;
+  const stage = options.workshop_stage;
+  const handover = isHandover(options);
+  const mustSign = signatureMandatory(draft, options);
   const required = failureRepairRequired(draft, options);
   const repairs = repairsFor(draft, options);
   let step = 0;
@@ -484,6 +500,14 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
             Se recuperó lo que habías cargado en este celular.
           </p>
         )
+      )}
+      {stage && (
+        <p className="closure__stage" role="note">
+          {workshopStageText(stage)}.{" "}
+          {stage === "delivery"
+            ? "Al terminar, la orden queda cerrada."
+            : "Al terminar, vuelve a la oficina para la etapa siguiente."}
+        </p>
       )}
       <Section id="closure-technicians" error={errors.technician_ids}>
         {title("¿Quiénes fueron?")}
@@ -532,9 +556,16 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
           <Choice
             single
             pressed={draft.outcome === "done"}
-            onClick={() => update({ outcome: "done", notDoneReason: null })}
+            onClick={() =>
+              update({
+                outcome: "done",
+                notDoneReason: null,
+                // E06: el retiro y la devolución hechos se firman; no hay "no firma".
+                ...(handover ? { noSignatureReason: null, noSignatureText: "" } : {}),
+              })
+            }
           >
-            Resuelta
+            {stage ? STAGE_DONE_LABELS[stage] : "Resuelta"}
           </Choice>
           <Choice
             single
@@ -543,6 +574,16 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
           >
             Requiere otra visita
           </Choice>
+          {/* E06-02: la misma orden pasa a taller; la oficina asigna el retiro. */}
+          {!stage && (
+            <Choice
+              single
+              pressed={draft.outcome === "needs_pickup"}
+              onClick={() => update({ outcome: "needs_pickup", notDoneReason: null })}
+            >
+              Requiere retiro al galpón
+            </Choice>
+          )}
         </div>
         <p className="closure__group">No se pudo hacer</p>
         <div className="closure__choices">
@@ -615,7 +656,7 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
         )}
       </Section>
 
-      {asksEquipmentCondition(draft) && (
+      {asksEquipmentCondition(draft, options) && (
         <Section id="closure-equipment" error={errors.equipment_condition}>
           {title("¿Cómo quedó el equipo?")}
           <div className="closure__choices">
@@ -656,7 +697,11 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
       </Section>
 
       <Section id="closure-observation" error={errors.observation}>
-        {title("Observación", optionalTag(observationRequired(draft)), "closure-observation-title")}
+        {title(
+          "Observación",
+          optionalTag(observationRequired(draft, options)),
+          "closure-observation-title",
+        )}
         {draft.outcome === "needs_revisit" && (
           <p className="closure__hint">Contá qué falta para terminar el trabajo.</p>
         )}
@@ -671,54 +716,66 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
         />
       </Section>
 
-      <Section
-        id="closure-signature"
-        error={errors.signature ?? errors.signer_name ?? errors.no_signature_text}
-      >
-        {title("Firma del cliente")}
-        {draft.noSignatureReason === null && (
-          <>
-            <SignaturePad
-              blob={signature?.blob ?? null}
-              disabled={busy}
-              invalid={Boolean(errors.signature)}
-              onChange={changeSignature}
-            />
-            <label className="closure__other">
-              Aclaración (nombre de quien firma)
-              <input
-                type="text"
-                className="closure__input"
-                maxLength={255}
-                autoComplete="off"
-                value={draft.signerName}
-                aria-invalid={errors.signer_name ? true : undefined}
-                onChange={(event) => update({ signerName: event.target.value })}
+      {!isBench(options) && (
+        <Section
+          id="closure-signature"
+          error={errors.signature ?? errors.signer_name ?? errors.no_signature_text}
+        >
+          {title(
+            stage === "pickup"
+              ? "Firma del cliente (entrega el equipo)"
+              : stage === "delivery"
+                ? "Firma del cliente (recibe el equipo)"
+                : "Firma del cliente",
+          )}
+          {(draft.noSignatureReason === null || mustSign) && (
+            <>
+              <SignaturePad
+                blob={signature?.blob ?? null}
+                disabled={busy}
+                invalid={Boolean(errors.signature)}
+                onChange={changeSignature}
               />
-            </label>
-          </>
-        )}
-        <p className="closure__group">Si no firma, elegí por qué</p>
-        <div className="closure__choices">
-          {NO_SIGNATURE_REASONS.map(([reason, label]) => (
-            <Choice
-              key={reason}
-              single
-              pressed={draft.noSignatureReason === reason}
-              onClick={() => chooseNoSignature(reason)}
-            >
-              {label}
-            </Choice>
-          ))}
-        </div>
-        {draft.noSignatureReason === "other" && (
-          <OtherText
-            label="¿Por qué no firma?"
-            value={draft.noSignatureText}
-            onChange={(noSignatureText) => update({ noSignatureText })}
-          />
-        )}
-      </Section>
+              <label className="closure__other">
+                Aclaración (nombre de quien firma)
+                <input
+                  type="text"
+                  className="closure__input"
+                  maxLength={255}
+                  autoComplete="off"
+                  value={draft.signerName}
+                  aria-invalid={errors.signer_name ? true : undefined}
+                  onChange={(event) => update({ signerName: event.target.value })}
+                />
+              </label>
+            </>
+          )}
+          {!mustSign && (
+            <>
+              <p className="closure__group">Si no firma, elegí por qué</p>
+              <div className="closure__choices">
+                {NO_SIGNATURE_REASONS.map(([reason, label]) => (
+                  <Choice
+                    key={reason}
+                    single
+                    pressed={draft.noSignatureReason === reason}
+                    onClick={() => chooseNoSignature(reason)}
+                  >
+                    {label}
+                  </Choice>
+                ))}
+              </div>
+              {draft.noSignatureReason === "other" && (
+                <OtherText
+                  label="¿Por qué no firma?"
+                  value={draft.noSignatureText}
+                  onChange={(noSignatureText) => update({ noSignatureText })}
+                />
+              )}
+            </>
+          )}
+        </Section>
+      )}
 
       {errorList.length > 0 && (
         <div className="closure__missing" role="alert">
@@ -741,7 +798,9 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
           ? "Enviando…"
           : draft.outcome === "not_done"
             ? "Cerrar como no realizada"
-            : "Finalizar orden"}
+            : stage && draft.outcome === "done" && stage !== "delivery"
+              ? "Terminar la etapa"
+              : "Finalizar orden"}
       </button>
     </form>
   );

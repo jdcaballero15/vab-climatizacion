@@ -50,16 +50,16 @@ stateDiagram-v2
 
 ## Órdenes de taller (retiro, taller y devolución)
 
-Una orden `workshop` tiene tres etapas con avance propio. El estado de la orden se calcula así:
+Una orden `workshop` tiene tres etapas **en fila** (decisión del 2026-11-03, nota en el ADR 0007): retiro, galpón y devolución. `work_order.workshop_stage` dice cuál toca. Cada etapa se asigna, se inicia y se cierra como una orden en el lugar:
 
-| Situación de las etapas | Estado de la orden |
+| Cierre de la etapa | Efecto |
 |---|---|
-| Ninguna etapa asignada | Pendiente |
-| Alguna etapa asignada, ninguna iniciada | Asignada |
-| Alguna etapa iniciada o terminada, la devolución sin terminar | En curso |
-| Devolución terminada | Terminada |
+| Retiro hecho | Vuelve a `Pendiente` con la etapa Galpón (acción `complete_stage`), sin escuadrilla |
+| Trabajo en el galpón terminado | Vuelve a `Pendiente` con la etapa Devolución |
+| Devolución hecha | `Terminada` |
+| Requiere otra visita o No se pudo hacer | Vuelve a `Pendiente` en la misma etapa |
 
-Retiro y devolución exigen firma del cliente (nombre y DNI). La orden se factura una sola vez, al quedar `Terminada`.
+Retiro y devolución hechos exigen firma y nombre del cliente (sin DNI); el galpón no se firma. La orden se factura una sola vez, al quedar `Terminada`. "En el galpón" son las de taller con el retiro hecho y la devolución sin hacer.
 
 ## Cierre de la escuadrilla y resultados
 
