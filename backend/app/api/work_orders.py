@@ -18,6 +18,7 @@ from app.api.schemas.work_order import (
     UnassignmentCreate,
     WorkOrderAdminOut,
     WorkOrderCreate,
+    WorkOrderDetailAdminOut,
 )
 from app.db.models.user import User, UserRole
 from app.db.models.work_order import WorkOrderAssignment
@@ -122,7 +123,8 @@ _ASSIGNMENT_ERROR_FIELD: dict[type[Exception], str] = {
 
 # Solo administración crea órdenes; dirección las ve en el panel (E04-05).
 AdminOnly = Annotated[User, Depends(require_role(UserRole.admin))]
-# Dirección ve el cierre desde el historial del cliente (E03-04).
+# Dirección ve el cierre desde el historial del cliente (E03-04) y el detalle de una
+# orden (E04-06).
 AdminOrOwner = Annotated[User, Depends(require_role(UserRole.admin, UserRole.owner))]
 
 
@@ -180,6 +182,17 @@ async def list_work_orders(
         for item in items:
             item.billing = billings.get(item.id)
     return OrderListPage(items=items, total=total, limit=limit, offset=offset)
+
+
+@router.get("/{order_id}", response_model=WorkOrderDetailAdminOut)
+async def get_work_order_detail(
+    order_id: uuid.UUID, session: SessionDep, _: AdminOrOwner
+) -> WorkOrderDetailAdminOut:
+    """La orden con todos sus datos y su línea de tiempo (E04-06)."""
+    try:
+        return await work_orders_service.get_detail(session, order_id)
+    except work_orders_service.WorkOrderNotFoundError:
+        raise _error(404, "order_not_found", "No se encontró la orden.") from None
 
 
 @router.put("/{order_id}/billing", response_model=BillingAdminOut)

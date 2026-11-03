@@ -410,6 +410,40 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         result = await self.session.execute(stmt)
         return result.all()
 
+    async def timeline(self, order_id: uuid.UUID) -> Sequence[Row[WorkOrderEvent, str | None]]:
+        """Los eventos de la orden con el nombre de quién los hizo, del más viejo al más nuevo."""
+        stmt = (
+            select(WorkOrderEvent, User.full_name)
+            .outerjoin(User, User.id == WorkOrderEvent.actor_id)
+            .where(
+                WorkOrderEvent.work_order_id == order_id,
+                WorkOrderEvent.deleted_at.is_(None),
+            )
+            .order_by(WorkOrderEvent.occurred_at, WorkOrderEvent.id)
+        )
+        return (await self.session.execute(stmt)).all()
+
+    async def invoiced_billing(
+        self, order_id: uuid.UUID
+    ) -> Row[WorkOrderBilling, str | None] | None:
+        """El cobro marcado Facturada (E04-14) y quién lo marcó; nulo si no está facturada."""
+        stmt = (
+            select(WorkOrderBilling, User.full_name)
+            .outerjoin(User, User.id == WorkOrderBilling.updated_by)
+            .where(
+                WorkOrderBilling.work_order_id == order_id,
+                WorkOrderBilling.status == BillingStatus.invoiced,
+                WorkOrderBilling.deleted_at.is_(None),
+            )
+        )
+        return (await self.session.execute(stmt)).first()
+
+    async def has_closure(self, order_id: uuid.UUID) -> bool:
+        stmt = select(WorkOrderClosure.id).where(
+            WorkOrderClosure.work_order_id == order_id, WorkOrderClosure.deleted_at.is_(None)
+        )
+        return await self.session.scalar(stmt.limit(1)) is not None
+
     async def current_assignment(self, order_id: uuid.UUID) -> WorkOrderAssignment | None:
         stmt = select(WorkOrderAssignment).where(
             WorkOrderAssignment.work_order_id == order_id,

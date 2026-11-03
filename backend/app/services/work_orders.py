@@ -19,17 +19,22 @@ from app.api.schemas.work_order import (
     CurrentAssignmentOut,
     DoneOrderTechnicianOut,
     EquipmentTechnicianOut,
+    OrderDetailClientOut,
+    OrderDetailSiteOut,
     OrderDetailTechnicianOut,
     OrderEquipmentOut,
     OrderListItemOut,
     OrderTechnicianOut,
     ReturnedFromCrewOut,
     ReturnToCrewCreate,
+    TimelineEntryOut,
     UnassignmentCreate,
     WorkOrderAdminOut,
     WorkOrderCreate,
+    WorkOrderDetailAdminOut,
 )
 from app.core.dates import business_today, format_date
+from app.db.models.client import ClientSite
 from app.db.models.crew import Crew
 from app.db.models.equipment import Equipment
 from app.db.models.user import User
@@ -205,6 +210,99 @@ async def change_equipment(
         await session.refresh(order)
     created_at = await repo.created_at(order.id)
     return WorkOrderAdminOut.model_validate({**_columns(order), "created_at": created_at})
+
+
+async def get_detail(session: AsyncSession, order_id: uuid.UUID) -> WorkOrderDetailAdminOut:
+    """La orden con sus datos, escuadrilla, cancelación y línea de tiempo (E04-06)."""
+    order = await get_work_order(session, order_id)
+    repository = WorkOrderRepository(session)
+    client = await clients_service.get_client(session, order.client_id)
+    site = await session.get(ClientSite, order.client_site_id)
+    if site is None:
+        # La orden apunta siempre a un domicilio (FK): no pasa con datos sanos.
+        raise WorkOrderNotFoundError
+    work_type = await catalog_service.get_work_type(session, order.work_type_id)
+    equipment = (
+        await EquipmentRepository(session).get(order.equipment_id, include_deleted=True)
+        if order.equipment_id is not None
+        else None
+    )
+    current = await repository.current_assignment(order.id)
+    crew = await CrewRepository(session).get(current.crew_id) if current is not None else None
+    cancellation = await session.scalar(
+        select(WorkOrderCancellation).where(
+            WorkOrderCancellation.work_order_id == order.id,
+            WorkOrderCancellation.deleted_at.is_(None),
+        )
+    )
+    cancelled_by = (
+        await session.get(User, cancellation.cancelled_by) if cancellation is not None else None
+    )
+    timeline = [
+        TimelineEntryOut(
+            occurred_at=event.occurred_at,
+            event_type=event.event_type,
+            from_status=event.from_status,
+            to_status=event.to_status,
+            actor_name=actor_name,
+            note=event.note,
+        )
+        for event, actor_name in await repository.timeline(order.id)
+    ]
+    billed = await repository.invoiced_billing(order.id)
+    if billed is not None:
+        billing, billed_by = billed
+        timeline.append(
+            TimelineEntryOut(
+                occurred_at=billing.updated_at,
+                event_type="billing_invoiced",
+                from_status=None,
+                to_status=None,
+                actor_name=billed_by,
+                note=f"Factura {billing.invoice_number}" if billing.invoice_number else None,
+            )
+        )
+        timeline.sort(key=lambda entry: entry.occurred_at)
+    return WorkOrderDetailAdminOut(
+        id=order.id,
+        number=order.number,
+        kind=order.kind,
+        status=order.status,
+        # Del evento de creación (ADR 0005), no de la columna técnica created_at.
+        created_at=await repository.created_at(order.id) or order.created_at,
+        client=OrderDetailClientOut(id=client.id, number=client.number, name=client.name),
+        site=OrderDetailSiteOut(label=site.label, address=site.address, reference=site.reference),
+        work_type_name=work_type.name,
+        equipment=(
+            OrderEquipmentOut(
+                id=equipment.id,
+                internal_code=equipment.internal_code,
+                location_note=equipment.location_note,
+            )
+            if equipment is not None
+            else None
+        ),
+        description=order.description,
+        channel=order.channel,
+        requester_name=order.requester_name,
+        requester_area=order.requester_area,
+        assignment=(
+            CurrentAssignmentOut(
+                crew_name=crew.name,
+                scheduled_for=current.scheduled_for,
+                return_reason=current.return_reason,
+            )
+            if current is not None and crew is not None
+            else None
+        ),
+        cancellation=(
+            _cancellation_out(cancellation, cancelled_by.full_name)
+            if cancellation is not None and cancelled_by is not None
+            else None
+        ),
+        has_closure=await repository.has_closure(order.id),
+        timeline=timeline,
+    )
 
 
 async def list_by_status(
