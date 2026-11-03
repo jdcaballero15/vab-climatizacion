@@ -52,7 +52,9 @@ jobs:
         working-directory: backend
     services:
       postgres:
-        image: postgres:16-alpine
+        # La misma versión que la base de Render (E00-07). El pg_dump del runner de GitHub
+        # pasó a ser el 18 el 2026-11-03: con una base 16 las copias no se restauran.
+        image: postgres:18-alpine
         env:
           POSTGRES_USER: ot
           POSTGRES_PASSWORD: ot
@@ -90,7 +92,7 @@ jobs:
             > "$RUNNER_TEMP/minio.log" 2>&1 &
           for i in $(seq 1 30); do curl -sf http://localhost:9000/minio/health/live && exit 0; sleep 1; done
           cat "$RUNNER_TEMP/minio.log"; exit 1
-      # Las copias de E00-07 usan pg_dump y pg_restore: tienen que ser de Postgres 16.
+      # Las copias de E00-07 usan pg_dump y pg_restore: de la misma versión que la base (18).
       - run: pg_dump --version && pg_restore --version
       - run: pytest
 
