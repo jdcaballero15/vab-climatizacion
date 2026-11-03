@@ -20,12 +20,12 @@ Los términos de negocio van en español. Entre paréntesis, el nombre usado en 
 | **Tarea** (`task`) | Subtarea predefinida de un tipo de trabajo |
 | **Equipo** (`equipment`) | Aparato del cliente sobre el que se trabaja (aire acondicionado, cámara, etc.) |
 | **Sitio** (`client_site`) | Domicilio o sucursal de un cliente donde hay equipos |
-| **Abonado, abono** (`maintenance_plan`) | Cliente con contrato de mantenimiento mensual que incluye ciertos equipos |
+| **Abonado, abono** | Cliente con contrato de mantenimiento: sus equipos tienen un plan de mantenimiento |
+| **Plan de mantenimiento** (`maintenance_plan`) | De un equipo: cada cuántos meses se visita, la próxima visita y la escuadrilla que suele ir. Una semana antes de cada visita se genera la orden |
 | **Mantenimiento preventivo** | Visita programada con checklist según frecuencia y tipo de equipo |
 | **Checklist** (`checklist_template`) | Lista de tareas OK o No OK y mediciones con rango esperado |
 | **Medición** | Valor numérico (tensión, consumo) con unidad y rango. Fuera de rango obliga a observación |
-| **Corrida de mantenimiento** (`maintenance_run`) | Generación mensual automática de las órdenes de los abonados |
-| **Aprobación en bloque** | Administración aprueba todas las órdenes generadas de un mes de una vez |
+| **Corrida de mantenimiento** | Proceso de cada mañana que genera las órdenes de las visitas de la semana (también "Generar ahora") |
 | **Repuesto, material** (`part`) | Pieza que se usa en un trabajo. Hoy sin código |
 | **Depósito, camioneta** (`stock_location`) | Ubicaciones donde hay stock de repuestos |
 | **Movimiento de stock** (`stock_movement`) | Ingreso, transferencia, uso o ajuste. El stock es la suma de movimientos |

@@ -36,10 +36,18 @@ function missingFields(crewId: string, scheduledFor: string): string | null {
   return `Falta ${missing.length ? `${missing.join(", ")} y ${last}` : last}.`;
 }
 
-/** Al reprogramar, la misma escuadrilla y mañana; al reasignar, lo vigente. Se pueden cambiar. */
+/**
+ * Al reprogramar, la misma escuadrilla y mañana; una de mantenimiento, la escuadrilla del
+ * plan y el día de la visita (o hoy, si ya pasó). Se pueden cambiar.
+ */
 function initialValues(order: OrderListItem, mode: AssignMode): [string, string] {
   if (mode === "reprogram" && order.returned) {
     return [order.returned.crew_id, nextDay(businessToday())];
+  }
+  if (mode === "assign" && order.maintenance) {
+    const today = businessToday();
+    const due = order.maintenance.due_on;
+    return [order.maintenance.crew_id ?? "", due < today ? today : due];
   }
   return ["", ""];
 }

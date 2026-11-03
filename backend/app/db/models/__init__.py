@@ -3,6 +3,7 @@ from app.db.models.client import Client, ClientContact, ClientSegment, ClientSit
 from app.db.models.crew import Crew, FieldTechnician
 from app.db.models.equipment import Equipment
 from app.db.models.legacy_reference import LegacyReference
+from app.db.models.maintenance import MaintenancePlan
 from app.db.models.part import Part, PartPrice, PartUsage
 from app.db.models.refresh_token import RefreshToken
 from app.db.models.signature import Signature
@@ -30,6 +31,7 @@ __all__ = [
     "Failure",
     "FieldTechnician",
     "LegacyReference",
+    "MaintenancePlan",
     "Part",
     "PartPrice",
     "PartUsage",

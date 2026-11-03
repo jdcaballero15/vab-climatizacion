@@ -137,6 +137,11 @@ export function OrderCard({ order, primary, more, children }: OrderCardProps) {
                   Equipo {order.equipment.internal_code} · {order.equipment.location_note}
                 </span>
               )}
+              {order.maintenance && (
+                <span className="badge badge--maintenance">
+                  Mantenimiento · para el {formatDay(order.maintenance.due_on)}
+                </span>
+              )}
               {order.workshop_stage && (
                 <span className="badge badge--workshop">
                   {workshopStageText(order.workshop_stage)}

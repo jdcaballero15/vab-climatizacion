@@ -24,6 +24,7 @@ from app.api.schemas.work_order import (
     OrderDetailTechnicianOut,
     OrderEquipmentOut,
     OrderListItemOut,
+    OrderMaintenanceOut,
     OrderTechnicianOut,
     ReturnedFromCrewOut,
     ReturnToCrewCreate,
@@ -37,6 +38,7 @@ from app.core.dates import business_today, format_date
 from app.db.models.client import ClientSite
 from app.db.models.crew import Crew
 from app.db.models.equipment import Equipment
+from app.db.models.maintenance import MaintenancePlan
 from app.db.models.user import User
 from app.db.models.work_order import (
     WorkOrder,
@@ -49,6 +51,7 @@ from app.db.models.work_order import (
 from app.db.repositories.client import ClientContactRepository
 from app.db.repositories.crew import CrewRepository
 from app.db.repositories.equipment import EquipmentRepository
+from app.db.repositories.maintenance import MaintenancePlanRepository
 from app.db.repositories.work_order import OpenCrewOrderRow, WorkOrderRepository
 from app.domain.work_order import (
     CANCEL_REASON_LABELS,
@@ -327,6 +330,9 @@ async def list_by_status(
     rows, total = await WorkOrderRepository(session).list_by_status_page(
         status, in_workshop=in_workshop, billing=billing, limit=limit, offset=offset
     )
+    plans = await MaintenancePlanRepository(session).by_ids(
+        [row[0].maintenance_plan_id for row in rows if row[0].maintenance_plan_id is not None]
+    )
     items = [
         OrderListItemOut(
             id=order.id,
@@ -374,6 +380,7 @@ async def list_by_status(
                 if equipment is not None
                 else None
             ),
+            maintenance=_maintenance_out(order, plans),
         )
         for (
             order,
@@ -394,6 +401,17 @@ async def list_by_status(
         ) in rows
     ]
     return items, total
+
+
+def _maintenance_out(
+    order: WorkOrder, plans: dict[uuid.UUID, MaintenancePlan]
+) -> OrderMaintenanceOut | None:
+    plan = plans.get(order.maintenance_plan_id) if order.maintenance_plan_id else None
+    if plan is None or order.maintenance_due_on is None:
+        return None
+    return OrderMaintenanceOut(
+        due_on=order.maintenance_due_on, every_months=plan.every_months, crew_id=plan.crew_id
+    )
 
 
 async def list_for_client(

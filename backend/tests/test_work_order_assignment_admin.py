@@ -13,6 +13,7 @@ from app.db.models.catalog import EquipmentType, Failure, Repair, WorkType
 from app.db.models.client import Client, ClientSite
 from app.db.models.crew import Crew, FieldTechnician
 from app.db.models.equipment import Equipment
+from app.db.models.maintenance import MaintenancePlan
 from app.db.models.user import User, UserRole
 from app.db.models.work_order import (
     WorkOrder,
@@ -39,6 +40,7 @@ TABLES = [
     WorkType.__table__,
     Failure.__table__,
     Repair.__table__,
+    MaintenancePlan.__table__,
     WorkOrder.__table__,
     WorkOrderEvent.__table__,
     WorkOrderAssignment.__table__,
