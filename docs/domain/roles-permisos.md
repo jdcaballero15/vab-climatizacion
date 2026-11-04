@@ -23,7 +23,7 @@
 | Editar catálogos | Sí | No | No |
 | Gestionar escuadrillas y técnicos | Sí | No | No |
 | Editar plantillas de checklist | Sí | No | No |
-| Aprobar mantenimiento en bloque | Sí | No | No |
+| Gestionar planes de mantenimiento y generar sus órdenes | Sí | No | No |
 | Ver y mover stock | Sí | Ver el de su camioneta (ver E08-01) | Ver |
 | Usar repuestos en un cierre | No | Sí (sin ver precios) | No |
 | Ver tablero | Sí | No | Sí |

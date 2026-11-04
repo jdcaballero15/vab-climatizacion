@@ -1137,6 +1137,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/maintenance/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Plans */
+        get: operations["list_plans_admin_maintenance_plans_get"];
+        put?: never;
+        /** Create Plan */
+        post: operations["create_plan_admin_maintenance_plans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/maintenance/plans/{plan_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Plan */
+        get: operations["get_plan_admin_maintenance_plans__plan_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Plan */
+        patch: operations["update_plan_admin_maintenance_plans__plan_id__patch"];
+        trace?: never;
+    };
+    "/admin/maintenance/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Now
+         * @description La misma corrida del cron de cada mañana, a pedido ("Generar ahora").
+         */
+        post: operations["run_now_admin_maintenance_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1979,6 +2035,25 @@ export interface components {
             /** Confirmed At */
             confirmed_at: string | null;
         };
+        /** GeneratedOrderOut */
+        GeneratedOrderOut: {
+            /**
+             * Order Id
+             * Format: uuid
+             */
+            order_id: string;
+            /** Number */
+            number: number;
+            /** Client Name */
+            client_name: string;
+            /** Equipment Code */
+            equipment_code: string;
+            /**
+             * Due On
+             * Format: date
+             */
+            due_on: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1993,6 +2068,88 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** MaintenancePlanAdminOut */
+        MaintenancePlanAdminOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            equipment: components["schemas"]["PlanEquipmentOut"];
+            client: components["schemas"]["PlanClientOut"];
+            work_type: components["schemas"]["PlanNamedOut"];
+            crew: components["schemas"]["PlanNamedOut"] | null;
+            /** Every Months */
+            every_months: number;
+            /**
+             * Next Due On
+             * Format: date
+             */
+            next_due_on: string;
+            /** Ends On */
+            ends_on: string | null;
+            /** Notes */
+            notes: string | null;
+            /** Active */
+            active: boolean;
+            open_order: components["schemas"]["PlanOpenOrderOut"] | null;
+        };
+        /** MaintenancePlanCreate */
+        MaintenancePlanCreate: {
+            /**
+             * Equipment Id
+             * Format: uuid
+             */
+            equipment_id: string;
+            /**
+             * Work Type Id
+             * Format: uuid
+             */
+            work_type_id: string;
+            /** Crew Id */
+            crew_id?: string | null;
+            /** Every Months */
+            every_months: number;
+            /**
+             * Next Due On
+             * Format: date
+             */
+            next_due_on: string;
+            /** Ends On */
+            ends_on?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /**
+         * MaintenancePlanUpdate
+         * @description Solo se cambian los campos enviados; crew_id, ends_on y notes en null los borran.
+         *
+         *     El equipo no se cambia: para otro equipo se termina el plan y se crea uno nuevo.
+         */
+        MaintenancePlanUpdate: {
+            /** Work Type Id */
+            work_type_id?: string | null;
+            /** Crew Id */
+            crew_id?: string | null;
+            /** Every Months */
+            every_months?: number | null;
+            /** Next Due On */
+            next_due_on?: string | null;
+            /** Ends On */
+            ends_on?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /**
+         * MaintenanceRunOut
+         * @description Resumen de una corrida (E07-04, criterio 5): qué se generó y qué se omitió.
+         */
+        MaintenanceRunOut: {
+            /** Generated */
+            generated: components["schemas"]["GeneratedOrderOut"][];
+            /** Skipped */
+            skipped: components["schemas"]["SkippedPlanOut"][];
         };
         /** MaterialLineAdminOut */
         MaterialLineAdminOut: {
@@ -2184,6 +2341,7 @@ export interface components {
             completed: components["schemas"]["CompletedOut"] | null;
             billing?: components["schemas"]["BillingAdminOut"] | null;
             equipment: components["schemas"]["OrderEquipmentOut"] | null;
+            maintenance?: components["schemas"]["OrderMaintenanceOut"] | null;
         };
         /** OrderListPage */
         OrderListPage: {
@@ -2195,6 +2353,22 @@ export interface components {
             limit: number;
             /** Offset */
             offset: number;
+        };
+        /**
+         * OrderMaintenanceOut
+         * @description De una orden generada por un plan (E07-04): para cuándo es la visita y la
+         *     escuadrilla que suele ir, que viene elegida al asignar.
+         */
+        OrderMaintenanceOut: {
+            /**
+             * Due On
+             * Format: date
+             */
+            due_on: string;
+            /** Every Months */
+            every_months: number;
+            /** Crew Id */
+            crew_id: string | null;
         };
         /** OrderMaterialsAdminOut */
         OrderMaterialsAdminOut: {
@@ -2330,6 +2504,65 @@ export interface components {
         PasswordResetOut: {
             /** Temporary Password */
             temporary_password: string;
+        };
+        /** PlanClientOut */
+        PlanClientOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: string;
+            /** Name */
+            name: string;
+            /** Site Label */
+            site_label: string | null;
+            /** Site Address */
+            site_address: string;
+        };
+        /** PlanEquipmentOut */
+        PlanEquipmentOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Internal Code */
+            internal_code: string;
+            /** Location Note */
+            location_note: string;
+            /** Equipment Type Name */
+            equipment_type_name: string;
+        };
+        /** PlanNamedOut */
+        PlanNamedOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * PlanOpenOrderOut
+         * @description La última orden generada que todavía no se cerró ni se canceló.
+         */
+        PlanOpenOrderOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            status: components["schemas"]["OrderStatus"];
+            /**
+             * Due On
+             * Format: date
+             */
+            due_on: string;
         };
         /** RefreshResponse */
         RefreshResponse: {
@@ -2482,6 +2715,18 @@ export interface components {
             reference?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+        };
+        /** SkippedPlanOut */
+        SkippedPlanOut: {
+            /**
+             * Plan Id
+             * Format: uuid
+             */
+            plan_id: string;
+            /** Equipment Code */
+            equipment_code: string;
+            /** Reason */
+            reason: string;
         };
         /** TaskAdminOut */
         TaskAdminOut: {
@@ -5634,6 +5879,158 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_plans_admin_maintenance_plans_get: {
+        parameters: {
+            query?: {
+                include_ended?: boolean;
+                equipment_id?: string | null;
+                client_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenancePlanAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_plan_admin_maintenance_plans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaintenancePlanCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenancePlanAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_plan_admin_maintenance_plans__plan_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenancePlanAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_plan_admin_maintenance_plans__plan_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaintenancePlanUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenancePlanAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_now_admin_maintenance_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceRunOut"];
                 };
             };
         };

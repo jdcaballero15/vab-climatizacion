@@ -4699,6 +4699,267 @@
           }
         }
       }
+    },
+    "/admin/maintenance/plans": {
+      "get": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "summary": "List Plans",
+        "operationId": "list_plans_admin_maintenance_plans_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "include_ended",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Ended"
+            }
+          },
+          {
+            "name": "equipment_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Equipment Id"
+            }
+          },
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MaintenancePlanAdminOut"
+                  },
+                  "title": "Response List Plans Admin Maintenance Plans Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "summary": "Create Plan",
+        "operationId": "create_plan_admin_maintenance_plans_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaintenancePlanCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaintenancePlanAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/maintenance/plans/{plan_id}": {
+      "get": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "summary": "Get Plan",
+        "operationId": "get_plan_admin_maintenance_plans__plan_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Plan Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaintenancePlanAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "summary": "Update Plan",
+        "operationId": "update_plan_admin_maintenance_plans__plan_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Plan Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaintenancePlanUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaintenancePlanAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/maintenance/run": {
+      "post": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "summary": "Run Now",
+        "description": "La misma corrida del cron de cada mañana, a pedido (\"Generar ahora\").",
+        "operationId": "run_now_admin_maintenance_run_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaintenanceRunOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -7182,6 +7443,41 @@
         ],
         "title": "FileOut"
       },
+      "GeneratedOrderOut": {
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Order Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "equipment_code": {
+            "type": "string",
+            "title": "Equipment Code"
+          },
+          "due_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Due On"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order_id",
+          "number",
+          "client_name",
+          "equipment_code",
+          "due_on"
+        ],
+        "title": "GeneratedOrderOut"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -7213,6 +7509,271 @@
           "password"
         ],
         "title": "LoginRequest"
+      },
+      "MaintenancePlanAdminOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "equipment": {
+            "$ref": "#/components/schemas/PlanEquipmentOut"
+          },
+          "client": {
+            "$ref": "#/components/schemas/PlanClientOut"
+          },
+          "work_type": {
+            "$ref": "#/components/schemas/PlanNamedOut"
+          },
+          "crew": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlanNamedOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "every_months": {
+            "type": "integer",
+            "title": "Every Months"
+          },
+          "next_due_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Next Due On"
+          },
+          "ends_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends On"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "open_order": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlanOpenOrderOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "equipment",
+          "client",
+          "work_type",
+          "crew",
+          "every_months",
+          "next_due_on",
+          "ends_on",
+          "notes",
+          "active",
+          "open_order"
+        ],
+        "title": "MaintenancePlanAdminOut"
+      },
+      "MaintenancePlanCreate": {
+        "properties": {
+          "equipment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Equipment Id"
+          },
+          "work_type_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Work Type Id"
+          },
+          "crew_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Id"
+          },
+          "every_months": {
+            "type": "integer",
+            "maximum": 24.0,
+            "minimum": 1.0,
+            "title": "Every Months"
+          },
+          "next_due_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Next Due On"
+          },
+          "ends_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends On"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "equipment_id",
+          "work_type_id",
+          "every_months",
+          "next_due_on"
+        ],
+        "title": "MaintenancePlanCreate"
+      },
+      "MaintenancePlanUpdate": {
+        "properties": {
+          "work_type_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Type Id"
+          },
+          "crew_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Id"
+          },
+          "every_months": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 24.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Every Months"
+          },
+          "next_due_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due On"
+          },
+          "ends_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends On"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MaintenancePlanUpdate",
+        "description": "Solo se cambian los campos enviados; crew_id, ends_on y notes en null los borran.\n\nEl equipo no se cambia: para otro equipo se termina el plan y se crea uno nuevo."
+      },
+      "MaintenanceRunOut": {
+        "properties": {
+          "generated": {
+            "items": {
+              "$ref": "#/components/schemas/GeneratedOrderOut"
+            },
+            "type": "array",
+            "title": "Generated"
+          },
+          "skipped": {
+            "items": {
+              "$ref": "#/components/schemas/SkippedPlanOut"
+            },
+            "type": "array",
+            "title": "Skipped"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated",
+          "skipped"
+        ],
+        "title": "MaintenanceRunOut",
+        "description": "Resumen de una corrida (E07-04, criterio 5): qué se generó y qué se omitió."
       },
       "MaterialLineAdminOut": {
         "properties": {
@@ -7766,6 +8327,16 @@
                 "type": "null"
               }
             ]
+          },
+          "maintenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderMaintenanceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -7820,6 +8391,39 @@
           "offset"
         ],
         "title": "OrderListPage"
+      },
+      "OrderMaintenanceOut": {
+        "properties": {
+          "due_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Due On"
+          },
+          "every_months": {
+            "type": "integer",
+            "title": "Every Months"
+          },
+          "crew_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "due_on",
+          "every_months",
+          "crew_id"
+        ],
+        "title": "OrderMaintenanceOut",
+        "description": "De una orden generada por un plan (E07-04): para cuándo es la visita y la\nescuadrilla que suele ir, que viene elegida al asignar."
       },
       "OrderMaterialsAdminOut": {
         "properties": {
@@ -8203,6 +8807,125 @@
         ],
         "title": "PasswordResetOut",
         "description": "La contraseña temporal: solo viaja en esta respuesta (E01-05)."
+      },
+      "PlanClientOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "string",
+            "title": "Number"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "site_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Label"
+          },
+          "site_address": {
+            "type": "string",
+            "title": "Site Address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "name",
+          "site_label",
+          "site_address"
+        ],
+        "title": "PlanClientOut"
+      },
+      "PlanEquipmentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "internal_code": {
+            "type": "string",
+            "title": "Internal Code"
+          },
+          "location_note": {
+            "type": "string",
+            "title": "Location Note"
+          },
+          "equipment_type_name": {
+            "type": "string",
+            "title": "Equipment Type Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "internal_code",
+          "location_note",
+          "equipment_type_name"
+        ],
+        "title": "PlanEquipmentOut"
+      },
+      "PlanNamedOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "PlanNamedOut"
+      },
+      "PlanOpenOrderOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "due_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Due On"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "status",
+          "due_on"
+        ],
+        "title": "PlanOpenOrderOut",
+        "description": "La última orden generada que todavía no se cerró ni se canceló."
       },
       "RefreshResponse": {
         "properties": {
@@ -8617,6 +9340,30 @@
         "type": "object",
         "title": "SiteUpdate",
         "description": "Solo se cambian los campos enviados; etiqueta o referencia en null se borran."
+      },
+      "SkippedPlanOut": {
+        "properties": {
+          "plan_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Plan Id"
+          },
+          "equipment_code": {
+            "type": "string",
+            "title": "Equipment Code"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan_id",
+          "equipment_code",
+          "reason"
+        ],
+        "title": "SkippedPlanOut"
       },
       "TaskAdminOut": {
         "properties": {

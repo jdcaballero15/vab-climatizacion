@@ -710,6 +710,29 @@ describe("OrdersPage", () => {
       );
     });
 
+    // E07-04: la de mantenimiento trae la escuadrilla del plan y el día de la visita.
+    it("una de mantenimiento viene con la escuadrilla y el día del plan", async () => {
+      const user = userEvent.setup();
+      mockApi((request, url) =>
+        url.pathname.endsWith("/admin/orders") && request.method === "GET"
+          ? json(
+              pendingPage([
+                {
+                  ...PENDIENTE,
+                  maintenance: { due_on: "2099-01-15", every_months: 3, crew_id: "c1" },
+                },
+              ]),
+            )
+          : undefined,
+      );
+      renderOrders();
+
+      expect(await screen.findByText("Mantenimiento · para el 15/01/2099")).toBeInTheDocument();
+      const form = await abrirAsignar(user);
+      await waitFor(() => expect(within(form).getByLabelText("Escuadrilla")).toHaveValue("c1"));
+      expect(within(form).getByLabelText("Fecha prevista")).toHaveValue("2099-01-15");
+    });
+
     it("se puede cancelar", async () => {
       const user = userEvent.setup();
       conPendiente();

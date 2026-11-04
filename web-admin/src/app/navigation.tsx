@@ -1,6 +1,7 @@
 import {
   AirVent,
   Building2,
+  CalendarClock,
   ClipboardList,
   Hammer,
   Package,
@@ -17,6 +18,7 @@ import { ClientsPage } from "../features/clients/ClientsPage";
 import { CrewsPage } from "../features/crews/CrewsPage";
 import { EquipmentTypesPage } from "../features/equipment-types/EquipmentTypesPage";
 import { FailuresPage } from "../features/failures/FailuresPage";
+import { MaintenancePage } from "../features/maintenance/MaintenancePage";
 import { OrdersPage } from "../features/orders/OrdersPage";
 import { PartsPage } from "../features/parts/PartsPage";
 import { RepairsPage } from "../features/repairs/RepairsPage";
@@ -53,6 +55,14 @@ export const NAV_SECTIONS: NavSection[] = [
     roles: ["admin"],
     icon: ClipboardList,
     element: <OrdersPage />,
+  },
+  {
+    path: "/mantenimiento",
+    label: "Mantenimiento",
+    group: null,
+    roles: ["admin"],
+    icon: CalendarClock,
+    element: <MaintenancePage />,
   },
   {
     path: "/clientes",

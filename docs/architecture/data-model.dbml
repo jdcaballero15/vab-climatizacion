@@ -278,8 +278,9 @@ Table work_order {
   channel order_channel [note: 'Por dónde llegó el pedido. Obligatorio en las manuales (E04-02)']
   requester_name varchar [note: 'Quién pidió: nombre y cargo. Opcional, el técnico no lo ve']
   requester_area varchar [note: 'Dónde: sector, piso o ala. Opcional, el técnico lo ve']
-  requires_approval boolean [default: false, note: 'Órdenes generadas por mantenimiento hasta su aprobación en bloque. Pendiente D-005. Existe desde E04-03 (siempre false hasta E07-04)']
-  maintenance_run_id uuid [ref: > maintenance_run.id, note: 'Se agrega con E07-04']
+  requires_approval boolean [default: false, note: 'Sin uso: el mantenimiento se genera Pendiente, sin aprobación en bloque (decisión del 2026-11-03, D-005). Siempre false']
+  maintenance_plan_id uuid [ref: > maintenance_plan.id, note: 'Plan que generó la orden (E07-04)']
+  maintenance_due_on date [note: 'Día de la visita del plan. Único junto con maintenance_plan_id: generar dos veces no duplica. CHECK: los dos nulos o los dos con valor']
 }
 
 Table work_order_event {
@@ -513,25 +514,15 @@ Table checklist_template_item {
 
 Table maintenance_plan {
   id uuid [pk]
-  client_id uuid [ref: > client.id, not null, note: 'Abono']
-  name varchar
-}
+  equipment_id uuid [ref: > equipment.id, not null, note: 'Un equipo en un solo plan activo (índice parcial sin fin + control del servicio)']
+  work_type_id uuid [ref: > work_type.id, not null]
+  crew_id uuid [ref: > crew.id, note: 'Escuadrilla que suele ir: viene elegida al asignar']
+  every_months int [not null, note: 'CHECK 1 a 24']
+  next_due_on date [not null, note: 'Próxima visita. Una semana antes se genera la orden y se corre every_months meses']
+  ends_on date [note: 'Desde ese día no se generan visitas; el plan queda como historial']
+  notes text [note: 'Indicaciones que pasan a la descripción de cada orden']
 
-Table maintenance_plan_equipment {
-  id uuid [pk]
-  plan_id uuid [ref: > maintenance_plan.id, not null]
-  equipment_id uuid [ref: > equipment.id, not null]
-  frequency maintenance_frequency [not null]
-  starts_on date [not null]
-  ends_on date
-}
-
-Table maintenance_run {
-  id uuid [pk]
-  period varchar(7) [unique, not null, note: 'AAAA-MM']
-  generated_at timestamptz [not null]
-  approved_at timestamptz
-  approved_by uuid [ref: > app_user.id]
+  Note: 'Plan por equipo, como el prototipo del cliente (decisión de Gonza, 2026-11-03). Reemplaza el abono con equipos y la corrida mensual con aprobación (E07-03, E07-04)'
 }
 
 Table checklist_result {

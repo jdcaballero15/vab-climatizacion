@@ -154,6 +154,15 @@ class BillingAdminOut(BaseModel):
     updated_at: datetime
 
 
+class OrderMaintenanceOut(BaseModel):
+    """De una orden generada por un plan (E07-04): para cuándo es la visita y la
+    escuadrilla que suele ir, que viene elegida al asignar."""
+
+    due_on: date
+    every_months: int
+    crew_id: uuid.UUID | None
+
+
 class OrderListItemOut(BaseModel):
     id: uuid.UUID
     number: int
@@ -181,6 +190,8 @@ class OrderListItemOut(BaseModel):
     billing: BillingAdminOut | None = None
     # Nulo si la orden no tiene equipo (E04-12).
     equipment: OrderEquipmentOut | None
+    # Solo en las generadas por un plan de mantenimiento.
+    maintenance: OrderMaintenanceOut | None = None
 
 
 class OrderListPage(BaseModel):

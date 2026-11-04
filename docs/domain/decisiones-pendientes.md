@@ -98,6 +98,7 @@ Se pospone. El modelo guarda número de factura y fecha de registro (`invoice_re
 
 El cliente definió siete estados y no incluye "Revisión" ni "Pendiente de aprobación". La propuesta técnica los muestra como pasos del circuito.
 *Propuesta*: no son estados. Son acciones de administración: aprobar o devolver una orden Terminada, y aprobar un lote de órdenes generadas (campo `requires_approval`). Si el cliente prefiere verlos como estados, se agregan.
+*Actualización 2026-11-03*: Gonza descartó la aprobación en bloque del mantenimiento. Las órdenes de los planes nacen Pendientes y la oficina las asigna o cancela como cualquier otra (E07-04); `requires_approval` queda sin uso.
 
 ### D-006 Costo recurrente de hosting
 

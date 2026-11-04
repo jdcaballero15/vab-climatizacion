@@ -139,6 +139,7 @@ describe("AppRoot", () => {
       .map((link) => link.textContent);
     expect(links).toEqual([
       "Órdenes",
+      "Mantenimiento",
       "Clientes",
       "Escuadrillas",
       "Usuarios",

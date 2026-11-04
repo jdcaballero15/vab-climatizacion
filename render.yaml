@@ -91,6 +91,27 @@ services:
       - key: BACKUP_S3_REGION
         value: auto
 
+  # Órdenes de mantenimiento de los planes que vencen en la semana (E07-04). Correrlo de
+  # más no duplica nada. Misma imagen que la API, con otro comando.
+  - type: cron
+    name: vab-ot-maintenance
+    runtime: docker
+    plan: starter
+    region: virginia
+    schedule: "0 9 * * *" # 6 de la mañana en Argentina, después de la copia
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python -m app.maintenance_run
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: vab-ot-db
+          property: connectionString
+
   - type: web
     name: vab-ot-admin
     runtime: static

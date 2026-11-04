@@ -15,6 +15,8 @@ assumes: [D-005]
 
 # E07-05 Aprobar en bloque las órdenes de mantenimiento generadas
 
+> **Descartada el 2026-11-03** (decisión de Gonza): las órdenes de mantenimiento nacen Pendientes y se asignan como cualquier otra (E07-04). Queda en borrador por si el cliente la pide.
+
 ## Historia
 
 **Como** administración, **quiero** revisar y aprobar de una vez las órdenes de mantenimiento generadas en el mes, **para** controlar lo que se va a enviar a campo sin aprobar una por una.

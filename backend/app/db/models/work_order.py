@@ -59,6 +59,17 @@ class WorkOrder(TimestampedBase):
             "(kind = 'workshop') = (workshop_stage IS NOT NULL)",
             name="ck_work_order_workshop_stage",
         ),
+        CheckConstraint(
+            "(maintenance_plan_id IS NULL) = (maintenance_due_on IS NULL)",
+            name="ck_work_order_maintenance_due",
+        ),
+        # Una orden por visita de cada plan: generar dos veces no duplica (E07-04).
+        Index(
+            "uq_work_order_maintenance_visit",
+            "maintenance_plan_id",
+            "maintenance_due_on",
+            unique=True,
+        ),
     )
 
     number: Mapped[int] = mapped_column(
@@ -97,6 +108,11 @@ class WorkOrder(TimestampedBase):
     # Quién pidió (nombre y cargo): el técnico no lo ve. Dónde (sector, piso o ala): sí.
     requester_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     requester_area: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Generada por un plan de mantenimiento (E07-04): el plan y el día de la visita.
+    maintenance_plan_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("maintenance_plan.id"), nullable=True
+    )
+    maintenance_due_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     # Las generadas por mantenimiento no se asignan hasta aprobar el lote (R6, E07-05).
     requires_approval: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=text("false")

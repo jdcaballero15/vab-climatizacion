@@ -23,6 +23,8 @@ class OrderStatus(StrEnum):
 # Órdenes que una escuadrilla tiene entre manos: las ve en el celular (E05-01) y
 # no se puede desactivar mientras tenga alguna (E04-03, criterio 9).
 CREW_OPEN_STATUSES = frozenset({OrderStatus.assigned, OrderStatus.in_progress})
+# Órdenes que todavía no se cerraron ni se cancelaron.
+OPEN_STATUSES = frozenset({OrderStatus.pending, *CREW_OPEN_STATUSES})
 
 
 class OrderKind(StrEnum):

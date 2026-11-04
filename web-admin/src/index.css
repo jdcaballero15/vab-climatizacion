@@ -339,6 +339,13 @@ label {
   color: #6d28d9;
 }
 
+/* Generada por un plan de mantenimiento (E07-04). */
+.badge--maintenance {
+  border-color: #99f6e4;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
 .avatar {
   box-shadow:
     0 0 0 2px var(--surface),

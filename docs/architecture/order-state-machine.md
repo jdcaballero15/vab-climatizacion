@@ -9,7 +9,7 @@ Los siete estados los pidió el cliente: **Pendiente, Asignada, En curso, Termin
 ```mermaid
 stateDiagram-v2
   [*] --> Pendiente: administración crea la orden
-  [*] --> Pendiente: mantenimiento generado (requiere aprobación en bloque)
+  [*] --> Pendiente: mantenimiento generado por un plan (E07-04)
 
   Pendiente --> Asignada: administración asigna escuadrilla
   Asignada --> Pendiente: administración desasigna
@@ -73,4 +73,4 @@ Retiro y devolución hechos exigen firma y nombre del cliente (sin DNI); el galp
 ## Puntos sin resolver
 
 - **Revisión**: la propuesta técnica muestra "Revisión" como paso entre Terminada y Facturada, pero no es uno de los siete estados del cliente. Se modela como una acción de administración sobre `Terminada` (aprobar o devolver), no como estado. Ver `D-005`.
-- **Aprobación en bloque** de mantenimiento: se modela con el campo `requires_approval`, no con un estado extra. Ver `D-005`.
+- **Aprobación en bloque** de mantenimiento: descartada (decisión de Gonza, 2026-11-03). Las órdenes generadas nacen Pendientes y se asignan como cualquier otra; `requires_approval` queda sin uso. Ver `D-005`.
