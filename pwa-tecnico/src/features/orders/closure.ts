@@ -8,6 +8,16 @@ export type EquipmentCondition = components["schemas"]["EquipmentCondition"];
 export type NotDoneReason = components["schemas"]["NotDoneReason"];
 export type NoSignatureReason = components["schemas"]["NoSignatureReason"];
 export type WorkshopStage = components["schemas"]["WorkshopStage"];
+export type CheckResult = components["schemas"]["CheckResult"];
+
+/** Respuesta a un paso del checklist de mantenimiento (E07-06 y E07-08). */
+export interface CheckDraft {
+  result: CheckResult;
+  /** Lo que encontraron: obligatoria en No OK. */
+  observation: string;
+  /** Solo en No OK: el cierre pasa a pedir falla y reparación (E07-08). */
+  requiresRepair: boolean;
+}
 
 /** Retiro o devolución de taller (E06): el cliente entrega o recibe el equipo y firma. */
 export function isHandover(options: ClosureOptions): boolean {
@@ -43,6 +53,8 @@ export interface ClosureDraft {
   noSignatureText: string;
   /** Materiales usados (E05-05). Sin precios: la escuadrilla nunca los ve. */
   materials: MaterialDraft[];
+  /** Checklist de mantenimiento (E07-06), por id del paso. Sin clave: sin responder. */
+  checklist: Record<string, CheckDraft>;
 }
 
 export const EMPTY_DRAFT: ClosureDraft = {
@@ -60,6 +72,7 @@ export const EMPTY_DRAFT: ClosureDraft = {
   noSignatureReason: null,
   noSignatureText: "",
   materials: [],
+  checklist: {},
 };
 
 /** Campos que se marcan en el formulario. Los de la API coinciden con su `field` (422). */
@@ -73,6 +86,7 @@ export type ClosureField =
   | "repair_id"
   | "repair_other_text"
   | "equipment_condition"
+  | "checklist"
   | "parts"
   | "photo_ids"
   | "observation"
@@ -82,10 +96,57 @@ export type ClosureField =
 
 export type ClosureErrors = Partial<Record<ClosureField, string>>;
 
-/** Falla y reparación obligatorias: el tipo de trabajo las pide y el resultado es Resuelta. */
+/**
+ * El checklist de una orden de mantenimiento (E07-06). Con "No se pudo hacer" no va; con
+ * otra visita o retiro se puede mandar, completo, para no perder lo revisado.
+ */
+export function asksChecklist(draft: ClosureDraft, options: ClosureOptions): boolean {
+  return options.checklist.length > 0 && draft.outcome !== "not_done";
+}
+
+/** Algún paso No OK pide reparación (E07-08). */
+export function repairNeeded(draft: ClosureDraft, options: ClosureOptions): boolean {
+  return (
+    asksChecklist(draft, options) &&
+    options.checklist.some((item) => draft.checklist[item.id]?.requiresRepair === true)
+  );
+}
+
+/**
+ * Falla y reparación obligatorias con Resuelta: si el tipo de trabajo las pide o, en
+ * mantenimiento, si un paso requiere reparación (E07-08).
+ */
 export function failureRepairRequired(draft: ClosureDraft, options: ClosureOptions): boolean {
   // Retiro y devolución no las piden: eso se carga en el galpón (E06).
-  return options.requires_failure_repair && draft.outcome === "done" && !isHandover(options);
+  return (
+    (options.requires_failure_repair || repairNeeded(draft, options)) &&
+    draft.outcome === "done" &&
+    !isHandover(options)
+  );
+}
+
+/** Pasos que faltan marcar, o No OK sin observación (E07-06, criterio 2), por id. */
+export function checklistProblems(
+  draft: ClosureDraft,
+  options: ClosureOptions,
+): Record<string, string> {
+  if (!asksChecklist(draft, options)) {
+    return {};
+  }
+  const answered = options.checklist.some((item) => draft.checklist[item.id]);
+  const problems: Record<string, string> = {};
+  for (const item of options.checklist) {
+    const check = draft.checklist[item.id];
+    if (!check) {
+      // Terminada pide todos; otra visita o retiro, todos o ninguno.
+      if (draft.outcome === "done" || answered) {
+        problems[item.id] = "Marcá OK o No OK.";
+      }
+    } else if (check.result === "not_ok" && !check.observation.trim()) {
+      problems[item.id] = "Escribí qué encontraste.";
+    }
+  }
+  return problems;
 }
 
 /**
@@ -134,6 +195,13 @@ export function restoreDraft(saved: ClosureDraft, options: ClosureOptions): Clos
     materials: (saved.materials ?? []).filter(
       (line) => line.part === OTHER || parts.has(line.part),
     ),
+    // Ni checklist, si es anterior a E07-06.
+    checklist: Object.fromEntries(
+      options.checklist.flatMap((item) => {
+        const check = saved.checklist?.[item.id];
+        return check ? [[item.id, check]] : [];
+      }),
+    ),
   };
   if (!keeps(restored.failure, options.failures)) {
     return { ...restored, failure: "", failureOther: "", repair: "", repairOther: "" };
@@ -177,6 +245,12 @@ export function missingFields(
     !draft.equipmentCondition
   ) {
     errors.equipment_condition = "Elegí cómo quedó el equipo.";
+  }
+  const checks = Object.values(checklistProblems(draft, options));
+  if (checks.length > 0) {
+    errors.checklist = checks.includes("Marcá OK o No OK.")
+      ? "Marcá OK o No OK en todos los pasos."
+      : "Escribí qué encontraste en cada paso No OK.";
   }
   const materialError = materialsError(draft, options);
   if (materialError) {
@@ -253,7 +327,21 @@ export function toClosurePayload(
       other_text: line.part === OTHER ? line.otherText.trim() : null,
       quantity: parseQuantity(line.quantity) ?? line.quantity,
     })),
+    checklist: outcome === "not_done" ? [] : checklistPart(draft),
   };
+}
+
+function checklistPart(draft: ClosureDraft): ClosureCreate["checklist"] {
+  return Object.entries(draft.checklist).map(([itemId, check]) =>
+    check.result === "ok"
+      ? { check_item_id: itemId, result: "ok", observation: null, requires_repair: false }
+      : {
+          check_item_id: itemId,
+          result: "not_ok",
+          observation: check.observation.trim() || null,
+          requires_repair: check.requiresRepair,
+        },
+  );
 }
 
 function signaturePart(

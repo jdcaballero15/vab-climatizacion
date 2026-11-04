@@ -87,6 +87,17 @@ function pick(closure: StoredClosure): StoredClosure {
         otherText,
         quantity,
       })),
+      // Ni el checklist (E07-06).
+      checklist: Object.fromEntries(
+        Object.entries(draft.checklist ?? {}).map(([itemId, check]) => [
+          itemId,
+          {
+            result: check.result,
+            observation: check.observation,
+            requiresRepair: check.requiresRepair,
+          },
+        ]),
+      ),
     },
     idempotencyKey: closure.idempotencyKey,
     photos: closure.photos.map(({ key, blob, fileId, uploaded }) => ({

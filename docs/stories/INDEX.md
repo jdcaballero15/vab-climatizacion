@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 124 historias.** done: 57, draft: 56, icebox: 8, in_progress: 3
+**Total: 124 historias.** done: 60, draft: 53, icebox: 8, in_progress: 3
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -115,14 +115,14 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
-| [E07-01](E07-mantenimiento/E07-01-gestionar-plantillas-de-checklist-por-frecuencia-y-tipo.md) | Gestionar plantillas de checklist por frecuencia y tipo de equipo | Debe | M | draft | admin | - | - | E02-02, E01-04 |
+| [E07-01](E07-mantenimiento/E07-01-gestionar-plantillas-de-checklist-por-frecuencia-y-tipo.md) | Gestionar plantillas de checklist por frecuencia y tipo de equipo | Debe | M | done | admin | - | - | E02-02, E01-04 |
 | [E07-02](E07-mantenimiento/E07-02-definir-mediciones-con-unidad-y-rango-esperado.md) | Definir mediciones con unidad y rango esperado | Debe | S | draft | admin | - | - | E07-01 |
 | [E07-03](E07-mantenimiento/E07-03-gestionar-abonos-equipos-incluidos-y-frecuencia.md) | Gestionar abonos: equipos incluidos y frecuencia | Debe | M | done | admin | - | D-002 | E03-03 |
 | [E07-04](E07-mantenimiento/E07-04-generar-las-ordenes-de-mantenimiento-cada-mes.md) | Generar las órdenes de mantenimiento cada mes | Debe | L | done | admin | - | D-005 | E07-03, E04-02 |
 | [E07-05](E07-mantenimiento/E07-05-aprobar-en-bloque-las-ordenes-de-mantenimiento-generada.md) | Aprobar en bloque las órdenes de mantenimiento generadas | Debe | M | draft | admin | - | D-005 | E07-04, E04-07 |
-| [E07-06](E07-mantenimiento/E07-06-completar-el-checklist-de-mantenimiento-en-la-app-del-t.md) | Completar el checklist de mantenimiento en la app del técnico | Debe | M | draft | technician | - | - | E07-04, E05-03 |
+| [E07-06](E07-mantenimiento/E07-06-completar-el-checklist-de-mantenimiento-en-la-app-del-t.md) | Completar el checklist de mantenimiento en la app del técnico | Debe | M | done | technician | - | - | E07-04, E05-03 |
 | [E07-07](E07-mantenimiento/E07-07-registrar-mediciones-y-marcar-las-que-estan-fuera-de-ra.md) | Registrar mediciones y marcar las que están fuera de rango | Debe | M | draft | technician | - | - | E07-06, E07-02 |
-| [E07-08](E07-mantenimiento/E07-08-marcar-requiere-reparacion-desde-un-item-no-ok.md) | Marcar "requiere reparación" desde un ítem No OK | Debe | M | draft | technician | - | - | E07-06, E05-04 |
+| [E07-08](E07-mantenimiento/E07-08-marcar-requiere-reparacion-desde-un-item-no-ok.md) | Marcar "requiere reparación" desde un ítem No OK | Debe | M | done | technician | - | - | E07-06, E05-04 |
 | [E07-09](E07-mantenimiento/E07-09-ver-la-evolucion-de-mediciones-de-un-equipo.md) | Ver la evolución de mediciones de un equipo | Debería | M | draft | admin, owner | - | D-002 | E07-07, E03-05 |
 
 ## E08 Stock de repuestos

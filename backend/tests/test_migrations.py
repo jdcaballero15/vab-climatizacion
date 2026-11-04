@@ -468,6 +468,7 @@ def test_migracion_del_cierre_es_reversible() -> None:
             "equipment_condition",
             "not_done_reason",
             "work_order_closure",
+            "work_order_closure_check",
             "work_order_closure_photo",
             "work_order_closure_task",
             "work_order_closure_technician",
@@ -573,5 +574,45 @@ def test_migracion_crea_materiales_usados() -> None:
             "WHERE conname = 'ck_work_order_event_type'"
         )
         assert "materials_changed" in check[0]
+    finally:
+        command.downgrade(cfg, "base")
+
+
+# E07-01, E07-06 y E07-08: el checklist con sus pasos iniciales; las órdenes de
+# mantenimiento abiertas reciben la copia; el downgrade quita tablas y enum.
+def test_migracion_del_checklist_de_mantenimiento() -> None:
+    cfg = _alembic_config()
+    _reset_database()
+
+    objetos = (
+        "SELECT tablename FROM pg_tables WHERE tablename IN "
+        "('maintenance_check_step', 'work_order_check_item', 'work_order_closure_check') "
+        "UNION ALL SELECT typname FROM pg_type WHERE typname = 'check_result'"
+    )
+    command.upgrade(cfg, "451cd042f251")
+    try:
+        datos = (
+            "INSERT INTO client (id, number, name, segment) "
+            "VALUES (gen_random_uuid(), '1', 'Ficticio', 'unclassified');"
+            "INSERT INTO client_site (id, client_id, address, is_active) "
+            "SELECT gen_random_uuid(), id, 'Calle 1', true FROM client;"
+            "INSERT INTO equipment (id, client_site_id, equipment_type_id, internal_code, "
+            "location_note) SELECT gen_random_uuid(), s.id, t.id, 'EA1', 'Sala' "
+            "FROM client_site s, (SELECT id FROM equipment_type LIMIT 1) t;"
+            "INSERT INTO maintenance_plan (id, equipment_id, work_type_id, every_months, "
+            "next_due_on) SELECT gen_random_uuid(), e.id, w.id, 3, current_date "
+            "FROM equipment e, (SELECT id FROM work_type LIMIT 1) w;"
+            "INSERT INTO work_order (id, kind, source, status, client_id, client_site_id, "
+            "work_type_id, maintenance_plan_id, maintenance_due_on) "
+            "SELECT gen_random_uuid(), 'on_site', 'maintenance', 'pending', s.client_id, s.id, "
+            "p.work_type_id, p.id, current_date FROM client_site s, maintenance_plan p"
+        )
+        _execute(*datos.split(";"))
+        command.upgrade(cfg, "head")
+        assert len(_names(objetos)) == 4
+        assert len(_names("SELECT name FROM maintenance_check_step WHERE is_active")) == 6
+        assert len(_names("SELECT name FROM work_order_check_item")) == 6
+        command.downgrade(cfg, "451cd042f251")
+        assert _names(objetos) == []
     finally:
         command.downgrade(cfg, "base")

@@ -57,6 +57,28 @@ export function ClosureDetail({ order }: { order: Pick<OrderListItem, "id" | "nu
             </div>
           ),
         )}
+      {data.checklist.length > 0 && (
+        <div>
+          <dt>Checklist</dt>
+          <dd>
+            {/* E07-06 y E07-08: cada paso con su resultado; lo No OK, con lo que encontraron. */}
+            <ul className="orders__closure-checklist" aria-label="Checklist del mantenimiento">
+              {data.checklist.map((check) => (
+                <li key={check.name}>
+                  <span className={`badge badge--check-${check.result}`}>
+                    {check.result === "ok" ? "OK" : "No OK"}
+                  </span>{" "}
+                  {check.name}
+                  {check.observation && <span>: {check.observation}</span>}
+                  {check.requires_repair && (
+                    <span className="badge badge--other">Requiere reparación</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </dd>
+        </div>
+      )}
       {data.photos.length > 0 && (
         <div className="orders__closure-photos-row">
           <dt>Fotos</dt>

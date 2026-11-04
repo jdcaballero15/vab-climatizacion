@@ -158,6 +158,7 @@ const CIERRE: ClosureDetail = {
   signature: null,
   no_signature_reason: null,
   no_signature_text: null,
+  checklist: [],
 };
 const CANCELADA: OrderListItem = {
   ...PENDIENTE,
@@ -1024,6 +1025,36 @@ describe("OrdersPage", () => {
       );
       return screen.findByLabelText("Cierre de la orden N° 3");
     }
+
+    // E07-06 y E07-08: el checklist con lo No OK y si requiere reparación, junto a la falla.
+    it("muestra el checklist del mantenimiento", async () => {
+      const detalle = await verCierre({
+        ...CIERRE,
+        checklist: [
+          { name: "Limpieza de filtros", result: "ok", observation: null, requires_repair: false },
+          {
+            name: "Revisión del drenaje",
+            result: "not_ok",
+            observation: "Bandeja tapada",
+            requires_repair: true,
+          },
+        ],
+      });
+
+      const pasos = within(
+        within(detalle).getByRole("list", { name: "Checklist del mantenimiento" }),
+      ).getAllByRole("listitem");
+      expect(pasos[0]).toHaveTextContent("OK Limpieza de filtros");
+      expect(pasos[1]).toHaveTextContent(
+        "No OK Revisión del drenaje: Bandeja tapadaRequiere reparación",
+      );
+      expect(within(detalle).getByText("Pérdida de gas")).toBeInTheDocument();
+    });
+
+    it("sin checklist no muestra la fila", async () => {
+      const detalle = await verCierre(CIERRE);
+      expect(within(detalle).queryByText("Checklist")).not.toBeInTheDocument();
+    });
 
     // E05-07, criterio 6: la firma con el nombre y la hora, con su URL firmada.
     it("muestra la firma del cliente con el nombre y la hora", async () => {

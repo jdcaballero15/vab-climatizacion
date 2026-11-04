@@ -18,9 +18,9 @@ from app.db.models.catalog import EquipmentType, WorkType
 from app.db.models.client import Client, ClientSite
 from app.db.models.crew import Crew
 from app.db.models.equipment import Equipment
-from app.db.models.maintenance import MaintenancePlan
+from app.db.models.maintenance import MaintenanceCheckStep, MaintenancePlan
 from app.db.models.user import User, UserRole
-from app.db.models.work_order import WorkOrder, WorkOrderEvent
+from app.db.models.work_order import WorkOrder, WorkOrderCheckItem, WorkOrderEvent
 from app.db.session import SessionLocal, engine
 from app.domain.work_order import OrderSource, OrderStatus, WorkOrderEventType
 from app.services.maintenance import add_months
@@ -30,7 +30,8 @@ from tests.test_work_order_return_admin import ENUMS, TABLES_CON_COBRO
 
 PLANS_URL = "/admin/maintenance/plans"
 RUN_URL = "/admin/maintenance/run"
-TABLES = TABLES_CON_COBRO
+# La generación copia el checklist a cada orden (E07-01).
+TABLES = [*TABLES_CON_COBRO, MaintenanceCheckStep.__table__, WorkOrderCheckItem.__table__]
 
 
 @pytest.fixture

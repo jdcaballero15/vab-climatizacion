@@ -4960,6 +4960,210 @@
           }
         ]
       }
+    },
+    "/admin/maintenance/check-steps": {
+      "get": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "summary": "List Check Steps",
+        "operationId": "list_check_steps_admin_maintenance_check_steps_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "include_inactive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Inactive"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CheckStepAdminOut"
+                  },
+                  "title": "Response List Check Steps Admin Maintenance Check Steps Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "summary": "Create Check Step",
+        "operationId": "create_check_step_admin_maintenance_check_steps_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckStepCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckStepAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/maintenance/check-steps/order": {
+      "put": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "summary": "Reorder Check Steps",
+        "operationId": "reorder_check_steps_admin_maintenance_check_steps_order_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckStepOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CheckStepAdminOut"
+                  },
+                  "type": "array",
+                  "title": "Response Reorder Check Steps Admin Maintenance Check Steps Order Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/maintenance/check-steps/{step_id}": {
+      "patch": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "summary": "Update Check Step",
+        "operationId": "update_check_step_admin_maintenance_check_steps__step_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "step_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Step Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckStepUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckStepAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5216,6 +5420,147 @@
           "reason"
         ],
         "title": "CancellationCreate"
+      },
+      "CheckAnswerIn": {
+        "properties": {
+          "check_item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Check Item Id"
+          },
+          "result": {
+            "$ref": "#/components/schemas/CheckResult"
+          },
+          "observation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observation"
+          },
+          "requires_repair": {
+            "type": "boolean",
+            "title": "Requires Repair",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "check_item_id",
+          "result"
+        ],
+        "title": "CheckAnswerIn",
+        "description": "Respuesta a un paso del checklist (E07-06 y E07-08)."
+      },
+      "CheckResult": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "not_ok"
+        ],
+        "title": "CheckResult",
+        "description": "Resultado de un paso del checklist de mantenimiento (E07-06)."
+      },
+      "CheckStepAdminOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "position",
+          "is_active"
+        ],
+        "title": "CheckStepAdminOut"
+      },
+      "CheckStepCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CheckStepCreate"
+      },
+      "CheckStepOrder": {
+        "properties": {
+          "step_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Step Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "step_ids"
+        ],
+        "title": "CheckStepOrder",
+        "description": "Los pasos activos en el orden nuevo: todos, sin repetir."
+      },
+      "CheckStepUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CheckStepUpdate"
       },
       "ClientAdminOut": {
         "properties": {
@@ -5799,6 +6144,14 @@
               }
             ],
             "title": "No Signature Text"
+          },
+          "checklist": {
+            "items": {
+              "$ref": "#/components/schemas/ClosureCheckAdminOut"
+            },
+            "type": "array",
+            "title": "Checklist",
+            "default": []
           }
         },
         "type": "object",
@@ -5823,6 +6176,40 @@
         ],
         "title": "ClosureAdminOut",
         "description": "Lo que cargó la escuadrilla al cerrar, para que administración lo revise (E04-08).\n\nFalla y reparación vienen como texto: el nombre del catálogo o lo escrito en \"Otro\"."
+      },
+      "ClosureCheckAdminOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "result": {
+            "$ref": "#/components/schemas/CheckResult"
+          },
+          "observation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observation"
+          },
+          "requires_repair": {
+            "type": "boolean",
+            "title": "Requires Repair"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "result",
+          "observation",
+          "requires_repair"
+        ],
+        "title": "ClosureCheckAdminOut"
       },
       "ClosureChoiceTechnicianOut": {
         "properties": {
@@ -6005,6 +6392,14 @@
             "type": "array",
             "title": "Parts",
             "default": []
+          },
+          "checklist": {
+            "items": {
+              "$ref": "#/components/schemas/CheckAnswerIn"
+            },
+            "type": "array",
+            "title": "Checklist",
+            "default": []
           }
         },
         "additionalProperties": false,
@@ -6059,6 +6454,14 @@
                 "type": "null"
               }
             ]
+          },
+          "checklist": {
+            "items": {
+              "$ref": "#/components/schemas/ClosureChoiceTechnicianOut"
+            },
+            "type": "array",
+            "title": "Checklist",
+            "default": []
           }
         },
         "type": "object",

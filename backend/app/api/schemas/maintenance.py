@@ -4,6 +4,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
+from app.api.schemas.catalog import CatalogName
 from app.domain.work_order import OrderStatus
 
 # Cada cuántos meses: el prototipo del cliente usa 2, 3, 4 y 6; se deja margen.
@@ -103,3 +104,36 @@ class MaintenanceRunOut(BaseModel):
 
     generated: list[GeneratedOrderOut]
     skipped: list[SkippedPlanOut]
+
+
+# ---- E07-01: checklist único de mantenimiento ----
+
+
+class CheckStepCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: CatalogName
+
+
+class CheckStepUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: CatalogName | None = None
+    is_active: bool | None = None
+
+
+class CheckStepOrder(BaseModel):
+    """Los pasos activos en el orden nuevo: todos, sin repetir."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    step_ids: list[uuid.UUID]
+
+
+class CheckStepAdminOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    position: int
+    is_active: bool

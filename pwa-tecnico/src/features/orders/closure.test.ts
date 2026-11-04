@@ -24,6 +24,7 @@ const OPTIONS: ClosureOptions = {
     { id: "p2", name: "Caño de cobre 1/4", unit: "metro" },
   ],
   workshop_stage: null,
+  checklist: [],
 };
 
 function draft(overrides: Partial<ClosureDraft> = {}): ClosureDraft {
@@ -185,6 +186,7 @@ describe("toClosurePayload", () => {
       no_signature_reason: "refused",
       no_signature_text: null,
       parts: [],
+      checklist: [],
     });
   });
 
@@ -315,5 +317,55 @@ describe("materiales", () => {
       { part_id: null, other_text: "Cinta aisladora", quantity: "2" },
     ]);
     expect(toClosurePayload(draft(), "key").parts).toEqual([]);
+  });
+});
+
+// E07-06 y E07-08: checklist de mantenimiento.
+describe("checklist", () => {
+  const MANT: ClosureOptions = {
+    ...OPTIONS,
+    requires_failure_repair: false,
+    checklist: [
+      { id: "s1", name: "Limpieza de filtros" },
+      { id: "s2", name: "Revisión del drenaje" },
+    ],
+  };
+  const ok = { result: "ok" as const, observation: "", requiresRepair: false };
+
+  it("otra visita puede ir sin checklist, pero si se empieza va completo", () => {
+    const revisit = draft({ outcome: "needs_revisit", observation: "Falta repuesto" });
+    expect(missingFields(revisit, MANT).checklist).toBeUndefined();
+    expect(missingFields({ ...revisit, checklist: { s1: ok } }, MANT).checklist).toBe(
+      "Marcá OK o No OK en todos los pasos.",
+    );
+  });
+
+  it("con requiere reparación la falla pasa a ser obligatoria", () => {
+    const sinFalla = draft({
+      failure: "",
+      repair: "",
+      checklist: {
+        s1: ok,
+        s2: { result: "not_ok", observation: "Bandeja tapada", requiresRepair: true },
+      },
+    });
+    expect(missingFields(sinFalla, MANT)).toEqual({
+      failure_id: "Elegí la falla.",
+      repair_id: "Elegí la reparación.",
+    });
+    const sinReparar = { ...sinFalla, checklist: { s1: ok, s2: ok } };
+    expect(missingFields(sinReparar, MANT)).toEqual({});
+  });
+
+  it("un borrador viejo o con pasos que ya no están se limpia", () => {
+    const viejo = { ...draft(), checklist: undefined } as unknown as ClosureDraft;
+    expect(restoreDraft(viejo, MANT).checklist).toEqual({});
+    const otro = draft({ checklist: { s1: ok, quitado: ok } });
+    expect(restoreDraft(otro, MANT).checklist).toEqual({ s1: ok });
+  });
+
+  it("No se pudo hacer no manda el checklist", () => {
+    const noHecha = draft({ outcome: "not_done", checklist: { s1: ok } });
+    expect(toClosurePayload(noHecha, "k").checklist).toEqual([]);
   });
 });

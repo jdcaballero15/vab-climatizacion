@@ -9,7 +9,9 @@ import { SignaturePad } from "./SignaturePad";
 import {
   EMPTY_DRAFT,
   OTHER,
+  asksChecklist,
   asksEquipmentCondition,
+  checklistProblems,
   failureRepairRequired,
   isBench,
   isHandover,
@@ -18,6 +20,7 @@ import {
   observationRequired,
   repairsFor,
   restoreDraft,
+  type CheckDraft,
   type ClosureDraft,
   type ClosureErrors,
   type ClosureField,
@@ -64,6 +67,7 @@ const SECTION_OF: Record<ClosureField, string> = {
   task_ids: "closure-tasks",
   outcome: "closure-outcome",
   not_done_reason: "closure-outcome",
+  checklist: "closure-checklist",
   failure_id: "closure-failure",
   failure_other_text: "closure-failure",
   repair_id: "closure-repair",
@@ -325,6 +329,15 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
     setServerError(null);
     setDraft((current) => ({ ...current, ...changes }));
   };
+  const answer = (itemId: string, check: CheckDraft | null) => {
+    const checklist = { ...draft.checklist };
+    if (check) {
+      checklist[itemId] = check;
+    } else {
+      delete checklist[itemId];
+    }
+    update({ checklist });
+  };
   const toggle = (list: string[], id: string) =>
     list.includes(id) ? list.filter((item) => item !== id) : [...list, id];
 
@@ -473,6 +486,7 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
   const mustSign = signatureMandatory(draft, options);
   const required = failureRepairRequired(draft, options);
   const repairs = repairsFor(draft, options);
+  const checkProblems = submitted ? checklistProblems(draft, options) : {};
   let step = 0;
   const title = (text: string, extra?: ReactNode, id?: string) => (
     <h2 className="closure__title" id={id}>
@@ -600,6 +614,98 @@ function ClosureForm({ userId, orderId, summary, options, stored }: ClosureFormP
           ))}
         </div>
       </Section>
+
+      {asksChecklist(draft, options) && (
+        <Section id="closure-checklist" error={errors.checklist}>
+          {title("Checklist de mantenimiento")}
+          <p className="closure__hint">Marcá cada paso. Si algo da No OK, contá qué encontraste.</p>
+          <ol className="closure__checklist" aria-label="Checklist de mantenimiento">
+            {options.checklist.map((item) => {
+              const check = draft.checklist[item.id];
+              const problem = checkProblems[item.id];
+              return (
+                <li
+                  key={item.id}
+                  className={problem ? "closure__check closure__check--invalid" : "closure__check"}
+                >
+                  <p className="closure__check-name" id={`check-${item.id}`}>
+                    {item.name}
+                  </p>
+                  <div
+                    className="closure__choices closure__choices--cols"
+                    role="group"
+                    aria-labelledby={`check-${item.id}`}
+                  >
+                    <Choice
+                      single
+                      pressed={check?.result === "ok"}
+                      onClick={() =>
+                        answer(
+                          item.id,
+                          check?.result === "ok"
+                            ? null
+                            : { result: "ok", observation: "", requiresRepair: false },
+                        )
+                      }
+                    >
+                      OK
+                    </Choice>
+                    <Choice
+                      single
+                      fail
+                      pressed={check?.result === "not_ok"}
+                      onClick={() =>
+                        answer(
+                          item.id,
+                          check?.result === "not_ok"
+                            ? null
+                            : { result: "not_ok", observation: "", requiresRepair: false },
+                        )
+                      }
+                    >
+                      No OK
+                    </Choice>
+                  </div>
+                  {check?.result === "not_ok" && (
+                    <>
+                      <label className="closure__other">
+                        ¿Qué encontraron?
+                        <input
+                          type="text"
+                          className="closure__input"
+                          maxLength={2000}
+                          value={check.observation}
+                          aria-invalid={problem ? true : undefined}
+                          onChange={(event) =>
+                            answer(item.id, { ...check, observation: event.target.value })
+                          }
+                        />
+                      </label>
+                      <div className="closure__choices">
+                        <Choice
+                          fail
+                          pressed={check.requiresRepair}
+                          onClick={() =>
+                            answer(item.id, { ...check, requiresRepair: !check.requiresRepair })
+                          }
+                        >
+                          Requiere reparación
+                        </Choice>
+                      </div>
+                    </>
+                  )}
+                  {problem && <p className="closure__field-error">{problem}</p>}
+                </li>
+              );
+            })}
+          </ol>
+          {required && !options.requires_failure_repair && (
+            <p className="closure__hint" role="note">
+              Hay pasos que requieren reparación: cargá abajo la falla y la reparación.
+            </p>
+          )}
+        </Section>
+      )}
 
       <Section id="closure-failure" error={errors.failure_id ?? errors.failure_other_text}>
         {title("Falla", optionalTag(required), "closure-failure-title")}

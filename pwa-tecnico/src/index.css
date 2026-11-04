@@ -986,6 +986,45 @@ button:disabled {
   padding-left: 1.25rem;
 }
 
+/* Checklist de mantenimiento (E07-06): un paso por tarjeta, OK o No OK con un dedo. */
+.closure__checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.closure__check {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 90%);
+  border-radius: var(--radius-sm);
+  background: rgb(255 255 255 / 45%);
+}
+
+.closure__check--invalid {
+  border-color: var(--danger);
+}
+
+.closure__check-name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.closure__check .closure__choices--cols {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* Dentro de la tarjeta del paso, el campo blanco necesita borde para verse. */
+.closure__check .closure__input {
+  border-color: var(--border-strong);
+  background: #ffffff;
+}
+
 /* Fotos del cierre (E05-06): miniaturas grandes para quitar con un dedo. */
 .closure__photos {
   display: grid;

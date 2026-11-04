@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { businessToday } from "../orders/labels";
 import { MaintenancePage } from "./MaintenancePage";
-import type { MaintenancePlan, MaintenanceRun } from "./types";
+import type { CheckStep, MaintenancePlan, MaintenanceRun } from "./types";
 
 const PLAN: MaintenancePlan = {
   id: "p1",
@@ -66,6 +66,11 @@ const TIPOS = [
   { id: "w1", name: "Reparación", is_active: true },
   { id: "w2", name: "Service", is_active: true },
 ];
+const PASOS: CheckStep[] = [
+  { id: "s1", name: "Limpieza de filtros", position: 0, is_active: true },
+  { id: "s2", name: "Revisión del drenaje", position: 1, is_active: true },
+  { id: "s3", name: "Prueba de funcionamiento", position: 2, is_active: true },
+];
 const ESCUADRILLAS = [{ id: "k1", name: "Escuadrilla 1", is_active: true, app_user: null }];
 
 function json(body: unknown, status = 200) {
@@ -96,6 +101,9 @@ function stubApi(handler?: (call: Call) => Response | undefined) {
       }
       if (url.pathname.endsWith("/admin/maintenance/plans") && request.method === "GET") {
         return json([PLAN, SIN_ESCUADRILLA]);
+      }
+      if (url.pathname.endsWith("/admin/maintenance/check-steps") && request.method === "GET") {
+        return json(PASOS);
       }
       if (url.pathname.endsWith("/admin/clients")) {
         return json({ items: [CLIENTE], total: 1, limit: 20, offset: 0 });
@@ -254,5 +262,89 @@ describe("MaintenancePage", () => {
       "Falta el equipo y la próxima visita.",
     );
     expect(calls.filter((call) => call.method === "POST")).toHaveLength(0);
+  });
+
+  // E07-01: el checklist único, en orden, editable desde Mantenimiento.
+  describe("checklist", () => {
+    async function abrir() {
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: "Checklist" }));
+      const lista = await screen.findByRole("list", { name: "Pasos del checklist" });
+      await within(lista).findByText("Limpieza de filtros");
+      return { user, lista };
+    }
+
+    it("muestra los pasos en orden", async () => {
+      stubApi();
+      renderPage();
+
+      const { lista } = await abrir();
+
+      expect(
+        within(lista)
+          .getAllByRole("listitem")
+          .map((item) => item.textContent),
+      ).toEqual([
+        expect.stringContaining("Limpieza de filtros"),
+        expect.stringContaining("Revisión del drenaje"),
+        expect.stringContaining("Prueba de funcionamiento"),
+      ]);
+      expect(screen.getByRole("button", { name: "Subir Limpieza de filtros" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Bajar Prueba de funcionamiento" })).toBeDisabled();
+    });
+
+    it("agrega un paso", async () => {
+      const calls = stubApi((call) =>
+        call.method === "POST" && call.path.endsWith("/check-steps")
+          ? json({ id: "s4", name: "Control de presiones", position: 3, is_active: true }, 201)
+          : undefined,
+      );
+      renderPage();
+      const { user } = await abrir();
+
+      await user.type(screen.getByLabelText("Paso nuevo"), "Control de presiones");
+      await user.click(screen.getByRole("button", { name: "Agregar paso" }));
+
+      await waitFor(() =>
+        expect(calls.find((call) => call.method === "POST")?.body).toEqual({
+          name: "Control de presiones",
+        }),
+      );
+    });
+
+    it("baja un paso mandando el orden nuevo", async () => {
+      const calls = stubApi((call) => (call.method === "PUT" ? json(PASOS) : undefined));
+      renderPage();
+      const { user } = await abrir();
+
+      await user.click(screen.getByRole("button", { name: "Bajar Limpieza de filtros" }));
+
+      await waitFor(() =>
+        expect(calls.find((call) => call.method === "PUT")).toEqual({
+          method: "PUT",
+          path: expect.stringMatching(/\/admin\/maintenance\/check-steps\/order$/),
+          body: { step_ids: ["s2", "s1", "s3"] },
+        }),
+      );
+    });
+
+    // Criterio 4: quitar un paso lo desactiva, no lo borra.
+    it("desactiva un paso", async () => {
+      const calls = stubApi((call) =>
+        call.method === "PATCH" ? json({ ...PASOS[1], is_active: false }) : undefined,
+      );
+      renderPage();
+      const { user } = await abrir();
+
+      await user.click(screen.getByRole("button", { name: "Desactivar Revisión del drenaje" }));
+
+      await waitFor(() =>
+        expect(calls.find((call) => call.method === "PATCH")).toEqual({
+          method: "PATCH",
+          path: expect.stringMatching(/\/check-steps\/s2$/),
+          body: { is_active: false },
+        }),
+      );
+    });
   });
 });

@@ -37,6 +37,7 @@ from app.db.repositories.maintenance import MaintenancePlanRepository, PlanRow
 from app.db.repositories.work_order import WorkOrderRepository
 from app.domain.work_order import OrderSource, OrderStatus, WorkOrderEventType
 from app.services import catalog as catalog_service
+from app.services import maintenance_checklist
 
 logger = logging.getLogger(__name__)
 
@@ -304,6 +305,7 @@ async def _generate(session: AsyncSession, visit: _Visit) -> WorkOrder | None:
             await session.flush()
     except IntegrityError:
         return None
+    await maintenance_checklist.copy_to_order(session, order)
     WorkOrderRepository(session).add_event(
         WorkOrderEvent(
             work_order_id=order.id,

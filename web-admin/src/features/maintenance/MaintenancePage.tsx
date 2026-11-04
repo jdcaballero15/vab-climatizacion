@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { PageHeader } from "../../app/PageHeader";
 import { businessToday, formatDay, ORDER_STATUS_LABELS } from "../orders/labels";
+import { ChecklistEditor } from "./ChecklistEditor";
 import { everyText, SKIP_REASONS } from "./labels";
 import { PlanForm } from "./PlanForm";
 import type { MaintenancePlan, MaintenanceRun } from "./types";
@@ -15,6 +16,7 @@ import { usePlans, useRunMaintenance, useUpdatePlan } from "./useMaintenance";
 export function MaintenancePage() {
   const [showEnded, setShowEnded] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [editingChecklist, setEditingChecklist] = useState(false);
   const plans = usePlans(showEnded);
   const run = useRunMaintenance();
 
@@ -29,6 +31,13 @@ export function MaintenancePage() {
         }
         actions={
           <div className="users__actions">
+            <button
+              type="button"
+              aria-expanded={editingChecklist}
+              onClick={() => setEditingChecklist((open) => !open)}
+            >
+              {editingChecklist ? "Cerrar checklist" : "Checklist"}
+            </button>
             <button type="button" onClick={() => run.mutate()} disabled={run.isPending}>
               Generar ahora
             </button>
@@ -38,6 +47,7 @@ export function MaintenancePage() {
           </div>
         }
       />
+      {editingChecklist && <ChecklistEditor />}
       {run.isError && <p role="alert">{run.error.message}</p>}
       {run.data && <RunSummary result={run.data} />}
       {creating && <PlanForm onDone={() => setCreating(false)} />}

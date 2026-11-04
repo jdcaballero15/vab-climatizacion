@@ -1,7 +1,17 @@
 import uuid
 from datetime import date
 
-from sqlalchemy import CheckConstraint, Date, ForeignKey, Index, Integer, Text, text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Date,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import TimestampedBase
@@ -38,3 +48,20 @@ class MaintenancePlan(TimestampedBase):
     next_due_on: Mapped[date] = mapped_column(Date, nullable=False)
     ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class MaintenanceCheckStep(TimestampedBase):
+    """Paso del checklist único de mantenimiento, editable por la oficina (E07-01).
+
+    Decisión de Gonza (2026-11-03): una sola lista para todo mantenimiento, sin plantillas
+    por frecuencia ni por tipo de equipo. Cada orden generada se guarda una copia de los
+    pasos activos (WorkOrderCheckItem): editar la lista no cambia las órdenes ya generadas.
+    """
+
+    __tablename__ = "maintenance_check_step"
+    __table_args__ = (Index("uq_maintenance_check_step_name", text("lower(name)"), unique=True),)
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Quitar un paso lo desactiva, no lo borra (E07-01, criterio 4).
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
