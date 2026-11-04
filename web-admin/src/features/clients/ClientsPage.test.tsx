@@ -766,6 +766,7 @@ describe("ClientsPage", () => {
       signature: null,
       no_signature_reason: null,
       no_signature_text: null,
+      checklist: [],
     } as unknown as ClosureDetail;
 
     function conHistorial(ordenes: (url: URL) => Response) {

@@ -8,6 +8,7 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StringConstr
 from app.api.schemas.client import blank_to_none
 from app.api.schemas.part import PartChoiceTechnicianOut
 from app.domain.work_order import (
+    CheckResult,
     ClosureOutcome,
     EquipmentCondition,
     NoSignatureReason,
@@ -49,6 +50,10 @@ class ClosureOptionsTechnicianOut(BaseModel):
     parts: list[PartChoiceTechnicianOut]
     # Taller (E06): qué etapa se cierra; cambia lo que pide el formulario. Nula en el lugar.
     workshop_stage: WorkshopStage | None
+    # E07-06: pasos del checklist de una orden de mantenimiento, en orden; vacío en las demás.
+    # Con checklist, falla y reparación se piden solo si un paso "requiere reparación"
+    # (E07-08), y requires_failure_repair viene en false.
+    checklist: list[ClosureChoiceTechnicianOut] = []
 
 
 # Cantidad de un material: mayor que cero, hasta 3 decimales (1,5 kg; 3,2 metros).
@@ -63,6 +68,19 @@ class PartUsageIn(BaseModel):
     part_id: uuid.UUID | None = None
     other_text: OtherText = None
     quantity: Quantity
+
+
+class CheckAnswerIn(BaseModel):
+    """Respuesta a un paso del checklist (E07-06 y E07-08)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    check_item_id: uuid.UUID
+    result: CheckResult
+    # Obligatoria en No OK; en OK no va.
+    observation: Observation = None
+    # Solo en No OK: el cierre pasa a pedir falla y reparación (E07-08).
+    requires_repair: bool = False
 
 
 class SignatureIn(BaseModel):
@@ -99,6 +117,8 @@ class ClosureCreate(BaseModel):
     no_signature_text: OtherText = None
     # E05-05: con cualquier resultado; el total de la orden suma todas las visitas.
     parts: list[PartUsageIn] = []
+    # E07-06: todos los pasos al terminarla; nada si no se pudo hacer.
+    checklist: list[CheckAnswerIn] = []
 
 
 class ClosureTechnicianOut(BaseModel):
@@ -121,6 +141,13 @@ class ClosureSignatureAdminOut(BaseModel):
     signed_at: datetime
     # URL firmada de corta duración (E00-09), como las fotos.
     url: str
+
+
+class ClosureCheckAdminOut(BaseModel):
+    name: str
+    result: CheckResult
+    observation: str | None
+    requires_repair: bool
 
 
 class ClosureAdminOut(BaseModel):
@@ -148,3 +175,5 @@ class ClosureAdminOut(BaseModel):
     signature: ClosureSignatureAdminOut | None
     no_signature_reason: NoSignatureReason | None
     no_signature_text: str | None
+    # E07-06 y E07-08: el checklist de mantenimiento, en orden; vacío en las demás órdenes.
+    checklist: list[ClosureCheckAdminOut] = []

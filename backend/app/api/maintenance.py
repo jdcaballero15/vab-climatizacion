@@ -5,6 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.deps import SessionDep, require_role
 from app.api.schemas.maintenance import (
+    CheckStepAdminOut,
+    CheckStepCreate,
+    CheckStepOrder,
+    CheckStepUpdate,
     MaintenancePlanAdminOut,
     MaintenancePlanCreate,
     MaintenancePlanUpdate,
@@ -12,6 +16,7 @@ from app.api.schemas.maintenance import (
 )
 from app.db.models.user import User, UserRole
 from app.services import maintenance as maintenance_service
+from app.services import maintenance_checklist
 
 router = APIRouter(prefix="/admin/maintenance", tags=["mantenimiento"])
 
@@ -39,6 +44,21 @@ _ERROR_DETAIL: dict[type[Exception], tuple[int, str, str]] = {
         409,
         "equipment_already_in_plan",
         "Ese equipo ya tiene un plan de mantenimiento activo.",
+    ),
+    maintenance_checklist.CheckStepNotFoundError: (
+        404,
+        "check_step_not_found",
+        "No se encontró el paso.",
+    ),
+    maintenance_checklist.CheckStepNameTakenError: (
+        409,
+        "check_step_name_already_exists",
+        "Ya hay un paso con ese nombre.",
+    ),
+    maintenance_checklist.CheckStepOrderMismatchError: (
+        422,
+        "check_step_order_mismatch",
+        "La lista cambió mientras la ordenabas. Volvé a cargarla.",
     ),
 }
 _ERRORS = tuple(_ERROR_DETAIL)
@@ -91,6 +111,51 @@ async def update_plan(
 async def run_now(session: SessionDep, _: AdminOnly) -> MaintenanceRunOut:
     """La misma corrida del cron de cada mañana, a pedido ("Generar ahora")."""
     return await maintenance_service.run_generation(session)
+
+
+# ---- E07-01: checklist único ----
+
+
+@router.get("/check-steps", response_model=list[CheckStepAdminOut])
+async def list_check_steps(
+    session: SessionDep, _: AdminOnly, include_inactive: bool = False
+) -> list[CheckStepAdminOut]:
+    steps = await maintenance_checklist.list_steps(session, include_inactive=include_inactive)
+    return [CheckStepAdminOut.model_validate(step) for step in steps]
+
+
+@router.post("/check-steps", response_model=CheckStepAdminOut, status_code=status.HTTP_201_CREATED)
+async def create_check_step(
+    payload: CheckStepCreate, session: SessionDep, _: AdminOnly
+) -> CheckStepAdminOut:
+    try:
+        step = await maintenance_checklist.create_step(session, payload)
+    except _ERRORS as exc:
+        raise _error(exc) from None
+    return CheckStepAdminOut.model_validate(step)
+
+
+# Antes de /{step_id}: si no, "order" se toma como un id y da 422.
+@router.put("/check-steps/order", response_model=list[CheckStepAdminOut])
+async def reorder_check_steps(
+    payload: CheckStepOrder, session: SessionDep, _: AdminOnly
+) -> list[CheckStepAdminOut]:
+    try:
+        steps = await maintenance_checklist.reorder_steps(session, payload)
+    except _ERRORS as exc:
+        raise _error(exc) from None
+    return [CheckStepAdminOut.model_validate(step) for step in steps]
+
+
+@router.patch("/check-steps/{step_id}", response_model=CheckStepAdminOut)
+async def update_check_step(
+    step_id: uuid.UUID, payload: CheckStepUpdate, session: SessionDep, _: AdminOnly
+) -> CheckStepAdminOut:
+    try:
+        step = await maintenance_checklist.update_step(session, step_id, payload)
+    except _ERRORS as exc:
+        raise _error(exc) from None
+    return CheckStepAdminOut.model_validate(step)
 
 
 def _error(exc: Exception) -> HTTPException:

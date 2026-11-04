@@ -86,6 +86,13 @@ class EquipmentCondition(StrEnum):
     not_working = "not_working"
 
 
+class CheckResult(StrEnum):
+    """Resultado de un paso del checklist de mantenimiento (E07-06)."""
+
+    ok = "ok"
+    not_ok = "not_ok"
+
+
 class NotDoneReason(StrEnum):
     """Por qué no se pudo hacer el trabajo (E05-08). Lista fija, como el prototipo."""
 

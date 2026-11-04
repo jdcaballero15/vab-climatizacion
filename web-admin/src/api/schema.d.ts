@@ -1193,6 +1193,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/maintenance/check-steps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Check Steps */
+        get: operations["list_check_steps_admin_maintenance_check_steps_get"];
+        put?: never;
+        /** Create Check Step */
+        post: operations["create_check_step_admin_maintenance_check_steps_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/maintenance/check-steps/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Reorder Check Steps */
+        put: operations["reorder_check_steps_admin_maintenance_check_steps_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/maintenance/check-steps/{step_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Check Step */
+        patch: operations["update_check_step_admin_maintenance_check_steps__step_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1305,6 +1357,65 @@ export interface components {
             reason: components["schemas"]["CancelReason"];
             /** Reason Text */
             reason_text?: string | null;
+        };
+        /**
+         * CheckAnswerIn
+         * @description Respuesta a un paso del checklist (E07-06 y E07-08).
+         */
+        CheckAnswerIn: {
+            /**
+             * Check Item Id
+             * Format: uuid
+             */
+            check_item_id: string;
+            result: components["schemas"]["CheckResult"];
+            /** Observation */
+            observation?: string | null;
+            /**
+             * Requires Repair
+             * @default false
+             */
+            requires_repair: boolean;
+        };
+        /**
+         * CheckResult
+         * @description Resultado de un paso del checklist de mantenimiento (E07-06).
+         * @enum {string}
+         */
+        CheckResult: "ok" | "not_ok";
+        /** CheckStepAdminOut */
+        CheckStepAdminOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Position */
+            position: number;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** CheckStepCreate */
+        CheckStepCreate: {
+            /** Name */
+            name: string;
+        };
+        /**
+         * CheckStepOrder
+         * @description Los pasos activos en el orden nuevo: todos, sin repetir.
+         */
+        CheckStepOrder: {
+            /** Step Ids */
+            step_ids: string[];
+        };
+        /** CheckStepUpdate */
+        CheckStepUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /** ClientAdminOut */
         ClientAdminOut: {
@@ -1492,6 +1603,21 @@ export interface components {
             no_signature_reason: components["schemas"]["NoSignatureReason"] | null;
             /** No Signature Text */
             no_signature_text: string | null;
+            /**
+             * Checklist
+             * @default []
+             */
+            checklist: components["schemas"]["ClosureCheckAdminOut"][];
+        };
+        /** ClosureCheckAdminOut */
+        ClosureCheckAdminOut: {
+            /** Name */
+            name: string;
+            result: components["schemas"]["CheckResult"];
+            /** Observation */
+            observation: string | null;
+            /** Requires Repair */
+            requires_repair: boolean;
         };
         /** ClosureChoiceTechnicianOut */
         ClosureChoiceTechnicianOut: {
@@ -1548,6 +1674,11 @@ export interface components {
              * @default []
              */
             parts: components["schemas"]["PartUsageIn"][];
+            /**
+             * Checklist
+             * @default []
+             */
+            checklist: components["schemas"]["CheckAnswerIn"][];
         };
         /** ClosureOptionsTechnicianOut */
         ClosureOptionsTechnicianOut: {
@@ -1562,6 +1693,11 @@ export interface components {
             /** Parts */
             parts: components["schemas"]["PartChoiceTechnicianOut"][];
             workshop_stage: components["schemas"]["WorkshopStage"] | null;
+            /**
+             * Checklist
+             * @default []
+             */
+            checklist: components["schemas"]["ClosureChoiceTechnicianOut"][];
         };
         /**
          * ClosureOutcome
@@ -6031,6 +6167,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MaintenanceRunOut"];
+                };
+            };
+        };
+    };
+    list_check_steps_admin_maintenance_check_steps_get: {
+        parameters: {
+            query?: {
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckStepAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_check_step_admin_maintenance_check_steps_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckStepCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckStepAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reorder_check_steps_admin_maintenance_check_steps_order_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckStepOrder"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckStepAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_check_step_admin_maintenance_check_steps__step_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                step_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckStepUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckStepAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

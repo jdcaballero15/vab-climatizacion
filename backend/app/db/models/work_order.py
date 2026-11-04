@@ -26,6 +26,7 @@ from app.db.base import Base, TimestampedBase
 from app.domain.work_order import (
     BillingStatus,
     CancelReason,
+    CheckResult,
     ClosureOutcome,
     EquipmentCondition,
     NoSignatureReason,
@@ -254,6 +255,59 @@ class WorkOrderClosurePhoto(Base):
         ForeignKey("stored_file.id"), primary_key=True, unique=True
     )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class WorkOrderCheckItem(TimestampedBase):
+    """Paso del checklist copiado a la orden al generarla (E07-01, criterio 3).
+
+    Se copia el nombre: si la oficina después edita o desactiva el paso, la orden conserva
+    la lista con la que se generó.
+    """
+
+    __tablename__ = "work_order_check_item"
+    __table_args__ = (
+        Index("uq_work_order_check_item_position", "work_order_id", "position", unique=True),
+    )
+
+    work_order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("work_order.id"), nullable=False, index=True
+    )
+    step_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("maintenance_check_step.id"), nullable=True
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class WorkOrderClosureCheck(Base):
+    """Respuesta de la escuadrilla a un paso del checklist al cerrar (E07-06 y E07-08)."""
+
+    __tablename__ = "work_order_closure_check"
+    __table_args__ = (
+        # No OK lleva observación; OK no lleva ni observación ni "requiere reparación".
+        CheckConstraint(
+            "(result = 'not_ok') = (observation IS NOT NULL)",
+            name="ck_work_order_closure_check_observation",
+        ),
+        CheckConstraint(
+            "result = 'not_ok' OR NOT requires_repair",
+            name="ck_work_order_closure_check_repair",
+        ),
+    )
+
+    closure_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("work_order_closure.id"), primary_key=True
+    )
+    check_item_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("work_order_check_item.id"), primary_key=True
+    )
+    result: Mapped[CheckResult] = mapped_column(
+        Enum(CheckResult, name="check_result"), nullable=False
+    )
+    observation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    requires_repair: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
 
 
 class WorkOrderCancellation(TimestampedBase):

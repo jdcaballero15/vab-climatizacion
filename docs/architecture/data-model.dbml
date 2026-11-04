@@ -114,9 +114,9 @@ Enum maintenance_frequency {
   annual
 }
 
-Enum checklist_item_kind {
-  ok_no
-  measurement
+Enum check_result {
+  ok
+  not_ok
 }
 
 Enum stock_location_type {
@@ -494,22 +494,25 @@ Table stock_movement {
 
 // ---------- Mantenimiento preventivo ----------
 
-Table checklist_template {
+Table maintenance_check_step {
   id uuid [pk]
-  name varchar [not null]
-  frequency maintenance_frequency [not null]
-  equipment_type_id uuid [ref: > equipment_type.id, note: 'Null = plantilla general de esa frecuencia']
+  name varchar [not null, note: 'Único sin distinguir mayúsculas']
+  position int [not null]
+  is_active boolean [not null, note: 'Quitar un paso lo desactiva (E07-01)']
+
+  Note: 'Checklist único de mantenimiento, editable por la oficina (decisión de Gonza, 2026-11-03). Sin plantillas por frecuencia ni por tipo de equipo; las mediciones (E07-02) quedan para más adelante'
 }
 
-Table checklist_template_item {
+Table work_order_check_item {
   id uuid [pk]
-  template_id uuid [ref: > checklist_template.id, not null]
+  work_order_id uuid [ref: > work_order.id, not null]
+  step_id uuid [ref: > maintenance_check_step.id, note: 'De qué paso se copió']
   position int [not null]
-  label varchar [not null]
-  kind checklist_item_kind [not null]
-  unit varchar [note: 'Para mediciones: V, A, °C, bar']
-  expected_min numeric(12,3)
-  expected_max numeric(12,3)
+  name varchar [not null, note: 'Copiado al generar: editar el checklist no cambia la orden']
+
+  indexes {
+    (work_order_id, position) [unique]
+  }
 }
 
 Table maintenance_plan {
@@ -525,14 +528,16 @@ Table maintenance_plan {
   Note: 'Plan por equipo, como el prototipo del cliente (decisión de Gonza, 2026-11-03). Reemplaza el abono con equipos y la corrida mensual con aprobación (E07-03, E07-04)'
 }
 
-Table checklist_result {
-  id uuid [pk]
+Table work_order_closure_check {
   closure_id uuid [ref: > work_order_closure.id, not null]
-  template_item_id uuid [ref: > checklist_template_item.id, not null]
-  result varchar [note: 'ok o not_ok para ítems ok_no']
-  measured_value numeric(12,3)
-  out_of_range boolean
-  observation text
+  check_item_id uuid [ref: > work_order_check_item.id, not null]
+  result check_result [not null]
+  observation text [note: 'Obligatoria en No OK; nula en OK (CHECK)']
+  requires_repair boolean [not null, default: false, note: 'Solo en No OK: el cierre pide falla y reparación (E07-08)']
+
+  indexes {
+    (closure_id, check_item_id) [pk]
+  }
 }
 
 // ---------- Informes, auditoría y migración ----------

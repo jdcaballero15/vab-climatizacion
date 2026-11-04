@@ -19,7 +19,9 @@ from app.db.models.work_order import (
     WorkOrderAssignment,
     WorkOrderBilling,
     WorkOrderCancellation,
+    WorkOrderCheckItem,
     WorkOrderClosure,
+    WorkOrderClosureCheck,
     WorkOrderClosurePhoto,
     WorkOrderClosureTask,
     WorkOrderClosureTechnician,
@@ -469,6 +471,18 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         )
         return await self.session.scalar(stmt)
 
+    async def check_items(self, order_id: uuid.UUID) -> list[WorkOrderCheckItem]:
+        """Los pasos del checklist que se copiaron a la orden, en orden (E07-01)."""
+        stmt = (
+            select(WorkOrderCheckItem)
+            .where(
+                WorkOrderCheckItem.work_order_id == order_id,
+                WorkOrderCheckItem.deleted_at.is_(None),
+            )
+            .order_by(WorkOrderCheckItem.position)
+        )
+        return list(await self.session.scalars(stmt))
+
     async def end_current_assignment(self, order_id: uuid.UUID) -> None:
         """Deja la orden sin escuadrilla: la asignación vigente pasa a histórica."""
         stmt = (
@@ -521,6 +535,20 @@ class WorkOrderClosureRepository(BaseRepository[WorkOrderClosure]):
             .order_by(Task.name)
         )
         return list(await self.session.scalars(stmt))
+
+    async def checks(
+        self, closure_id: uuid.UUID
+    ) -> Sequence[Row[WorkOrderCheckItem, WorkOrderClosureCheck]]:
+        stmt = (
+            select(WorkOrderCheckItem, WorkOrderClosureCheck)
+            .join(
+                WorkOrderClosureCheck,
+                WorkOrderClosureCheck.check_item_id == WorkOrderCheckItem.id,
+            )
+            .where(WorkOrderClosureCheck.closure_id == closure_id)
+            .order_by(WorkOrderCheckItem.position)
+        )
+        return (await self.session.execute(stmt)).all()
 
     async def photos(self, closure_id: uuid.UUID) -> list[StoredFile]:
         stmt = (

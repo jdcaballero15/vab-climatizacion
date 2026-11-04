@@ -275,6 +275,8 @@ async def test_cierre_con_todo_lo_que_cargo_la_escuadrilla(mundo: Mundo) -> None
         "signature": None,
         "no_signature_reason": None,
         "no_signature_text": None,
+        # No es de mantenimiento: sin checklist (E07-06).
+        "checklist": [],
     }
 
 

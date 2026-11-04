@@ -2,14 +2,14 @@ import uuid
 from collections.abc import Sequence
 from datetime import date
 
-from sqlalchemy import ColumnElement, Row, and_, exists, or_, select, true
+from sqlalchemy import ColumnElement, Row, and_, exists, func, or_, select, true
 from sqlalchemy.orm import aliased
 
 from app.db.models.catalog import EquipmentType, WorkType
 from app.db.models.client import Client, ClientSite
 from app.db.models.crew import Crew
 from app.db.models.equipment import Equipment
-from app.db.models.maintenance import MaintenancePlan
+from app.db.models.maintenance import MaintenanceCheckStep, MaintenancePlan
 from app.db.models.work_order import WorkOrder
 from app.db.repository import BaseRepository
 from app.domain.work_order import OPEN_STATUSES
@@ -109,3 +109,24 @@ class MaintenancePlanRepository(BaseRepository[MaintenancePlan]):
             self._select(include_deleted=True).where(self.model.id.in_(plan_ids))
         )
         return {plan.id: plan for plan in result.scalars()}
+
+
+class CheckStepRepository(BaseRepository[MaintenanceCheckStep]):
+    model = MaintenanceCheckStep
+
+    async def list_by_status(self, *, include_inactive: bool) -> Sequence[MaintenanceCheckStep]:
+        stmt = self._select()
+        if not include_inactive:
+            stmt = stmt.where(self.model.is_active.is_(True))
+        result = await self.session.execute(stmt.order_by(self.model.position, self.model.name))
+        return result.scalars().all()
+
+    async def get_by_name(self, name: str) -> MaintenanceCheckStep | None:
+        stmt = self._select().where(func.lower(self.model.name) == func.lower(name))
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def next_position(self) -> int:
+        stmt = select(func.coalesce(func.max(self.model.position) + 1, 0)).where(
+            self.model.deleted_at.is_(None)
+        )
+        return int((await self.session.execute(stmt)).scalar_one())

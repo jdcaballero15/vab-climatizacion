@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.closure import (
     ClosureAdminOut,
+    ClosureCheckAdminOut,
     ClosureChoiceTechnicianOut,
     ClosureCreate,
     ClosureOptionsTechnicianOut,
@@ -25,7 +26,9 @@ from app.db.models.stored_file import StoredFile
 from app.db.models.user import User
 from app.db.models.work_order import (
     WorkOrder,
+    WorkOrderCheckItem,
     WorkOrderClosure,
+    WorkOrderClosureCheck,
     WorkOrderClosurePhoto,
     WorkOrderClosureTask,
     WorkOrderClosureTechnician,
@@ -39,6 +42,7 @@ from app.domain.work_order import (
     NEXT_WORKSHOP_STAGE,
     NOT_DONE_REASON_LABELS,
     SIGNED_WORKSHOP_STAGES,
+    CheckResult,
     ClosureOutcome,
     EquipmentCondition,
     NoSignatureReason,
@@ -103,6 +107,7 @@ async def get_closure_options(
     tasks = await catalog_service.list_tasks(session, order.work_type_id, include_inactive=False)
     failures: Sequence[Failure] = await _allowed(FailureRepository(session), equipment_type_id)
     repairs: Sequence[Repair] = await _allowed(RepairRepository(session), equipment_type_id)
+    checklist = await _check_items(session, order)
 
     repairs_by_failure: dict[uuid.UUID, list[ClosureChoiceTechnicianOut]] = {}
     for repair in repairs:
@@ -112,7 +117,7 @@ async def get_closure_options(
     return ClosureOptionsTechnicianOut(
         technicians=[ClosureChoiceTechnicianOut(id=t.id, name=t.full_name) for t in technicians],
         tasks=[ClosureChoiceTechnicianOut(id=t.id, name=t.name) for t in tasks],
-        requires_failure_repair=work_type.requires_failure_repair,
+        requires_failure_repair=work_type.requires_failure_repair and not checklist,
         failures=[
             FailureChoiceTechnicianOut(
                 id=f.id, name=f.name, repairs=repairs_by_failure.get(f.id, [])
@@ -121,6 +126,7 @@ async def get_closure_options(
         ],
         parts=await parts_service.list_active_choices(session),
         workshop_stage=order.workshop_stage,
+        checklist=[ClosureChoiceTechnicianOut(id=item.id, name=item.name) for item in checklist],
     )
 
 
@@ -137,7 +143,8 @@ async def close_order(
 
     order, equipment_type_id = await _order_in_progress(session, user, order_id)
     outcome = ClosureOutcome(data.outcome)
-    await _validate(session, order, equipment_type_id, outcome, data)
+    check_items = await _check_items(session, order)
+    await _validate(session, order, equipment_type_id, outcome, data, check_items)
     await _validate_photos(session, user, data.photo_ids)
     await _validate_signature(session, user, data, order.workshop_stage, outcome)
     await _validate_parts(session, data)
@@ -215,6 +222,16 @@ async def close_order(
             )
             for line in data.parts
         ]
+        + [
+            WorkOrderClosureCheck(
+                closure_id=closure.id,
+                check_item_id=answer.check_item_id,
+                result=answer.result,
+                observation=answer.observation,
+                requires_repair=answer.requires_repair,
+            )
+            for answer in data.checklist
+        ]
     )
     if data.signature is not None and data.signature.signer_name is not None:
         session.add(
@@ -246,7 +263,7 @@ async def get_last_closure(
 
     Las fotos y la firma vienen con URL firmada de corta duración (E05-06 y E05-07).
     """
-    await work_orders_service.get_work_order(session, order_id)
+    order = await work_orders_service.get_work_order(session, order_id)
     repo = WorkOrderClosureRepository(session)
     closure = await repo.last_for_order(order_id)
     if closure is None:
@@ -289,6 +306,19 @@ async def get_last_closure(
         signature=signature,
         no_signature_reason=closure.no_signature_reason,
         no_signature_text=closure.no_signature_text,
+        checklist=(
+            [
+                ClosureCheckAdminOut(
+                    name=item.name,
+                    result=check.result,
+                    observation=check.observation,
+                    requires_repair=check.requires_repair,
+                )
+                for item, check in await repo.checks(closure.id)
+            ]
+            if order.maintenance_plan_id is not None
+            else []
+        ),
     )
 
 
@@ -339,6 +369,17 @@ async def _order_in_progress(
     return order, equipment.equipment_type_id if equipment is not None else None
 
 
+async def _check_items(session: AsyncSession, order: WorkOrder) -> list[WorkOrderCheckItem]:
+    """El checklist de una orden de mantenimiento en el lugar (E07-06).
+
+    Si la orden pasó a taller, las etapas se cierran sin checklist: se respondió en la
+    visita que la mandó al galpón.
+    """
+    if order.maintenance_plan_id is None or order.kind != OrderKind.on_site:
+        return []
+    return await WorkOrderRepository(session).check_items(order.id)
+
+
 async def _allowed[T: (Failure, Repair)](
     repository: FailureRepository | RepairRepository, equipment_type_id: uuid.UUID | None
 ) -> Sequence[T]:
@@ -361,6 +402,7 @@ async def _validate(
     equipment_type_id: uuid.UUID | None,
     outcome: ClosureOutcome,
     data: ClosureCreate,
+    check_items: list[WorkOrderCheckItem],
 ) -> None:
     """Valida el cierre en un orden fijo: primero lo cargado, después lo que falta."""
     stage = order.workshop_stage
@@ -414,10 +456,13 @@ async def _validate(
                 "repair_not_available", "repair_id", "La reparación no corresponde a esa falla."
             )
 
+    repair_needed = _validate_checklist(check_items, outcome, data)
     work_type = await catalog_service.get_work_type(session, order.work_type_id)
+    # Con checklist, falla y reparación van solo si un paso requiere reparación (E07-08).
+    requires_failure_repair = repair_needed if check_items else work_type.requires_failure_repair
     # Retiro y devolución no piden falla ni reparación: eso se carga en el galpón (E06).
     handover = stage in SIGNED_WORKSHOP_STAGES
-    if outcome == ClosureOutcome.done and work_type.requires_failure_repair and not handover:
+    if outcome == ClosureOutcome.done and requires_failure_repair and not handover:
         if not has_failure:
             raise ClosureValidationError("failure_required", "failure_id", "Elegí la falla.")
         if not has_repair:
@@ -451,6 +496,49 @@ async def _validate(
         raise ClosureValidationError(
             "observation_required", "observation", "Escribí una observación."
         )
+
+
+def _validate_checklist(
+    check_items: list[WorkOrderCheckItem], outcome: ClosureOutcome, data: ClosureCreate
+) -> bool:
+    """OK / No OK por paso (E07-06). Devuelve si algún paso requiere reparación (E07-08).
+
+    Terminada pide todos los pasos. "Requiere otra visita" o "requiere retiro" pueden
+    mandarlo, completo, para no perder lo revisado; "no se pudo hacer" no lo lleva.
+    """
+    answers = data.checklist
+    if answers and (not check_items or outcome == ClosureOutcome.not_done):
+        raise ClosureValidationError(
+            "checklist_not_allowed", "checklist", "Esta orden no lleva checklist."
+        )
+    item_ids = {item.id for item in check_items}
+    answered = [answer.check_item_id for answer in answers]
+    if len(set(answered)) != len(answered) or not set(answered) <= item_ids:
+        raise ClosureValidationError(
+            "checklist_item_not_available",
+            "checklist",
+            "El checklist cambió. Volvé a abrir el cierre.",
+        )
+    for answer in answers:
+        if answer.result == CheckResult.not_ok and answer.observation is None:
+            raise ClosureValidationError(
+                "checklist_observation_required",
+                "checklist",
+                "Escribí qué encontraste en cada paso No OK.",
+            )
+        if answer.result == CheckResult.ok and (
+            answer.observation is not None or answer.requires_repair
+        ):
+            raise ClosureValidationError(
+                "checklist_ok_with_details",
+                "checklist",
+                'La observación y "requiere reparación" van solo en No OK.',
+            )
+    if (outcome == ClosureOutcome.done or answers) and set(answered) != item_ids:
+        raise ClosureValidationError(
+            "checklist_incomplete", "checklist", "Marcá OK o No OK en todos los pasos."
+        )
+    return any(answer.requires_repair for answer in answers)
 
 
 async def _validate_photos(session: AsyncSession, user: User, photo_ids: list[uuid.UUID]) -> None:

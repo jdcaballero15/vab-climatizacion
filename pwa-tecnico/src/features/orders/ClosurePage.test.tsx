@@ -47,6 +47,7 @@ function options(overrides: Partial<Options> = {}): Options {
       { id: "e0000000-0000-4000-8000-000000000002", name: "Caño de cobre 1/4", unit: "metro" },
     ],
     workshop_stage: null,
+    checklist: [],
     ...overrides,
   };
 }
@@ -330,6 +331,7 @@ describe("ClosurePage", () => {
       no_signature_reason: "refused",
       no_signature_text: null,
       parts: [],
+      checklist: [],
     });
   });
 
@@ -1143,5 +1145,118 @@ describe("ClosurePage materiales", () => {
 
     await waitFor(() => expect(sent).toHaveLength(1));
     expect(sent[0].parts).toEqual([]);
+  });
+
+  // E07-06 y E07-08: checklist de una orden de mantenimiento.
+  describe("checklist de mantenimiento", () => {
+    const FILTROS = "c1000000-0000-4000-8000-000000000001";
+    const DRENAJE = "c1000000-0000-4000-8000-000000000002";
+    const conChecklist = () =>
+      json(
+        options({
+          requires_failure_repair: false,
+          checklist: [
+            { id: FILTROS, name: "Limpieza de filtros" },
+            { id: DRENAJE, name: "Revisión del drenaje" },
+          ],
+        }),
+      );
+    const paso = (name: string) => screen.getByRole("group", { name });
+
+    async function fillMaintenance() {
+      await click("Ana Ficticia");
+      await click("Resuelta");
+      await click("Funcionando bien");
+      await click("No quiso firmar");
+    }
+
+    it("no deja enviar con pasos sin marcar y marca cuáles faltan", async () => {
+      const sent = stubApi(undefined, conChecklist);
+      renderClosure();
+      await screen.findByRole("list", { name: "Checklist de mantenimiento" });
+
+      await fillMaintenance();
+      await user.click(within(paso("Limpieza de filtros")).getByRole("button", { name: "OK" }));
+      await click("Finalizar orden");
+
+      expect(screen.getByRole("alert")).toHaveTextContent("Marcá OK o No OK en todos los pasos.");
+      const pasos = within(
+        screen.getByRole("list", { name: "Checklist de mantenimiento" }),
+      ).getAllByRole("listitem");
+      expect(pasos[0]).not.toHaveTextContent("Marcá OK o No OK.");
+      expect(pasos[1]).toHaveTextContent("Marcá OK o No OK.");
+      expect(sent).toHaveLength(0);
+    });
+
+    it("sin pasos No OK no pide falla ni reparación", async () => {
+      const sent = stubApi(undefined, conChecklist);
+      renderClosure();
+      await screen.findByRole("list", { name: "Checklist de mantenimiento" });
+
+      await fillMaintenance();
+      await user.click(within(paso("Limpieza de filtros")).getByRole("button", { name: "OK" }));
+      await user.click(within(paso("Revisión del drenaje")).getByRole("button", { name: "OK" }));
+      await click("Finalizar orden");
+
+      await screen.findByRole("heading", { name: /Lista: Orden N° 3 cerrada/ });
+      expect(sent[0]?.failure_id).toBeNull();
+      expect(sent[0]?.checklist).toEqual([
+        { check_item_id: FILTROS, result: "ok", observation: null, requires_repair: false },
+        { check_item_id: DRENAJE, result: "ok", observation: null, requires_repair: false },
+      ]);
+    });
+
+    it("No OK pide qué encontraron y requiere reparación pide la falla", async () => {
+      const sent = stubApi(undefined, conChecklist);
+      renderClosure();
+      await screen.findByRole("list", { name: "Checklist de mantenimiento" });
+
+      await fillMaintenance();
+      await user.click(within(paso("Limpieza de filtros")).getByRole("button", { name: "OK" }));
+      await user.click(within(paso("Revisión del drenaje")).getByRole("button", { name: "No OK" }));
+      await click("Requiere reparación");
+      await click("Finalizar orden");
+
+      const alerta = screen.getByRole("alert");
+      expect(alerta).toHaveTextContent("Escribí qué encontraste en cada paso No OK.");
+      expect(alerta).toHaveTextContent("Elegí la falla.");
+      expect(sent).toHaveLength(0);
+
+      await user.type(screen.getByLabelText("¿Qué encontraron?"), "Bandeja tapada");
+      await user.selectOptions(screen.getByRole("combobox", { name: /Falla/ }), "No enfría");
+      await user.selectOptions(
+        screen.getByRole("combobox", { name: /Reparación/ }),
+        "Carga de gas",
+      );
+      await click("Finalizar orden");
+
+      await screen.findByRole("heading", { name: /Lista: Orden N° 3 cerrada/ });
+      expect(sent[0]?.failure_id).toBe(FAILURE);
+      expect(sent[0]?.checklist).toEqual([
+        { check_item_id: FILTROS, result: "ok", observation: null, requires_repair: false },
+        {
+          check_item_id: DRENAJE,
+          result: "not_ok",
+          observation: "Bandeja tapada",
+          requires_repair: true,
+        },
+      ]);
+    });
+
+    it("con No se pudo hacer no muestra ni manda el checklist", async () => {
+      const sent = stubApi(undefined, conChecklist);
+      renderClosure();
+      await screen.findByRole("list", { name: "Checklist de mantenimiento" });
+
+      await click("Ana Ficticia");
+      await click("Cliente ausente o sin acceso");
+
+      expect(
+        screen.queryByRole("list", { name: "Checklist de mantenimiento" }),
+      ).not.toBeInTheDocument();
+      await click("Cerrar como no realizada");
+      await screen.findByRole("heading", { name: /Lista:/ });
+      expect(sent[0]?.checklist).toEqual([]);
+    });
   });
 });

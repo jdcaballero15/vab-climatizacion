@@ -3,7 +3,7 @@ from app.db.models.client import Client, ClientContact, ClientSegment, ClientSit
 from app.db.models.crew import Crew, FieldTechnician
 from app.db.models.equipment import Equipment
 from app.db.models.legacy_reference import LegacyReference
-from app.db.models.maintenance import MaintenancePlan
+from app.db.models.maintenance import MaintenanceCheckStep, MaintenancePlan
 from app.db.models.part import Part, PartPrice, PartUsage
 from app.db.models.refresh_token import RefreshToken
 from app.db.models.signature import Signature
@@ -13,7 +13,9 @@ from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
     WorkOrderCancellation,
+    WorkOrderCheckItem,
     WorkOrderClosure,
+    WorkOrderClosureCheck,
     WorkOrderClosurePhoto,
     WorkOrderClosureTask,
     WorkOrderClosureTechnician,
@@ -31,6 +33,7 @@ __all__ = [
     "Failure",
     "FieldTechnician",
     "LegacyReference",
+    "MaintenanceCheckStep",
     "MaintenancePlan",
     "Part",
     "PartPrice",
@@ -46,7 +49,9 @@ __all__ = [
     "WorkOrder",
     "WorkOrderAssignment",
     "WorkOrderCancellation",
+    "WorkOrderCheckItem",
     "WorkOrderClosure",
+    "WorkOrderClosureCheck",
     "WorkOrderClosurePhoto",
     "WorkOrderClosureTask",
     "WorkOrderClosureTechnician",

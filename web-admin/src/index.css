@@ -339,6 +339,19 @@ label {
   color: #6d28d9;
 }
 
+/* Paso del checklist de mantenimiento (E07-06). */
+.badge--check-ok {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: var(--success);
+}
+
+.badge--check-not_ok {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 /* Generada por un plan de mantenimiento (E07-04). */
 .badge--maintenance {
   border-color: #99f6e4;
@@ -1068,6 +1081,18 @@ label {
   padding: 0.25rem 0.5rem;
   border-radius: var(--radius-sm);
   background: var(--accent-bg);
+}
+
+.orders__closure-checklist {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.orders__closure-checklist .badge--other {
+  margin-left: 0.5rem;
 }
 
 .orders__closure-photos {
