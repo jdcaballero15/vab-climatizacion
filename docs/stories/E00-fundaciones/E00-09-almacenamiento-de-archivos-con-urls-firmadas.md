@@ -4,7 +4,7 @@ title: "Almacenamiento de archivos con URLs firmadas"
 epic: E00
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [dev]
 size: M
 areas: [backend, infra]
@@ -51,4 +51,4 @@ assumes: []
 - Uso disponible por ahora: `closure_photo` (JPEG, PNG, WebP). La firma suma su uso en E05-07; los PDF, cuando haya comprobantes.
 - Tests en `tests/test_files.py` contra MinIO real (en el CI se levanta como paso del job `backend`), uno por criterio. Comprueban también que el bucket rechaza un `PUT` con otro tamaño u otro tipo que el firmado.
 - Comandos: `python -m app.create_bucket` (MinIO local) y `python -m app.check_storage` (sube, lee y borra un archivo de prueba).
-- **Queda `in_progress`** hasta configurar R2 en el despliegue y que `check_storage` diga `Bucket OK` allá (pasos 2 y 8 de `docs/workflow/despliegue.md`).
+- **Probado en producción (2026-11-07):** con R2 configurado en `vab-ot-api`, una orden del cliente "PRÁCTICA - no facturar" se cerró desde el celular con foto y firma, y la oficina vio las dos en el detalle. Eso cubre la subida directa desde el navegador (CORS), la confirmación y la descarga firmada; `check_storage` no se corrió porque la prueba de punta a punta lo incluye.
