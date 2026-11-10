@@ -1137,6 +1137,167 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/stock/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Locations */
+        get: operations["list_locations_admin_stock_locations_get"];
+        put?: never;
+        /**
+         * Create Location
+         * @description Depósito o camioneta; la camioneta lleva su escuadrilla (E08-01).
+         */
+        post: operations["create_location_admin_stock_locations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/stock/locations/{location_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Location
+         * @description Renombrar, cambiar la escuadrilla o desactivar; no se borra (criterio 3).
+         */
+        patch: operations["update_location_admin_stock_locations__location_id__patch"];
+        trace?: never;
+    };
+    "/admin/stock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Stock
+         * @description Cada repuesto con su cantidad por ubicación y el total (E08-05).
+         */
+        get: operations["get_stock_admin_stock_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/stock/parts/{part_id}/movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Part Movements
+         * @description Historial de movimientos de un repuesto, el más nuevo primero (E08-07).
+         */
+        get: operations["get_part_movements_admin_stock_parts__part_id__movements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/stock/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receive
+         * @description Ingreso de repuestos (E08-02).
+         */
+        post: operations["receive_admin_stock_receipts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/stock/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transfer
+         * @description Transferencia entre ubicaciones en una sola transacción (E08-03).
+         */
+        post: operations["transfer_admin_stock_transfers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/stock/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Adjust
+         * @description Ajuste con motivo, positivo o negativo (E08-06).
+         */
+        post: operations["adjust_admin_stock_adjustments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tech/stock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Truck Stock
+         * @description Lo que hay en la camioneta de mi escuadrilla, sin precios (E08-04, E08-05).
+         */
+        get: operations["get_truck_stock_tech_stock_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/maintenance/plans": {
         parameters: {
             query?: never;
@@ -1249,6 +1410,26 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AdjustmentCreate
+         * @description Corrección de inventario con motivo; positiva suma y negativa resta (E08-06).
+         */
+        AdjustmentCreate: {
+            /**
+             * Part Id
+             * Format: uuid
+             */
+            part_id: string;
+            /**
+             * Location Id
+             * Format: uuid
+             */
+            location_id: string;
+            /** Quantity */
+            quantity: number | string;
+            /** Reason */
+            reason: string;
+        };
         /** AssignmentAdminOut */
         AssignmentAdminOut: {
             /**
@@ -2195,6 +2376,40 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** LocationCreate */
+        LocationCreate: {
+            kind: components["schemas"]["StockLocationKind"];
+            /** Name */
+            name: string;
+            /** Crew Id */
+            crew_id?: string | null;
+        };
+        /** LocationOut */
+        LocationOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["StockLocationKind"];
+            /** Name */
+            name: string;
+            /** Crew Id */
+            crew_id: string | null;
+            /** Crew Name */
+            crew_name: string | null;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** LocationUpdate */
+        LocationUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Crew Id */
+            crew_id?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -2337,6 +2552,37 @@ export interface components {
         MaterialLineUpdate: {
             /** Quantity */
             quantity: number | string;
+        };
+        /**
+         * MovementOut
+         * @description Un movimiento en el historial del repuesto (E08-07).
+         */
+        MovementOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["StockMovementKind"];
+            /** Quantity */
+            quantity: string;
+            /** From Location Name */
+            from_location_name: string | null;
+            /** To Location Name */
+            to_location_name: string | null;
+            /** Work Order Id */
+            work_order_id: string | null;
+            /** Work Order Number */
+            work_order_number: number | null;
+            /** Reason */
+            reason: string | null;
+            /** Created By Name */
+            created_by_name: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
         };
         /**
          * NoSignatureReason
@@ -2700,6 +2946,24 @@ export interface components {
              */
             due_on: string;
         };
+        /**
+         * ReceiptCreate
+         * @description Ingreso de repuestos a una ubicación (E08-02).
+         */
+        ReceiptCreate: {
+            /**
+             * Part Id
+             * Format: uuid
+             */
+            part_id: string;
+            /**
+             * Location Id
+             * Format: uuid
+             */
+            location_id: string;
+            /** Quantity */
+            quantity: number | string;
+        };
         /** RefreshResponse */
         RefreshResponse: {
             /** Access Token */
@@ -2864,6 +3128,58 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * StockBalanceOut
+         * @description Cuánto hay de un repuesto en una ubicación. Negativo: hubo usos sin stock (E08-08).
+         */
+        StockBalanceOut: {
+            /**
+             * Part Id
+             * Format: uuid
+             */
+            part_id: string;
+            /** Part Name */
+            part_name: string;
+            /** Unit */
+            unit: string;
+            /**
+             * Location Id
+             * Format: uuid
+             */
+            location_id: string;
+            /** Location Name */
+            location_name: string;
+            /** Quantity */
+            quantity: string;
+        };
+        /**
+         * StockLocationKind
+         * @enum {string}
+         */
+        StockLocationKind: "warehouse" | "truck";
+        /**
+         * StockMovementKind
+         * @enum {string}
+         */
+        StockMovementKind: "receipt" | "transfer" | "usage" | "adjustment";
+        /** StockPartOut */
+        StockPartOut: {
+            /**
+             * Part Id
+             * Format: uuid
+             */
+            part_id: string;
+            /** Part Name */
+            part_name: string;
+            /** Unit */
+            unit: string;
+            /** Total */
+            total: string;
+            /** By Location */
+            by_location: components["schemas"]["StockBalanceOut"][];
+            /** Has Negative */
+            has_negative: boolean;
+        };
         /** TaskAdminOut */
         TaskAdminOut: {
             /**
@@ -2928,6 +3244,48 @@ export interface components {
              */
             token_type: string;
             user: components["schemas"]["UserOut"];
+        };
+        /**
+         * TransferCreate
+         * @description De una ubicación a otra en una sola transacción (E08-03).
+         */
+        TransferCreate: {
+            /**
+             * Part Id
+             * Format: uuid
+             */
+            part_id: string;
+            /**
+             * From Location Id
+             * Format: uuid
+             */
+            from_location_id: string;
+            /**
+             * To Location Id
+             * Format: uuid
+             */
+            to_location_id: string;
+            /** Quantity */
+            quantity: number | string;
+        };
+        /** TruckItemTechnicianOut */
+        TruckItemTechnicianOut: {
+            /** Part Name */
+            part_name: string;
+            /** Unit */
+            unit: string;
+            /** Quantity */
+            quantity: string;
+        };
+        /**
+         * TruckStockTechnicianOut
+         * @description Lo que hay en la camioneta de la escuadrilla, sin precios (E08-04, criterio 4).
+         */
+        TruckStockTechnicianOut: {
+            /** Location Name */
+            location_name: string | null;
+            /** Items */
+            items: components["schemas"]["TruckItemTechnicianOut"][];
         };
         /** UnassignmentCreate */
         UnassignmentCreate: {
@@ -6015,6 +6373,287 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_locations_admin_stock_locations_get: {
+        parameters: {
+            query?: {
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_location_admin_stock_locations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_location_admin_stock_locations__location_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_stock_admin_stock_get: {
+        parameters: {
+            query?: {
+                part_id?: string | null;
+                location_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockPartOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_part_movements_admin_stock_parts__part_id__movements_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                part_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovementOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    receive_admin_stock_receipts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiptCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovementOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transfer_admin_stock_transfers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovementOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    adjust_admin_stock_adjustments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovementOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_truck_stock_tech_stock_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TruckStockTechnicianOut"];
                 };
             };
         };

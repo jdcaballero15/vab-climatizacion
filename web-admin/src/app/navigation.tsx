@@ -1,4 +1,5 @@
 import {
+  Boxes,
   AirVent,
   Building2,
   CalendarClock,
@@ -22,6 +23,7 @@ import { MaintenancePage } from "../features/maintenance/MaintenancePage";
 import { OrdersPage } from "../features/orders/OrdersPage";
 import { PartsPage } from "../features/parts/PartsPage";
 import { RepairsPage } from "../features/repairs/RepairsPage";
+import { StockPage } from "../features/stock/StockPage";
 import { UsersPage } from "../features/users/UsersPage";
 import { WorkTypesPage } from "../features/work-types/WorkTypesPage";
 
@@ -63,6 +65,14 @@ export const NAV_SECTIONS: NavSection[] = [
     roles: ["admin"],
     icon: CalendarClock,
     element: <MaintenancePage />,
+  },
+  {
+    path: "/stock",
+    label: "Stock",
+    group: null,
+    roles: ["admin"],
+    icon: Boxes,
+    element: <StockPage />,
   },
   {
     path: "/clientes",

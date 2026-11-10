@@ -2061,3 +2061,15 @@ button[type="submit"]:hover:not(:disabled),
   background: #fef3c7;
   border-radius: var(--radius-sm);
 }
+
+/* Stock (E08): saldos negativos por usos sin stock, para ajustar (E08-08) */
+.stock__negative td {
+  background: #fef2f2;
+}
+
+.badge--danger {
+  margin-left: 0.5rem;
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}

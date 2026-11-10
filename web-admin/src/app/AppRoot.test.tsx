@@ -140,6 +140,7 @@ describe("AppRoot", () => {
     expect(links).toEqual([
       "Órdenes",
       "Mantenimiento",
+      "Stock",
       "Clientes",
       "Escuadrillas",
       "Usuarios",

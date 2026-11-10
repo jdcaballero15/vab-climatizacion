@@ -1,4 +1,4 @@
-import { LogOut, MapPin, RefreshCw, Snowflake } from "lucide-react";
+import { LogOut, MapPin, RefreshCw, Snowflake, Truck } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 
@@ -123,6 +123,11 @@ export function MyOrdersPage({ userId, onLogout }: MyOrdersPageProps) {
           <RefreshCw size={18} aria-hidden="true" />
           Actualizar
         </button>
+        {/* E08-04: lo que lleva la camioneta, sin precios. */}
+        <Link to="/camioneta" className="btn-secondary">
+          <Truck size={18} aria-hidden="true" />
+          Mi camioneta
+        </Link>
         <button
           type="button"
           className="orders__logout"
