@@ -4,7 +4,7 @@ title: "Generar el comprobante PDF de retiro"
 epic: E09
 phase: 1
 priority: must
-status: draft
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -29,3 +29,14 @@ assumes: []
 ## Notas técnicas
 
 - El PDF se guarda en el bucket. El DNI y la firma son datos personales: ver `SECURITY.md`.
+
+## Decisiones (Gonza)
+
+- Sin DNI: el retiro pide firma y nombre (2026-11-03). El criterio 1 queda sin DNI.
+
+## Hecho
+
+- PDF con fpdf2 (Python puro, nueva dependencia del backend). Se arma en el servidor (`app/services/pdf.py`) y se guarda en el bucket bajo `documents/`, con su `stored_file`; `order_document` lo ata a la orden, uno por tipo.
+- `POST /admin/orders/{id}/documents/{pickup_receipt|delivery_receipt}` (administración) devuelve una URL firmada; la segunda vez devuelve el mismo archivo. Sin la etapa cerrada como hecha con firma, 409 `stage_not_done`.
+- web-admin: "Comprobante de retiro" y "Comprobante de devolución" en el detalle de una orden de taller.
+- Lleva cliente, domicilio, equipo, fecha, escuadrilla, técnicos, estado del equipo, nombre de quien firmó y la imagen de la firma.

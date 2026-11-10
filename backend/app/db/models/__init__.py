@@ -1,6 +1,7 @@
 from app.db.models.catalog import EquipmentType, Failure, Repair, Task, WorkType
 from app.db.models.client import Client, ClientContact, ClientSegment, ClientSite, TaxCondition
 from app.db.models.crew import Crew, FieldTechnician
+from app.db.models.document import OrderDocument
 from app.db.models.equipment import Equipment
 from app.db.models.legacy_reference import LegacyReference
 from app.db.models.maintenance import MaintenanceCheckStep, MaintenancePlan
@@ -23,6 +24,7 @@ from app.db.models.work_order import (
 )
 
 __all__ = [
+    "OrderDocument",
     "Client",
     "ClientContact",
     "ClientSegment",

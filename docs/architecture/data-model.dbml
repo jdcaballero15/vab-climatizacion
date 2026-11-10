@@ -572,3 +572,15 @@ Table legacy_reference {
     (entity, source, legacy_id) [unique]
   }
 }
+
+// ---------- Comprobantes ----------
+
+Table order_document {
+  id uuid [pk]
+  work_order_id uuid [ref: > work_order.id, not null]
+  kind document_kind [not null, note: 'pickup_receipt o delivery_receipt. Uno por orden y tipo (índice parcial)']
+  file_id uuid [ref: > stored_file.id, not null, note: 'El PDF en el bucket, bajo documents/']
+  created_by uuid [ref: > app_user.id, not null]
+
+  Note: 'Comprobantes de retiro y devolución con la firma, sin precios (E09-01, E09-02)'
+}

@@ -45,6 +45,22 @@ class ObjectStorage:
             "get_object", Params={"Bucket": self._bucket, "Key": key}, ExpiresIn=self._ttl
         )
 
+    async def get_bytes(self, key: str) -> bytes:
+        """El contenido del objeto, para armar un PDF con la firma (E09)."""
+        response = await asyncio.to_thread(self._client.get_object, Bucket=self._bucket, Key=key)
+        body: bytes = await asyncio.to_thread(response["Body"].read)
+        return body
+
+    async def put_bytes(self, key: str, data: bytes, content_type: str) -> None:
+        """Lo genera el servidor (los PDF de E09); lo del celular sube con upload_url."""
+        await asyncio.to_thread(
+            self._client.put_object,
+            Bucket=self._bucket,
+            Key=key,
+            Body=data,
+            ContentType=content_type,
+        )
+
     def ensure_bucket(self) -> bool:
         """Crea el bucket si no existe (MinIO local y tests). Devuelve si lo creó."""
         try:

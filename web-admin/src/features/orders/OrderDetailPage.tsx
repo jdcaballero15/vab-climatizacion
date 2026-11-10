@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { PageHeader } from "../../app/PageHeader";
 import { ClosureDetail } from "./ClosureDetail";
+import { ReceiptButtons } from "./ReceiptButtons";
 import {
   CHANNEL_LABELS,
   cancelReasonText,
@@ -70,6 +71,8 @@ export function OrderDetailPage() {
         )}
 
         <OrderMaterials orderId={order.id} orderNumber={order.number} />
+
+        <ReceiptButtons order={order} />
 
         <div className="card order-detail__card">
           <h3 id="order-timeline">Línea de tiempo</h3>

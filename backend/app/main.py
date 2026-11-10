@@ -5,6 +5,7 @@ from app.api import (
     auth,
     clients,
     crews,
+    documents,
     equipment,
     equipment_types,
     failures,
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
     app.include_router(equipment.router)
     app.include_router(work_orders.router)
     app.include_router(order_materials.router)
+    app.include_router(documents.router)
     app.include_router(crews.router)
     app.include_router(crews.technicians_router)
     app.include_router(tech_orders.router)

@@ -3890,6 +3890,130 @@
         }
       }
     },
+    "/admin/orders/{order_id}/documents/{kind}": {
+      "post": {
+        "tags": [
+          "comprobantes e informes"
+        ],
+        "summary": "Get Receipt",
+        "description": "Comprobante de retiro o devolución (E09-01, E09-02). La primera vez se arma y se\nguarda; después devuelve el mismo archivo. Es POST porque puede crearlo.",
+        "operationId": "get_receipt_admin_orders__order_id__documents__kind__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DocumentKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentLinkOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/monthly-report": {
+      "get": {
+        "tags": [
+          "comprobantes e informes"
+        ],
+        "summary": "Get Monthly Report",
+        "description": "Informe mensual del cliente en PDF, sin precios (E09-04).",
+        "operationId": "get_monthly_report_admin_clients__client_id__monthly_report_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2100,
+              "minimum": 2020,
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/pdf": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/crews": {
       "get": {
         "tags": [
@@ -7032,6 +7156,28 @@
         ],
         "title": "CurrentAssignmentOut",
         "description": "Escuadrilla y fecha prevista de una orden Asignada o En curso."
+      },
+      "DocumentKind": {
+        "type": "string",
+        "enum": [
+          "pickup_receipt",
+          "delivery_receipt"
+        ],
+        "title": "DocumentKind"
+      },
+      "DocumentLinkOut": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "DocumentLinkOut",
+        "description": "URL firmada del PDF guardado en el bucket; vence como las de fotos y firmas."
       },
       "DoneOrderTechnicianOut": {
         "properties": {
