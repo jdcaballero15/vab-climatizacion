@@ -11,7 +11,8 @@
   --border-strong: #c7d7ee;
   --text: #0b1b33;
   --text-secondary: #4a5a72;
-  --text-muted: #8a99b0;
+  /* Contraste AA sobre blanco y sobre el fondo (E12-06). */
+  --text-muted: #5b6b82;
   --primary: #2563eb;
   --primary-dark: #1d4ed8;
   --primary-gradient: linear-gradient(135deg, #0ea5e9, #2563eb 60%, #4f46e5);
@@ -458,7 +459,7 @@ button:disabled {
 
 .orders__tabs button {
   flex: 1;
-  min-height: 44px;
+  min-height: 48px;
   padding: 0.5rem 0.75rem;
   border: none;
   border-radius: calc(var(--radius-sm) - 4px);
@@ -650,8 +651,9 @@ button:disabled {
 
 /* Enlace al mapa: alto suficiente para tocarlo con guantes finos. */
 .order-detail__facts a {
-  display: inline-block;
-  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
   color: var(--primary-dark);
   font-weight: 600;
 }

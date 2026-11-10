@@ -1,4 +1,6 @@
 import {
+  FileSpreadsheet,
+  MessageSquareText,
   History,
   AirVent,
   Building2,
@@ -16,12 +18,14 @@ import type { ReactNode } from "react";
 
 import type { Session } from "../features/auth/types";
 import { AuditPage } from "../features/audit/AuditPage";
+import { CatalogCsvPage } from "../features/catalog-csv/CatalogCsvPage";
 import { ClientsPage } from "../features/clients/ClientsPage";
 import { CrewsPage } from "../features/crews/CrewsPage";
 import { EquipmentTypesPage } from "../features/equipment-types/EquipmentTypesPage";
 import { FailuresPage } from "../features/failures/FailuresPage";
 import { MaintenancePage } from "../features/maintenance/MaintenancePage";
 import { OrdersPage } from "../features/orders/OrdersPage";
+import { OtherTextsPage } from "../features/other-texts/OtherTextsPage";
 import { PartsPage } from "../features/parts/PartsPage";
 import { RepairsPage } from "../features/repairs/RepairsPage";
 import { UsersPage } from "../features/users/UsersPage";
@@ -131,12 +135,28 @@ export const NAV_SECTIONS: NavSection[] = [
     element: <RepairsPage />,
   },
   {
+    path: "/catalogos/textos-otro",
+    label: "Textos de «Otro»",
+    group: "Catálogos",
+    roles: ["admin"],
+    icon: MessageSquareText,
+    element: <OtherTextsPage />,
+  },
+  {
     path: "/catalogos/materiales",
     label: "Materiales y precios",
     group: "Catálogos",
     roles: ["admin"],
     icon: Package,
     element: <PartsPage />,
+  },
+  {
+    path: "/catalogos/importar",
+    label: "Importar y exportar",
+    group: "Catálogos",
+    roles: ["admin"],
+    icon: FileSpreadsheet,
+    element: <CatalogCsvPage />,
   },
 ];
 

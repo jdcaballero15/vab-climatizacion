@@ -1107,6 +1107,123 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/other-texts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Other Texts
+         * @description Textos de "Otro" con sus repeticiones, el más repetido primero (E02-07).
+         */
+        get: operations["list_other_texts_admin_other_texts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/other-texts/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Promote Other Text */
+        post: operations["promote_other_text_admin_other_texts_promote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/other-texts/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dismiss Other Text
+         * @description Deja de mostrar el texto en la revisión; las órdenes lo conservan (criterio 3).
+         */
+        post: operations["dismiss_other_text_admin_other_texts_dismiss_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/catalog-csv/{catalog}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Catalog
+         * @description El catálogo con las mismas columnas que acepta la importación (E02-08, criterio 3).
+         */
+        get: operations["export_catalog_admin_catalog_csv__catalog__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/catalog-csv/{catalog}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Catalog
+         * @description Altas, cambios y errores con su fila, sin aplicar nada (criterio 1).
+         */
+        post: operations["preview_catalog_admin_catalog_csv__catalog__preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/catalog-csv/{catalog}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Catalog
+         * @description Aplica todo junto; con algún error no aplica nada (criterio 2).
+         */
+        post: operations["apply_catalog_admin_catalog_csv__catalog__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/crews": {
         parameters: {
             query?: never;
@@ -2204,6 +2321,27 @@ export interface components {
             /** Is Active */
             is_active: boolean;
         };
+        /** CsvPreviewOut */
+        CsvPreviewOut: {
+            /** Creates */
+            creates: components["schemas"]["RowOut"][];
+            /** Changes */
+            changes: components["schemas"]["RowOut"][];
+            /** Errors */
+            errors: components["schemas"]["RowOut"][];
+            /** Unchanged */
+            unchanged: number;
+            /** Applied */
+            applied: boolean;
+        };
+        /**
+         * CsvUpload
+         * @description El contenido del CSV como texto (lo lee el navegador).
+         */
+        CsvUpload: {
+            /** Content */
+            content: string;
+        };
         /**
          * CurrentAssignmentOut
          * @description Escuadrilla y fecha prevista de una orden Asignada o En curso.
@@ -2218,6 +2356,16 @@ export interface components {
             scheduled_for: string;
             /** Return Reason */
             return_reason: string | null;
+        };
+        /** DismissRequest */
+        DismissRequest: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "failure" | "repair" | "part";
+            /** Text Key */
+            text_key: string;
         };
         /**
          * DoneOrderTechnicianOut
@@ -2968,6 +3116,15 @@ export interface components {
             return_reason: string | null;
             workshop_stage: components["schemas"]["WorkshopStage"] | null;
         };
+        /** OtherTextOut */
+        OtherTextOut: {
+            /** Text Key */
+            text_key: string;
+            /** Text */
+            text: string;
+            /** Count */
+            count: number;
+        };
         /**
          * PartAdminOut
          * @description Material con su precio de lista vigente (E02-05, E02-06). Solo administración.
@@ -3114,6 +3271,35 @@ export interface components {
              */
             due_on: string;
         };
+        /** PromoteOut */
+        PromoteOut: {
+            /** Updated */
+            updated: number;
+        };
+        /**
+         * PromoteRequest
+         * @description Sumar un texto a la lista: con target_id, a un valor que ya existe; si no, uno
+         *     nuevo con name (por defecto el texto). Una reparación nueva necesita su falla.
+         */
+        PromoteRequest: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "failure" | "repair" | "part";
+            /** Text Key */
+            text_key: string;
+            /** Name */
+            name?: string | null;
+            /** Target Id */
+            target_id?: string | null;
+            /** Failure Id */
+            failure_id?: string | null;
+            /** Equipment Type Id */
+            equipment_type_id?: string | null;
+            /** Unit */
+            unit?: string | null;
+        };
         /** RefreshResponse */
         RefreshResponse: {
             /** Access Token */
@@ -3197,6 +3383,15 @@ export interface components {
             not_done_reason: components["schemas"]["NotDoneReason"] | null;
             /** Observation */
             observation: string | null;
+        };
+        /** RowOut */
+        RowOut: {
+            /** Row */
+            row: number;
+            /** Name */
+            name: string;
+            /** Detail */
+            detail: string;
         };
         /** SearchOut */
         SearchOut: {
@@ -6257,6 +6452,202 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderMaterialsAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_other_texts_admin_other_texts_get: {
+        parameters: {
+            query: {
+                kind: "failure" | "repair" | "part";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtherTextOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    promote_other_text_admin_other_texts_promote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dismiss_other_text_admin_other_texts_dismiss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DismissRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_catalog_admin_catalog_csv__catalog__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                catalog: "work-types" | "equipment-types" | "failures" | "repairs" | "parts";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_catalog_admin_catalog_csv__catalog__preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                catalog: "work-types" | "equipment-types" | "failures" | "repairs" | "parts";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CsvUpload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CsvPreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_catalog_admin_catalog_csv__catalog__apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                catalog: "work-types" | "equipment-types" | "failures" | "repairs" | "parts";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CsvUpload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CsvPreviewOut"];
                 };
             };
             /** @description Validation Error */

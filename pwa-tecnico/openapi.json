@@ -4578,6 +4578,330 @@
         }
       }
     },
+    "/admin/other-texts": {
+      "get": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "List Other Texts",
+        "description": "Textos de \"Otro\" con sus repeticiones, el más repetido primero (E02-07).",
+        "operationId": "list_other_texts_admin_other_texts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "failure",
+                "repair",
+                "part"
+              ],
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OtherTextOut"
+                  },
+                  "title": "Response List Other Texts Admin Other Texts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/other-texts/promote": {
+      "post": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Promote Other Text",
+        "operationId": "promote_other_text_admin_other_texts_promote_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoteOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/other-texts/dismiss": {
+      "post": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Dismiss Other Text",
+        "description": "Deja de mostrar el texto en la revisión; las órdenes lo conservan (criterio 3).",
+        "operationId": "dismiss_other_text_admin_other_texts_dismiss_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DismissRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/catalog-csv/{catalog}": {
+      "get": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Export Catalog",
+        "description": "El catálogo con las mismas columnas que acepta la importación (E02-08, criterio 3).",
+        "operationId": "export_catalog_admin_catalog_csv__catalog__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "catalog",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "work-types",
+                "equipment-types",
+                "failures",
+                "repairs",
+                "parts"
+              ],
+              "type": "string",
+              "title": "Catalog"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/csv": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/catalog-csv/{catalog}/preview": {
+      "post": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Preview Catalog",
+        "description": "Altas, cambios y errores con su fila, sin aplicar nada (criterio 1).",
+        "operationId": "preview_catalog_admin_catalog_csv__catalog__preview_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "catalog",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "work-types",
+                "equipment-types",
+                "failures",
+                "repairs",
+                "parts"
+              ],
+              "type": "string",
+              "title": "Catalog"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CsvUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsvPreviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/catalog-csv/{catalog}/apply": {
+      "post": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Apply Catalog",
+        "description": "Aplica todo junto; con algún error no aplica nada (criterio 2).",
+        "operationId": "apply_catalog_admin_catalog_csv__catalog__apply_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "catalog",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "work-types",
+                "equipment-types",
+                "failures",
+                "repairs",
+                "parts"
+              ],
+              "type": "string",
+              "title": "Catalog"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CsvUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsvPreviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/crews": {
       "get": {
         "tags": [
@@ -7952,6 +8276,64 @@
         ],
         "title": "CrewUserOut"
       },
+      "CsvPreviewOut": {
+        "properties": {
+          "creates": {
+            "items": {
+              "$ref": "#/components/schemas/RowOut"
+            },
+            "type": "array",
+            "title": "Creates"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/RowOut"
+            },
+            "type": "array",
+            "title": "Changes"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/RowOut"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "unchanged": {
+            "type": "integer",
+            "title": "Unchanged"
+          },
+          "applied": {
+            "type": "boolean",
+            "title": "Applied"
+          }
+        },
+        "type": "object",
+        "required": [
+          "creates",
+          "changes",
+          "errors",
+          "unchanged",
+          "applied"
+        ],
+        "title": "CsvPreviewOut"
+      },
+      "CsvUpload": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 2000000,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "CsvUpload",
+        "description": "El contenido del CSV como texto (lo lee el navegador)."
+      },
       "CurrentAssignmentOut": {
         "properties": {
           "crew_name": {
@@ -7983,6 +8365,32 @@
         ],
         "title": "CurrentAssignmentOut",
         "description": "Escuadrilla y fecha prevista de una orden Asignada o En curso."
+      },
+      "DismissRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "failure",
+              "repair",
+              "part"
+            ],
+            "title": "Kind"
+          },
+          "text_key": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Text Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "text_key"
+        ],
+        "title": "DismissRequest"
       },
       "DoneOrderTechnicianOut": {
         "properties": {
@@ -10169,6 +10577,29 @@
         ],
         "title": "OrderTechnicianOut"
       },
+      "OtherTextOut": {
+        "properties": {
+          "text_key": {
+            "type": "string",
+            "title": "Text Key"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text_key",
+          "text",
+          "count"
+        ],
+        "title": "OtherTextOut"
+      },
       "PartAdminOut": {
         "properties": {
           "id": {
@@ -10522,6 +10953,106 @@
         "title": "PlanOpenOrderOut",
         "description": "La última orden generada que todavía no se cerró ni se canceló."
       },
+      "PromoteOut": {
+        "properties": {
+          "updated": {
+            "type": "integer",
+            "title": "Updated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "updated"
+        ],
+        "title": "PromoteOut"
+      },
+      "PromoteRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "failure",
+              "repair",
+              "part"
+            ],
+            "title": "Kind"
+          },
+          "text_key": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Text Key"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "target_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
+          },
+          "failure_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Id"
+          },
+          "equipment_type_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipment Type Id"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "maxLength": 255,
+            "title": "Unit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "text_key"
+        ],
+        "title": "PromoteRequest",
+        "description": "Sumar un texto a la lista: con target_id, a un valor que ya existe; si no, uno\nnuevo con name (por defecto el texto). Una reparación nueva necesita su falla."
+      },
       "RefreshResponse": {
         "properties": {
           "access_token": {
@@ -10724,6 +11255,29 @@
         ],
         "title": "ReturnedFromCrewOut",
         "description": "Por qué volvió a Pendiente desde una escuadrilla (E05-08, criterio 5)."
+      },
+      "RowOut": {
+        "properties": {
+          "row": {
+            "type": "integer",
+            "title": "Row"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "row",
+          "name",
+          "detail"
+        ],
+        "title": "RowOut"
       },
       "SearchOut": {
         "properties": {

@@ -148,7 +148,9 @@ describe("AppRoot", () => {
       "Tipos de equipo",
       "Fallas",
       "Reparaciones",
+      "Textos de «Otro»",
       "Materiales y precios",
+      "Importar y exportar",
     ]);
   });
 

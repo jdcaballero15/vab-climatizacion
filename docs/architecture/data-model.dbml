@@ -581,11 +581,28 @@ Table audit_event {
   entity varchar(50) [not null, note: 'client, equipment...']
   entity_id uuid [not null]
   action varchar(50) [not null, note: 'deactivated, restored, merged, merged_in']
-  actor_id uuid [ref: > app_user.id]
+  actor_id uuid [note: 'Quién hizo el cambio; sin clave foránea, el registro no depende del usuario']
   occurred_at timestamptz [not null]
-  detail text
+  detail text [note: 'Diferencias en JSON (campo: [antes, después]); CUIT/DNI enmascarado']
 
-  Note: 'Bajas, restauraciones y unificaciones (E03-07, E03-08, E12-02). Base de la auditoría de E12-01. Las órdenes usan work_order_event'
+  Note: 'Auditoría de cambios (E12-01): la llena un listener del flush con el usuario del pedido. Las órdenes además tienen work_order_event'
+}
+
+Table login_failure {
+  id uuid [pk]
+  email varchar(320) [not null, note: 'En minúsculas; no se loguea']
+  ip varchar(64) [not null]
+  occurred_at timestamptz [not null]
+
+  Note: 'Intentos de ingreso fallidos para bloquear la cuenta (E01-06)'
+}
+
+Table dismissed_other_text {
+  id uuid [pk]
+  kind varchar(20) [not null, note: 'failure, repair o part']
+  text_key varchar(255) [not null, note: 'Texto normalizado; único por tipo (índice parcial)']
+
+  Note: 'Textos de "Otro" descartados de la revisión (E02-07)'
 }
 
 Table equipment_transfer {

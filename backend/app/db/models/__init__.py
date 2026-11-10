@@ -6,6 +6,7 @@ from app.db.models.equipment import Equipment, EquipmentTransfer
 from app.db.models.legacy_reference import LegacyReference
 from app.db.models.login_failure import LoginFailure
 from app.db.models.maintenance import MaintenanceCheckStep, MaintenancePlan
+from app.db.models.other_text import DismissedOtherText
 from app.db.models.part import Part, PartPrice, PartUsage
 from app.db.models.refresh_token import RefreshToken
 from app.db.models.signature import Signature
@@ -25,6 +26,7 @@ from app.db.models.work_order import (
 )
 
 __all__ = [
+    "DismissedOtherText",
     "LoginFailure",
     "AuditEvent",
     "EquipmentTransfer",

@@ -30,6 +30,8 @@ UNPAGINATED = {
     "/admin/clients/{client_id}/sites": "de un cliente",
     "/admin/clients/{client_id}/equipment": "de un cliente",
     "/admin/clients/{client_id}/audit": "bajas y unificaciones de un cliente",
+    # Textos de "Otro" agrupados: los distintos, que se revisan y se van sacando.
+    "/admin/other-texts": "textos de Otro para revisar",
     # Sugerencias al escribir: el servicio ya devuelve pocas.
     "/admin/clients/similar": "sugerencias, con tope en el servicio",
     # Un plan por equipo con abono: cientos como mucho; se revisa si crece.
