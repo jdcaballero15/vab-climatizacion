@@ -58,6 +58,8 @@ SIGNED_WORKSHOP_STAGES = frozenset({WorkshopStage.pickup, WorkshopStage.delivery
 class OrderSource(StrEnum):
     manual = "manual"
     maintenance = "maintenance"
+    # Historial importado de Persat (E11-03): de solo lectura y fuera del panel.
+    persat = "persat"
 
 
 class OrderChannel(StrEnum):
@@ -276,6 +278,15 @@ class WorkOrderRuleError(Exception):
     def __init__(self, message: str) -> None:
         super().__init__(message)
         self.message = message
+
+
+class ImportedOrderReadOnlyError(WorkOrderRuleError):
+    """La orden es del historial importado de Persat: no se modifica (E11-03, criterio 4)."""
+
+    code = "imported_order_read_only"
+
+    def __init__(self) -> None:
+        super().__init__("La orden es del historial de Persat: es de solo lectura.")
 
 
 class InvalidTransitionError(WorkOrderRuleError):

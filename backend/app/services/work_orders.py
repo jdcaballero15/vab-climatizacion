@@ -60,6 +60,7 @@ from app.domain.work_order import (
     BillingStatus,
     CancelReason,
     ClosureOutcome,
+    ImportedOrderReadOnlyError,
     OrderAction,
     OrderKind,
     OrderSource,
@@ -188,7 +189,7 @@ async def change_equipment(
     """
     repo = WorkOrderRepository(session)
     order = await get_work_order(session, order_id)
-    if order.status not in EQUIPMENT_EDITABLE_STATUSES:
+    if order.source == OrderSource.persat or order.status not in EQUIPMENT_EDITABLE_STATUSES:
         raise OrderNotEditableError
     new = (
         await _check_equipment(session, equipment_id, order.client_site_id)
@@ -456,6 +457,8 @@ async def list_for_client(
             ),
             crew_name=crew_name,
             has_closure=has_closure,
+            imported=order.source == OrderSource.persat,
+            description=order.description,
         )
         for (
             order,
@@ -696,6 +699,9 @@ async def stage_transition(
     note: str | None,
 ) -> WorkOrderEvent:
     """Cambia el estado y agrega el evento sin confirmar, para sumar más en la transacción."""
+    if order.source == OrderSource.persat:
+        # El historial importado de Persat es de solo lectura (E11-03, criterio 4).
+        raise ImportedOrderReadOnlyError
     current = order.status
     transition = resolve_transition(current, action, actor.role, note)
     repository = WorkOrderRepository(session)

@@ -24,6 +24,7 @@ from app.db.models.user import User, UserRole
 from app.db.models.work_order import WorkOrderAssignment
 from app.domain.work_order import (
     BillingStatus,
+    ImportedOrderReadOnlyError,
     InvalidTransitionError,
     OrderStatus,
     ReasonRequiredError,
@@ -77,6 +78,7 @@ def _equipment_not_available() -> HTTPException:
 # Reglas de la máquina de estados: no se puede en el estado actual es un conflicto (409).
 _RULE_STATUS: dict[type[WorkOrderRuleError], int] = {
     InvalidTransitionError: 409,
+    ImportedOrderReadOnlyError: 409,
     TransitionRoleError: 403,
     ReasonRequiredError: 422,
 }

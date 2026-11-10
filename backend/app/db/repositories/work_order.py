@@ -32,6 +32,7 @@ from app.domain.work_order import (
     CREW_OPEN_STATUSES,
     BillingStatus,
     OrderKind,
+    OrderSource,
     OrderStatus,
     WorkOrderEventType,
     WorkshopStage,
@@ -156,6 +157,8 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             if in_workshop
             else self.model.status == status
         )
+        # El historial de Persat no entra en el panel (E11-03, criterio 3).
+        scope = and_(scope, self.model.source != OrderSource.persat)
         filtered = self._select().where(scope)
         billing_filter = self._billing_filter(billing)
         if billing_filter is not None:

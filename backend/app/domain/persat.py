@@ -8,6 +8,7 @@ tienen datos de clientes.
 import re
 import unicodedata
 from dataclasses import dataclass
+from datetime import datetime
 
 # Registros de Persat que no son clientes (columna Tipo).
 INTERNAL_CLIENT_TYPES = frozenset({"OPERARIO", "DEPOSITO", "ADMINISTRACION"})
@@ -102,6 +103,11 @@ def _key(value: str) -> str:
     """Mayúsculas sin acentos y solo letras y números, para comparar variantes."""
     plain = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode()
     return re.sub(r"[^A-Z0-9]", "", plain.upper())
+
+
+def name_key(value: str) -> str:
+    """El nombre para comparar: sin mayúsculas, acentos, espacios ni signos."""
+    return _key(value)
 
 
 def _sentence(value: str) -> str:
@@ -338,3 +344,97 @@ def equipment_data(
         notes=f"{notes}." if notes else None,
         to_review=tuple(review),
     )
+
+
+# ---------- Órdenes (historial, E11-03) ----------
+
+# Tipo de trabajo según el formulario: el nombre del archivo de la exportación, sin la
+# extensión y en minúsculas. Los tres "mm_" son los formularios de mantenimiento.
+ORDER_FORMS = {
+    "ordenes_de_trabajo": "Reparación",
+    "ot_visista_reparacion": "Visita de reparación",
+    "ot_retiros": "Retiro",
+    "ot_devolucion": "Devolución",
+    "ot_instalacion": "Instalación",
+    "ot_preinstalacion": "Preinstalación",
+    "ot_relevamiento": "Relevamiento",
+    "mm_aire_split": "Mantenimiento",
+    "mm_rooftoop_bajo_sil": "Mantenimiento",
+    "mm_split_piso_techo": "Mantenimiento",
+}
+PERSAT_STATUSES = {
+    "CERRADA_OK": "cerrada",
+    "INFORME": "hecha sin cerrar",
+    "VENCIDA": "vencida",
+    "CERRADA_NO_CUMPLIDA": "cerrada no cumplida",
+    "CANCELADA": "cancelada",
+    "ASIGNADA": "asignada",
+}
+CANCELLED_STATUS = "CANCELADA"
+# Columnas cuyo texto forma el detalle: reclamo, observación, trabajo realizado, falla
+# detectada, causal de retiro y tareas.
+_DETAIL_HEADER = re.compile(r"RECLAMO|OBSERVACI|TRABAJO|FALLA|CAUSAL|TAREA", re.IGNORECASE)
+_NOT_DETAIL_HEADER = re.compile(r"REFERIDO|ESTADO|IMAGEN", re.IGNORECASE)
+_FILLER = frozenset({"", "0", "NA", "OTROS", "TEXTO"})
+# Etiquetas que son tipos de trabajo y no técnicos (con los errores de tipeo de Persat).
+_WORK_TYPE_TAGS = frozenset(
+    {
+        "REPARACION",
+        "VISITAREPARACION",
+        "RETIRO",
+        "DEVOLUCION",
+        "INSTALACION",
+        "INSTLACION",
+        "PREINSTALACION",
+        "RELEVAMIENTO",
+        "MANTENIMIENTO",
+    }
+)
+_ORDER_DATE = re.compile(r"^(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{2}):(\d{2}))?$")
+
+
+def order_work_type(form: str) -> str | None:
+    return ORDER_FORMS.get(form.lower())
+
+
+def order_date(raw: str) -> tuple[int, int, int, int, int] | None:
+    """`dd-mm-aaaa hh:mm` (hora de Argentina) como (año, mes, día, hora, minuto)."""
+    match = _ORDER_DATE.match(raw)
+    if match is None:
+        return None
+    day, month, year, hour, minute = (int(v or 0) for v in match.groups())
+    try:
+        datetime(year, month, day, hour, minute)
+    except ValueError:
+        return None
+    return year, month, day, hour, minute
+
+
+def is_detail_header(header: str) -> bool:
+    return bool(_DETAIL_HEADER.search(header)) and not _NOT_DETAIL_HEADER.search(header)
+
+
+def detail(texts: list[str]) -> str:
+    """Los textos sin repetir y sin valores de relleno, en el orden del formulario."""
+    seen: set[str] = set()
+    parts = []
+    for value in texts:
+        key = _key(value)
+        if key in _FILLER or key in seen:
+            continue
+        seen.add(key)
+        parts.append(value)
+    return "\n".join(parts)
+
+
+def technicians(tags: str) -> list[str]:
+    """Las etiquetas que no son tipos de trabajo: los técnicos de la orden."""
+    return [
+        name
+        for name in (part.strip() for part in re.split(r"[|,]", tags))
+        if name and _key(name) not in _WORK_TYPE_TAGS
+    ]
+
+
+def is_equipment_placeholder(value: str) -> bool:
+    return _key(value) in {"", "NA"}

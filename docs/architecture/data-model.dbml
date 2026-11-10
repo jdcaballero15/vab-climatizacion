@@ -568,7 +568,19 @@ Table legacy_reference {
   source varchar [not null, default: 'persat']
   legacy_id varchar [not null]
   imported_at timestamptz [not null]
+  batch_id uuid [ref: > import_batch.id, note: 'El lote que lo creó (E11-05)']
   indexes {
-    (entity, source, legacy_id) [unique]
+    (entity, source, legacy_id) [unique, note: 'Sin las borradas: un lote deshecho se puede volver a importar']
   }
+}
+
+// ---------- Importación ----------
+
+Table import_batch {
+  id uuid [pk]
+  source varchar(50) [not null, note: 'persat']
+  run_by varchar(255) [not null, note: 'Quién corrió la importación (línea de comandos)']
+  started_at timestamptz [not null]
+  summary text [not null, note: 'Cantidades creadas, para leer']
+  undone_at timestamptz [note: 'Lote deshecho: lo creado quedó dado de baja (E11-05)']
 }

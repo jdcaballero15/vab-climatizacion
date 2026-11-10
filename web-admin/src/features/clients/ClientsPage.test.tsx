@@ -739,6 +739,7 @@ describe("ClientsPage", () => {
       equipment: { id: "e1", internal_code: "EA1064201", location_note: "Habitación 12" },
       crew_name: "Escuadrilla 1",
       has_closure: true,
+      imported: false,
     };
     const PENDIENTE: ClientOrder = {
       ...TERMINADA,
@@ -875,6 +876,42 @@ describe("ClientsPage", () => {
       ).toBeInTheDocument();
       await userEvent.click(historial.getByRole("button", { name: "Limpiar filtros" }));
       expect(await historial.findByRole("table")).toBeInTheDocument();
+    });
+
+    // E11-03: el historial de Persat se marca y deja ver su detalle.
+    it("marca las importadas de Persat y muestra su detalle", async () => {
+      mockApi((request, url) => {
+        if (url.pathname.endsWith("/admin/clients") && request.method === "GET") {
+          return json(page([HOTEL]));
+        }
+        if (url.pathname.endsWith("/admin/clients/c1")) {
+          return json(HOTEL);
+        }
+        if (url.pathname.endsWith("/c1/orders")) {
+          return json({
+            items: [
+              {
+                ...TERMINADA,
+                has_closure: false,
+                imported: true,
+                description: "Persat N° 5001 · cerrada\nNo enfría",
+              },
+            ],
+            total: 1,
+            limit: 20,
+            offset: 0,
+          });
+        }
+        return undefined;
+      });
+      renderClients();
+      await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
+
+      expect(await screen.findByText("Importada de Persat")).toBeInTheDocument();
+      await userEvent.click(
+        screen.getByRole("button", { name: "Ver el detalle de Persat de la orden N° 12" }),
+      );
+      expect(screen.getByText(/Persat N° 5001 · cerrada/)).toBeInTheDocument();
     });
   });
 
