@@ -1,4 +1,5 @@
 import {
+  LayoutDashboard,
   AirVent,
   Building2,
   CalendarClock,
@@ -17,6 +18,7 @@ import { ForRole } from "./ForRole";
 
 import type { Session } from "../features/auth/types";
 import { ClientsPage } from "../features/clients/ClientsPage";
+import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { CrewsPage } from "../features/crews/CrewsPage";
 import { EquipmentTypesPage } from "../features/equipment-types/EquipmentTypesPage";
 import { FailuresPage } from "../features/failures/FailuresPage";
@@ -42,6 +44,8 @@ export interface NavSection {
   group: string | null;
   /** Roles que ven la sección. La API exige el rol igual: esto solo ordena la interfaz. */
   roles: Role[];
+  /** Roles para los que es la pantalla de inicio, aunque no sea la primera del menú. */
+  homeFor?: Role[];
   icon: LucideIcon;
   element: ReactNode;
 }
@@ -50,6 +54,16 @@ export interface NavSection {
 // (roles-permisos.md); dirección ve las órdenes y gestiona usuarios. El orden del arreglo es el del menú,
 // y la primera sección visible es la pantalla de inicio del rol.
 export const NAV_SECTIONS: NavSection[] = [
+  {
+    path: "/tablero",
+    label: "Tablero",
+    group: null,
+    roles: ["admin", "owner"],
+    // E10-07: dirección entra al tablero; administración, a Órdenes.
+    homeFor: ["owner"],
+    icon: LayoutDashboard,
+    element: <DashboardPage />,
+  },
   {
     path: "/ordenes",
     label: "Órdenes",
@@ -135,4 +149,13 @@ export const NAV_SECTIONS: NavSection[] = [
 
 export function sectionsFor(role: Role): NavSection[] {
   return NAV_SECTIONS.filter((section) => section.roles.includes(role));
+}
+
+/** La pantalla de inicio del rol: la marcada para él o, si no, la primera que ve. */
+export function homeFor(role: Role): NavSection | undefined {
+  const sections = sectionsFor(role);
+  return (
+    sections.find((section) => section.homeFor?.includes(role)) ??
+    sections.find((section) => !section.homeFor)
+  );
 }

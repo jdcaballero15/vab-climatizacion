@@ -18,11 +18,13 @@ router = APIRouter(prefix="/admin/equipment-types", tags=["catálogos"])
 
 # Solo administración edita catálogos (ver roles-permisos.md).
 AdminOnly = Annotated[User, Depends(require_role(UserRole.admin))]
+# Dirección filtra el tablero por tipo de equipo (E10-08).
+AdminOrOwner = Annotated[User, Depends(require_role(UserRole.admin, UserRole.owner))]
 
 
 @router.get("", response_model=list[EquipmentTypeAdminOut])
 async def list_equipment_types(
-    session: SessionDep, _: AdminOnly, include_inactive: bool = False
+    session: SessionDep, _: AdminOrOwner, include_inactive: bool = False
 ) -> Sequence[EquipmentType]:
     return await catalog_service.list_equipment_types(session, include_inactive=include_inactive)
 

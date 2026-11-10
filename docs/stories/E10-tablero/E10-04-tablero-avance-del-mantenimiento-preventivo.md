@@ -4,7 +4,7 @@ title: "Tablero: avance del mantenimiento preventivo"
 epic: E10
 phase: 1
 priority: must
-status: draft
+status: done
 roles: [owner, admin]
 size: S
 areas: [backend, web-admin]
@@ -23,3 +23,12 @@ assumes: []
 
 1. **Dado:** una corrida mensual. **Cuando:** abro la sección. **Entonces:** veo generadas, aprobadas, asignadas, cerradas y pendientes.
 2. **Dado:** un mes anterior. **Cuando:** lo elijo. **Entonces:** veo su avance final.
+
+## Decisiones (2026-11-10)
+
+- Sin "aprobadas": la aprobación en bloque se descartó (E99-10).
+
+## Hecho
+
+- `GET /admin/dashboard` (administración y dirección; el técnico recibe 403) devuelve todas las secciones con los mismos filtros: período (por defecto los últimos 30 días), cliente, escuadrilla, tipo de trabajo y tipo de equipo. Sin precios.
+- Mantenimientos con visita prevista en el período: generados, pendientes, asignados (o en curso), cerrados y cancelados. Un mes anterior se ve eligiendo su período.

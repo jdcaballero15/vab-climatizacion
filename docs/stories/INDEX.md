@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 124 historias.** done: 66, draft: 44, icebox: 12, in_progress: 2
+**Total: 124 historias.** done: 74, draft: 36, icebox: 12, in_progress: 2
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -149,14 +149,14 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
-| [E10-01](E10-tablero/E10-01-tablero-ordenes-por-estado.md) | Tablero: órdenes por estado | Debe | M | draft | owner, admin | - | - | E04-05 |
-| [E10-02](E10-tablero/E10-02-tablero-trabajos-por-tecnico.md) | Tablero: trabajos por técnico | Debe | S | draft | owner, admin | - | - | E10-01, E05-04 |
-| [E10-03](E10-tablero/E10-03-tablero-tipos-de-reparacion-mas-comunes.md) | Tablero: tipos de reparación más comunes | Debe | S | draft | owner, admin | - | - | E10-01, E05-04 |
-| [E10-04](E10-tablero/E10-04-tablero-avance-del-mantenimiento-preventivo.md) | Tablero: avance del mantenimiento preventivo | Debe | S | draft | owner, admin | - | - | E10-01, E07-04 |
-| [E10-05](E10-tablero/E10-05-tablero-ordenes-terminadas-sin-facturar.md) | Tablero: órdenes terminadas sin facturar | Debe | S | draft | owner, admin | - | - | E10-01, E04-09 |
-| [E10-06](E10-tablero/E10-06-tablero-repuestos-mas-usados.md) | Tablero: repuestos más usados | Debe | S | draft | owner, admin | - | - | E10-01, E08-04 |
-| [E10-07](E10-tablero/E10-07-ver-el-tablero-desde-el-celular.md) | Ver el tablero desde el celular | Debe | S | draft | owner | - | - | E10-01 |
-| [E10-08](E10-tablero/E10-08-tablero-filtros-por-cliente-tecnico-equipo-y-periodo.md) | Tablero: filtros por cliente, técnico, equipo y período | Debería | M | draft | owner, admin | - | - | E10-01 |
+| [E10-01](E10-tablero/E10-01-tablero-ordenes-por-estado.md) | Tablero: órdenes por estado | Debe | M | done | owner, admin | - | - | E04-05 |
+| [E10-02](E10-tablero/E10-02-tablero-trabajos-por-tecnico.md) | Tablero: trabajos por técnico | Debe | S | done | owner, admin | - | - | E10-01, E05-04 |
+| [E10-03](E10-tablero/E10-03-tablero-tipos-de-reparacion-mas-comunes.md) | Tablero: tipos de reparación más comunes | Debe | S | done | owner, admin | - | - | E10-01, E05-04 |
+| [E10-04](E10-tablero/E10-04-tablero-avance-del-mantenimiento-preventivo.md) | Tablero: avance del mantenimiento preventivo | Debe | S | done | owner, admin | - | - | E10-01, E07-04 |
+| [E10-05](E10-tablero/E10-05-tablero-ordenes-terminadas-sin-facturar.md) | Tablero: órdenes terminadas sin facturar | Debe | S | done | owner, admin | - | - | E10-01, E04-09 |
+| [E10-06](E10-tablero/E10-06-tablero-repuestos-mas-usados.md) | Tablero: repuestos más usados | Debe | S | done | owner, admin | - | - | E10-01, E08-04 |
+| [E10-07](E10-tablero/E10-07-ver-el-tablero-desde-el-celular.md) | Ver el tablero desde el celular | Debe | S | done | owner | - | - | E10-01 |
+| [E10-08](E10-tablero/E10-08-tablero-filtros-por-cliente-tecnico-equipo-y-periodo.md) | Tablero: filtros por cliente, técnico, equipo y período | Debería | M | done | owner, admin | - | - | E10-01 |
 
 ## E11 Migración y puesta en marcha
 

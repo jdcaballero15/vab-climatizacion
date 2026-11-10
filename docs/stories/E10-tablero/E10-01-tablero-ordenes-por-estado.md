@@ -4,7 +4,7 @@ title: "Tablero: órdenes por estado"
 epic: E10
 phase: 1
 priority: must
-status: draft
+status: done
 roles: [owner, admin]
 size: M
 areas: [backend, web-admin]
@@ -28,3 +28,8 @@ assumes: []
 ## Notas técnicas
 
 - Reemplaza a la opción "tablero en Power BI" de la propuesta original. Si más adelante se quiere Power BI, se expone una vista de datos de solo lectura.
+
+## Hecho
+
+- `GET /admin/dashboard` (administración y dirección; el técnico recibe 403) devuelve todas las secciones con los mismos filtros: período (por defecto los últimos 30 días), cliente, escuadrilla, tipo de trabajo y tipo de equipo. Sin precios.
+- Las cantidades por estado salen de la misma consulta que el panel de órdenes (E04-05), así coinciden; cada una lleva a `/ordenes?estado=...`. Evolución: creadas y terminadas por semana (lunes a domingo), en barras con leyenda, valor al pasar o enfocar y vista de tabla.

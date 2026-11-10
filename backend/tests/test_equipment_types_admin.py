@@ -191,11 +191,13 @@ async def test_tecnico_y_direccion_reciben_403(admin: User, role: UserRole) -> N
     async with _client() as client:
         tipo = await _crear_tipo(client, admin, "Split")
         tipo_url = f"{URL}/{tipo['id']}"
+        lista = await client.get(URL, headers=_auth(otro))
         respuestas = [
-            await client.get(URL, headers=_auth(otro)),
             await client.post(URL, json={"name": "X"}, headers=_auth(otro)),
             await client.get(tipo_url, headers=_auth(otro)),
             await client.patch(tipo_url, json={"name": "X"}, headers=_auth(otro)),
             await client.patch(tipo_url, json={"is_active": False}, headers=_auth(otro)),
         ]
     assert [r.status_code for r in respuestas] == [403] * len(respuestas)
+    # Dirección ve la lista para filtrar el tablero (E10-08); el técnico, no.
+    assert lista.status_code == (200 if role == UserRole.owner else 403)

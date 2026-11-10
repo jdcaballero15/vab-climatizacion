@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { PageHeader } from "../../app/PageHeader";
 import type { ClientSummary } from "../clients/types";
@@ -196,7 +197,12 @@ function cardActions(
  * en modo lectura (E04-05).
  */
 export function OrdersPage({ readOnly = false }: { readOnly?: boolean }) {
-  const [status, setStatus] = useState<OrderView>(readOnly ? "done" : "pending");
+  // Desde el tablero se llega a un estado (E10-01, criterio 2).
+  const [params] = useSearchParams();
+  const fromLink = params.get("estado") as OrderView | null;
+  const [status, setStatus] = useState<OrderView>(
+    fromLink && fromLink in LIST_STATUS_LABELS ? fromLink : readOnly ? "done" : "pending",
+  );
   const [offset, setOffset] = useState(0);
   const [filters, setFilters] = useState<OrderFilters>({});
   const [filterClient, setFilterClient] = useState<ClientSummary | null>(null);
