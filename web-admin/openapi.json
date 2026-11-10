@@ -1826,6 +1826,16 @@
             }
           },
           {
+            "name": "deleted",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Deleted"
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -1992,6 +2002,7 @@
           "clientes"
         ],
         "summary": "Get Client",
+        "description": "También los dados de baja: conservan su ficha y su historial (E03-07).",
         "operationId": "get_client_admin_clients__client_id__get",
         "security": [
           {
@@ -2073,6 +2084,274 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClientAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/audit": {
+      "get": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Get Client Audit",
+        "description": "Bajas, restauraciones y unificaciones del cliente (E03-07, criterio 3).",
+        "operationId": "get_client_audit_admin_clients__client_id__audit_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditEntryOut"
+                  },
+                  "title": "Response Get Client Audit Admin Clients  Client Id  Audit Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/deactivation": {
+      "post": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Deactivate Client",
+        "description": "Baja lógica (E03-07): no con órdenes abiertas.",
+        "operationId": "deactivate_client_admin_clients__client_id__deactivation_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/restoration": {
+      "post": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Restore Client",
+        "operationId": "restore_client_admin_clients__client_id__restoration_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/merge-preview": {
+      "get": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Preview Client Merge",
+        "description": "Qué pasaría al unificar este cliente en otro, sin cambiar nada (E03-08).",
+        "operationId": "preview_client_merge_admin_clients__client_id__merge_preview_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          },
+          {
+            "name": "into_client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Into Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientMergePreviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/merge": {
+      "post": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Merge Client",
+        "description": "Unifica este cliente (el que se va) en otro (el que queda), E03-08.",
+        "operationId": "merge_client_admin_clients__client_id__merge_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientMergeCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientMergePreviewOut"
                 }
               }
             }
@@ -2657,6 +2936,16 @@
               ],
               "title": "Site Id"
             }
+          },
+          {
+            "name": "deleted",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Deleted"
+            }
           }
         ],
         "responses": {
@@ -2819,6 +3108,210 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/EquipmentUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/equipment/{equipment_id}/file": {
+      "get": {
+        "tags": [
+          "equipos"
+        ],
+        "summary": "Get Equipment File",
+        "description": "Ficha con traslados y trabajos, también de un equipo dado de baja (E03-05).",
+        "operationId": "get_equipment_file_admin_equipment__equipment_id__file_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentFileOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/equipment/{equipment_id}/deactivation": {
+      "post": {
+        "tags": [
+          "equipos"
+        ],
+        "summary": "Deactivate Equipment",
+        "operationId": "deactivate_equipment_admin_equipment__equipment_id__deactivation_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/equipment/{equipment_id}/restoration": {
+      "post": {
+        "tags": [
+          "equipos"
+        ],
+        "summary": "Restore Equipment",
+        "operationId": "restore_equipment_admin_equipment__equipment_id__restoration_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/equipment/{equipment_id}/transfer": {
+      "post": {
+        "tags": [
+          "equipos"
+        ],
+        "summary": "Transfer Equipment",
+        "description": "Pasa el equipo a un domicilio de otro cliente, con código nuevo (E03-09).",
+        "operationId": "transfer_equipment_admin_equipment__equipment_id__transfer_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentTransferCreate"
               }
             }
           }
@@ -5251,6 +5744,50 @@
         ],
         "title": "AssignmentCreate"
       },
+      "AuditEntryOut": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "actor_name",
+          "occurred_at",
+          "detail"
+        ],
+        "title": "AuditEntryOut",
+        "description": "Una baja, restauración o unificación, con quién y cuándo (E12-02)."
+      },
       "BillingAdminOut": {
         "properties": {
           "parts_amount": {
@@ -5611,6 +6148,28 @@
               }
             ],
             "title": "Notes"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "merged_into": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -5678,6 +6237,83 @@
           "name"
         ],
         "title": "ClientCreate"
+      },
+      "ClientMergeCreate": {
+        "properties": {
+          "into_client_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Into Client Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "into_client_id"
+        ],
+        "title": "ClientMergeCreate",
+        "description": "Unificar este cliente (el que se va) en otro (el que queda), E03-08."
+      },
+      "ClientMergePreviewOut": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Id"
+          },
+          "source_name": {
+            "type": "string",
+            "title": "Source Name"
+          },
+          "source_number": {
+            "type": "string",
+            "title": "Source Number"
+          },
+          "target_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Id"
+          },
+          "target_name": {
+            "type": "string",
+            "title": "Target Name"
+          },
+          "target_number": {
+            "type": "string",
+            "title": "Target Number"
+          },
+          "sites": {
+            "type": "integer",
+            "title": "Sites"
+          },
+          "contacts": {
+            "type": "integer",
+            "title": "Contacts"
+          },
+          "equipment": {
+            "type": "integer",
+            "title": "Equipment"
+          },
+          "orders": {
+            "type": "integer",
+            "title": "Orders"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id",
+          "source_name",
+          "source_number",
+          "target_id",
+          "target_name",
+          "target_number",
+          "sites",
+          "contacts",
+          "equipment",
+          "orders"
+        ],
+        "title": "ClientMergePreviewOut",
+        "description": "Lo que pasa del que se va al que queda, para confirmar antes (criterio 4)."
       },
       "ClientOrderOut": {
         "properties": {
@@ -7198,6 +7834,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
           }
         },
         "type": "object",
@@ -7321,6 +7969,180 @@
           "location_note"
         ],
         "title": "EquipmentCreate"
+      },
+      "EquipmentFileOut": {
+        "properties": {
+          "equipment": {
+            "$ref": "#/components/schemas/EquipmentAdminOut"
+          },
+          "client_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Id"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "client_number": {
+            "type": "string",
+            "title": "Client Number"
+          },
+          "site_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Label"
+          },
+          "site_address": {
+            "type": "string",
+            "title": "Site Address"
+          },
+          "equipment_type_name": {
+            "type": "string",
+            "title": "Equipment Type Name"
+          },
+          "transfers": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentTransferOut"
+            },
+            "type": "array",
+            "title": "Transfers"
+          },
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentHistoryOrderOut"
+            },
+            "type": "array",
+            "title": "Orders"
+          }
+        },
+        "type": "object",
+        "required": [
+          "equipment",
+          "client_id",
+          "client_name",
+          "client_number",
+          "site_label",
+          "site_address",
+          "equipment_type_name",
+          "transfers",
+          "orders"
+        ],
+        "title": "EquipmentFileOut",
+        "description": "Ficha del equipo: datos, traslados y trabajos, el más nuevo primero (E03-05)."
+      },
+      "EquipmentHistoryOrderOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "work_type_name": {
+            "type": "string",
+            "title": "Work Type Name"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "failure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure"
+          },
+          "repair": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repair"
+          },
+          "observation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observation"
+          },
+          "materials": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Materials"
+          },
+          "before_transfer": {
+            "type": "boolean",
+            "title": "Before Transfer"
+          },
+          "imported": {
+            "type": "boolean",
+            "title": "Imported"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "status",
+          "work_type_name",
+          "client_name",
+          "created_at",
+          "closed_at",
+          "failure",
+          "repair",
+          "observation",
+          "materials",
+          "before_transfer",
+          "imported"
+        ],
+        "title": "EquipmentHistoryOrderOut",
+        "description": "Un trabajo del equipo en su ficha (E03-05)."
       },
       "EquipmentSearchOut": {
         "properties": {
@@ -7450,6 +8272,61 @@
           "model"
         ],
         "title": "EquipmentTechnicianOut"
+      },
+      "EquipmentTransferCreate": {
+        "properties": {
+          "client_site_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Site Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "client_site_id"
+        ],
+        "title": "EquipmentTransferCreate",
+        "description": "Pasar el equipo a un domicilio activo de otro cliente (E03-09)."
+      },
+      "EquipmentTransferOut": {
+        "properties": {
+          "from_client_name": {
+            "type": "string",
+            "title": "From Client Name"
+          },
+          "from_code": {
+            "type": "string",
+            "title": "From Code"
+          },
+          "to_client_name": {
+            "type": "string",
+            "title": "To Client Name"
+          },
+          "to_code": {
+            "type": "string",
+            "title": "To Code"
+          },
+          "transferred_by_name": {
+            "type": "string",
+            "title": "Transferred By Name"
+          },
+          "transferred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Transferred At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_client_name",
+          "from_code",
+          "to_client_name",
+          "to_code",
+          "transferred_by_name",
+          "transferred_at"
+        ],
+        "title": "EquipmentTransferOut"
       },
       "EquipmentTypeAdminOut": {
         "properties": {

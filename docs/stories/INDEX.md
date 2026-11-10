@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 124 historias.** done: 61, draft: 53, icebox: 8, in_progress: 2
+**Total: 124 historias.** done: 66, draft: 48, icebox: 8, in_progress: 2
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -57,11 +57,11 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E03-02](E03-clientes-equipos/E03-02-domicilios-o-sitios-de-un-cliente.md) | Domicilios o sitios de un cliente | Debe | M | done | admin | - | - | E03-01 |
 | [E03-03](E03-clientes-equipos/E03-03-alta-y-edicion-de-equipos.md) | Alta y edición de equipos | Debe | M | done | admin | - | D-002 | E03-02, E02-02 |
 | [E03-04](E03-clientes-equipos/E03-04-ficha-de-cliente-con-historial.md) | Ficha de cliente con historial | Debe | M | done | admin, owner | - | - | E03-01, E04-08 |
-| [E03-05](E03-clientes-equipos/E03-05-ficha-de-equipo-con-historial-y-mediciones.md) | Ficha de equipo con historial y mediciones | Debe | M | draft | admin, owner | - | D-002 | E03-03, E04-06 |
+| [E03-05](E03-clientes-equipos/E03-05-ficha-de-equipo-con-historial-y-mediciones.md) | Ficha de equipo con historial y mediciones | Debe | M | done | admin, owner | - | D-002 | E03-03, E04-06 |
 | [E03-06](E03-clientes-equipos/E03-06-buscar-clientes-y-equipos.md) | Buscar clientes y equipos | Debe | S | done | admin, owner | - | - | E03-01 |
-| [E03-07](E03-clientes-equipos/E03-07-baja-logica-y-restauracion-de-clientes-y-equipos.md) | Baja lógica y restauración de clientes y equipos | Debería | S | draft | admin | - | - | E03-01, E03-03 |
-| [E03-08](E03-clientes-equipos/E03-08-unificar-dos-clientes.md) | Unificar dos clientes | Debería | M | draft | admin | - | D-002 | E03-02, E03-03, E03-07 |
-| [E03-09](E03-clientes-equipos/E03-09-pasar-un-equipo-a-otro-cliente.md) | Pasar un equipo a otro cliente | Debería | M | draft | admin | - | D-002 | E03-03 |
+| [E03-07](E03-clientes-equipos/E03-07-baja-logica-y-restauracion-de-clientes-y-equipos.md) | Baja lógica y restauración de clientes y equipos | Debería | S | done | admin | - | - | E03-01, E03-03 |
+| [E03-08](E03-clientes-equipos/E03-08-unificar-dos-clientes.md) | Unificar dos clientes | Debería | M | done | admin | - | D-002 | E03-02, E03-03, E03-07 |
+| [E03-09](E03-clientes-equipos/E03-09-pasar-un-equipo-a-otro-cliente.md) | Pasar un equipo a otro cliente | Debería | M | done | admin | - | D-002 | E03-03 |
 
 ## E04 Órdenes de trabajo (administración)
 
@@ -181,7 +181,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
 | [E12-01](E12-transversal/E12-01-auditoria-de-cambios.md) | Auditoría de cambios | Debe | M | draft | admin, owner | - | - | E00-01 |
-| [E12-02](E12-transversal/E12-02-borrado-logico-y-restauracion.md) | Borrado lógico y restauración | Debe | S | draft | admin | - | - | E00-01 |
+| [E12-02](E12-transversal/E12-02-borrado-logico-y-restauracion.md) | Borrado lógico y restauración | Debe | S | done | admin | - | - | E00-01 |
 | [E12-03](E12-transversal/E12-03-errores-uniformes-y-en-espanol.md) | Errores uniformes y en español | Debe | S | draft | admin, technician, owner | - | - | E00-01 |
 | [E12-04](E12-transversal/E12-04-proteccion-de-datos-personales.md) | Protección de datos personales | Debe | M | draft | owner | D-008 | - | E00-09 |
 | [E12-05](E12-transversal/E12-05-paginacion-estandar-en-los-listados.md) | Paginación estándar en los listados | Debe | S | draft | admin, owner | - | - | E00-01 |

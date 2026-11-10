@@ -7,8 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.deps import SessionDep, require_role
 from app.api.schemas.client import (
+    AuditEntryOut,
     ClientAdminOut,
     ClientCreate,
+    ClientMergeCreate,
+    ClientMergePreviewOut,
     ClientPage,
     ClientSummaryOut,
     ClientUpdate,
@@ -41,11 +44,13 @@ async def list_clients(
     _: AdminOnly,
     segment: ClientSegment | None = None,
     q: Annotated[str | None, Query(max_length=255)] = None,
+    # Solo los dados de baja, para restaurarlos (E03-07).
+    deleted: bool = False,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> ClientPage:
     items, total = await clients_service.list_clients(
-        session, segment=segment, search=q, limit=limit, offset=offset
+        session, segment=segment, search=q, deleted=deleted, limit=limit, offset=offset
     )
     return ClientPage(
         items=[ClientSummaryOut.model_validate(item) for item in items],
@@ -72,11 +77,87 @@ async def find_similar_clients(
 
 
 @router.get("/{client_id}", response_model=ClientAdminOut)
-async def get_client(client_id: uuid.UUID, session: SessionDep, _: AdminOnly) -> Client:
+async def get_client(client_id: uuid.UUID, session: SessionDep, _: AdminOnly) -> ClientAdminOut:
+    """También los dados de baja: conservan su ficha y su historial (E03-07)."""
     try:
-        return await clients_service.get_client(session, client_id)
+        client = await clients_service.get_client(session, client_id, include_deleted=True)
     except clients_service.ClientNotFoundError:
         raise _client_not_found() from None
+    return await clients_service.client_admin_out(session, client)
+
+
+@router.get("/{client_id}/audit", response_model=list[AuditEntryOut])
+async def get_client_audit(
+    client_id: uuid.UUID, session: SessionDep, _: AdminOrOwner
+) -> list[AuditEntryOut]:
+    """Bajas, restauraciones y unificaciones del cliente (E03-07, criterio 3)."""
+    try:
+        return await clients_service.audit_trail(session, client_id)
+    except clients_service.ClientNotFoundError:
+        raise _client_not_found() from None
+
+
+@router.post("/{client_id}/deactivation", response_model=ClientAdminOut)
+async def deactivate_client(
+    client_id: uuid.UUID, session: SessionDep, admin: AdminOnly
+) -> ClientAdminOut:
+    """Baja lógica (E03-07): no con órdenes abiertas."""
+    try:
+        client = await clients_service.deactivate_client(session, client_id, admin)
+    except clients_service.ClientNotFoundError:
+        raise _client_not_found() from None
+    except clients_service.ClientHasOpenOrdersError as exc:
+        raise _error(409, "client_has_open_orders", exc.message) from None
+    return await clients_service.client_admin_out(session, client)
+
+
+@router.post("/{client_id}/restoration", response_model=ClientAdminOut)
+async def restore_client(
+    client_id: uuid.UUID, session: SessionDep, admin: AdminOnly
+) -> ClientAdminOut:
+    try:
+        client = await clients_service.restore_client(session, client_id, admin)
+    except clients_service.ClientNotFoundError:
+        raise _client_not_found() from None
+    except clients_service.ClientNotDeletedError:
+        raise _error(409, "client_not_deleted", "El cliente no está dado de baja.") from None
+    except clients_service.ClientMergedError:
+        raise _error(
+            409, "client_merged", "El cliente se unificó en otro: no se puede restaurar."
+        ) from None
+    return await clients_service.client_admin_out(session, client)
+
+
+@router.get("/{client_id}/merge-preview", response_model=ClientMergePreviewOut)
+async def preview_client_merge(
+    client_id: uuid.UUID, into_client_id: uuid.UUID, session: SessionDep, _: AdminOnly
+) -> ClientMergePreviewOut:
+    """Qué pasaría al unificar este cliente en otro, sin cambiar nada (E03-08)."""
+    try:
+        return await clients_service.merge_preview(session, client_id, into_client_id)
+    except clients_service.ClientNotFoundError:
+        raise _client_not_found() from None
+    except clients_service.SameClientMergeError:
+        raise _same_client() from None
+
+
+@router.post("/{client_id}/merge", response_model=ClientMergePreviewOut)
+async def merge_client(
+    client_id: uuid.UUID, payload: ClientMergeCreate, session: SessionDep, admin: AdminOnly
+) -> ClientMergePreviewOut:
+    """Unifica este cliente (el que se va) en otro (el que queda), E03-08."""
+    try:
+        return await clients_service.merge_clients(
+            session, client_id, payload.into_client_id, admin
+        )
+    except clients_service.ClientNotFoundError:
+        raise _client_not_found() from None
+    except clients_service.SameClientMergeError:
+        raise _same_client() from None
+
+
+def _same_client() -> HTTPException:
+    return _error(422, "same_client", "Elegí otro cliente: no se unifica un cliente en sí mismo.")
 
 
 @router.get("/{client_id}/orders", response_model=ClientOrderPage)
@@ -242,3 +323,7 @@ def _report_requires_email() -> HTTPException:
             "message": "Para recibir el informe mensual, el contacto necesita un email.",
         },
     )
+
+
+def _error(status_code: int, code: str, message: str) -> HTTPException:
+    return HTTPException(status_code=status_code, detail={"code": code, "message": message})

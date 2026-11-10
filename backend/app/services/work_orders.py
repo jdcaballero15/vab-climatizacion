@@ -227,7 +227,7 @@ async def get_detail(session: AsyncSession, order_id: uuid.UUID) -> WorkOrderDet
     """La orden con sus datos, escuadrilla, cancelación y línea de tiempo (E04-06)."""
     order = await get_work_order(session, order_id)
     repository = WorkOrderRepository(session)
-    client = await clients_service.get_client(session, order.client_id)
+    client = await clients_service.get_client(session, order.client_id, include_deleted=True)
     site = await session.get(ClientSite, order.client_site_id)
     if site is None:
         # La orden apunta siempre a un domicilio (FK): no pasa con datos sanos.
@@ -426,7 +426,7 @@ async def list_for_client(
     offset: int,
 ) -> tuple[list[ClientOrderOut], int]:
     """Historial de órdenes de un cliente para su ficha (E03-04). 404 si no existe."""
-    await clients_service.get_client(session, client_id)
+    await clients_service.get_client(session, client_id, include_deleted=True)
     rows, total = await WorkOrderRepository(session).list_for_client_page(
         client_id,
         equipment_id=equipment_id,

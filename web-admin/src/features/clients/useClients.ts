@@ -3,6 +3,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { api } from "../../api/client";
 import { ORDERS_KEY } from "../orders/useOrders";
 import type {
+  AuditEntry,
   Client,
   ClientCreate,
   ClientOrderPage,
@@ -15,7 +16,9 @@ import type {
   ContactUpdate,
   Equipment,
   EquipmentCreate,
+  EquipmentFile,
   EquipmentUpdate,
+  MergePreview,
   SearchResults,
   Site,
   SiteCreate,
@@ -32,12 +35,13 @@ function saveError(error: unknown, fallback: string): Error {
   return new Error(typeof detail?.message === "string" ? detail.message : fallback);
 }
 
-export function useClientPage(segment: ClientSegment | null, offset: number) {
+/** Con deleted, los dados de baja, para restaurarlos (E03-07). */
+export function useClientPage(segment: ClientSegment | null, offset: number, deleted = false) {
   return useQuery<ClientPage>({
-    queryKey: [...CLIENTS_KEY, "page", { segment, offset }],
+    queryKey: [...CLIENTS_KEY, "page", { segment, offset, deleted }],
     queryFn: async () => {
       const { data, error } = await api.GET("/admin/clients", {
-        params: { query: { segment, limit: PAGE_SIZE, offset } },
+        params: { query: { segment, limit: PAGE_SIZE, offset, deleted } },
       });
       if (error || !data) {
         throw new Error("no se pudieron cargar los clientes");
@@ -212,12 +216,12 @@ export function useUpdateSite(clientId: string, siteId: string) {
   });
 }
 
-export function useEquipment(clientId: string, siteId: string | null) {
+export function useEquipment(clientId: string, siteId: string | null, deleted = false) {
   return useQuery<Equipment[]>({
-    queryKey: [...CLIENTS_KEY, "equipment", clientId, { siteId }],
+    queryKey: [...CLIENTS_KEY, "equipment", clientId, { siteId, deleted }],
     queryFn: async () => {
       const { data, error } = await api.GET("/admin/clients/{client_id}/equipment", {
-        params: { path: { client_id: clientId }, query: { site_id: siteId } },
+        params: { path: { client_id: clientId }, query: { site_id: siteId, deleted } },
       });
       if (error || !data) {
         throw new Error("no se pudieron cargar los equipos");
@@ -324,5 +328,120 @@ export function useSearch(query: string, includeDeleted: boolean) {
     },
     enabled: query.length >= 2,
     placeholderData: keepPreviousData,
+  });
+}
+
+/** Baja o restauración de un cliente (E03-07); invalida listas, fichas y órdenes. */
+export function useClientLifecycle(clientId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<Client, Error, "deactivation" | "restoration">({
+    mutationFn: async (action) => {
+      const params = { path: { client_id: clientId } };
+      const { data, error } =
+        action === "deactivation"
+          ? await api.POST("/admin/clients/{client_id}/deactivation", { params })
+          : await api.POST("/admin/clients/{client_id}/restoration", { params });
+      if (error || !data) {
+        throw saveError(error, "No se pudo guardar el cambio.");
+      }
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CLIENTS_KEY }),
+  });
+}
+
+/** Bajas, restauraciones y unificaciones del cliente (E03-07, criterio 3). */
+export function useClientAudit(clientId: string) {
+  return useQuery<AuditEntry[]>({
+    queryKey: [...CLIENTS_KEY, "audit", clientId],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/admin/clients/{client_id}/audit", {
+        params: { path: { client_id: clientId } },
+      });
+      if (error || !data) {
+        throw new Error("no se pudo cargar la auditoría");
+      }
+      return data;
+    },
+  });
+}
+
+/** Qué se movería al unificar (E03-08, criterio 4). */
+export function useMergePreview(clientId: string, intoId: string | null) {
+  return useQuery<MergePreview>({
+    queryKey: [...CLIENTS_KEY, "merge-preview", clientId, intoId],
+    enabled: intoId !== null,
+    queryFn: async () => {
+      const { data, error } = await api.GET("/admin/clients/{client_id}/merge-preview", {
+        params: { path: { client_id: clientId }, query: { into_client_id: intoId ?? "" } },
+      });
+      if (error || !data) {
+        throw saveError(error, "No se pudo calcular la unificación.");
+      }
+      return data;
+    },
+  });
+}
+
+export function useMergeClient(clientId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<MergePreview, Error, string>({
+    mutationFn: async (intoId) => {
+      const { data, error } = await api.POST("/admin/clients/{client_id}/merge", {
+        params: { path: { client_id: clientId } },
+        body: { into_client_id: intoId },
+      });
+      if (error || !data) {
+        throw saveError(error, "No se pudo unificar.");
+      }
+      return data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: CLIENTS_KEY });
+      await queryClient.invalidateQueries({ queryKey: ORDERS_KEY });
+    },
+  });
+}
+
+type EquipmentAction =
+  { kind: "deactivation" } | { kind: "restoration" } | { kind: "transfer"; siteId: string };
+
+/** Baja, restauración (E03-07) o traslado a otro cliente (E03-09) de un equipo. */
+export function useEquipmentAction(equipmentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<Equipment, Error, EquipmentAction>({
+    mutationFn: async (action) => {
+      const params = { path: { equipment_id: equipmentId } };
+      const { data, error } =
+        action.kind === "transfer"
+          ? await api.POST("/admin/equipment/{equipment_id}/transfer", {
+              params,
+              body: { client_site_id: action.siteId },
+            })
+          : action.kind === "deactivation"
+            ? await api.POST("/admin/equipment/{equipment_id}/deactivation", { params })
+            : await api.POST("/admin/equipment/{equipment_id}/restoration", { params });
+      if (error || !data) {
+        throw saveError(error, "No se pudo guardar el cambio del equipo.");
+      }
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CLIENTS_KEY }),
+  });
+}
+
+/** Ficha del equipo con traslados y trabajos (E03-05). */
+export function useEquipmentFile(equipmentId: string) {
+  return useQuery<EquipmentFile>({
+    queryKey: [...CLIENTS_KEY, "equipment-file", equipmentId],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/admin/equipment/{equipment_id}/file", {
+        params: { path: { equipment_id: equipmentId } },
+      });
+      if (error || !data) {
+        throw new Error("no se pudo cargar la ficha del equipo");
+      }
+      return data;
+    },
   });
 }
