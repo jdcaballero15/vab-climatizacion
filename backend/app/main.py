@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import (
+    audit,
     auth,
     clients,
     crews,
@@ -21,12 +22,15 @@ from app.api import (
     work_types,
 )
 from app.core.config import get_settings
+from app.core.errors import install_error_handlers
+from app.db import audit_listener  # noqa: F401  (registra la auditoría de cambios)
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
     settings.require_storage()
     app = FastAPI(title="OT Platform API", version="0.1.0")
+    install_error_handlers(app)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
@@ -35,6 +39,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(health.router)
+    app.include_router(audit.router)
     app.include_router(auth.router)
     app.include_router(users.router)
     app.include_router(work_types.router)

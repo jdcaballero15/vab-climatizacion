@@ -282,11 +282,7 @@ async def test_motivo_incompleto_se_rechaza_con_el_campo(
 
     assert response.status_code == 422, response.text
     detail = response.json()["detail"]
-    campos = (
-        {detail["field"]}
-        if isinstance(detail, dict)
-        else {str(error["loc"][-1]) for error in detail}
-    )
+    campos = {detail["field"]}
     assert campo in campos
     await _sin_cambios(orden, OrderStatus.pending)
 

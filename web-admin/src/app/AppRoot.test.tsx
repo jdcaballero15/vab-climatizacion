@@ -143,6 +143,7 @@ describe("AppRoot", () => {
       "Clientes",
       "Escuadrillas",
       "Usuarios",
+      "Auditoría",
       "Tipos de trabajo",
       "Tipos de equipo",
       "Fallas",
@@ -183,7 +184,7 @@ describe("AppRoot", () => {
     const links = within(menu())
       .getAllByRole("link")
       .map((link) => link.textContent);
-    expect(links).toEqual(["Usuarios"]);
+    expect(links).toEqual(["Usuarios", "Auditoría"]);
   });
 
   it("un rol sin secciones ve el saludo con su rol", async () => {

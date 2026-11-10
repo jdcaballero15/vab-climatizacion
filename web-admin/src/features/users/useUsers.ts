@@ -52,6 +52,22 @@ export function useDeactivateUser() {
   });
 }
 
+/** Levanta el bloqueo por intentos fallidos (E01-06). */
+export function useUnlockUser() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: async (userId) => {
+      const { error } = await api.POST("/admin/users/{user_id}/unlock", {
+        params: { path: { user_id: userId } },
+      });
+      if (error) {
+        throw new Error("no se pudo desbloquear el usuario");
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+  });
+}
+
 /**
  * Restablece la contraseña (E01-05): la temporal llega solo en esta respuesta. Con `self`
  * (la propia) no se recarga la lista: la API ya niega todo hasta elegir una nueva, y la

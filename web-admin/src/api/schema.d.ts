@@ -44,6 +44,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Audit
+         * @description Cambios auditados, el más nuevo primero, filtrables por entidad, usuario y fecha.
+         */
+        get: operations["list_audit_admin_audit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -147,6 +167,26 @@ export interface paths {
         put?: never;
         /** Create User */
         post: operations["create_user_admin_users_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{user_id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unlock User
+         * @description Levanta el bloqueo por intentos fallidos (E01-06, criterio 3).
+         */
+        post: operations["unlock_user_admin_users__user_id__unlock_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1484,6 +1524,49 @@ export interface components {
             occurred_at: string;
             /** Detail */
             detail: string | null;
+        };
+        /** AuditLogOut */
+        AuditLogOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Entity */
+            entity: string;
+            /**
+             * Entity Id
+             * Format: uuid
+             */
+            entity_id: string;
+            /** Action */
+            action: string;
+            /** Actor Id */
+            actor_id: string | null;
+            /** Actor Name */
+            actor_name: string | null;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Changes */
+            changes: {
+                [key: string]: unknown[];
+            } | null;
+            /** Note */
+            note: string | null;
+        };
+        /** AuditLogPage */
+        AuditLogPage: {
+            /** Items */
+            items: components["schemas"]["AuditLogOut"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
         };
         /** BillingAdminOut */
         BillingAdminOut: {
@@ -3308,6 +3391,8 @@ export interface components {
             is_active: boolean;
             /** Must Change Password */
             must_change_password: boolean;
+            /** Locked Until */
+            locked_until?: string | null;
         };
         /** UserCreate */
         UserCreate: {
@@ -3564,6 +3649,43 @@ export interface operations {
             };
         };
     };
+    list_audit_admin_audit_get: {
+        parameters: {
+            query?: {
+                entity?: string | null;
+                actor_id?: string | null;
+                entity_id?: string | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     login_auth_login_post: {
         parameters: {
             query?: never;
@@ -3745,6 +3867,37 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlock_user_admin_users__user_id__unlock_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

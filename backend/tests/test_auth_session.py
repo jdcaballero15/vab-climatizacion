@@ -4,13 +4,14 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
+from app.db.models.login_failure import LoginFailure
 from app.db.models.refresh_token import RefreshToken
 from app.db.models.user import User
 from app.db.session import SessionLocal, engine
 from app.main import app
 from tests.factories import make_user
 
-TABLES = [User.__table__, RefreshToken.__table__]
+TABLES = [User.__table__, RefreshToken.__table__, LoginFailure.__table__]
 COOKIE = "ot_refresh"
 
 

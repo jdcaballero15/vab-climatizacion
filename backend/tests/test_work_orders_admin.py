@@ -136,7 +136,8 @@ def _code(response: Response) -> str:
 
 
 def _faltantes(response: Response) -> set[str]:
-    return {str(error["loc"][-1]) for error in response.json()["detail"]}
+    # E12-03: los errores de validación vienen con cada campo y su mensaje en español.
+    return {error["field"] for error in response.json()["detail"]["fields"]}
 
 
 # Criterio 1: queda Pendiente con número correlativo.

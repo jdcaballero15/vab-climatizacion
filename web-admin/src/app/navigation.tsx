@@ -1,4 +1,5 @@
 import {
+  History,
   AirVent,
   Building2,
   CalendarClock,
@@ -14,6 +15,7 @@ import {
 import type { ReactNode } from "react";
 
 import type { Session } from "../features/auth/types";
+import { AuditPage } from "../features/audit/AuditPage";
 import { ClientsPage } from "../features/clients/ClientsPage";
 import { CrewsPage } from "../features/crews/CrewsPage";
 import { EquipmentTypesPage } from "../features/equipment-types/EquipmentTypesPage";
@@ -87,6 +89,14 @@ export const NAV_SECTIONS: NavSection[] = [
     roles: ["admin", "owner"],
     icon: Users,
     element: <UsersPage />,
+  },
+  {
+    path: "/auditoria",
+    label: "Auditoría",
+    group: "Equipo",
+    roles: ["admin", "owner"],
+    icon: History,
+    element: <AuditPage />,
   },
   {
     path: "/catalogos/tipos-de-trabajo",
