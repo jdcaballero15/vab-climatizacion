@@ -2914,6 +2914,8 @@
                 "assigned",
                 "in_progress",
                 "done",
+                "invoiced",
+                "paid",
                 "cancelled"
               ],
               "type": "string",
@@ -2921,19 +2923,88 @@
             }
           },
           {
-            "name": "billing",
+            "name": "crew_id",
             "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "$ref": "#/components/schemas/BillingStatus"
+                  "type": "string",
+                  "format": "uuid"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "title": "Billing"
+              "title": "Crew Id"
+            }
+          },
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Id"
+            }
+          },
+          {
+            "name": "work_type_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Work Type Id"
+            }
+          },
+          {
+            "name": "created_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created From"
+            }
+          },
+          {
+            "name": "created_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created To"
             }
           },
           {
@@ -3154,12 +3225,59 @@
       }
     },
     "/admin/orders/{order_id}/billing": {
+      "get": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Get Work Order Billing",
+        "description": "Importes, factura y cobro de la orden (E04-09 a E04-11).",
+        "operationId": "get_work_order_billing_admin_orders__order_id__billing_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "tags": [
           "órdenes"
         ],
         "summary": "Save Work Order Billing",
-        "description": "Importes y estado de cobro de una orden terminada (E04-14, versión mínima).",
+        "description": "Mano de obra de una orden terminada (E04-14).",
         "operationId": "save_work_order_billing_admin_orders__order_id__billing_put",
         "security": [
           {
@@ -3184,6 +3302,370 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/BillingUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/charges": {
+      "get": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "List Work Order Charges",
+        "description": "Otros cargos de la orden (E04-11).",
+        "operationId": "list_work_order_charges_admin_orders__order_id__charges_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChargeAdminOut"
+                  },
+                  "title": "Response List Work Order Charges Admin Orders  Order Id  Charges Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Add Work Order Charge",
+        "operationId": "add_work_order_charge_admin_orders__order_id__charges_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChargeWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChargeAdminOut"
+                  },
+                  "title": "Response Add Work Order Charge Admin Orders  Order Id  Charges Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/charges/{charge_id}": {
+      "put": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Update Work Order Charge",
+        "operationId": "update_work_order_charge_admin_orders__order_id__charges__charge_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "charge_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Charge Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChargeWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChargeAdminOut"
+                  },
+                  "title": "Response Update Work Order Charge Admin Orders  Order Id  Charges  Charge Id  Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Remove Work Order Charge",
+        "description": "Saca el cargo (borrado lógico) y lo anota en la línea de tiempo.",
+        "operationId": "remove_work_order_charge_admin_orders__order_id__charges__charge_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "charge_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Charge Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChargeAdminOut"
+                  },
+                  "title": "Response Remove Work Order Charge Admin Orders  Order Id  Charges  Charge Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/payment": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Register Work Order Payment",
+        "description": "Cobro de una orden facturada: pasa a Cobrada (E04-10).",
+        "operationId": "register_work_order_payment_admin_orders__order_id__payment_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/payment/void": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Void Work Order Payment",
+        "description": "Anula un cobro registrado por error: vuelve a Facturada (E04-10, criterio 4).",
+        "operationId": "void_work_order_payment_admin_orders__order_id__payment_void_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentVoid"
               }
             }
           }
@@ -3873,6 +4355,112 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OrderMaterialsAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/invoices": {
+      "post": {
+        "tags": [
+          "facturas"
+        ],
+        "summary": "Create Invoice",
+        "description": "Registra una factura para una o varias órdenes y las pasa a Facturada (E04-09).",
+        "operationId": "create_invoice_admin_invoices_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/invoices/{invoice_id}": {
+      "put": {
+        "tags": [
+          "facturas"
+        ],
+        "summary": "Update Invoice",
+        "description": "Corrige número o fecha; queda en la línea de tiempo de cada orden (criterio 4).",
+        "operationId": "update_invoice_admin_invoices__invoice_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceOut"
                 }
               }
             }
@@ -5261,14 +5849,15 @@
             "type": "string",
             "title": "Labor Amount"
           },
+          "charges_amount": {
+            "type": "string",
+            "title": "Charges Amount"
+          },
           "total": {
             "type": "string",
             "title": "Total"
           },
-          "status": {
-            "$ref": "#/components/schemas/BillingStatus"
-          },
-          "invoice_number": {
+          "updated_by_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -5277,38 +5866,54 @@
                 "type": "null"
               }
             ],
-            "title": "Invoice Number"
-          },
-          "updated_by_name": {
-            "type": "string",
             "title": "Updated By Name"
           },
           "updated_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Updated At"
+          },
+          "invoice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvoiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
         "required": [
           "parts_amount",
           "labor_amount",
+          "charges_amount",
           "total",
-          "status",
-          "invoice_number",
           "updated_by_name",
-          "updated_at"
+          "updated_at",
+          "invoice",
+          "payment"
         ],
-        "title": "BillingAdminOut"
-      },
-      "BillingStatus": {
-        "type": "string",
-        "enum": [
-          "pending",
-          "invoiced"
-        ],
-        "title": "BillingStatus",
-        "description": "Estado de cobro de una orden terminada (E04-14, versión mínima)."
+        "title": "BillingAdminOut",
+        "description": "Importes, factura y cobro de una orden cerrada (E04-09 a E04-11)."
       },
       "BillingUpdate": {
         "properties": {
@@ -5323,31 +5928,15 @@
               }
             ],
             "title": "Labor Amount"
-          },
-          "status": {
-            "$ref": "#/components/schemas/BillingStatus"
-          },
-          "invoice_number": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 50
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Invoice Number"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "labor_amount",
-          "status"
+          "labor_amount"
         ],
         "title": "BillingUpdate",
-        "description": "Importes y estado de cobro de una orden terminada (E04-14, versión mínima)."
+        "description": "Mano de obra de una orden terminada, cargada a mano (E04-14, E04-11)."
       },
       "CancelReason": {
         "type": "string",
@@ -5420,6 +6009,70 @@
           "reason"
         ],
         "title": "CancellationCreate"
+      },
+      "ChargeAdminOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          },
+          "created_by_name": {
+            "type": "string",
+            "title": "Created By Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "description",
+          "amount",
+          "created_by_name",
+          "created_at"
+        ],
+        "title": "ChargeAdminOut"
+      },
+      "ChargeWrite": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Description"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "description",
+          "amount"
+        ],
+        "title": "ChargeWrite",
+        "description": "Otro cargo de la orden, además de la mano de obra (E04-11)."
       },
       "CheckAnswerIn": {
         "properties": {
@@ -7894,6 +8547,99 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "InvoiceCreate": {
+        "properties": {
+          "number": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Number"
+          },
+          "issued_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Issued On"
+          },
+          "order_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Order Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "number",
+          "issued_on",
+          "order_ids"
+        ],
+        "title": "InvoiceCreate",
+        "description": "Una factura para una o varias órdenes terminadas y aprobadas (E04-09)."
+      },
+      "InvoiceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "string",
+            "title": "Number"
+          },
+          "issued_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Issued On"
+          },
+          "created_by_name": {
+            "type": "string",
+            "title": "Created By Name"
+          },
+          "order_numbers": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Order Numbers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "issued_on",
+          "created_by_name",
+          "order_numbers"
+        ],
+        "title": "InvoiceOut"
+      },
+      "InvoiceUpdate": {
+        "properties": {
+          "number": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Number"
+          },
+          "issued_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Issued On"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "number",
+          "issued_on"
+        ],
+        "title": "InvoiceUpdate",
+        "description": "Corrección del número o la fecha de una factura (E04-09, criterio 4)."
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -8721,6 +9467,11 @@
               }
             ]
           },
+          "billing_overdue": {
+            "type": "boolean",
+            "title": "Billing Overdue",
+            "default": false
+          },
           "equipment": {
             "anyOf": [
               {
@@ -9211,6 +9962,80 @@
         "title": "PasswordResetOut",
         "description": "La contraseña temporal: solo viaja en esta respuesta (E01-05)."
       },
+      "PaymentCreate": {
+        "properties": {
+          "paid_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Paid On"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "paid_on",
+          "method"
+        ],
+        "title": "PaymentCreate"
+      },
+      "PaymentMethod": {
+        "type": "string",
+        "enum": [
+          "cash",
+          "transfer",
+          "check",
+          "other"
+        ],
+        "title": "PaymentMethod",
+        "description": "Cómo pagó el cliente una orden facturada (E04-10, Gonza 2026-11-10)."
+      },
+      "PaymentOut": {
+        "properties": {
+          "paid_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Paid On"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "created_by_name": {
+            "type": "string",
+            "title": "Created By Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "paid_on",
+          "method",
+          "created_by_name",
+          "created_at"
+        ],
+        "title": "PaymentOut"
+      },
+      "PaymentVoid": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "PaymentVoid"
+      },
       "PlanClientOut": {
         "properties": {
           "id": {
@@ -9351,6 +10176,29 @@
           "user"
         ],
         "title": "RefreshResponse"
+      },
+      "RelatedOrderOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "status"
+        ],
+        "title": "RelatedOrderOut"
       },
       "RepairAdminOut": {
         "properties": {
@@ -9916,7 +10764,7 @@
           "note"
         ],
         "title": "TimelineEntryOut",
-        "description": "Un paso de la línea de tiempo (E04-06). event_type es el del evento de la orden o\n\"billing_invoiced\", que se arma con el cobro de E04-14 (no deja evento propio)."
+        "description": "Un paso de la línea de tiempo (E04-06): event_type es el del evento de la orden."
       },
       "TokenResponse": {
         "properties": {
@@ -10386,6 +11234,18 @@
           "kind": {
             "$ref": "#/components/schemas/OrderKind",
             "default": "on_site"
+          },
+          "source_order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Order Id"
           }
         },
         "additionalProperties": false,
@@ -10517,6 +11377,24 @@
           "has_closure": {
             "type": "boolean",
             "title": "Has Closure"
+          },
+          "source_order": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RelatedOrderOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "repair_orders": {
+            "items": {
+              "$ref": "#/components/schemas/RelatedOrderOut"
+            },
+            "type": "array",
+            "title": "Repair Orders",
+            "default": []
           },
           "timeline": {
             "items": {

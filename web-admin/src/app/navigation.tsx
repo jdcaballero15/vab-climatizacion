@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { ForRole } from "./ForRole";
+
 import type { Session } from "../features/auth/types";
 import { ClientsPage } from "../features/clients/ClientsPage";
 import { CrewsPage } from "../features/crews/CrewsPage";
@@ -45,16 +47,17 @@ export interface NavSection {
 }
 
 // Solo administración opera órdenes, clientes, escuadrillas y catálogos
-// (roles-permisos.md); dirección gestiona usuarios. El orden del arreglo es el del menú,
+// (roles-permisos.md); dirección ve las órdenes y gestiona usuarios. El orden del arreglo es el del menú,
 // y la primera sección visible es la pantalla de inicio del rol.
 export const NAV_SECTIONS: NavSection[] = [
   {
     path: "/ordenes",
     label: "Órdenes",
     group: null,
-    roles: ["admin"],
+    // Dirección ve el panel en modo lectura (E04-05, criterio 5).
+    roles: ["admin", "owner"],
     icon: ClipboardList,
-    element: <OrdersPage />,
+    element: <ForRole render={(role) => <OrdersPage readOnly={role !== "admin"} />} />,
   },
   {
     path: "/mantenimiento",

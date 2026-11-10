@@ -17,7 +17,6 @@ from app.db.models.user import User
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
-    WorkOrderBilling,
     WorkOrderCancellation,
     WorkOrderCheckItem,
     WorkOrderClosure,
@@ -30,7 +29,7 @@ from app.db.models.work_order import (
 from app.db.repository import BaseRepository
 from app.domain.work_order import (
     CREW_OPEN_STATUSES,
-    BillingStatus,
+    OrderFilters,
     OrderKind,
     OrderStatus,
     WorkOrderEventType,
@@ -131,7 +130,7 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         status: OrderStatus | None,
         *,
         in_workshop: bool = False,
-        billing: BillingStatus | None = None,
+        filters: OrderFilters | None = None,
         limit: int,
         offset: int,
     ) -> tuple[Sequence[StatusOrderRow], int]:
@@ -156,10 +155,8 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             if in_workshop
             else self.model.status == status
         )
-        filtered = self._select().where(scope)
-        billing_filter = self._billing_filter(billing)
-        if billing_filter is not None:
-            filtered = filtered.where(billing_filter)
+        panel = self._panel_filters(filters)
+        filtered = self._select().where(scope, *panel)
         total = await self.session.scalar(select(func.count()).select_from(filtered.subquery()))
         last_closure = (
             select(WorkOrderClosure)
@@ -231,7 +228,7 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             # Un equipo dado de baja después sigue siendo el de la orden.
             .outerjoin(Equipment, Equipment.id == self.model.equipment_id)
             .where(scope, self.model.deleted_at.is_(None))
-            .where(billing_filter if billing_filter is not None else true())
+            .where(*panel)
             .order_by(*order_by)
             .limit(limit)
             .offset(offset)
@@ -239,17 +236,55 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         result = await self.session.execute(stmt)
         return result.all(), total or 0
 
-    def _billing_filter(self, billing: BillingStatus | None) -> ColumnElement[bool] | None:
-        """Sin cobro cargado, la orden está pendiente de enviar a cobrar (E04-14)."""
-        if billing is None:
-            return None
-        invoiced = select(WorkOrderBilling.work_order_id).where(
-            WorkOrderBilling.status == BillingStatus.invoiced,
-            WorkOrderBilling.deleted_at.is_(None),
-        )
-        if billing == BillingStatus.invoiced:
-            return self.model.id.in_(invoiced)
-        return self.model.id.not_in(invoiced)
+    def _panel_filters(self, filters: OrderFilters | None) -> list[ColumnElement[bool]]:
+        """Filtros del panel (E04-05): la escuadrilla es la de la última asignación y el
+        período, días de Argentina sobre el evento de creación."""
+        if filters is None:
+            return []
+        out: list[ColumnElement[bool]] = []
+        if filters.client_id is not None:
+            out.append(self.model.client_id == filters.client_id)
+        if filters.work_type_id is not None:
+            out.append(self.model.work_type_id == filters.work_type_id)
+        if filters.crew_id is not None:
+            assignment = aliased(WorkOrderAssignment)
+            last_crew = (
+                select(assignment.crew_id)
+                .where(assignment.work_order_id == self.model.id)
+                .order_by(assignment.assigned_at.desc())
+                .limit(1)
+                .correlate(self.model)
+                .scalar_subquery()
+            )
+            out.append(last_crew == filters.crew_id)
+        if filters.created_from is not None or filters.created_to is not None:
+            # Alias propio: el listado ya une el evento de creación y lo correlacionaría.
+            event = aliased(WorkOrderEvent)
+            created = (
+                select(event.occurred_at)
+                .where(
+                    event.work_order_id == self.model.id,
+                    event.event_type == WorkOrderEventType.created,
+                )
+                .limit(1)
+                .correlate(self.model)
+                .scalar_subquery()
+            )
+            if filters.created_from is not None:
+                out.append(created >= _day_start(filters.created_from))
+            if filters.created_to is not None:
+                out.append(created < _day_start(filters.created_to + timedelta(days=1)))
+        return out
+
+    async def repair_orders_of(self, order_id: uuid.UUID) -> Sequence[WorkOrder]:
+        """Las órdenes de reparación abiertas desde el cierre de esta (E04-13)."""
+        return (
+            await self.session.scalars(
+                select(self.model)
+                .where(self.model.source_order_id == order_id, self.model.deleted_at.is_(None))
+                .order_by(self.model.number)
+            )
+        ).all()
 
     async def list_for_client_page(
         self,
@@ -441,21 +476,6 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             .order_by(WorkOrderEvent.occurred_at, WorkOrderEvent.id)
         )
         return (await self.session.execute(stmt)).all()
-
-    async def invoiced_billing(
-        self, order_id: uuid.UUID
-    ) -> Row[WorkOrderBilling, str | None] | None:
-        """El cobro marcado Facturada (E04-14) y quién lo marcó; nulo si no está facturada."""
-        stmt = (
-            select(WorkOrderBilling, User.full_name)
-            .outerjoin(User, User.id == WorkOrderBilling.updated_by)
-            .where(
-                WorkOrderBilling.work_order_id == order_id,
-                WorkOrderBilling.status == BillingStatus.invoiced,
-                WorkOrderBilling.deleted_at.is_(None),
-            )
-        )
-        return (await self.session.execute(stmt)).first()
 
     async def has_closure(self, order_id: uuid.UUID) -> bool:
         stmt = select(WorkOrderClosure.id).where(

@@ -3,13 +3,13 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import {
-  BILLING_STATUS_LABELS,
   cancelReasonText,
   formatDate,
   formatDay,
   formatMoney,
   initials,
   ORDER_STATUS_LABELS,
+  PAYMENT_METHOD_LABELS,
   returnedText,
   workshopStageText,
 } from "./labels";
@@ -33,11 +33,15 @@ interface OrderCardProps {
   more: CardAction[];
   /** Formulario o detalle abierto debajo de la tarjeta. */
   children?: ReactNode;
+  /** Casilla para elegirla, por ejemplo para facturar varias juntas (E04-09). */
+  selection?: { checked: boolean; onChange: (checked: boolean) => void };
 }
+
+const CLOSED = new Set<OrderListItem["status"]>(["done", "invoiced", "paid"]);
 
 /** Quién la tiene y la fecha que importa en su estado. */
 function footer(order: OrderListItem): { person: string | null; who: ReactNode; when: ReactNode } {
-  if (order.status === "done" && order.completed) {
+  if (CLOSED.has(order.status) && order.completed) {
     return {
       person: order.completed.crew_name,
       who: order.completed.crew_name ?? "Sin escuadrilla",
@@ -82,7 +86,7 @@ function footer(order: OrderListItem): { person: string | null; who: ReactNode; 
 }
 
 /** Una orden del listado: número y cliente, metadatos, descripción, quién la tiene y cuándo. */
-export function OrderCard({ order, primary, more, children }: OrderCardProps) {
+export function OrderCard({ order, primary, more, children, selection }: OrderCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { person, who, when } = footer(order);
@@ -114,6 +118,15 @@ export function OrderCard({ order, primary, more, children }: OrderCardProps) {
     <li className={children ? "order-card-wrap order-card-wrap--open" : "order-card-wrap"}>
       <article className="card order-card" aria-label={title}>
         <div className="order-card__top">
+          {selection && (
+            <input
+              type="checkbox"
+              className="order-card__select"
+              checked={selection.checked}
+              onChange={(event) => selection.onChange(event.target.checked)}
+              aria-label={`Elegir la orden N° ${order.number} para facturar`}
+            />
+          )}
           <span className={`icon-box icon-box--${order.status}`} aria-hidden="true">
             <ClipboardList size={18} strokeWidth={1.75} />
           </span>
@@ -211,7 +224,7 @@ export function OrderCard({ order, primary, more, children }: OrderCardProps) {
             Motivo: <span>{cancelReasonText(order.cancellation)}</span>
           </p>
         )}
-        {order.status === "done" && <BillingLine order={order} />}
+        {CLOSED.has(order.status) && <BillingLine order={order} />}
 
         <div className="order-card__footer">
           <span className="order-card__who">
@@ -233,17 +246,25 @@ export function OrderCard({ order, primary, more, children }: OrderCardProps) {
   );
 }
 
-/** Estado de cobro y total de una terminada (E04-14); sin importes, pendiente. */
+/** Total, factura y cobro de una cerrada (E04-09 a E04-11). Una terminada hace más de
+ * una semana sin facturar se destaca (E04-05, criterio 4). */
 function BillingLine({ order }: { order: OrderListItem }) {
   const billing = order.billing ?? null;
-  const status = billing?.status ?? "pending";
+  const state = order.billing_overdue ? "overdue" : order.status;
+  let text = "Sin facturar";
+  if (order.billing_overdue) {
+    text = "Terminada sin facturar hace más de una semana";
+  } else if (billing?.payment) {
+    text = `Cobrada el ${formatDay(billing.payment.paid_on)} · ${
+      PAYMENT_METHOD_LABELS[billing.payment.method]
+    }`;
+  } else if (billing?.invoice) {
+    text = `Factura ${billing.invoice.number} del ${formatDay(billing.invoice.issued_on)}`;
+  }
   return (
-    <p className={`order-card__billing order-card__billing--${status}`}>
-      <span className="order-card__billing-status">{BILLING_STATUS_LABELS[status]}</span>
-      <span>
-        {billing ? formatMoney(billing.total) : "Sin importes"}
-        {billing?.invoice_number && ` · Factura ${billing.invoice_number}`}
-      </span>
+    <p className={`order-card__billing order-card__billing--${state}`}>
+      <span className="order-card__billing-status">{text}</span>
+      <span>{billing ? formatMoney(billing.total) : "Sin importes"}</span>
     </p>
   );
 }

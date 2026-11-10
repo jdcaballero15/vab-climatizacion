@@ -23,6 +23,7 @@ stateDiagram-v2
   Terminada --> Facturada: administración revisa y registra factura
   Terminada --> Asignada: administración devuelve a la escuadrilla (con motivo)
   Facturada --> Cobrada: administración registra cobro
+  Cobrada --> Facturada: administración anula el cobro (con motivo)
 
   Pendiente --> Cancelada: administración cancela (con motivo)
   Asignada --> Cancelada: administración cancela (con motivo)
@@ -41,8 +42,8 @@ stateDiagram-v2
 | R1 | Solo administración crea, asigna, revisa, factura, cobra y cancela. Solo la escuadrilla asignada (su usuario, rol `technician`) inicia y cierra. |
 | R2 | Cada cambio de estado inserta un `work_order_event` con actor y fecha. Las fechas de la orden salen de ahí. |
 | R3 | Cancelar exige motivo y solo es posible antes de `Terminada`. |
-| R4 | `Facturada` exige número de factura. `Cobrada` solo desde `Facturada`. |
-| R5 | `Cobrada` y `Cancelada` son finales. Una corrección es una nueva orden o un ajuste con auditoría, no una reapertura. |
+| R4 | `Facturada` exige número y fecha de factura y la orden aprobada (E04-08); una factura puede cubrir varias órdenes, y si alguna no se puede facturar no se factura ninguna (E04-09). `Cobrada` solo desde `Facturada`, con fecha y medio de pago (E04-10). |
+| R5 | `Cancelada` es final. De `Cobrada` solo se vuelve a `Facturada` anulando el cobro con motivo (E04-10, criterio 4). Cualquier otra corrección es una nueva orden o un ajuste con auditoría, no una reapertura. |
 | R6 | Una orden con `requires_approval = true` no se puede asignar hasta que administración apruebe el lote. |
 | R7 | Cada orden (o etapa, en taller) tiene una sola escuadrilla responsable (D-013). Se asigna con fecha prevista, sin hora. Quiénes fueron se registra al cerrar. |
 | R8 | Devolver a la escuadrilla una orden `Terminada` exige motivo y la deja `Asignada` a la misma escuadrilla. |

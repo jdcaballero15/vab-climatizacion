@@ -38,7 +38,7 @@ HISTORY_PAGE_SIZE = 20
 @router.get("", response_model=ClientPage)
 async def list_clients(
     session: SessionDep,
-    _: AdminOnly,
+    _: AdminOrOwner,
     segment: ClientSegment | None = None,
     q: Annotated[str | None, Query(max_length=255)] = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,

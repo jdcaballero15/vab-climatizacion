@@ -48,6 +48,8 @@ class Settings(BaseSettings):
     s3_bucket: str = "ot-files"
     s3_region: str = "us-east-1"  # R2 usa "auto"
     signed_url_ttl_seconds: int = 300
+    # Días desde el cierre para que una terminada sin facturar se destaque (E04-05).
+    billing_overdue_days: int = 7
     upload_max_bytes: int = 5 * 1024 * 1024
     upload_allowed_types: str = "image/jpeg,image/png,image/webp,application/pdf"
 
