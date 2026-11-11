@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ClientContacts } from "./ClientContacts";
 import { ClientEquipment } from "./ClientEquipment";
 import { ClientHistory } from "./ClientHistory";
+import { ClientLifecycle } from "./ClientLifecycle";
 import { ClientSearch } from "./ClientSearch";
 import { ClientSites } from "./ClientSites";
 import { ClientForm } from "./ClientForm";
@@ -66,6 +67,7 @@ function ClientDetail({ clientId, onClose }: { clientId: string; onClose: () => 
       <ClientEquipment clientId={id} />
       <ClientContacts clientId={id} />
       <ClientHistory clientId={id} />
+      <ClientLifecycle client={client.data} />
     </section>
   );
 }
@@ -75,7 +77,9 @@ export function ClientsPage() {
   const [offset, setOffset] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const page = useClientPage(segment, offset);
+  // Los dados de baja se listan aparte, para restaurarlos (E03-07).
+  const [showDeleted, setShowDeleted] = useState(false);
+  const page = useClientPage(segment, offset, showDeleted);
   const createClient = useCreateClient();
 
   const total = page.data?.total ?? 0;
@@ -147,6 +151,17 @@ export function ClientsPage() {
             </option>
           ))}
         </select>
+        <label>
+          <input
+            type="checkbox"
+            checked={showDeleted}
+            onChange={(event) => {
+              setShowDeleted(event.target.checked);
+              setOffset(0);
+            }}
+          />{" "}
+          Ver dados de baja
+        </label>
       </div>
 
       {page.isLoading && <p>Cargando clientes…</p>}

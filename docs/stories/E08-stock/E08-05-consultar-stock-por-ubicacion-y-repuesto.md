@@ -4,7 +4,7 @@ title: "Consultar stock por ubicación y repuesto"
 epic: E08
 phase: 1
 priority: must
-status: draft
+status: done
 roles: [admin, technician, owner]
 size: S
 areas: [backend, web-admin, pwa]
@@ -25,3 +25,8 @@ assumes: []
 2. **Dado:** un técnico. **Cuando:** consulta el stock. **Entonces:** solo ve el de su camioneta.
 3. **Dado:** la consulta. **Cuando:** se filtra por repuesto o ubicación. **Entonces:** se actualiza.
 4. **Dado:** el stock. **Cuando:** se calcula. **Entonces:** es la suma de movimientos y coincide con el historial.
+
+## Hecho
+
+- `GET /admin/stock` (administración y dirección): cada repuesto con su cantidad por ubicación y el total, filtrable por repuesto y ubicación. Es la suma de los movimientos.
+- web-admin: pantalla Stock (menú de administración).

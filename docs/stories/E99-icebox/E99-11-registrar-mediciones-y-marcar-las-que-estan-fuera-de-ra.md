@@ -1,19 +1,21 @@
 ---
-id: E07-07
+id: E99-11
 title: "Registrar mediciones y marcar las que están fuera de rango"
-epic: E07
+epic: E99
 phase: 1
-priority: must
-status: draft
+priority: could
+status: icebox
 roles: [technician]
 size: M
 areas: [backend, pwa]
-depends_on: [E07-06, E07-02]
+depends_on: []
 blocked_by: []
 assumes: []
 ---
 
-# E07-07 Registrar mediciones y marcar las que están fuera de rango
+# E99-11 Registrar mediciones y marcar las que están fuera de rango
+
+> Pasó al icebox el 2026-11-10: Gonza descartó las mediciones y la aprobación en bloque del mantenimiento (decisión del 2026-11-03). Antes era E07.
 
 ## Historia
 

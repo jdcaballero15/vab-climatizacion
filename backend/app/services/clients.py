@@ -1,13 +1,19 @@
 import unicodedata
 import uuid
 from collections.abc import Sequence
+from datetime import UTC, datetime
 
+from sqlalchemy import Select, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.client import (
+    AuditEntryOut,
+    ClientAdminOut,
     ClientCreate,
+    ClientMergePreviewOut,
     ClientSiteTechnicianOut,
+    ClientSummaryOut,
     ClientUpdate,
     ContactCreate,
     ContactUpdate,
@@ -17,18 +23,27 @@ from app.api.schemas.client import (
     site_map_url,
 )
 from app.db.models.client import Client, ClientContact, ClientSegment, ClientSite
+from app.db.models.equipment import Equipment
+from app.db.models.user import User
+from app.db.models.work_order import WorkOrder
 from app.db.repositories.client import (
     ClientContactRepository,
     ClientRepository,
     ClientSiteRepository,
 )
 from app.db.repositories.equipment import EquipmentRepository
+from app.domain.work_order import OPEN_STATUSES
+from app.services import audit
 
 # Veces que se reintenta el alta si dos altas simultáneas toman el mismo número.
 _NUMBER_ATTEMPTS = 3
 # Por debajo de este largo, un nombre no se compara por contención ("Sol" no avisa por
 # "Farmacia Del Sol"): daría avisos en casi todos los clientes.
 _MIN_CONTAINED_LENGTH = 4
+
+
+# Lo que se muestra en la ficha del cliente: bajas, restauraciones y unificaciones.
+CLIENT_TRAIL_ACTIONS = frozenset({"deactivated", "restored", "merged", "merged_in"})
 
 
 class ClientNotFoundError(Exception):
@@ -53,6 +68,27 @@ class SiteOfAnotherClientError(Exception):
 
 class SiteInactiveError(Exception):
     """El domicilio elegido está desactivado."""
+
+
+class ClientHasOpenOrdersError(Exception):
+    """El cliente tiene órdenes sin cerrar: no se da de baja (E03-07, criterio 4)."""
+
+    def __init__(self, numbers: Sequence[int]) -> None:
+        listed = ", ".join(f"N° {n}" for n in numbers)
+        self.message = f"El cliente tiene órdenes abiertas: {listed}. Cerralas o cancelalas antes."
+        super().__init__(self.message)
+
+
+class ClientMergedError(Exception):
+    """El cliente se unificó en otro: no se restaura (E03-08)."""
+
+
+class ClientNotDeletedError(Exception):
+    """El cliente no está dado de baja."""
+
+
+class SameClientMergeError(Exception):
+    """Se intentó unificar un cliente en sí mismo."""
 
 
 class ContactWithoutDataError(Exception):
@@ -95,20 +131,162 @@ async def list_clients(
     *,
     segment: ClientSegment | None,
     search: str | None = None,
+    deleted: bool = False,
     limit: int,
     offset: int,
 ) -> tuple[Sequence[Client], int]:
-    """search filtra por parte del nombre o por el número, sin mayúsculas ni acentos."""
+    """search filtra por parte del nombre o por el número, sin mayúsculas ni acentos. Con
+    deleted, solo los dados de baja (para restaurarlos, E03-07)."""
     return await ClientRepository(session).list_page(
-        segment=segment, search=normalize_text(search or "") or None, limit=limit, offset=offset
+        segment=segment,
+        search=normalize_text(search or "") or None,
+        deleted=deleted,
+        limit=limit,
+        offset=offset,
     )
 
 
-async def get_client(session: AsyncSession, client_id: uuid.UUID) -> Client:
-    client = await ClientRepository(session).get(client_id)
+async def get_client(
+    session: AsyncSession, client_id: uuid.UUID, *, include_deleted: bool = False
+) -> Client:
+    """Para leer historial se piden también los dados de baja: conservan todo (E03-07)."""
+    client = await ClientRepository(session).get(client_id, include_deleted=include_deleted)
     if client is None:
         raise ClientNotFoundError
     return client
+
+
+async def client_admin_out(session: AsyncSession, client: Client) -> ClientAdminOut:
+    merged_into = (
+        await get_client(session, client.merged_into_id, include_deleted=True)
+        if client.merged_into_id is not None
+        else None
+    )
+    out = ClientAdminOut.model_validate(client)
+    out.merged_into = ClientSummaryOut.model_validate(merged_into) if merged_into else None
+    return out
+
+
+async def audit_trail(session: AsyncSession, client_id: uuid.UUID) -> list[AuditEntryOut]:
+    await get_client(session, client_id, include_deleted=True)
+    return [
+        AuditEntryOut(
+            action=event.action,
+            actor_name=name,
+            occurred_at=event.occurred_at,
+            # Las diferencias en JSON quedan para la pantalla de auditoría (E12-01).
+            detail=event.detail if event.action == "merged_in" else None,
+        )
+        for event, name in await audit.events_for(session, "client", client_id)
+        if event.action in CLIENT_TRAIL_ACTIONS
+    ]
+
+
+async def deactivate_client(session: AsyncSession, client_id: uuid.UUID, actor: User) -> Client:
+    """Baja lógica: deja de ofrecerse para órdenes nuevas y conserva su historial."""
+    client = await get_client(session, client_id)
+    open_numbers = (
+        await session.scalars(
+            select(WorkOrder.number)
+            .where(
+                WorkOrder.client_id == client.id,
+                WorkOrder.status.in_(OPEN_STATUSES),
+                WorkOrder.deleted_at.is_(None),
+            )
+            .order_by(WorkOrder.number)
+        )
+    ).all()
+    if open_numbers:
+        raise ClientHasOpenOrdersError(open_numbers)
+    client.deleted_at = datetime.now(UTC)
+    await session.commit()
+    await session.refresh(client)
+    return client
+
+
+async def restore_client(session: AsyncSession, client_id: uuid.UUID, actor: User) -> Client:
+    client = await get_client(session, client_id, include_deleted=True)
+    if client.deleted_at is None:
+        raise ClientNotDeletedError
+    if client.merged_into_id is not None:
+        raise ClientMergedError
+    client.deleted_at = None
+    await session.commit()
+    await session.refresh(client)
+    return client
+
+
+async def merge_preview(
+    session: AsyncSession, source_id: uuid.UUID, target_id: uuid.UUID
+) -> ClientMergePreviewOut:
+    """Qué se va a mover del que se va al que queda, para confirmar (E03-08, criterio 4)."""
+    source, target = await _merge_pair(session, source_id, target_id)
+
+    async def count(stmt: Select[int]) -> int:
+        return int(await session.scalar(stmt) or 0)
+
+    return ClientMergePreviewOut(
+        source_id=source.id,
+        source_name=source.name,
+        source_number=source.number,
+        target_id=target.id,
+        target_name=target.name,
+        target_number=target.number,
+        sites=await count(
+            select(func.count()).where(
+                ClientSite.client_id == source.id, ClientSite.deleted_at.is_(None)
+            )
+        ),
+        contacts=await count(
+            select(func.count()).where(
+                ClientContact.client_id == source.id, ClientContact.deleted_at.is_(None)
+            )
+        ),
+        equipment=await count(
+            select(func.count())
+            .select_from(Equipment)
+            .join(ClientSite, ClientSite.id == Equipment.client_site_id)
+            .where(ClientSite.client_id == source.id, Equipment.deleted_at.is_(None))
+        ),
+        orders=await count(
+            select(func.count()).where(
+                WorkOrder.client_id == source.id, WorkOrder.deleted_at.is_(None)
+            )
+        ),
+    )
+
+
+async def merge_clients(
+    session: AsyncSession, source_id: uuid.UUID, target_id: uuid.UUID, actor: User
+) -> ClientMergePreviewOut:
+    """Pasa domicilios (con sus equipos y planes), contactos y órdenes del que se va al que
+    queda, y da de baja al que se va. Los equipos conservan su código (D-002)."""
+    preview = await merge_preview(session, source_id, target_id)
+    for model in (ClientSite, ClientContact, WorkOrder):
+        await session.execute(
+            update(model).where(model.client_id == source_id).values(client_id=target_id)
+        )
+    source = await get_client(session, source_id)
+    source.deleted_at = datetime.now(UTC)
+    source.merged_into_id = target_id
+    audit.record(
+        session,
+        "client",
+        target_id,
+        "merged_in",
+        actor,
+        f"Recibió el cliente N° {preview.source_number} ({preview.source_name})",
+    )
+    await session.commit()
+    return preview
+
+
+async def _merge_pair(
+    session: AsyncSession, source_id: uuid.UUID, target_id: uuid.UUID
+) -> tuple[Client, Client]:
+    if source_id == target_id:
+        raise SameClientMergeError
+    return await get_client(session, source_id), await get_client(session, target_id)
 
 
 async def update_client(session: AsyncSession, client_id: uuid.UUID, data: ClientUpdate) -> Client:

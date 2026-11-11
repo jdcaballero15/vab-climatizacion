@@ -282,11 +282,7 @@ async def test_motivo_incompleto_se_rechaza_con_el_campo(
 
     assert response.status_code == 422, response.text
     detail = response.json()["detail"]
-    campos = (
-        {detail["field"]}
-        if isinstance(detail, dict)
-        else {str(error["loc"][-1]) for error in detail}
-    )
+    campos = {detail["field"]}
     assert campo in campos
     await _sin_cambios(orden, OrderStatus.pending)
 
@@ -461,11 +457,9 @@ async def test_pendientes_sin_asignacion_ni_cancelacion(mundo: Mundo) -> None:
     assert item["cancellation"] is None
 
 
-# Las terminadas se listan desde E04-08; facturadas y cobradas llegan con E04-05.
+# Facturadas y cobradas se listan desde el panel por estado (E04-05).
 @pytest.mark.parametrize("status", ["invoiced", "paid"])
-async def test_el_listado_todavia_no_admite_facturadas_ni_cobradas(
-    mundo: Mundo, status: str
-) -> None:
+async def test_el_listado_admite_facturadas_y_cobradas(mundo: Mundo, status: str) -> None:
     response = await _get(mundo.admin, f"{ORDERS_URL}?status={status}")
 
-    assert response.status_code == 422
+    assert response.status_code == 200

@@ -11,8 +11,15 @@ import type { ClientPage } from "../clients/types";
 import type {
   Assignment,
   Billing,
-  BillingStatus,
   BillingUpdate,
+  Charge,
+  ChargeWrite,
+  Invoice,
+  InvoiceCreate,
+  InvoiceUpdate,
+  OrderFilters,
+  PaymentCreate,
+  PaymentVoid,
   AssignmentCreate,
   UnassignmentCreate,
   Cancellation,
@@ -43,18 +50,31 @@ async function fetchOrders(
   view: OrderView,
   limit: number,
   offset: number,
-  billing?: BillingStatus,
+  filters: OrderFilters = {},
 ) {
   return view === "in_workshop"
     ? api.GET("/admin/orders/in-workshop", { params: { query: { limit, offset } } })
-    : api.GET("/admin/orders", { params: { query: { status: view, limit, offset, billing } } });
+    : api.GET("/admin/orders", {
+        params: {
+          query: {
+            status: view,
+            limit,
+            offset,
+            crew_id: filters.crewId || undefined,
+            client_id: filters.clientId || undefined,
+            work_type_id: filters.workTypeId || undefined,
+            created_from: filters.createdFrom || undefined,
+            created_to: filters.createdTo || undefined,
+          },
+        },
+      });
 }
 
-export function useOrderList(status: OrderView, offset: number, billing?: BillingStatus) {
+export function useOrderList(status: OrderView, offset: number, filters: OrderFilters = {}) {
   return useQuery<OrderListPage>({
-    queryKey: [...ORDERS_KEY, status, { offset, billing }],
+    queryKey: [...ORDERS_KEY, status, { offset, filters }],
     queryFn: async () => {
-      const { data, error } = await fetchOrders(status, PAGE_SIZE, offset, billing);
+      const { data, error } = await fetchOrders(status, PAGE_SIZE, offset, filters);
       if (error || !data) {
         throw new Error("no se pudieron cargar las órdenes");
       }
@@ -64,13 +84,15 @@ export function useOrderList(status: OrderView, offset: number, billing?: Billin
   });
 }
 
-/** Cuántas órdenes hay en cada estado: el total de una página de una sola orden. */
-export function useOrderCounts(statuses: OrderView[]) {
+/** Cuántas órdenes hay en cada estado, con los filtros del panel: el total de una página
+ * de una sola orden. */
+export function useOrderCounts(statuses: OrderView[], filters: OrderFilters = {}) {
   const results = useQueries({
     queries: statuses.map((status) => ({
-      queryKey: [...ORDERS_KEY, status, "count"],
+      queryKey: [...ORDERS_KEY, status, "count", filters],
       queryFn: async () => {
-        const { data, error } = await fetchOrders(status, 1, 0);
+        // Los filtros no aplican al galpón: es una vista aparte (E06-07).
+        const { data, error } = await fetchOrders(status, 1, 0, filters);
         if (error || !data) {
           throw new Error("no se pudo contar las órdenes");
         }
@@ -97,7 +119,23 @@ export function useCreateOrder() {
   });
 }
 
-/** Guarda los importes y el estado de cobro de una terminada (E04-14). */
+/** Importes, factura y cobro de una orden cerrada (E04-09 a E04-11). */
+export function useOrderBilling(orderId: string) {
+  return useQuery<Billing>({
+    queryKey: [...ORDERS_KEY, orderId, "billing"],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/admin/orders/{order_id}/billing", {
+        params: { path: { order_id: orderId } },
+      });
+      if (error || !data) {
+        throw new Error("no se pudieron cargar los importes");
+      }
+      return data;
+    },
+  });
+}
+
+/** Guarda la mano de obra de una terminada (E04-14). */
 export function useSaveBilling(orderId: string) {
   const queryClient = useQueryClient();
   return useMutation<Billing, Error, BillingUpdate>({
@@ -107,7 +145,116 @@ export function useSaveBilling(orderId: string) {
         body: cobro,
       });
       if (error || !data) {
-        throw saveError(error, "No se pudieron guardar los importes.");
+        throw saveError(error, "No se pudo guardar la mano de obra.");
+      }
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
+  });
+}
+
+/** Otros cargos de la orden (E04-11). */
+export function useCharges(orderId: string) {
+  return useQuery<Charge[]>({
+    queryKey: [...ORDERS_KEY, orderId, "charges"],
+    queryFn: async () => {
+      const { data, error } = await api.GET("/admin/orders/{order_id}/charges", {
+        params: { path: { order_id: orderId } },
+      });
+      if (error || !data) {
+        throw new Error("no se pudieron cargar los cargos");
+      }
+      return data;
+    },
+  });
+}
+
+type ChargeChange =
+  | { kind: "add"; body: ChargeWrite }
+  | { kind: "update"; chargeId: string; body: ChargeWrite }
+  | { kind: "remove"; chargeId: string };
+
+/** Agrega, corrige o saca un cargo; cada cambio queda en la línea de tiempo. */
+export function useChangeCharge(orderId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<Charge[], Error, ChargeChange>({
+    mutationFn: async (change) => {
+      const path = { order_id: orderId };
+      const { data, error } =
+        change.kind === "add"
+          ? await api.POST("/admin/orders/{order_id}/charges", {
+              params: { path },
+              body: change.body,
+            })
+          : change.kind === "update"
+            ? await api.PUT("/admin/orders/{order_id}/charges/{charge_id}", {
+                params: { path: { ...path, charge_id: change.chargeId } },
+                body: change.body,
+              })
+            : await api.DELETE("/admin/orders/{order_id}/charges/{charge_id}", {
+                params: { path: { ...path, charge_id: change.chargeId } },
+              });
+      if (error || !data) {
+        throw saveError(error, "No se pudo guardar el cargo.");
+      }
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
+  });
+}
+
+/** Una factura para una o varias terminadas aprobadas (E04-09). */
+export function useCreateInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation<Invoice, Error, InvoiceCreate>({
+    mutationFn: async (factura) => {
+      const { data, error } = await api.POST("/admin/invoices", { body: factura });
+      if (error || !data) {
+        throw saveError(error, "No se pudo registrar la factura.");
+      }
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
+  });
+}
+
+/** Corrige número o fecha de una factura (E04-09, criterio 4). */
+export function useUpdateInvoice(invoiceId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<Invoice, Error, InvoiceUpdate>({
+    mutationFn: async (factura) => {
+      const { data, error } = await api.PUT("/admin/invoices/{invoice_id}", {
+        params: { path: { invoice_id: invoiceId } },
+        body: factura,
+      });
+      if (error || !data) {
+        throw saveError(error, "No se pudo corregir la factura.");
+      }
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS_KEY }),
+  });
+}
+
+/** Registra el cobro (E04-10) o lo anula con motivo (criterio 4). */
+export function usePayment(orderId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<
+    Billing,
+    Error,
+    { kind: "register"; body: PaymentCreate } | { kind: "void"; body: PaymentVoid }
+  >({
+    mutationFn: async (change) => {
+      const params = { path: { order_id: orderId } };
+      const { data, error } =
+        change.kind === "register"
+          ? await api.POST("/admin/orders/{order_id}/payment", { params, body: change.body })
+          : await api.POST("/admin/orders/{order_id}/payment/void", { params, body: change.body });
+      if (error || !data) {
+        throw saveError(
+          error,
+          change.kind === "register" ? "No se pudo registrar el cobro." : "No se pudo anular.",
+        );
       }
       return data;
     },

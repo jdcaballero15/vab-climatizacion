@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import decode_access_token
 from app.core.storage import ObjectStorage, get_storage
+from app.db.audit_listener import current_actor
 from app.db.models.user import User, UserRole
 from app.db.repositories.user import UserRepository
 from app.db.session import get_session
@@ -72,6 +73,8 @@ def require_role(
                     "message": "Tenés que elegir una contraseña nueva antes de seguir.",
                 },
             )
+        # Quién hace el cambio, para la auditoría (E12-01).
+        current_actor.set(user.id)
         return user
 
     # Marca para el test de contrato de rutas (criterio 5): toda ruta protegida

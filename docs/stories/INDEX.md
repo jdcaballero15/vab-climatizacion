@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 124 historias.** done: 64, draft: 50, icebox: 8, in_progress: 2
+**Total: 124 historias.** done: 89, draft: 21, icebox: 12, in_progress: 2
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -31,7 +31,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E01-03](E01-acceso/E01-03-gestionar-usuarios.md) | Gestionar usuarios | Debe | M | done | admin, owner | - | - | E01-04 |
 | [E01-04](E01-acceso/E01-04-autorizacion-por-rol-en-la-api.md) | Autorización por rol en la API | Debe | M | done | admin, technician, owner | - | - | E01-01, E00-04 |
 | [E01-05](E01-acceso/E01-05-restablecer-la-contrasena-de-un-usuario.md) | Restablecer la contraseña de un usuario | Debería | M | done | admin, technician, owner | - | - | E01-03, E01-07 |
-| [E01-06](E01-acceso/E01-06-bloqueo-temporal-por-intentos-fallidos.md) | Bloqueo temporal por intentos fallidos | Debería | S | draft | admin, technician, owner | - | - | E01-01 |
+| [E01-06](E01-acceso/E01-06-bloqueo-temporal-por-intentos-fallidos.md) | Bloqueo temporal por intentos fallidos | Debería | S | done | admin, technician, owner | - | - | E01-01 |
 | [E01-07](E01-acceso/E01-07-mantener-la-sesion-al-recargar-o-reabrir.md) | Mantener la sesión al recargar o reabrir | Debe | M | done | admin, technician, owner | - | - | E01-02 |
 
 ## E02 Catálogos
@@ -44,8 +44,8 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E02-04](E02-catalogos/E02-04-gestionar-reparaciones.md) | Gestionar reparaciones | Debe | M | done | admin | - | D-003 | E02-02 |
 | [E02-05](E02-catalogos/E02-05-gestionar-el-catalogo-de-repuestos.md) | Gestionar el catálogo de repuestos | Debe | M | done | admin | - | D-003 | E01-04, E00-04 |
 | [E02-06](E02-catalogos/E02-06-gestionar-la-lista-de-precios-de-repuestos.md) | Gestionar la lista de precios de repuestos | Debe | M | done | admin | - | - | E02-05 |
-| [E02-07](E02-catalogos/E02-07-promover-un-texto-de-otro-a-la-lista.md) | Promover un texto de "Otro" a la lista | Debería | M | draft | admin | - | - | E02-03, E02-04, E05-04 |
-| [E02-08](E02-catalogos/E02-08-importar-y-exportar-catalogos-por-csv.md) | Importar y exportar catálogos por CSV | Podría | M | draft | admin | - | D-003 | E02-01, E02-05 |
+| [E02-07](E02-catalogos/E02-07-promover-un-texto-de-otro-a-la-lista.md) | Promover un texto de "Otro" a la lista | Debería | M | done | admin | - | - | E02-03, E02-04, E05-04 |
+| [E02-08](E02-catalogos/E02-08-importar-y-exportar-catalogos-por-csv.md) | Importar y exportar catálogos por CSV | Podría | M | done | admin | - | D-003 | E02-01, E02-05 |
 | [E02-09](E02-catalogos/E02-09-gestionar-escuadrillas-y-tecnicos.md) | Gestionar escuadrillas y técnicos | Debe | M | done | admin | - | - | E01-03, E01-04 |
 | [E02-10](E02-catalogos/E02-10-marcar-que-tipos-de-trabajo-piden-falla-y-reparacion.md) | Marcar qué tipos de trabajo piden falla y reparación | Debe | S | done | admin | - | - | E02-01 |
 
@@ -57,11 +57,11 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E03-02](E03-clientes-equipos/E03-02-domicilios-o-sitios-de-un-cliente.md) | Domicilios o sitios de un cliente | Debe | M | done | admin | - | - | E03-01 |
 | [E03-03](E03-clientes-equipos/E03-03-alta-y-edicion-de-equipos.md) | Alta y edición de equipos | Debe | M | done | admin | - | D-002 | E03-02, E02-02 |
 | [E03-04](E03-clientes-equipos/E03-04-ficha-de-cliente-con-historial.md) | Ficha de cliente con historial | Debe | M | done | admin, owner | - | - | E03-01, E04-08 |
-| [E03-05](E03-clientes-equipos/E03-05-ficha-de-equipo-con-historial-y-mediciones.md) | Ficha de equipo con historial y mediciones | Debe | M | draft | admin, owner | - | D-002 | E03-03, E04-06 |
+| [E03-05](E03-clientes-equipos/E03-05-ficha-de-equipo-con-historial-y-mediciones.md) | Ficha de equipo con historial y mediciones | Debe | M | done | admin, owner | - | D-002 | E03-03, E04-06 |
 | [E03-06](E03-clientes-equipos/E03-06-buscar-clientes-y-equipos.md) | Buscar clientes y equipos | Debe | S | done | admin, owner | - | - | E03-01 |
-| [E03-07](E03-clientes-equipos/E03-07-baja-logica-y-restauracion-de-clientes-y-equipos.md) | Baja lógica y restauración de clientes y equipos | Debería | S | draft | admin | - | - | E03-01, E03-03 |
-| [E03-08](E03-clientes-equipos/E03-08-unificar-dos-clientes.md) | Unificar dos clientes | Debería | M | draft | admin | - | D-002 | E03-02, E03-03, E03-07 |
-| [E03-09](E03-clientes-equipos/E03-09-pasar-un-equipo-a-otro-cliente.md) | Pasar un equipo a otro cliente | Debería | M | draft | admin | - | D-002 | E03-03 |
+| [E03-07](E03-clientes-equipos/E03-07-baja-logica-y-restauracion-de-clientes-y-equipos.md) | Baja lógica y restauración de clientes y equipos | Debería | S | done | admin | - | - | E03-01, E03-03 |
+| [E03-08](E03-clientes-equipos/E03-08-unificar-dos-clientes.md) | Unificar dos clientes | Debería | M | done | admin | - | D-002 | E03-02, E03-03, E03-07 |
+| [E03-09](E03-clientes-equipos/E03-09-pasar-un-equipo-a-otro-cliente.md) | Pasar un equipo a otro cliente | Debería | M | done | admin | - | D-002 | E03-03 |
 
 ## E04 Órdenes de trabajo (administración)
 
@@ -71,15 +71,15 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E04-02](E04-ordenes/E04-02-crear-una-orden-de-trabajo.md) | Crear una orden de trabajo | Debe | M | done | admin | - | - | E04-01, E03-02, E02-01 |
 | [E04-03](E04-ordenes/E04-03-asignar-una-orden-a-un-tecnico.md) | Asignar una orden a una escuadrilla | Debe | S | done | admin | - | - | E04-02, E02-09 |
 | [E04-04](E04-ordenes/E04-04-reasignar-o-desasignar-una-orden.md) | Reasignar o desasignar una orden | Debe | S | done | admin | - | - | E04-03 |
-| [E04-05](E04-ordenes/E04-05-panel-de-ordenes-por-estado.md) | Panel de órdenes por estado | Debe | M | draft | admin, owner | - | - | E04-01 |
+| [E04-05](E04-ordenes/E04-05-panel-de-ordenes-por-estado.md) | Panel de órdenes por estado | Debe | M | done | admin, owner | - | - | E04-01 |
 | [E04-06](E04-ordenes/E04-06-detalle-de-la-orden-con-linea-de-tiempo.md) | Detalle de la orden con línea de tiempo | Debe | M | done | admin, owner | - | - | E04-01, E00-09 |
 | [E04-07](E04-ordenes/E04-07-cancelar-una-orden-con-motivo.md) | Cancelar una orden con motivo | Debe | S | done | admin | - | - | E04-01 |
 | [E04-08](E04-ordenes/E04-08-revisar-una-orden-terminada.md) | Revisar una orden terminada | Debe | M | done | admin | - | D-005 | E04-06 |
-| [E04-09](E04-ordenes/E04-09-registrar-la-factura-de-una-orden.md) | Registrar la factura de una orden | Debe | S | draft | admin | - | D-004 | E04-08 |
-| [E04-10](E04-ordenes/E04-10-registrar-el-cobro-de-una-orden.md) | Registrar el cobro de una orden | Debe | S | draft | admin | - | - | E04-09 |
-| [E04-11](E04-ordenes/E04-11-registrar-mano-de-obra-y-otros-cargos-de-una-orden.md) | Registrar mano de obra y otros cargos de una orden | Debería | M | draft | admin | - | - | E04-06, E00-04 |
+| [E04-09](E04-ordenes/E04-09-registrar-la-factura-de-una-orden.md) | Registrar la factura de una orden | Debe | S | done | admin | - | D-004 | E04-08 |
+| [E04-10](E04-ordenes/E04-10-registrar-el-cobro-de-una-orden.md) | Registrar el cobro de una orden | Debe | S | done | admin | - | - | E04-09 |
+| [E04-11](E04-ordenes/E04-11-registrar-mano-de-obra-y-otros-cargos-de-una-orden.md) | Registrar mano de obra y otros cargos de una orden | Debería | M | done | admin | - | - | E04-06, E00-04 |
 | [E04-12](E04-ordenes/E04-12-asociar-un-equipo-a-la-orden.md) | Asociar un equipo a la orden | Debe | S | done | admin | - | D-002 | E04-02, E03-03 |
-| [E04-13](E04-ordenes/E04-13-abrir-una-orden-de-reparacion-desde-un-cierre.md) | Abrir una orden de reparación desde un cierre | Debería | S | draft | admin | - | - | E04-02, E04-08 |
+| [E04-13](E04-ordenes/E04-13-abrir-una-orden-de-reparacion-desde-un-cierre.md) | Abrir una orden de reparación desde un cierre | Debería | S | done | admin | - | - | E04-02, E04-08 |
 | [E04-14](E04-ordenes/E04-14-importes-y-estado-de-cobro-minimo.md) | Importes y estado de cobro de una orden terminada (versión mínima) | Debe | S | done | admin | - | D-004 | E04-08, E00-04 |
 
 ## E05 App del técnico
@@ -116,27 +116,23 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
 | [E07-01](E07-mantenimiento/E07-01-gestionar-plantillas-de-checklist-por-frecuencia-y-tipo.md) | Gestionar plantillas de checklist por frecuencia y tipo de equipo | Debe | M | done | admin | - | - | E02-02, E01-04 |
-| [E07-02](E07-mantenimiento/E07-02-definir-mediciones-con-unidad-y-rango-esperado.md) | Definir mediciones con unidad y rango esperado | Debe | S | draft | admin | - | - | E07-01 |
 | [E07-03](E07-mantenimiento/E07-03-gestionar-abonos-equipos-incluidos-y-frecuencia.md) | Gestionar abonos: equipos incluidos y frecuencia | Debe | M | done | admin | - | D-002 | E03-03 |
 | [E07-04](E07-mantenimiento/E07-04-generar-las-ordenes-de-mantenimiento-cada-mes.md) | Generar las órdenes de mantenimiento cada mes | Debe | L | done | admin | - | D-005 | E07-03, E04-02 |
-| [E07-05](E07-mantenimiento/E07-05-aprobar-en-bloque-las-ordenes-de-mantenimiento-generada.md) | Aprobar en bloque las órdenes de mantenimiento generadas | Debe | M | draft | admin | - | D-005 | E07-04, E04-07 |
 | [E07-06](E07-mantenimiento/E07-06-completar-el-checklist-de-mantenimiento-en-la-app-del-t.md) | Completar el checklist de mantenimiento en la app del técnico | Debe | M | done | technician | - | - | E07-04, E05-03 |
-| [E07-07](E07-mantenimiento/E07-07-registrar-mediciones-y-marcar-las-que-estan-fuera-de-ra.md) | Registrar mediciones y marcar las que están fuera de rango | Debe | M | draft | technician | - | - | E07-06, E07-02 |
 | [E07-08](E07-mantenimiento/E07-08-marcar-requiere-reparacion-desde-un-item-no-ok.md) | Marcar "requiere reparación" desde un ítem No OK | Debe | M | done | technician | - | - | E07-06, E05-04 |
-| [E07-09](E07-mantenimiento/E07-09-ver-la-evolucion-de-mediciones-de-un-equipo.md) | Ver la evolución de mediciones de un equipo | Debería | M | draft | admin, owner | - | D-002 | E07-07, E03-05 |
 
 ## E08 Stock de repuestos
 
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
-| [E08-01](E08-stock/E08-01-gestionar-depositos-y-camionetas.md) | Gestionar depósitos y camionetas | Debe | S | draft | admin | - | - | E01-04 |
-| [E08-02](E08-stock/E08-02-registrar-el-ingreso-de-repuestos.md) | Registrar el ingreso de repuestos | Debe | S | draft | admin | - | - | E08-01, E02-05 |
-| [E08-03](E08-stock/E08-03-transferir-repuestos-entre-ubicaciones.md) | Transferir repuestos entre ubicaciones | Debe | S | draft | admin | - | - | E08-02 |
-| [E08-04](E08-stock/E08-04-descontar-stock-al-usar-repuestos-en-un-cierre.md) | Descontar stock al usar repuestos en un cierre | Debe | M | draft | technician | - | - | E08-03, E05-12, E02-06 |
-| [E08-05](E08-stock/E08-05-consultar-stock-por-ubicacion-y-repuesto.md) | Consultar stock por ubicación y repuesto | Debe | S | draft | admin, technician, owner | - | - | E08-04 |
-| [E08-06](E08-stock/E08-06-ajustar-stock-con-motivo.md) | Ajustar stock con motivo | Debería | S | draft | admin | - | - | E08-02 |
-| [E08-07](E08-stock/E08-07-ver-el-historial-de-movimientos-de-un-repuesto.md) | Ver el historial de movimientos de un repuesto | Debería | S | draft | admin | - | - | E08-04 |
-| [E08-08](E08-stock/E08-08-uso-de-repuestos-sin-stock-disponible.md) | Uso de repuestos sin stock disponible | Debería | S | draft | technician, admin | - | - | E08-04, E08-06 |
+| [E08-01](E08-stock/E08-01-gestionar-depositos-y-camionetas.md) | Gestionar depósitos y camionetas | Debe | S | done | admin | - | - | E01-04 |
+| [E08-02](E08-stock/E08-02-registrar-el-ingreso-de-repuestos.md) | Registrar el ingreso de repuestos | Debe | S | done | admin | - | - | E08-01, E02-05 |
+| [E08-03](E08-stock/E08-03-transferir-repuestos-entre-ubicaciones.md) | Transferir repuestos entre ubicaciones | Debe | S | done | admin | - | - | E08-02 |
+| [E08-04](E08-stock/E08-04-descontar-stock-al-usar-repuestos-en-un-cierre.md) | Descontar stock al usar repuestos en un cierre | Debe | M | done | technician | - | - | E08-03, E05-12, E02-06 |
+| [E08-05](E08-stock/E08-05-consultar-stock-por-ubicacion-y-repuesto.md) | Consultar stock por ubicación y repuesto | Debe | S | done | admin, technician, owner | - | - | E08-04 |
+| [E08-06](E08-stock/E08-06-ajustar-stock-con-motivo.md) | Ajustar stock con motivo | Debería | S | done | admin | - | - | E08-02 |
+| [E08-07](E08-stock/E08-07-ver-el-historial-de-movimientos-de-un-repuesto.md) | Ver el historial de movimientos de un repuesto | Debería | S | done | admin | - | - | E08-04 |
+| [E08-08](E08-stock/E08-08-uso-de-repuestos-sin-stock-disponible.md) | Uso de repuestos sin stock disponible | Debería | S | done | technician, admin | - | - | E08-04, E08-06 |
 
 ## E09 Comprobantes e informes
 
@@ -180,12 +176,12 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
-| [E12-01](E12-transversal/E12-01-auditoria-de-cambios.md) | Auditoría de cambios | Debe | M | draft | admin, owner | - | - | E00-01 |
-| [E12-02](E12-transversal/E12-02-borrado-logico-y-restauracion.md) | Borrado lógico y restauración | Debe | S | draft | admin | - | - | E00-01 |
-| [E12-03](E12-transversal/E12-03-errores-uniformes-y-en-espanol.md) | Errores uniformes y en español | Debe | S | draft | admin, technician, owner | - | - | E00-01 |
+| [E12-01](E12-transversal/E12-01-auditoria-de-cambios.md) | Auditoría de cambios | Debe | M | done | admin, owner | - | - | E00-01 |
+| [E12-02](E12-transversal/E12-02-borrado-logico-y-restauracion.md) | Borrado lógico y restauración | Debe | S | done | admin | - | - | E00-01 |
+| [E12-03](E12-transversal/E12-03-errores-uniformes-y-en-espanol.md) | Errores uniformes y en español | Debe | S | done | admin, technician, owner | - | - | E00-01 |
 | [E12-04](E12-transversal/E12-04-proteccion-de-datos-personales.md) | Protección de datos personales | Debe | M | draft | owner | D-008 | - | E00-09 |
-| [E12-05](E12-transversal/E12-05-paginacion-estandar-en-los-listados.md) | Paginación estándar en los listados | Debe | S | draft | admin, owner | - | - | E00-01 |
-| [E12-06](E12-transversal/E12-06-uso-comodo-de-la-app-del-tecnico-a-la-intemperie.md) | Uso cómodo de la app del técnico a la intemperie | Debería | M | draft | technician | - | - | E00-03 |
+| [E12-05](E12-transversal/E12-05-paginacion-estandar-en-los-listados.md) | Paginación estándar en los listados | Debe | S | done | admin, owner | - | - | E00-01 |
+| [E12-06](E12-transversal/E12-06-uso-comodo-de-la-app-del-tecnico-a-la-intemperie.md) | Uso cómodo de la app del técnico a la intemperie | Debería | M | done | technician | - | - | E00-03 |
 
 ## E99 Icebox: fuera de alcance por ahora
 
@@ -199,6 +195,10 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E99-06](E99-icebox/E99-06-guardar-mis-ordenes-en-el-celular-para-trabajar-sin-senal.md) | Guardar mis órdenes en el celular para trabajar sin señal | Podría | L | icebox | technician | - | - | - |
 | [E99-07](E99-icebox/E99-07-cola-de-cierres-pendientes-de-sincronizar.md) | Cola de cierres pendientes de sincronizar | Podría | L | icebox | technician | - | - | - |
 | [E99-08](E99-icebox/E99-08-ver-el-estado-de-sincronizacion-y-resolver-conflictos.md) | Ver el estado de sincronización y resolver conflictos | Podría | M | icebox | technician, admin | - | - | - |
+| [E99-09](E99-icebox/E99-09-definir-mediciones-con-unidad-y-rango-esperado.md) | Definir mediciones con unidad y rango esperado | Podría | S | icebox | admin | - | - | - |
+| [E99-10](E99-icebox/E99-10-aprobar-en-bloque-las-ordenes-de-mantenimiento-generada.md) | Aprobar en bloque las órdenes de mantenimiento generadas | Podría | M | icebox | admin | - | D-005 | - |
+| [E99-11](E99-icebox/E99-11-registrar-mediciones-y-marcar-las-que-estan-fuera-de-ra.md) | Registrar mediciones y marcar las que están fuera de rango | Podría | M | icebox | technician | - | - | - |
+| [E99-12](E99-icebox/E99-12-ver-la-evolucion-de-mediciones-de-un-equipo.md) | Ver la evolución de mediciones de un equipo | Podría | M | icebox | admin, owner | - | D-002 | - |
 
 ## Historias bloqueadas por decisión
 

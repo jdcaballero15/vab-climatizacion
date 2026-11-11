@@ -4,7 +4,7 @@ title: "Errores uniformes y en español"
 epic: E12
 phase: 1
 priority: must
-status: draft
+status: done
 roles: [admin, technician, owner]
 size: S
 areas: [backend, web-admin, pwa]
@@ -24,3 +24,8 @@ assumes: []
 1. **Dado:** un error de validación. **Cuando:** ocurre. **Entonces:** la API responde `{code, message}` y, si aplica, el detalle por campo.
 2. **Dado:** un error inesperado. **Cuando:** ocurre. **Entonces:** el usuario ve un mensaje genérico y el detalle técnico va solo al log.
 3. **Dado:** los mensajes de error. **Cuando:** se revisan. **Entonces:** no incluyen datos personales ni detalles internos.
+
+## Hecho
+
+- `app/core/errors.py`: los 422 de validación vienen como `{code: "validation_error", message, field, fields: [{field, message}]}` en español; un error inesperado devuelve 500 `internal_error` con un mensaje genérico y deja el detalle en el log con solo el método y la ruta.
+- Los errores propios ya usaban `{code, message}`.

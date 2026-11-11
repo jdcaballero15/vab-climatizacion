@@ -22,11 +22,13 @@ router = APIRouter(prefix="/admin/work-types", tags=["catálogos"])
 # Solo administración edita catálogos (ver roles-permisos.md). El técnico los leerá
 # para cerrar órdenes por otro endpoint (E05-04).
 AdminOnly = Annotated[User, Depends(require_role(UserRole.admin))]
+# Dirección ve el panel de órdenes con sus filtros (E04-05, criterio 5).
+AdminOrOwner = Annotated[User, Depends(require_role(UserRole.admin, UserRole.owner))]
 
 
 @router.get("", response_model=list[WorkTypeAdminOut])
 async def list_work_types(
-    session: SessionDep, _: AdminOnly, include_inactive: bool = False
+    session: SessionDep, _: AdminOrOwner, include_inactive: bool = False
 ) -> Sequence[WorkType]:
     return await catalog_service.list_work_types(session, include_inactive=include_inactive)
 

@@ -10,6 +10,7 @@ from sqlalchemy import text
 
 from app.api.deps import require_role
 from app.core.security import create_access_token
+from app.db.models.login_failure import LoginFailure
 from app.db.models.user import User, UserRole
 from app.db.session import SessionLocal, engine
 from app.main import app
@@ -33,10 +34,12 @@ PUBLIC_PATHS = {
 @pytest.fixture
 async def schema() -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
-        await conn.run_sync(User.metadata.create_all, tables=[User.__table__])
+        await conn.run_sync(
+            User.metadata.create_all, tables=[User.__table__, LoginFailure.__table__]
+        )
     yield
     async with engine.begin() as conn:
-        await conn.run_sync(User.metadata.drop_all, tables=[User.__table__])
+        await conn.run_sync(User.metadata.drop_all, tables=[LoginFailure.__table__, User.__table__])
         await conn.execute(text("DROP TYPE IF EXISTS user_role"))
 
 

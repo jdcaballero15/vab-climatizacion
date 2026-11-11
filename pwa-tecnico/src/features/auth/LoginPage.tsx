@@ -49,7 +49,9 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
 
         {login.isError && (
           <p className="login__error" role="alert">
-            Correo o contraseña incorrectos.
+            {login.error.message === "login_failed"
+              ? "Correo o contraseña incorrectos."
+              : login.error.message}
           </p>
         )}
 

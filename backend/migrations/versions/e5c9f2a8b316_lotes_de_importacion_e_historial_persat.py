@@ -1,7 +1,7 @@
 """lotes de importación e historial de Persat (E11-03, E11-05)
 
 Revision ID: e5c9f2a8b316
-Revises: a968d70ec211
+Revises: d4b8e1c6a207
 Create Date: 2026-11-10
 
 import_batch: cada importación confirmada, para deshacerla entera. legacy_reference
@@ -15,7 +15,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "e5c9f2a8b316"
-down_revision: str | None = "a968d70ec211"
+down_revision: str | None = "d4b8e1c6a207"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

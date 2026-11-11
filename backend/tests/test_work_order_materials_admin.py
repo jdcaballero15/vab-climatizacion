@@ -52,7 +52,7 @@ async def schema() -> AsyncGenerator[None, None]:
             "cancel_reason",
             "no_signature_reason",
             "signature_purpose",
-            "billing_status",
+            "payment_method",
         ):
             await conn.execute(text(f"DROP TYPE IF EXISTS {enum_type}"))
         await conn.execute(text("DROP SEQUENCE IF EXISTS work_order_number_seq"))

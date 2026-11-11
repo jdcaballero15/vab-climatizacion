@@ -355,3 +355,40 @@ async def test_historial_importado_fuera_del_panel_y_de_solo_lectura(
     assert all(item["imported"] for item in items)
     assert items[0]["description"].startswith("Persat N° ")
     assert equipo.status_code == 409
+
+
+# Criterio 4: a una importada no se le cargan importes ni se la factura.
+async def test_importada_no_se_factura(schema: None, tmp_path: Path, ordenes: Path) -> None:
+    from httpx import ASGITransport, AsyncClient
+
+    from app.main import app
+    from tests.factories import make_user
+    from tests.test_work_order_closure_admin import _auth
+
+    await _base(tmp_path)
+    await _import_orders(ordenes)
+    admin = make_user(email="admin@ot-demo.com")
+    async with SessionLocal() as session:
+        session.add(admin)
+        await session.commit()
+        terminada = await session.scalar(
+            select(WorkOrder).where(WorkOrder.status == OrderStatus.done).limit(1)
+        )
+    assert terminada is not None
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
+        importes = await http.put(
+            f"/admin/orders/{terminada.id}/billing",
+            json={"labor_amount": "100"},
+            headers=_auth(admin),
+        )
+        factura = await http.post(
+            "/admin/invoices",
+            json={"number": "A-1", "issued_on": "2026-11-11", "order_ids": [str(terminada.id)]},
+            headers=_auth(admin),
+        )
+
+    assert importes.status_code == 409
+    assert importes.json()["detail"]["code"] == "imported_order_read_only"
+    assert factura.status_code == 409
+    assert "historial de Persat" in factura.json()["detail"]["message"]
