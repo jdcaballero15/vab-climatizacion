@@ -36,6 +36,9 @@ UNPAGINATED = {
     "/admin/other-texts": "textos de Otro para revisar",
     # Sugerencias al escribir: el servicio ya devuelve pocas.
     "/admin/clients/similar": "sugerencias, con tope en el servicio",
+    # Stock: una fila por repuesto con sus ubicaciones, y las ubicaciones (pocas).
+    "/admin/stock": "stock por repuesto (cientos)",
+    "/admin/stock/locations": "depósitos y camionetas",
     # Un plan por equipo con abono: cientos como mucho; se revisa si crece.
     "/admin/maintenance/plans": "planes de mantenimiento",
 }

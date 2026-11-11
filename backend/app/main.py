@@ -19,6 +19,7 @@ from app.api import (
     parts,
     repairs,
     search,
+    stock,
     tech_orders,
     users,
     work_orders,
@@ -63,6 +64,8 @@ def create_app() -> FastAPI:
     app.include_router(tech_orders.router)
     app.include_router(files.router)
     app.include_router(search.router)
+    app.include_router(stock.router)
+    app.include_router(stock.tech_router)
     app.include_router(maintenance.router)
     return app
 

@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 124 historias.** done: 78, draft: 32, icebox: 12, in_progress: 2
+**Total: 124 historias.** done: 86, draft: 24, icebox: 12, in_progress: 2
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -125,14 +125,14 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
-| [E08-01](E08-stock/E08-01-gestionar-depositos-y-camionetas.md) | Gestionar depósitos y camionetas | Debe | S | draft | admin | - | - | E01-04 |
-| [E08-02](E08-stock/E08-02-registrar-el-ingreso-de-repuestos.md) | Registrar el ingreso de repuestos | Debe | S | draft | admin | - | - | E08-01, E02-05 |
-| [E08-03](E08-stock/E08-03-transferir-repuestos-entre-ubicaciones.md) | Transferir repuestos entre ubicaciones | Debe | S | draft | admin | - | - | E08-02 |
-| [E08-04](E08-stock/E08-04-descontar-stock-al-usar-repuestos-en-un-cierre.md) | Descontar stock al usar repuestos en un cierre | Debe | M | draft | technician | - | - | E08-03, E05-12, E02-06 |
-| [E08-05](E08-stock/E08-05-consultar-stock-por-ubicacion-y-repuesto.md) | Consultar stock por ubicación y repuesto | Debe | S | draft | admin, technician, owner | - | - | E08-04 |
-| [E08-06](E08-stock/E08-06-ajustar-stock-con-motivo.md) | Ajustar stock con motivo | Debería | S | draft | admin | - | - | E08-02 |
-| [E08-07](E08-stock/E08-07-ver-el-historial-de-movimientos-de-un-repuesto.md) | Ver el historial de movimientos de un repuesto | Debería | S | draft | admin | - | - | E08-04 |
-| [E08-08](E08-stock/E08-08-uso-de-repuestos-sin-stock-disponible.md) | Uso de repuestos sin stock disponible | Debería | S | draft | technician, admin | - | - | E08-04, E08-06 |
+| [E08-01](E08-stock/E08-01-gestionar-depositos-y-camionetas.md) | Gestionar depósitos y camionetas | Debe | S | done | admin | - | - | E01-04 |
+| [E08-02](E08-stock/E08-02-registrar-el-ingreso-de-repuestos.md) | Registrar el ingreso de repuestos | Debe | S | done | admin | - | - | E08-01, E02-05 |
+| [E08-03](E08-stock/E08-03-transferir-repuestos-entre-ubicaciones.md) | Transferir repuestos entre ubicaciones | Debe | S | done | admin | - | - | E08-02 |
+| [E08-04](E08-stock/E08-04-descontar-stock-al-usar-repuestos-en-un-cierre.md) | Descontar stock al usar repuestos en un cierre | Debe | M | done | technician | - | - | E08-03, E05-12, E02-06 |
+| [E08-05](E08-stock/E08-05-consultar-stock-por-ubicacion-y-repuesto.md) | Consultar stock por ubicación y repuesto | Debe | S | done | admin, technician, owner | - | - | E08-04 |
+| [E08-06](E08-stock/E08-06-ajustar-stock-con-motivo.md) | Ajustar stock con motivo | Debería | S | done | admin | - | - | E08-02 |
+| [E08-07](E08-stock/E08-07-ver-el-historial-de-movimientos-de-un-repuesto.md) | Ver el historial de movimientos de un repuesto | Debería | S | done | admin | - | - | E08-04 |
+| [E08-08](E08-stock/E08-08-uso-de-repuestos-sin-stock-disponible.md) | Uso de repuestos sin stock disponible | Debería | S | done | technician, admin | - | - | E08-04, E08-06 |
 
 ## E09 Comprobantes e informes
 

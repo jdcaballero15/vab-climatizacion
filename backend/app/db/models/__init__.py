@@ -10,6 +10,7 @@ from app.db.models.other_text import DismissedOtherText
 from app.db.models.part import Part, PartPrice, PartUsage
 from app.db.models.refresh_token import RefreshToken
 from app.db.models.signature import Signature
+from app.db.models.stock import StockLocation, StockMovement
 from app.db.models.stored_file import StoredFile
 from app.db.models.user import User, UserRole
 from app.db.models.work_order import (
@@ -26,6 +27,8 @@ from app.db.models.work_order import (
 )
 
 __all__ = [
+    "StockLocation",
+    "StockMovement",
     "DismissedOtherText",
     "LoginFailure",
     "AuditEvent",

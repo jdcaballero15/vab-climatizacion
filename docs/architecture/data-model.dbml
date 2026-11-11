@@ -121,12 +121,12 @@ Enum check_result {
   not_ok
 }
 
-Enum stock_location_type {
-  depot
-  vehicle
+Enum stock_location_kind {
+  warehouse
+  truck
 }
 
-Enum stock_movement_reason {
+Enum stock_movement_kind {
   receipt
   transfer
   usage
@@ -490,22 +490,26 @@ Table work_order_payment {
 
 Table stock_location {
   id uuid [pk]
-  type stock_location_type [not null]
-  name varchar [not null]
-  technician_id uuid [ref: > app_user.id, note: 'Para camionetas']
+  kind stock_location_kind [not null]
+  name varchar(255) [not null]
+  crew_id uuid [ref: > crew.id, note: 'Solo camionetas (CHECK). Una camioneta activa por escuadrilla: de ahí salen sus usos (E08-01, D-013)']
+  is_active boolean [not null, note: 'Con movimientos no se borra: se desactiva']
 }
 
 Table stock_movement {
   id uuid [pk]
+  kind stock_movement_kind [not null]
   part_id uuid [ref: > part.id, not null]
+  quantity numeric(12,3) [not null, note: 'Siempre > 0: sale del origen y entra en el destino']
   from_location_id uuid [ref: > stock_location.id]
-  to_location_id uuid [ref: > stock_location.id]
-  quantity numeric(12,3) [not null]
-  reason stock_movement_reason [not null]
-  part_usage_id uuid [ref: > part_usage.id]
-  moved_at timestamptz [not null]
-  moved_by uuid [ref: > app_user.id, not null]
-  note varchar
+  to_location_id uuid [ref: > stock_location.id, note: 'CHECK: al menos uno de los dos']
+  work_order_id uuid [ref: > work_order.id, note: 'En los usos de un cierre']
+  part_usage_id uuid [ref: > part_usage.id, note: 'Único: un cierre reenviado no descuenta dos veces (E08-04)']
+  reason varchar(255) [note: 'Obligatorio en los ajustes (E08-06)']
+  created_by uuid [ref: > app_user.id, not null]
+  occurred_at timestamptz [not null]
+
+  Note: 'El saldo de cada ubicación es entradas menos salidas (regla 6). Un uso sin stock deja la camioneta en negativo, destacada para ajustarla (E08-08)'
 }
 
 // ---------- Mantenimiento preventivo ----------

@@ -6300,6 +6300,479 @@
         }
       }
     },
+    "/admin/stock/locations": {
+      "get": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "List Locations",
+        "operationId": "list_locations_admin_stock_locations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "include_inactive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Inactive"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LocationOut"
+                  },
+                  "title": "Response List Locations Admin Stock Locations Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Create Location",
+        "description": "Depósito o camioneta; la camioneta lleva su escuadrilla (E08-01).",
+        "operationId": "create_location_admin_stock_locations_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/stock/locations/{location_id}": {
+      "patch": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Update Location",
+        "description": "Renombrar, cambiar la escuadrilla o desactivar; no se borra (criterio 3).",
+        "operationId": "update_location_admin_stock_locations__location_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "location_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Location Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/stock": {
+      "get": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Get Stock",
+        "description": "Cada repuesto con su cantidad por ubicación y el total (E08-05).",
+        "operationId": "get_stock_admin_stock_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "part_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Part Id"
+            }
+          },
+          {
+            "name": "location_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Location Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StockPartOut"
+                  },
+                  "title": "Response Get Stock Admin Stock Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/stock/parts/{part_id}/movements": {
+      "get": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Get Part Movements",
+        "description": "Historial de movimientos de un repuesto, el más nuevo primero (E08-07).",
+        "operationId": "get_part_movements_admin_stock_parts__part_id__movements_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "part_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Part Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovementPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/stock/receipts": {
+      "post": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Receive",
+        "description": "Ingreso de repuestos (E08-02).",
+        "operationId": "receive_admin_stock_receipts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiptCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovementOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/stock/transfers": {
+      "post": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Transfer",
+        "description": "Transferencia entre ubicaciones en una sola transacción (E08-03).",
+        "operationId": "transfer_admin_stock_transfers_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovementOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/stock/adjustments": {
+      "post": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Adjust",
+        "description": "Ajuste con motivo, positivo o negativo (E08-06).",
+        "operationId": "adjust_admin_stock_adjustments_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjustmentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovementOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/tech/stock": {
+      "get": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Get Truck Stock",
+        "description": "Lo que hay en la camioneta de mi escuadrilla, sin precios (E08-04, E08-05).",
+        "operationId": "get_truck_stock_tech_stock_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TruckStockTechnicianOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/admin/maintenance/plans": {
       "get": {
         "tags": [
@@ -6768,6 +7241,46 @@
   },
   "components": {
     "schemas": {
+      "AdjustmentCreate": {
+        "properties": {
+          "part_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Part Id"
+          },
+          "location_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Location Id"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "part_id",
+          "location_id",
+          "quantity",
+          "reason"
+        ],
+        "title": "AdjustmentCreate",
+        "description": "Corrección de inventario con motivo; positiva suma y negativa resta (E08-06)."
+      },
       "AssignmentAdminOut": {
         "properties": {
           "id": {
@@ -10240,6 +10753,132 @@
         "title": "InvoiceUpdate",
         "description": "Corrección del número o la fecha de una factura (E04-09, criterio 4)."
       },
+      "LocationCreate": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/StockLocationKind"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "crew_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "name"
+        ],
+        "title": "LocationCreate"
+      },
+      "LocationOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/StockLocationKind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "crew_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Id"
+          },
+          "crew_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Name"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "crew_id",
+          "crew_name",
+          "is_active"
+        ],
+        "title": "LocationOut"
+      },
+      "LocationUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "crew_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Id"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "LocationUpdate"
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -10703,6 +11342,133 @@
           "quantity"
         ],
         "title": "MaterialLineUpdate"
+      },
+      "MovementOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/StockMovementKind"
+          },
+          "quantity": {
+            "type": "string",
+            "title": "Quantity"
+          },
+          "from_location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Location Name"
+          },
+          "to_location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Location Name"
+          },
+          "work_order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Order Id"
+          },
+          "work_order_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Order Number"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "created_by_name": {
+            "type": "string",
+            "title": "Created By Name"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "quantity",
+          "from_location_name",
+          "to_location_name",
+          "work_order_id",
+          "work_order_number",
+          "reason",
+          "created_by_name",
+          "occurred_at"
+        ],
+        "title": "MovementOut",
+        "description": "Un movimiento en el historial del repuesto (E08-07)."
+      },
+      "MovementPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MovementOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "MovementPage"
       },
       "NoSignatureReason": {
         "type": "string",
@@ -11878,6 +12644,41 @@
         "title": "PromoteRequest",
         "description": "Sumar un texto a la lista: con target_id, a un valor que ya existe; si no, uno\nnuevo con name (por defecto el texto). Una reparación nueva necesita su falla."
       },
+      "ReceiptCreate": {
+        "properties": {
+          "part_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Part Id"
+          },
+          "location_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Location Id"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "part_id",
+          "location_id",
+          "quantity"
+        ],
+        "title": "ReceiptCreate",
+        "description": "Ingreso de repuestos a una ubicación (E08-02)."
+      },
       "RefreshResponse": {
         "properties": {
           "access_token": {
@@ -12362,6 +13163,107 @@
         ],
         "title": "SkippedPlanOut"
       },
+      "StockBalanceOut": {
+        "properties": {
+          "part_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Part Id"
+          },
+          "part_name": {
+            "type": "string",
+            "title": "Part Name"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "location_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Location Id"
+          },
+          "location_name": {
+            "type": "string",
+            "title": "Location Name"
+          },
+          "quantity": {
+            "type": "string",
+            "title": "Quantity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "part_id",
+          "part_name",
+          "unit",
+          "location_id",
+          "location_name",
+          "quantity"
+        ],
+        "title": "StockBalanceOut",
+        "description": "Cuánto hay de un repuesto en una ubicación. Negativo: hubo usos sin stock (E08-08)."
+      },
+      "StockLocationKind": {
+        "type": "string",
+        "enum": [
+          "warehouse",
+          "truck"
+        ],
+        "title": "StockLocationKind"
+      },
+      "StockMovementKind": {
+        "type": "string",
+        "enum": [
+          "receipt",
+          "transfer",
+          "usage",
+          "adjustment"
+        ],
+        "title": "StockMovementKind"
+      },
+      "StockPartOut": {
+        "properties": {
+          "part_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Part Id"
+          },
+          "part_name": {
+            "type": "string",
+            "title": "Part Name"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "total": {
+            "type": "string",
+            "title": "Total"
+          },
+          "by_location": {
+            "items": {
+              "$ref": "#/components/schemas/StockBalanceOut"
+            },
+            "type": "array",
+            "title": "By Location"
+          },
+          "has_negative": {
+            "type": "boolean",
+            "title": "Has Negative"
+          }
+        },
+        "type": "object",
+        "required": [
+          "part_id",
+          "part_name",
+          "unit",
+          "total",
+          "by_location",
+          "has_negative"
+        ],
+        "title": "StockPartOut"
+      },
       "TaskAdminOut": {
         "properties": {
           "id": {
@@ -12533,6 +13435,99 @@
           "user"
         ],
         "title": "TokenResponse"
+      },
+      "TransferCreate": {
+        "properties": {
+          "part_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Part Id"
+          },
+          "from_location_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "From Location Id"
+          },
+          "to_location_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "To Location Id"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "part_id",
+          "from_location_id",
+          "to_location_id",
+          "quantity"
+        ],
+        "title": "TransferCreate",
+        "description": "De una ubicación a otra en una sola transacción (E08-03)."
+      },
+      "TruckItemTechnicianOut": {
+        "properties": {
+          "part_name": {
+            "type": "string",
+            "title": "Part Name"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "quantity": {
+            "type": "string",
+            "title": "Quantity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "part_name",
+          "unit",
+          "quantity"
+        ],
+        "title": "TruckItemTechnicianOut"
+      },
+      "TruckStockTechnicianOut": {
+        "properties": {
+          "location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Name"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TruckItemTechnicianOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "location_name",
+          "items"
+        ],
+        "title": "TruckStockTechnicianOut",
+        "description": "Lo que hay en la camioneta de la escuadrilla, sin precios (E08-04, criterio 4)."
       },
       "UnassignmentCreate": {
         "properties": {

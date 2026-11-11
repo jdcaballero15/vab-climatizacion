@@ -1,4 +1,5 @@
 import {
+  Boxes,
   FileSpreadsheet,
   MessageSquareText,
   History,
@@ -30,6 +31,7 @@ import { OrdersPage } from "../features/orders/OrdersPage";
 import { OtherTextsPage } from "../features/other-texts/OtherTextsPage";
 import { PartsPage } from "../features/parts/PartsPage";
 import { RepairsPage } from "../features/repairs/RepairsPage";
+import { StockPage } from "../features/stock/StockPage";
 import { UsersPage } from "../features/users/UsersPage";
 import { WorkTypesPage } from "../features/work-types/WorkTypesPage";
 
@@ -72,6 +74,15 @@ export const NAV_SECTIONS: NavSection[] = [
     roles: ["admin"],
     icon: CalendarClock,
     element: <MaintenancePage />,
+  },
+  {
+    path: "/stock",
+    label: "Stock",
+    group: null,
+    // Dirección ve el stock sin moverlo (roles-permisos.md).
+    roles: ["admin", "owner"],
+    icon: Boxes,
+    element: <ForRole render={(role) => <StockPage readOnly={role !== "admin"} />} />,
   },
   {
     path: "/clientes",
