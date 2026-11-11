@@ -1,5 +1,6 @@
 import { Navigate, useRoutes, type RouteObject } from "react-router-dom";
 
+import { EquipmentFilePage } from "../features/clients/EquipmentFilePage";
 import { OrderDetailPage } from "../features/orders/OrderDetailPage";
 import { AppRoot } from "./AppRoot";
 import { NAV_SECTIONS } from "./navigation";
@@ -24,6 +25,15 @@ const routes: RouteObject[] = [
         element: (
           <RequireRole roles={["admin", "owner"]}>
             <ForRole render={(role) => <OrderDetailPage readOnly={role !== "admin"} />} />
+          </RequireRole>
+        ),
+      },
+      // E03-05: la ficha del equipo, desde la lista de equipos del cliente.
+      {
+        path: "equipos/:equipmentId",
+        element: (
+          <RequireRole roles={["admin", "owner"]}>
+            <EquipmentFilePage />
           </RequireRole>
         ),
       },

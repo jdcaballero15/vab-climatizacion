@@ -4,7 +4,7 @@ title: "Unificar dos clientes"
 epic: E03
 phase: 2
 priority: should
-status: draft
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -32,13 +32,18 @@ assumes: [D-002]
 - Hace falta porque la migración importa tal cual los registros de Persat, y Persat no admite varios domicilios: muchas sedes de un mismo cliente (cadenas de farmacias, organismos públicos, sanatorios) están cargadas como clientes distintos. Unificar después es fácil; separar es difícil.
 - Prevista para la versión 1.1.
 
-## Preguntas abiertas
-
-- Respondida en parte (cliente, 2026-10-28): depende del CUIT. Las sucursales con el mismo CUIT son un cliente con varios domicilios (se pueden unificar); las que tienen otro CUIT son clientes distintos. El Poder Judicial lo quiere cargar **por obra**, para distinguir cada una.
-- Respondida (Gonza, 2026-10-28): en el Poder Judicial cada obra es un **domicilio** del mismo cliente, y se factura por obra. La facturación por domicilio va con D-004 (E04-09).
-- ¿Qué pasa con el número de cliente del que se va? Los códigos de sus equipos lo llevan y no cambian; el número queda en el cliente dado de baja.
-
 ## Fuera de alcance
 
 - Detectar automáticamente qué clientes unificar.
 - Separar un cliente en dos.
+
+## Decisiones (Gonza, 2026-11-10)
+
+- El que se va queda dado de baja con su número; los códigos de sus equipos no cambian.
+- No se puede restaurar un cliente unificado.
+
+## Hecho
+
+- `GET /admin/clients/{id}/merge-preview?into_client_id=...` cuenta domicilios, equipos, contactos y órdenes que pasarían; `POST /admin/clients/{id}/merge` los mueve (los equipos y sus planes siguen a su domicilio) y da de baja al que se va con `client.merged_into_id`.
+- Las dos fichas registran la unificación en `audit_event`.
+- web-admin: "Unificar en otro cliente" en la ficha: se elige el que queda, se ve qué pasa y se confirma.

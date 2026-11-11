@@ -230,6 +230,7 @@ Table client {
   tax_id varchar [note: 'CUIT o DNI. Dato personal, ver SECURITY.md']
   tax_condition tax_condition [note: 'Opcional']
   notes text
+  merged_into_id uuid [ref: > client.id, note: 'Dado de baja al unificarlo en este cliente (E03-08)']
 }
 
 Table client_contact {
@@ -586,4 +587,33 @@ Table legacy_reference {
   indexes {
     (entity, source, legacy_id) [unique]
   }
+}
+
+// ---------- Auditoría y traslados ----------
+
+Table audit_event {
+  id uuid [pk]
+  entity varchar(50) [not null, note: 'client, equipment...']
+  entity_id uuid [not null]
+  action varchar(50) [not null, note: 'deactivated, restored, merged, merged_in']
+  actor_id uuid [ref: > app_user.id]
+  occurred_at timestamptz [not null]
+  detail text
+
+  Note: 'Bajas, restauraciones y unificaciones (E03-07, E03-08, E12-02). Base de la auditoría de E12-01. Las órdenes usan work_order_event'
+}
+
+Table equipment_transfer {
+  id uuid [pk]
+  equipment_id uuid [ref: > equipment.id, not null]
+  from_client_id uuid [ref: > client.id, not null]
+  from_site_id uuid [ref: > client_site.id, not null]
+  from_code varchar(50) [not null, note: 'Se sigue encontrando por este código (E03-09)']
+  to_client_id uuid [ref: > client.id, not null]
+  to_site_id uuid [ref: > client_site.id, not null]
+  to_code varchar(50) [not null]
+  transferred_by uuid [ref: > app_user.id, not null]
+  transferred_at timestamptz [not null]
+
+  Note: 'Paso de un equipo a otro cliente con código nuevo (E03-09). Las órdenes anteriores siguen en el cliente de origen'
 }
