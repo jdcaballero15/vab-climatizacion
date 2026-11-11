@@ -27,7 +27,6 @@ from app.db.models.work_order import WorkOrder, WorkOrderClosure, WorkOrderEvent
 from app.db.repositories.catalog import EquipmentTypeRepository
 from app.db.repositories.equipment import EquipmentRepository
 from app.domain.work_order import OPEN_STATUSES, WorkOrderEventType
-from app.services import audit
 from app.services import clients as clients_service
 
 # Prefijo de los tipos sin prefijo propio, como un tipo recién creado (D-002).
@@ -181,7 +180,6 @@ async def deactivate_equipment(
     if open_numbers:
         raise EquipmentHasOpenOrdersError(open_numbers)
     equipment.deleted_at = datetime.now(UTC)
-    audit.record(session, "equipment", equipment.id, "deactivated", actor)
     await session.commit()
     await session.refresh(equipment)
     return equipment
@@ -196,7 +194,6 @@ async def restore_equipment(
     if equipment.deleted_at is None:
         raise EquipmentNotDeletedError
     equipment.deleted_at = None
-    audit.record(session, "equipment", equipment.id, "restored", actor)
     await session.commit()
     await session.refresh(equipment)
     return equipment

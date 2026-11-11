@@ -143,11 +143,14 @@ describe("AppRoot", () => {
       "Clientes",
       "Escuadrillas",
       "Usuarios",
+      "Auditoría",
       "Tipos de trabajo",
       "Tipos de equipo",
       "Fallas",
       "Reparaciones",
+      "Textos de «Otro»",
       "Materiales y precios",
+      "Importar y exportar",
     ]);
   });
 
@@ -185,7 +188,7 @@ describe("AppRoot", () => {
     const links = within(menu())
       .getAllByRole("link")
       .map((link) => link.textContent);
-    expect(links).toEqual(["Órdenes", "Usuarios"]);
+    expect(links).toEqual(["Órdenes", "Usuarios", "Auditoría"]);
   });
 
   it("un rol sin secciones ve el saludo con su rol", async () => {

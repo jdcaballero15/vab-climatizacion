@@ -28,6 +28,8 @@ def _reset_database() -> None:
     async def reset() -> None:
         engine = create_async_engine(TEST_DATABASE_URL)
         async with engine.begin() as conn:
+            # La crea el conftest para la auditoría (E12-01); acá la crean las migraciones.
+            await conn.execute(text("DROP TABLE IF EXISTS audit_event CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS work_order_cancellation CASCADE"))
             await conn.execute(text("DROP TYPE IF EXISTS cancel_reason"))
             await conn.execute(text("DROP TABLE IF EXISTS work_order_closure_task CASCADE"))

@@ -29,3 +29,22 @@ def bucket() -> None:
     from app.core.storage import get_storage
 
     get_storage().ensure_bucket()
+
+
+@pytest.fixture(autouse=True)
+async def _audit_table() -> AsyncGenerator[None, None]:
+    """La auditoría (E12-01) se escribe en cada cambio hecho por la API: la tabla existe en
+    todos los tests, aunque cada uno arme solo las suyas."""
+    from app.db.models.audit import AuditEvent
+    from app.db.session import engine
+
+    # Solo la tabla: create_all crearía además los tipos enum de todo el modelo.
+    table = AuditEvent.__table__
+    async with engine.begin() as conn:
+        await conn.run_sync(lambda sync: table.create(sync, checkfirst=True))
+    # Sin conexiones abiertas de este loop: el test puede correr en otro.
+    await engine.dispose()
+    yield
+    async with engine.begin() as conn:
+        await conn.run_sync(lambda sync: table.drop(sync, checkfirst=True))
+    await engine.dispose()

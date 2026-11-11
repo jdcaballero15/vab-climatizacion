@@ -42,6 +42,10 @@ _NUMBER_ATTEMPTS = 3
 _MIN_CONTAINED_LENGTH = 4
 
 
+# Lo que se muestra en la ficha del cliente: bajas, restauraciones y unificaciones.
+CLIENT_TRAIL_ACTIONS = frozenset({"deactivated", "restored", "merged", "merged_in"})
+
+
 class ClientNotFoundError(Exception):
     """No existe un cliente activo con ese id."""
 
@@ -170,9 +174,11 @@ async def audit_trail(session: AsyncSession, client_id: uuid.UUID) -> list[Audit
             action=event.action,
             actor_name=name,
             occurred_at=event.occurred_at,
-            detail=event.detail,
+            # Las diferencias en JSON quedan para la pantalla de auditoría (E12-01).
+            detail=event.detail if event.action == "merged_in" else None,
         )
         for event, name in await audit.events_for(session, "client", client_id)
+        if event.action in CLIENT_TRAIL_ACTIONS
     ]
 
 
@@ -193,7 +199,6 @@ async def deactivate_client(session: AsyncSession, client_id: uuid.UUID, actor: 
     if open_numbers:
         raise ClientHasOpenOrdersError(open_numbers)
     client.deleted_at = datetime.now(UTC)
-    audit.record(session, "client", client.id, "deactivated", actor)
     await session.commit()
     await session.refresh(client)
     return client
@@ -206,7 +211,6 @@ async def restore_client(session: AsyncSession, client_id: uuid.UUID, actor: Use
     if client.merged_into_id is not None:
         raise ClientMergedError
     client.deleted_at = None
-    audit.record(session, "client", client.id, "restored", actor)
     await session.commit()
     await session.refresh(client)
     return client
@@ -265,8 +269,6 @@ async def merge_clients(
     source = await get_client(session, source_id)
     source.deleted_at = datetime.now(UTC)
     source.merged_into_id = target_id
-    detail = f"Unificado en el cliente N° {preview.target_number} ({preview.target_name})"
-    audit.record(session, "client", source_id, "merged", actor, detail)
     audit.record(
         session,
         "client",

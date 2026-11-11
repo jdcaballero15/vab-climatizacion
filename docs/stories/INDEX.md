@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 124 historias.** done: 71, draft: 39, icebox: 12, in_progress: 2
+**Total: 124 historias.** done: 78, draft: 32, icebox: 12, in_progress: 2
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -31,7 +31,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E01-03](E01-acceso/E01-03-gestionar-usuarios.md) | Gestionar usuarios | Debe | M | done | admin, owner | - | - | E01-04 |
 | [E01-04](E01-acceso/E01-04-autorizacion-por-rol-en-la-api.md) | Autorización por rol en la API | Debe | M | done | admin, technician, owner | - | - | E01-01, E00-04 |
 | [E01-05](E01-acceso/E01-05-restablecer-la-contrasena-de-un-usuario.md) | Restablecer la contraseña de un usuario | Debería | M | done | admin, technician, owner | - | - | E01-03, E01-07 |
-| [E01-06](E01-acceso/E01-06-bloqueo-temporal-por-intentos-fallidos.md) | Bloqueo temporal por intentos fallidos | Debería | S | draft | admin, technician, owner | - | - | E01-01 |
+| [E01-06](E01-acceso/E01-06-bloqueo-temporal-por-intentos-fallidos.md) | Bloqueo temporal por intentos fallidos | Debería | S | done | admin, technician, owner | - | - | E01-01 |
 | [E01-07](E01-acceso/E01-07-mantener-la-sesion-al-recargar-o-reabrir.md) | Mantener la sesión al recargar o reabrir | Debe | M | done | admin, technician, owner | - | - | E01-02 |
 
 ## E02 Catálogos
@@ -44,8 +44,8 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E02-04](E02-catalogos/E02-04-gestionar-reparaciones.md) | Gestionar reparaciones | Debe | M | done | admin | - | D-003 | E02-02 |
 | [E02-05](E02-catalogos/E02-05-gestionar-el-catalogo-de-repuestos.md) | Gestionar el catálogo de repuestos | Debe | M | done | admin | - | D-003 | E01-04, E00-04 |
 | [E02-06](E02-catalogos/E02-06-gestionar-la-lista-de-precios-de-repuestos.md) | Gestionar la lista de precios de repuestos | Debe | M | done | admin | - | - | E02-05 |
-| [E02-07](E02-catalogos/E02-07-promover-un-texto-de-otro-a-la-lista.md) | Promover un texto de "Otro" a la lista | Debería | M | draft | admin | - | - | E02-03, E02-04, E05-04 |
-| [E02-08](E02-catalogos/E02-08-importar-y-exportar-catalogos-por-csv.md) | Importar y exportar catálogos por CSV | Podría | M | draft | admin | - | D-003 | E02-01, E02-05 |
+| [E02-07](E02-catalogos/E02-07-promover-un-texto-de-otro-a-la-lista.md) | Promover un texto de "Otro" a la lista | Debería | M | done | admin | - | - | E02-03, E02-04, E05-04 |
+| [E02-08](E02-catalogos/E02-08-importar-y-exportar-catalogos-por-csv.md) | Importar y exportar catálogos por CSV | Podría | M | done | admin | - | D-003 | E02-01, E02-05 |
 | [E02-09](E02-catalogos/E02-09-gestionar-escuadrillas-y-tecnicos.md) | Gestionar escuadrillas y técnicos | Debe | M | done | admin | - | - | E01-03, E01-04 |
 | [E02-10](E02-catalogos/E02-10-marcar-que-tipos-de-trabajo-piden-falla-y-reparacion.md) | Marcar qué tipos de trabajo piden falla y reparación | Debe | S | done | admin | - | - | E02-01 |
 
@@ -176,12 +176,12 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
-| [E12-01](E12-transversal/E12-01-auditoria-de-cambios.md) | Auditoría de cambios | Debe | M | draft | admin, owner | - | - | E00-01 |
+| [E12-01](E12-transversal/E12-01-auditoria-de-cambios.md) | Auditoría de cambios | Debe | M | done | admin, owner | - | - | E00-01 |
 | [E12-02](E12-transversal/E12-02-borrado-logico-y-restauracion.md) | Borrado lógico y restauración | Debe | S | done | admin | - | - | E00-01 |
-| [E12-03](E12-transversal/E12-03-errores-uniformes-y-en-espanol.md) | Errores uniformes y en español | Debe | S | draft | admin, technician, owner | - | - | E00-01 |
+| [E12-03](E12-transversal/E12-03-errores-uniformes-y-en-espanol.md) | Errores uniformes y en español | Debe | S | done | admin, technician, owner | - | - | E00-01 |
 | [E12-04](E12-transversal/E12-04-proteccion-de-datos-personales.md) | Protección de datos personales | Debe | M | draft | owner | D-008 | - | E00-09 |
-| [E12-05](E12-transversal/E12-05-paginacion-estandar-en-los-listados.md) | Paginación estándar en los listados | Debe | S | draft | admin, owner | - | - | E00-01 |
-| [E12-06](E12-transversal/E12-06-uso-comodo-de-la-app-del-tecnico-a-la-intemperie.md) | Uso cómodo de la app del técnico a la intemperie | Debería | M | draft | technician | - | - | E00-03 |
+| [E12-05](E12-transversal/E12-05-paginacion-estandar-en-los-listados.md) | Paginación estándar en los listados | Debe | S | done | admin, owner | - | - | E00-01 |
+| [E12-06](E12-transversal/E12-06-uso-comodo-de-la-app-del-tecnico-a-la-intemperie.md) | Uso cómodo de la app del técnico a la intemperie | Debería | M | done | technician | - | - | E00-03 |
 
 ## E99 Icebox: fuera de alcance por ahora
 
