@@ -24,6 +24,8 @@ const DETALLE: OrderDetail = {
   assignment: { crew_name: "Escuadrilla 1", scheduled_for: "2026-10-21", return_reason: null },
   cancellation: null,
   has_closure: false,
+  source_order: null,
+  repair_orders: [],
   timeline: [
     {
       occurred_at: "2026-10-20T12:00:00Z",
@@ -51,9 +53,9 @@ const DETALLE: OrderDetail = {
     },
     {
       occurred_at: "2026-10-22T15:00:00Z",
-      event_type: "billing_invoiced",
-      from_status: null,
-      to_status: null,
+      event_type: "status_change",
+      from_status: "done",
+      to_status: "invoiced",
       actor_name: "Admin Ficticia",
       note: "Factura A-1",
     },
@@ -138,7 +140,7 @@ describe("OrderDetailPage", () => {
       "20/10/2026 09:00Creada · Admin Ficticia",
       "21/10/2026 08:00Iniciada por la escuadrilla · Celular 1",
       "21/10/2026 10:00Cerrada por la escuadrilla · Celular 1Resuelta.",
-      "22/10/2026 12:00Marcada como facturada · Admin FicticiaFactura A-1",
+      "22/10/2026 12:00Facturada · Admin FicticiaFactura A-1",
     ]);
   });
 

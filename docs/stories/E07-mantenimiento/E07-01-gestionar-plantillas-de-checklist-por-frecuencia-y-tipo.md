@@ -21,7 +21,7 @@ assumes: []
 
 ## Lo acordado
 
-Decisión de Gonza (2026-11-03): **un checklist único** para todo mantenimiento, editable por la oficina. Sin plantillas por frecuencia ni por tipo de equipo. Cada paso se marca OK o No OK (E07-06); las mediciones con rango (E07-02) quedan para más adelante. Como el cliente todavía no pasó su checklist real, se arranca con 6 pasos típicos que la oficina corrige.
+Decisión de Gonza (2026-11-03): **un checklist único** para todo mantenimiento, editable por la oficina. Sin plantillas por frecuencia ni por tipo de equipo. Cada paso se marca OK o No OK (E07-06); las mediciones con rango (E99-09) quedan para más adelante. Como el cliente todavía no pasó su checklist real, se arranca con 6 pasos típicos que la oficina corrige.
 
 ## Criterios de aceptación
 

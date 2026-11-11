@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 124 historias.** done: 61, draft: 53, icebox: 8, in_progress: 2
+**Total: 124 historias.** done: 66, draft: 44, icebox: 12, in_progress: 2
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -71,15 +71,15 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E04-02](E04-ordenes/E04-02-crear-una-orden-de-trabajo.md) | Crear una orden de trabajo | Debe | M | done | admin | - | - | E04-01, E03-02, E02-01 |
 | [E04-03](E04-ordenes/E04-03-asignar-una-orden-a-un-tecnico.md) | Asignar una orden a una escuadrilla | Debe | S | done | admin | - | - | E04-02, E02-09 |
 | [E04-04](E04-ordenes/E04-04-reasignar-o-desasignar-una-orden.md) | Reasignar o desasignar una orden | Debe | S | done | admin | - | - | E04-03 |
-| [E04-05](E04-ordenes/E04-05-panel-de-ordenes-por-estado.md) | Panel de órdenes por estado | Debe | M | draft | admin, owner | - | - | E04-01 |
+| [E04-05](E04-ordenes/E04-05-panel-de-ordenes-por-estado.md) | Panel de órdenes por estado | Debe | M | done | admin, owner | - | - | E04-01 |
 | [E04-06](E04-ordenes/E04-06-detalle-de-la-orden-con-linea-de-tiempo.md) | Detalle de la orden con línea de tiempo | Debe | M | done | admin, owner | - | - | E04-01, E00-09 |
 | [E04-07](E04-ordenes/E04-07-cancelar-una-orden-con-motivo.md) | Cancelar una orden con motivo | Debe | S | done | admin | - | - | E04-01 |
 | [E04-08](E04-ordenes/E04-08-revisar-una-orden-terminada.md) | Revisar una orden terminada | Debe | M | done | admin | - | D-005 | E04-06 |
-| [E04-09](E04-ordenes/E04-09-registrar-la-factura-de-una-orden.md) | Registrar la factura de una orden | Debe | S | draft | admin | - | D-004 | E04-08 |
-| [E04-10](E04-ordenes/E04-10-registrar-el-cobro-de-una-orden.md) | Registrar el cobro de una orden | Debe | S | draft | admin | - | - | E04-09 |
-| [E04-11](E04-ordenes/E04-11-registrar-mano-de-obra-y-otros-cargos-de-una-orden.md) | Registrar mano de obra y otros cargos de una orden | Debería | M | draft | admin | - | - | E04-06, E00-04 |
+| [E04-09](E04-ordenes/E04-09-registrar-la-factura-de-una-orden.md) | Registrar la factura de una orden | Debe | S | done | admin | - | D-004 | E04-08 |
+| [E04-10](E04-ordenes/E04-10-registrar-el-cobro-de-una-orden.md) | Registrar el cobro de una orden | Debe | S | done | admin | - | - | E04-09 |
+| [E04-11](E04-ordenes/E04-11-registrar-mano-de-obra-y-otros-cargos-de-una-orden.md) | Registrar mano de obra y otros cargos de una orden | Debería | M | done | admin | - | - | E04-06, E00-04 |
 | [E04-12](E04-ordenes/E04-12-asociar-un-equipo-a-la-orden.md) | Asociar un equipo a la orden | Debe | S | done | admin | - | D-002 | E04-02, E03-03 |
-| [E04-13](E04-ordenes/E04-13-abrir-una-orden-de-reparacion-desde-un-cierre.md) | Abrir una orden de reparación desde un cierre | Debería | S | draft | admin | - | - | E04-02, E04-08 |
+| [E04-13](E04-ordenes/E04-13-abrir-una-orden-de-reparacion-desde-un-cierre.md) | Abrir una orden de reparación desde un cierre | Debería | S | done | admin | - | - | E04-02, E04-08 |
 | [E04-14](E04-ordenes/E04-14-importes-y-estado-de-cobro-minimo.md) | Importes y estado de cobro de una orden terminada (versión mínima) | Debe | S | done | admin | - | D-004 | E04-08, E00-04 |
 
 ## E05 App del técnico
@@ -116,14 +116,10 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
 | [E07-01](E07-mantenimiento/E07-01-gestionar-plantillas-de-checklist-por-frecuencia-y-tipo.md) | Gestionar plantillas de checklist por frecuencia y tipo de equipo | Debe | M | done | admin | - | - | E02-02, E01-04 |
-| [E07-02](E07-mantenimiento/E07-02-definir-mediciones-con-unidad-y-rango-esperado.md) | Definir mediciones con unidad y rango esperado | Debe | S | draft | admin | - | - | E07-01 |
 | [E07-03](E07-mantenimiento/E07-03-gestionar-abonos-equipos-incluidos-y-frecuencia.md) | Gestionar abonos: equipos incluidos y frecuencia | Debe | M | done | admin | - | D-002 | E03-03 |
 | [E07-04](E07-mantenimiento/E07-04-generar-las-ordenes-de-mantenimiento-cada-mes.md) | Generar las órdenes de mantenimiento cada mes | Debe | L | done | admin | - | D-005 | E07-03, E04-02 |
-| [E07-05](E07-mantenimiento/E07-05-aprobar-en-bloque-las-ordenes-de-mantenimiento-generada.md) | Aprobar en bloque las órdenes de mantenimiento generadas | Debe | M | draft | admin | - | D-005 | E07-04, E04-07 |
 | [E07-06](E07-mantenimiento/E07-06-completar-el-checklist-de-mantenimiento-en-la-app-del-t.md) | Completar el checklist de mantenimiento en la app del técnico | Debe | M | done | technician | - | - | E07-04, E05-03 |
-| [E07-07](E07-mantenimiento/E07-07-registrar-mediciones-y-marcar-las-que-estan-fuera-de-ra.md) | Registrar mediciones y marcar las que están fuera de rango | Debe | M | draft | technician | - | - | E07-06, E07-02 |
 | [E07-08](E07-mantenimiento/E07-08-marcar-requiere-reparacion-desde-un-item-no-ok.md) | Marcar "requiere reparación" desde un ítem No OK | Debe | M | done | technician | - | - | E07-06, E05-04 |
-| [E07-09](E07-mantenimiento/E07-09-ver-la-evolucion-de-mediciones-de-un-equipo.md) | Ver la evolución de mediciones de un equipo | Debería | M | draft | admin, owner | - | D-002 | E07-07, E03-05 |
 
 ## E08 Stock de repuestos
 
@@ -199,6 +195,10 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E99-06](E99-icebox/E99-06-guardar-mis-ordenes-en-el-celular-para-trabajar-sin-senal.md) | Guardar mis órdenes en el celular para trabajar sin señal | Podría | L | icebox | technician | - | - | - |
 | [E99-07](E99-icebox/E99-07-cola-de-cierres-pendientes-de-sincronizar.md) | Cola de cierres pendientes de sincronizar | Podría | L | icebox | technician | - | - | - |
 | [E99-08](E99-icebox/E99-08-ver-el-estado-de-sincronizacion-y-resolver-conflictos.md) | Ver el estado de sincronización y resolver conflictos | Podría | M | icebox | technician, admin | - | - | - |
+| [E99-09](E99-icebox/E99-09-definir-mediciones-con-unidad-y-rango-esperado.md) | Definir mediciones con unidad y rango esperado | Podría | S | icebox | admin | - | - | - |
+| [E99-10](E99-icebox/E99-10-aprobar-en-bloque-las-ordenes-de-mantenimiento-generada.md) | Aprobar en bloque las órdenes de mantenimiento generadas | Podría | M | icebox | admin | - | D-005 | - |
+| [E99-11](E99-icebox/E99-11-registrar-mediciones-y-marcar-las-que-estan-fuera-de-ra.md) | Registrar mediciones y marcar las que están fuera de rango | Podría | M | icebox | technician | - | - | - |
+| [E99-12](E99-icebox/E99-12-ver-la-evolucion-de-mediciones-de-un-equipo.md) | Ver la evolución de mediciones de un equipo | Podría | M | icebox | admin, owner | - | D-002 | - |
 
 ## Historias bloqueadas por decisión
 

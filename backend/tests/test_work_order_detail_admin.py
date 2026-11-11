@@ -2,15 +2,13 @@
 
 import uuid
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
 
 from sqlalchemy import update
 
 from app.db.models.user import UserRole
-from app.db.models.work_order import WorkOrder, WorkOrderBilling, WorkOrderEvent
+from app.db.models.work_order import WorkOrder, WorkOrderEvent
 from app.db.session import SessionLocal
 from app.domain.work_order import (
-    BillingStatus,
     OrderChannel,
     OrderStatus,
     WorkOrderEventType,
@@ -86,21 +84,17 @@ async def _terminada_con_historia(m: Mundo) -> WorkOrder:
                 note="Resuelta.",
             ),
             evento(30, WorkOrderEventType.review_approved, actor_id=m.admin.id, note="Aprobada."),
+            evento(
+                40,
+                WorkOrderEventType.status_change,
+                from_status=OrderStatus.done,
+                to_status=OrderStatus.invoiced,
+                actor_id=m.admin.id,
+                note="Factura A-0001-00000001 del 22/10/2026",
+            ),
         ]
     )
     await _cierre(m, orden, closed_at=INICIO + timedelta(hours=22))
-    await _seed(
-        [
-            WorkOrderBilling(
-                work_order_id=orden.id,
-                parts_amount=Decimal("0"),
-                labor_amount=Decimal("1000"),
-                status=BillingStatus.invoiced,
-                invoice_number="A-0001-00000001",
-                updated_by=m.admin.id,
-            )
-        ]
-    )
     return orden
 
 
@@ -157,8 +151,7 @@ async def test_linea_de_tiempo_con_usuario_y_fecha(mundo: Mundo) -> None:
         ("status_change", "in_progress", "Celular 1", None),
         ("status_change", "done", "Celular 1", "Resuelta."),
         ("review_approved", None, "Admin Ficticia", "Aprobada."),
-        # El cobro de E04-14 no deja evento: se arma con su registro.
-        ("billing_invoiced", None, "Admin Ficticia", "Factura A-0001-00000001"),
+        ("status_change", "invoiced", "Admin Ficticia", "Factura A-0001-00000001 del 22/10/2026"),
     ]
     fechas = [datetime.fromisoformat(e["occurred_at"]) for e in body["timeline"]]
     assert fechas[:5] == [INICIO + timedelta(hours=h) for h in (0, 1, 20, 22, 30)]

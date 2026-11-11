@@ -1,11 +1,11 @@
 import type {
-  BillingStatus,
   Cancellation,
   CancelReason,
   ClosureDetail,
   OrderChannel,
   OrderListItem,
   OrderView,
+  PaymentMethod,
   WorkshopStage,
   ReturnedFromCrew,
   TimelineEntry,
@@ -35,6 +35,8 @@ export const LIST_STATUS_LABELS: Record<OrderView, string> = {
   assigned: "Asignadas",
   in_progress: "En curso",
   done: "Terminadas",
+  invoiced: "Facturadas",
+  paid: "Cobradas",
   cancelled: "Canceladas",
   in_workshop: "En el galpón",
 };
@@ -172,9 +174,11 @@ export const NO_SIGNATURE_REASON_LABELS: Record<NoSignatureReason, string> = {
 };
 
 /** Estado de cobro de una terminada (E04-14); sin importes cargados está pendiente. */
-export const BILLING_STATUS_LABELS: Record<BillingStatus, string> = {
-  pending: "Pendiente de enviar a cobrar",
-  invoiced: "Facturada",
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: "Efectivo",
+  transfer: "Transferencia",
+  check: "Cheque",
+  other: "Otro",
 };
 
 const MONEY = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
@@ -229,7 +233,9 @@ const EVENT_LABELS: Record<string, string> = {
   converted_to_workshop: "Pasó a taller",
   equipment_changed: "Cambio de equipo",
   materials_changed: "Cambio de materiales",
-  billing_invoiced: "Marcada como facturada",
+  invoice_corrected: "Factura corregida",
+  charges_changed: "Cambio de cargos",
+  repair_order_opened: "Se abrió una orden de reparación",
 };
 
 /** Cómo se lee un paso de la línea de tiempo de la orden (E04-06). */

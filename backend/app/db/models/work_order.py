@@ -24,7 +24,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampedBase
 from app.domain.work_order import (
-    BillingStatus,
     CancelReason,
     CheckResult,
     ClosureOutcome,
@@ -35,6 +34,7 @@ from app.domain.work_order import (
     OrderKind,
     OrderSource,
     OrderStatus,
+    PaymentMethod,
     WorkOrderEventType,
     WorkshopStage,
 )
@@ -114,7 +114,11 @@ class WorkOrder(TimestampedBase):
         ForeignKey("maintenance_plan.id"), nullable=True
     )
     maintenance_due_on: Mapped[date | None] = mapped_column(Date, nullable=True)
-    # Las generadas por mantenimiento no se asignan hasta aprobar el lote (R6, E07-05).
+    # La orden de la que nació, si se abrió desde un cierre (E04-13).
+    source_order_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("work_order.id"), nullable=True, index=True
+    )
+    # Las generadas por mantenimiento no se asignan hasta aprobar el lote (R6, E99-10).
     requires_approval: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )
@@ -340,10 +344,8 @@ class WorkOrderCancellation(TimestampedBase):
 
 
 class WorkOrderBilling(TimestampedBase):
-    """Importes y estado de cobro de una orden terminada (E04-14, versión mínima).
-
-    Una por orden; se reemplaza al editar. Provisoria hasta definir E04-09 a E04-11.
-    """
+    """Mano de obra de una orden terminada (E04-14), cargada a mano. Una por orden; se
+    reemplaza al editar. Factura y cobro van en sus tablas (E04-09, E04-10)."""
 
     __tablename__ = "work_order_billing"
     __table_args__ = (
@@ -361,8 +363,80 @@ class WorkOrderBilling(TimestampedBase):
     work_order_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("work_order.id"), nullable=False)
     parts_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     labor_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
-    status: Mapped[BillingStatus] = mapped_column(
-        Enum(BillingStatus, name="billing_status"), nullable=False
-    )
-    invoice_number: Mapped[str | None] = mapped_column(String(50), nullable=True)
     updated_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_user.id"), nullable=False)
+
+
+class WorkOrderCharge(TimestampedBase):
+    """Otro cargo de la orden con descripción e importe, además de la mano de obra
+    (E04-11). Sacarlo es borrado lógico; cada cambio queda en la línea de tiempo."""
+
+    __tablename__ = "work_order_charge"
+    __table_args__ = (CheckConstraint("amount >= 0", name="ck_work_order_charge_amount"),)
+
+    work_order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("work_order.id"), nullable=False, index=True
+    )
+    description: Mapped[str] = mapped_column(String(200), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_user.id"), nullable=False)
+
+
+class Invoice(TimestampedBase):
+    """Factura registrada por administración (E04-09). Puede cubrir varias órdenes, por
+    ejemplo las de un abonado (Gonza, 2026-11-10). La emite el sistema del cliente."""
+
+    __tablename__ = "invoice"
+
+    number: Mapped[str] = mapped_column(String(50), nullable=False)
+    issued_on: Mapped[date] = mapped_column(Date, nullable=False)
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_user.id"), nullable=False)
+
+
+class WorkOrderInvoice(TimestampedBase):
+    """Qué factura cubre cada orden: una vigente por orden."""
+
+    __tablename__ = "work_order_invoice"
+    __table_args__ = (
+        Index(
+            "uq_work_order_invoice_work_order",
+            "work_order_id",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+    )
+
+    work_order_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("work_order.id"), nullable=False)
+    invoice_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("invoice.id"), nullable=False, index=True
+    )
+
+
+class WorkOrderPayment(TimestampedBase):
+    """Cobro de una orden facturada (E04-10): fecha y medio; el importe es el total de la
+    orden. Anularlo no lo borra: queda con quién, cuándo y por qué."""
+
+    __tablename__ = "work_order_payment"
+    __table_args__ = (
+        Index(
+            "uq_work_order_payment_current",
+            "work_order_id",
+            unique=True,
+            postgresql_where=text("voided_at IS NULL AND deleted_at IS NULL"),
+        ),
+        CheckConstraint(
+            "(voided_at IS NULL) = (voided_by IS NULL AND void_reason IS NULL)",
+            name="ck_work_order_payment_void",
+        ),
+    )
+
+    work_order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("work_order.id"), nullable=False, index=True
+    )
+    paid_on: Mapped[date] = mapped_column(Date, nullable=False)
+    method: Mapped[PaymentMethod] = mapped_column(
+        Enum(PaymentMethod, name="payment_method"), nullable=False
+    )
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_user.id"), nullable=False)
+    voided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    voided_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("app_user.id"), nullable=True)
+    void_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)

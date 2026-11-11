@@ -1,7 +1,6 @@
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
-from decimal import Decimal
 
 import pytest
 from sqlalchemy import text, update
@@ -15,7 +14,6 @@ from app.db.models.work_order import (
 )
 from app.db.session import SessionLocal, engine
 from app.domain.work_order import (
-    BillingStatus,
     ClosureOutcome,
     OrderStatus,
     WorkOrderEventType,
@@ -57,7 +55,7 @@ ENUMS = (
     "equipment_condition",
     "not_done_reason",
     "cancel_reason",
-    "billing_status",
+    "payment_method",
 )
 
 
@@ -231,27 +229,21 @@ async def test_una_aprobada_no_se_devuelve(mundo: Mundo) -> None:
     assert await _estado(orden.id) == OrderStatus.done
 
 
-# Las facturadas de antes de exigir la aprobación (E05-05) tampoco se devuelven.
+# Una facturada ya no está Terminada: no se devuelve (E04-09).
 async def test_una_facturada_no_se_devuelve(mundo: Mundo) -> None:
     m = mundo
     orden = await _terminada(m)
-    await _seed(
-        [
-            WorkOrderBilling(
-                work_order_id=orden.id,
-                parts_amount=Decimal("0"),
-                labor_amount=Decimal("100"),
-                status=BillingStatus.invoiced,
-                updated_by=m.admin.id,
-            )
-        ]
-    )
+    async with SessionLocal() as session:
+        await session.execute(
+            update(WorkOrder).where(WorkOrder.id == orden.id).values(status=OrderStatus.invoiced)
+        )
+        await session.commit()
 
     response = await _post(m.admin, _url(orden), _devolver())
 
     assert response.status_code == 409
-    assert response.json()["detail"]["code"] == "order_invoiced"
-    assert await _estado(orden.id) == OrderStatus.done
+    assert response.json()["detail"]["code"] == "invalid_transition"
+    assert await _estado(orden.id) == OrderStatus.invoiced
 
 
 async def test_con_la_escuadrilla_desactivada_no_se_devuelve(mundo: Mundo) -> None:
