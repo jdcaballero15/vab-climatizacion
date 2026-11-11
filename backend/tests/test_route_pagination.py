@@ -30,6 +30,8 @@ UNPAGINATED = {
     "/admin/clients/{client_id}/sites": "de un cliente",
     "/admin/clients/{client_id}/equipment": "de un cliente",
     "/admin/clients/{client_id}/audit": "bajas y unificaciones de un cliente",
+    # De una sola orden: sus otros cargos son unos pocos.
+    "/admin/orders/{order_id}/charges": "cargos de una orden",
     # Textos de "Otro" agrupados: los distintos, que se revisan y se van sacando.
     "/admin/other-texts": "textos de Otro para revisar",
     # Sugerencias al escribir: el servicio ya devuelve pocas.

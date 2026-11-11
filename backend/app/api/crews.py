@@ -22,6 +22,8 @@ technicians_router = APIRouter(prefix="/admin/field-technicians", tags=["escuadr
 
 # Solo administración gestiona escuadrillas y técnicos (roles-permisos.md, D-013).
 AdminOnly = Annotated[User, Depends(require_role(UserRole.admin))]
+# Dirección ve el panel de órdenes con sus filtros (E04-05, criterio 5).
+AdminOrOwner = Annotated[User, Depends(require_role(UserRole.admin, UserRole.owner))]
 
 _ERROR_DETAIL: dict[type[Exception], tuple[int, str, str]] = {
     crews_service.CrewNotFoundError: (404, "crew_not_found", "No se encontró la escuadrilla."),
@@ -56,7 +58,7 @@ _ERRORS = tuple(_ERROR_DETAIL)
 
 @router.get("", response_model=list[CrewAdminOut])
 async def list_crews(
-    session: SessionDep, _: AdminOnly, include_inactive: bool = False
+    session: SessionDep, _: AdminOrOwner, include_inactive: bool = False
 ) -> Sequence[Crew]:
     return await crews_service.list_crews(session, include_inactive=include_inactive)
 

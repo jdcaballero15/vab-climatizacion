@@ -22,13 +22,13 @@ assumes: [D-002]
 ## Criterios de aceptación
 
 1. **Dado:** un equipo con trabajos. **Cuando:** abro su ficha. **Entonces:** veo trabajos anteriores, repuestos usados y mantenimientos y reparaciones previos.
-2. **Dado:** un equipo con mediciones de mantenimiento. **Cuando:** abro su ficha. **Entonces:** veo la evolución de cada medición (ver E07-09). *Fuera: mediciones al icebox.*
+2. **Dado:** un equipo con mediciones de mantenimiento. **Cuando:** abro su ficha. **Entonces:** veo la evolución de cada medición (ver E99-12). *Fuera: mediciones al icebox.*
 3. **Dado:** un equipo migrado desde Persat. **Cuando:** abro su ficha. **Entonces:** su historial importado se distingue del generado en el sistema nuevo.
 4. **Dado:** el rol técnico. **Cuando:** intenta acceder. **Entonces:** recibe acceso denegado.
 
 ## Decisiones (Gonza, 2026-11-10)
 
-- Sin mediciones: el criterio 2 queda fuera porque las mediciones pasaron al icebox (decisión del 2026-11-03).
+- Sin mediciones: el criterio 2 queda fuera porque las mediciones pasaron al icebox (E99-09, E99-11 y E99-12).
 
 ## Hecho
 

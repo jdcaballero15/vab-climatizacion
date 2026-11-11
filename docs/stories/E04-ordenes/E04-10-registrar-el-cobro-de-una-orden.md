@@ -4,7 +4,7 @@ title: "Registrar el cobro de una orden"
 epic: E04
 phase: 1
 priority: must
-status: draft
+status: done
 roles: [admin]
 size: S
 areas: [backend, web-admin]
@@ -26,6 +26,12 @@ assumes: []
 3. **Dado:** una orden `Cobrada`. **Cuando:** se consulta. **Entonces:** es de solo lectura.
 4. **Dado:** un cobro registrado por error. **Cuando:** administración lo anula. **Entonces:** queda auditado y la orden vuelve a `Facturada`.
 
-## Preguntas abiertas
+## Decisiones (Gonza, 2026-11-10)
 
-- ¿Se necesita registrar importe, medio o fecha de pago reales, o alcanza con marcar cobrada?
+- Se registra fecha y medio de pago (efectivo, transferencia, cheque u otro). El importe es el total de la orden: no se carga.
+- Anular un cobro pide motivo y la orden vuelve a Facturada; Cobrada deja de ser final solo para esto (R5).
+
+## Hecho
+
+- Tabla `work_order_payment` (un cobro vigente por orden; anularlo guarda quién, cuándo y por qué). `POST /admin/orders/{id}/payment` y `POST /admin/orders/{id}/payment/void`; transición nueva `void_payment` (Cobrada a Facturada).
+- web-admin: "Registrar cobro" en Facturadas y "Anular cobro" en Cobradas.

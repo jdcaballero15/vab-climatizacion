@@ -7,7 +7,6 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StringConstr
 
 from app.api.schemas.client import ClientSiteTechnicianOut, blank_to_none
 from app.domain.work_order import (
-    BillingStatus,
     CancelReason,
     ClosureOutcome,
     NotDoneReason,
@@ -15,6 +14,7 @@ from app.domain.work_order import (
     OrderKind,
     OrderSource,
     OrderStatus,
+    PaymentMethod,
     WorkshopStage,
 )
 
@@ -50,6 +50,8 @@ class WorkOrderCreate(BaseModel):
     equipment_id: uuid.UUID | None = None
     # Taller (E06-01): arranca en el retiro. En el lugar, si no se dice.
     kind: OrderKind = OrderKind.on_site
+    # De reparación abierta desde el cierre de otra orden (E04-13).
+    source_order_id: uuid.UUID | None = None
 
 
 class EquipmentChange(BaseModel):
@@ -131,27 +133,101 @@ Amount = Annotated[Decimal, Field(ge=0, max_digits=12, decimal_places=2)]
 
 
 class BillingUpdate(BaseModel):
-    """Importes y estado de cobro de una orden terminada (E04-14, versión mínima)."""
+    """Mano de obra de una orden terminada, cargada a mano (E04-14, E04-11)."""
 
     model_config = ConfigDict(extra="forbid")
 
     # Los repuestos no se cargan: salen del total de materiales de la orden (E05-05).
     labor_amount: Amount
-    status: BillingStatus
-    invoice_number: Annotated[
-        Annotated[str, StringConstraints(max_length=50)] | None,
-        BeforeValidator(blank_to_none),
-    ] = None
+
+
+InvoiceNumber = Annotated[
+    str, BeforeValidator(blank_to_none), StringConstraints(strip_whitespace=True, max_length=50)
+]
+
+
+class InvoiceOut(BaseModel):
+    id: uuid.UUID
+    number: str
+    issued_on: date
+    created_by_name: str
+    # Las órdenes que cubre (E04-09): una factura puede ir por varias.
+    order_numbers: list[int]
+
+
+class PaymentOut(BaseModel):
+    paid_on: date
+    method: PaymentMethod
+    created_by_name: str
+    created_at: datetime
 
 
 class BillingAdminOut(BaseModel):
+    """Importes, factura y cobro de una orden cerrada (E04-09 a E04-11)."""
+
     parts_amount: Decimal
     labor_amount: Decimal
+    charges_amount: Decimal
     total: Decimal
-    status: BillingStatus
-    invoice_number: str | None
-    updated_by_name: str
-    updated_at: datetime
+    # Nulos si nadie cargó la mano de obra todavía.
+    updated_by_name: str | None
+    updated_at: datetime | None
+    invoice: InvoiceOut | None
+    payment: PaymentOut | None
+
+
+class InvoiceCreate(BaseModel):
+    """Una factura para una o varias órdenes terminadas y aprobadas (E04-09)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    number: InvoiceNumber
+    issued_on: date
+    order_ids: Annotated[list[uuid.UUID], Field(min_length=1, max_length=200)]
+
+
+class InvoiceUpdate(BaseModel):
+    """Corrección del número o la fecha de una factura (E04-09, criterio 4)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    number: InvoiceNumber
+    issued_on: date
+
+
+class PaymentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    paid_on: date
+    method: PaymentMethod
+
+
+class PaymentVoid(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: Annotated[str, BeforeValidator(blank_to_none), StringConstraints(max_length=255)]
+
+
+ChargeDescription = Annotated[
+    str, BeforeValidator(blank_to_none), StringConstraints(strip_whitespace=True, max_length=200)
+]
+
+
+class ChargeWrite(BaseModel):
+    """Otro cargo de la orden, además de la mano de obra (E04-11)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    description: ChargeDescription
+    amount: Amount
+
+
+class ChargeAdminOut(BaseModel):
+    id: uuid.UUID
+    description: str
+    amount: Decimal
+    created_by_name: str
+    created_at: datetime
 
 
 class OrderMaintenanceOut(BaseModel):
@@ -186,8 +262,10 @@ class OrderListItemOut(BaseModel):
     cancellation: CancellationAdminOut | None
     # Solo en terminadas.
     completed: CompletedOut | None
-    # Solo en terminadas; nulo sin importes cargados (pendiente de enviar a cobrar, E04-14).
+    # En terminadas, facturadas y cobradas (E04-09 a E04-11).
     billing: BillingAdminOut | None = None
+    # Terminada hace más de BILLING_OVERDUE_DAYS días y sin facturar (E04-05, criterio 4).
+    billing_overdue: bool = False
     # Nulo si la orden no tiene equipo (E04-12).
     equipment: OrderEquipmentOut | None
     # Solo en las generadas por un plan de mantenimiento.
@@ -238,8 +316,7 @@ class OrderDetailSiteOut(BaseModel):
 
 
 class TimelineEntryOut(BaseModel):
-    """Un paso de la línea de tiempo (E04-06). event_type es el del evento de la orden o
-    "billing_invoiced", que se arma con el cobro de E04-14 (no deja evento propio)."""
+    """Un paso de la línea de tiempo (E04-06): event_type es el del evento de la orden."""
 
     occurred_at: datetime
     event_type: str
@@ -247,6 +324,12 @@ class TimelineEntryOut(BaseModel):
     to_status: OrderStatus | None
     actor_name: str | None
     note: str | None
+
+
+class RelatedOrderOut(BaseModel):
+    id: uuid.UUID
+    number: int
+    status: OrderStatus
 
 
 class WorkOrderDetailAdminOut(BaseModel):
@@ -273,6 +356,9 @@ class WorkOrderDetailAdminOut(BaseModel):
     assignment: CurrentAssignmentOut | None
     cancellation: CancellationAdminOut | None
     has_closure: bool
+    # Relación con órdenes de reparación abiertas desde un cierre (E04-13).
+    source_order: RelatedOrderOut | None = None
+    repair_orders: list[RelatedOrderOut] = []
     timeline: list[TimelineEntryOut]
 
 

@@ -274,9 +274,12 @@ async def test_consultar_y_no_encontrada(admin: User) -> None:
     assert editar_inexistente.status_code == 404
 
 
-# Criterio 8: técnico (usuario de escuadrilla) y dirección reciben 403.
-@pytest.mark.parametrize("rol", [UserRole.technician, UserRole.owner])
-async def test_tecnico_y_direccion_no_gestionan_escuadrillas(schema: None, rol: UserRole) -> None:
+# Criterio 8: técnico (usuario de escuadrilla) y dirección no gestionan escuadrillas.
+# Dirección ve la lista para filtrar el panel de órdenes (E04-05).
+@pytest.mark.parametrize(("rol", "lista"), [(UserRole.technician, 403), (UserRole.owner, 200)])
+async def test_tecnico_y_direccion_no_gestionan_escuadrillas(
+    schema: None, rol: UserRole, lista: int
+) -> None:
     usuario = make_user(email=f"{rol.value}@ot-demo.com", role=rol)
     await _seed([usuario])
 
@@ -284,5 +287,5 @@ async def test_tecnico_y_direccion_no_gestionan_escuadrillas(schema: None, rol: 
         listar = await client.get(URL, headers=_auth(usuario))
         crear = await client.post(URL, json={"name": "Escuadrilla 1"}, headers=_auth(usuario))
 
-    assert listar.status_code == 403
+    assert listar.status_code == lista
     assert crear.status_code == 403

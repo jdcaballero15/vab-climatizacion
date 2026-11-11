@@ -903,13 +903,99 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get Work Order Billing
+         * @description Importes, factura y cobro de la orden (E04-09 a E04-11).
+         */
+        get: operations["get_work_order_billing_admin_orders__order_id__billing_get"];
         /**
          * Save Work Order Billing
-         * @description Importes y estado de cobro de una orden terminada (E04-14, versión mínima).
+         * @description Mano de obra de una orden terminada (E04-14).
          */
         put: operations["save_work_order_billing_admin_orders__order_id__billing_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Work Order Charges
+         * @description Otros cargos de la orden (E04-11).
+         */
+        get: operations["list_work_order_charges_admin_orders__order_id__charges_get"];
+        put?: never;
+        /** Add Work Order Charge */
+        post: operations["add_work_order_charge_admin_orders__order_id__charges_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/charges/{charge_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Work Order Charge */
+        put: operations["update_work_order_charge_admin_orders__order_id__charges__charge_id__put"];
+        post?: never;
+        /**
+         * Remove Work Order Charge
+         * @description Saca el cargo (borrado lógico) y lo anota en la línea de tiempo.
+         */
+        delete: operations["remove_work_order_charge_admin_orders__order_id__charges__charge_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register Work Order Payment
+         * @description Cobro de una orden facturada: pasa a Cobrada (E04-10).
+         */
+        post: operations["register_work_order_payment_admin_orders__order_id__payment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/payment/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Void Work Order Payment
+         * @description Anula un cobro registrado por error: vuelve a Facturada (E04-10, criterio 4).
+         */
+        post: operations["void_work_order_payment_admin_orders__order_id__payment_void_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1218,6 +1304,46 @@ export interface paths {
          * @description Aplica todo junto; con algún error no aplica nada (criterio 2).
          */
         post: operations["apply_catalog_admin_catalog_csv__catalog__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Invoice
+         * @description Registra una factura para una o varias órdenes y las pasa a Facturada (E04-09).
+         */
+        post: operations["create_invoice_admin_invoices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/invoices/{invoice_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Invoice
+         * @description Corrige número o fecha; queda en la línea de tiempo de cada orden (criterio 4).
+         */
+        put: operations["update_invoice_admin_invoices__invoice_id__put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1685,41 +1811,33 @@ export interface components {
             /** Offset */
             offset: number;
         };
-        /** BillingAdminOut */
+        /**
+         * BillingAdminOut
+         * @description Importes, factura y cobro de una orden cerrada (E04-09 a E04-11).
+         */
         BillingAdminOut: {
             /** Parts Amount */
             parts_amount: string;
             /** Labor Amount */
             labor_amount: string;
+            /** Charges Amount */
+            charges_amount: string;
             /** Total */
             total: string;
-            status: components["schemas"]["BillingStatus"];
-            /** Invoice Number */
-            invoice_number: string | null;
             /** Updated By Name */
-            updated_by_name: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
+            updated_by_name: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            invoice: components["schemas"]["InvoiceOut"] | null;
+            payment: components["schemas"]["PaymentOut"] | null;
         };
         /**
-         * BillingStatus
-         * @description Estado de cobro de una orden terminada (E04-14, versión mínima).
-         * @enum {string}
-         */
-        BillingStatus: "pending" | "invoiced";
-        /**
          * BillingUpdate
-         * @description Importes y estado de cobro de una orden terminada (E04-14, versión mínima).
+         * @description Mano de obra de una orden terminada, cargada a mano (E04-14, E04-11).
          */
         BillingUpdate: {
             /** Labor Amount */
             labor_amount: number | string;
-            status: components["schemas"]["BillingStatus"];
-            /** Invoice Number */
-            invoice_number?: string | null;
         };
         /**
          * CancelReason
@@ -1748,6 +1866,35 @@ export interface components {
             reason: components["schemas"]["CancelReason"];
             /** Reason Text */
             reason_text?: string | null;
+        };
+        /** ChargeAdminOut */
+        ChargeAdminOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Description */
+            description: string;
+            /** Amount */
+            amount: string;
+            /** Created By Name */
+            created_by_name: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ChargeWrite
+         * @description Otro cargo de la orden, además de la mano de obra (E04-11).
+         */
+        ChargeWrite: {
+            /** Description */
+            description: string;
+            /** Amount */
+            amount: number | string;
         };
         /**
          * CheckAnswerIn
@@ -2757,6 +2904,53 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * InvoiceCreate
+         * @description Una factura para una o varias órdenes terminadas y aprobadas (E04-09).
+         */
+        InvoiceCreate: {
+            /** Number */
+            number: string;
+            /**
+             * Issued On
+             * Format: date
+             */
+            issued_on: string;
+            /** Order Ids */
+            order_ids: string[];
+        };
+        /** InvoiceOut */
+        InvoiceOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: string;
+            /**
+             * Issued On
+             * Format: date
+             */
+            issued_on: string;
+            /** Created By Name */
+            created_by_name: string;
+            /** Order Numbers */
+            order_numbers: number[];
+        };
+        /**
+         * InvoiceUpdate
+         * @description Corrección del número o la fecha de una factura (E04-09, criterio 4).
+         */
+        InvoiceUpdate: {
+            /** Number */
+            number: string;
+            /**
+             * Issued On
+             * Format: date
+             */
+            issued_on: string;
+        };
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -3038,6 +3232,11 @@ export interface components {
             cancellation: components["schemas"]["CancellationAdminOut"] | null;
             completed: components["schemas"]["CompletedOut"] | null;
             billing?: components["schemas"]["BillingAdminOut"] | null;
+            /**
+             * Billing Overdue
+             * @default false
+             */
+            billing_overdue: boolean;
             equipment: components["schemas"]["OrderEquipmentOut"] | null;
             maintenance?: components["schemas"]["OrderMaintenanceOut"] | null;
         };
@@ -3212,6 +3411,42 @@ export interface components {
             /** Temporary Password */
             temporary_password: string;
         };
+        /** PaymentCreate */
+        PaymentCreate: {
+            /**
+             * Paid On
+             * Format: date
+             */
+            paid_on: string;
+            method: components["schemas"]["PaymentMethod"];
+        };
+        /**
+         * PaymentMethod
+         * @description Cómo pagó el cliente una orden facturada (E04-10, Gonza 2026-11-10).
+         * @enum {string}
+         */
+        PaymentMethod: "cash" | "transfer" | "check" | "other";
+        /** PaymentOut */
+        PaymentOut: {
+            /**
+             * Paid On
+             * Format: date
+             */
+            paid_on: string;
+            method: components["schemas"]["PaymentMethod"];
+            /** Created By Name */
+            created_by_name: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** PaymentVoid */
+        PaymentVoid: {
+            /** Reason */
+            reason: string;
+        };
         /** PlanClientOut */
         PlanClientOut: {
             /**
@@ -3310,6 +3545,17 @@ export interface components {
              */
             token_type: string;
             user: components["schemas"]["UserOut"];
+        };
+        /** RelatedOrderOut */
+        RelatedOrderOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            status: components["schemas"]["OrderStatus"];
         };
         /** RepairAdminOut */
         RepairAdminOut: {
@@ -3509,8 +3755,7 @@ export interface components {
         TaxCondition: "final_consumer" | "registered_taxpayer" | "monotributo";
         /**
          * TimelineEntryOut
-         * @description Un paso de la línea de tiempo (E04-06). event_type es el del evento de la orden o
-         *     "billing_invoiced", que se arma con el cobro de E04-14 (no deja evento propio).
+         * @description Un paso de la línea de tiempo (E04-06): event_type es el del evento de la orden.
          */
         TimelineEntryOut: {
             /**
@@ -3715,6 +3960,8 @@ export interface components {
             equipment_id?: string | null;
             /** @default on_site */
             kind: components["schemas"]["OrderKind"];
+            /** Source Order Id */
+            source_order_id?: string | null;
         };
         /**
          * WorkOrderDetailAdminOut
@@ -3754,6 +4001,12 @@ export interface components {
             cancellation: components["schemas"]["CancellationAdminOut"] | null;
             /** Has Closure */
             has_closure: boolean;
+            source_order?: components["schemas"]["RelatedOrderOut"] | null;
+            /**
+             * Repair Orders
+             * @default []
+             */
+            repair_orders: components["schemas"]["RelatedOrderOut"][];
             /** Timeline */
             timeline: components["schemas"]["TimelineEntryOut"][];
         };
@@ -5863,8 +6116,12 @@ export interface operations {
     list_work_orders_admin_orders_get: {
         parameters: {
             query: {
-                status: "pending" | "assigned" | "in_progress" | "done" | "cancelled";
-                billing?: components["schemas"]["BillingStatus"] | null;
+                status: "pending" | "assigned" | "in_progress" | "done" | "invoiced" | "paid" | "cancelled";
+                crew_id?: string | null;
+                client_id?: string | null;
+                work_type_id?: string | null;
+                created_from?: string | null;
+                created_to?: string | null;
                 limit?: number;
                 offset?: number;
             };
@@ -6025,6 +6282,37 @@ export interface operations {
             };
         };
     };
+    get_work_order_billing_admin_orders__order_id__billing_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     save_work_order_billing_admin_orders__order_id__billing_put: {
         parameters: {
             query?: never;
@@ -6037,6 +6325,210 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BillingUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_work_order_charges_admin_orders__order_id__charges_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_work_order_charge_admin_orders__order_id__charges_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChargeWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_work_order_charge_admin_orders__order_id__charges__charge_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+                charge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChargeWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_work_order_charge_admin_orders__order_id__charges__charge_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+                charge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_work_order_payment_admin_orders__order_id__payment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    void_work_order_payment_admin_orders__order_id__payment_void_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentVoid"];
             };
         };
         responses: {
@@ -6648,6 +7140,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CsvPreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_invoice_admin_invoices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_invoice_admin_invoices__invoice_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
                 };
             };
             /** @description Validation Error */

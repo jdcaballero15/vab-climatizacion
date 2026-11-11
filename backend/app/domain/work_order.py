@@ -4,7 +4,9 @@ Reglas puras: no conoce la base ni HTTP. Que el técnico sea el asignado lo cont
 cada caso de uso, no esta tabla.
 """
 
+import uuid
 from dataclasses import dataclass
+from datetime import date
 from enum import StrEnum
 
 from app.domain.user import UserRole
@@ -25,6 +27,17 @@ class OrderStatus(StrEnum):
 CREW_OPEN_STATUSES = frozenset({OrderStatus.assigned, OrderStatus.in_progress})
 # Órdenes que todavía no se cerraron ni se cancelaron.
 OPEN_STATUSES = frozenset({OrderStatus.pending, *CREW_OPEN_STATUSES})
+
+
+@dataclass(frozen=True)
+class OrderFilters:
+    """Filtros del panel de órdenes (E04-05, criterio 2)."""
+
+    crew_id: uuid.UUID | None = None
+    client_id: uuid.UUID | None = None
+    work_type_id: uuid.UUID | None = None
+    created_from: date | None = None
+    created_to: date | None = None
 
 
 class OrderKind(StrEnum):
@@ -131,11 +144,21 @@ class SignaturePurpose(StrEnum):
     delivery = "delivery"
 
 
-class BillingStatus(StrEnum):
-    """Estado de cobro de una orden terminada (E04-14, versión mínima)."""
+class PaymentMethod(StrEnum):
+    """Cómo pagó el cliente una orden facturada (E04-10, Gonza 2026-11-10)."""
 
-    pending = "pending"
-    invoiced = "invoiced"
+    cash = "cash"
+    transfer = "transfer"
+    check = "check"
+    other = "other"
+
+
+PAYMENT_METHOD_LABELS = {
+    PaymentMethod.cash: "Efectivo",
+    PaymentMethod.transfer: "Transferencia",
+    PaymentMethod.check: "Cheque",
+    PaymentMethod.other: "Otro",
+}
 
 
 class CancelReason(StrEnum):
@@ -169,6 +192,12 @@ class WorkOrderEventType(StrEnum):
     equipment_changed = "equipment_changed"
     # Administración agregó, corrigió, sacó o pasó a la lista un material (E05-05).
     materials_changed = "materials_changed"
+    # Administración corrigió el número o la fecha de la factura (E04-09, criterio 4).
+    invoice_corrected = "invoice_corrected"
+    # Administración agregó, corrigió o sacó un cargo de la orden (E04-11).
+    charges_changed = "charges_changed"
+    # Se abrió una orden de reparación a partir de esta (E04-13).
+    repair_order_opened = "repair_order_opened"
 
 
 # Hechos que se registran en la línea de tiempo sin cambiar el estado (criterio 7).
@@ -179,6 +208,9 @@ STATUSLESS_EVENT_TYPES = frozenset(
         WorkOrderEventType.converted_to_workshop,
         WorkOrderEventType.equipment_changed,
         WorkOrderEventType.materials_changed,
+        WorkOrderEventType.invoice_corrected,
+        WorkOrderEventType.charges_changed,
+        WorkOrderEventType.repair_order_opened,
     }
 )
 
@@ -196,6 +228,8 @@ class OrderAction(StrEnum):
     return_to_technician = "return_to_technician"
     invoice = "invoice"
     collect = "collect"
+    # Cobro registrado por error: vuelve a Facturada (E04-10, criterio 4).
+    void_payment = "void_payment"
     cancel = "cancel"
 
 
@@ -235,6 +269,9 @@ TRANSITIONS: tuple[Transition, ...] = (
     ),
     Transition(_A.invoice, _S.done, _S.invoiced, _ADMIN, _E.status_change),
     Transition(_A.collect, _S.invoiced, _S.paid, _ADMIN, _E.status_change),
+    Transition(
+        _A.void_payment, _S.paid, _S.invoiced, _ADMIN, _E.status_change, requires_reason=True
+    ),
     *(
         Transition(_A.cancel, origin, _S.cancelled, _ADMIN, _E.status_change, requires_reason=True)
         for origin in (_S.pending, _S.assigned, _S.in_progress)
@@ -264,6 +301,7 @@ ACTION_LABELS = {
     _A.return_to_technician: "devolver al técnico",
     _A.invoice: "facturar",
     _A.collect: "cobrar",
+    _A.void_payment: "anular el cobro de",
     _A.cancel: "cancelar",
 }
 

@@ -21,7 +21,7 @@ assumes: [D-005]
 
 ## Lo acordado
 
-Decisión de Gonza (2026-11-03): **una semana antes de cada visita** se genera la orden, **Pendiente**, y la oficina la asigna o cancela como cualquier otra. **Sin aprobación en bloque** (E07-05 se descarta y `requires_approval` queda sin uso). Al asignar, viene elegida la escuadrilla del plan y el día de la visita.
+Decisión de Gonza (2026-11-03): **una semana antes de cada visita** se genera la orden, **Pendiente**, y la oficina la asigna o cancela como cualquier otra. **Sin aprobación en bloque** (E99-10 se descarta y `requires_approval` queda sin uso). Al asignar, viene elegida la escuadrilla del plan y el día de la visita.
 
 ## Criterios de aceptación
 

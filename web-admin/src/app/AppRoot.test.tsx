@@ -174,19 +174,21 @@ describe("AppRoot", () => {
     expect(currentPath()).toBe("/ordenes");
   });
 
-  it("dirección solo ve Usuarios, y una sección de administración la devuelve ahí", async () => {
+  it("dirección ve Órdenes (en lectura) y Usuarios; una sección de administración la devuelve al inicio", async () => {
     stubApi("owner");
     renderApp("/clientes");
 
     await iniciarSesion();
 
-    expect(await screen.findByRole("heading", { name: "Usuarios" })).toBeInTheDocument();
-    expect(currentPath()).toBe("/usuarios");
+    expect(await screen.findByRole("heading", { name: "Órdenes" })).toBeInTheDocument();
+    expect(currentPath()).toBe("/ordenes");
     expect(screen.queryByRole("heading", { name: "Clientes" })).not.toBeInTheDocument();
+    // E04-05, criterio 5: en lectura, sin alta de órdenes.
+    expect(screen.queryByRole("button", { name: "Nueva orden" })).not.toBeInTheDocument();
     const links = within(menu())
       .getAllByRole("link")
       .map((link) => link.textContent);
-    expect(links).toEqual(["Usuarios", "Auditoría"]);
+    expect(links).toEqual(["Órdenes", "Usuarios", "Auditoría"]);
   });
 
   it("un rol sin secciones ve el saludo con su rol", async () => {
