@@ -4,7 +4,7 @@ title: "Panel de órdenes por estado"
 epic: E04
 phase: 1
 priority: must
-status: draft
+status: done
 roles: [admin, owner]
 size: M
 areas: [backend, web-admin]
@@ -27,6 +27,13 @@ assumes: []
 4. **Dado:** una orden terminada hace más de un día sin facturar. **Cuando:** abro el panel. **Entonces:** se destaca como "terminada sin facturar".
 5. **Dado:** dirección. **Cuando:** abre el panel. **Entonces:** ve lo mismo en modo lectura.
 
-## Preguntas abiertas
+## Decisiones (Gonza, 2026-11-10)
 
-- ¿Cuántos días sin facturar se consideran demora? Se necesita un umbral configurable.
+- Umbral de demora: 7 días desde el cierre, configurable con `BILLING_OVERDUE_DAYS` (el criterio 4 decía un día).
+- El período filtra por fecha de creación de la orden; la escuadrilla es la de la última asignación.
+
+## Hecho
+
+- `GET /admin/orders` lista los siete estados (suma `invoiced` y `paid`) con filtros `crew_id`, `client_id`, `work_type_id`, `created_from` y `created_to`; cada ítem trae `billing_overdue`. Admin y dirección.
+- Dirección (`owner`) ve Órdenes y el detalle en modo lectura: sin alta, sin acciones, sin editar materiales ni importes. Para los filtros puede leer las listas de escuadrillas, tipos de trabajo y clientes.
+- web-admin: pestañas Facturadas y Cobradas, cifras con los filtros aplicados, barra de filtros y la marca "Terminada sin facturar hace más de una semana".

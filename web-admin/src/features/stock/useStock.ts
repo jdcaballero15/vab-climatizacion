@@ -6,6 +6,7 @@ import type {
   LocationCreate,
   LocationUpdate,
   Movement,
+  MovementPage,
   ReceiptCreate,
   StockLocation,
   StockPart,
@@ -54,13 +55,16 @@ export function useStock(filters: { partId?: string; locationId?: string }) {
   });
 }
 
-export function useMovements(partId: string | null) {
-  return useQuery<Movement[]>({
-    queryKey: [...STOCK_KEY, "movements", partId],
+export const MOVEMENTS_PAGE = 50;
+
+/** Una página del historial del repuesto, el más nuevo primero (E08-07). */
+export function useMovements(partId: string | null, offset: number) {
+  return useQuery<MovementPage>({
+    queryKey: [...STOCK_KEY, "movements", partId, offset],
     enabled: partId !== null,
     queryFn: async () => {
       const { data, error } = await api.GET("/admin/stock/parts/{part_id}/movements", {
-        params: { path: { part_id: partId ?? "" } },
+        params: { path: { part_id: partId ?? "" }, query: { limit: MOVEMENTS_PAGE, offset } },
       });
       if (error || !data) {
         throw new Error("no se pudo cargar el historial");

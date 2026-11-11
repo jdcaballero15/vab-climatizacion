@@ -4,7 +4,7 @@ title: "Registrar mano de obra y otros cargos de una orden"
 epic: E04
 phase: 1
 priority: should
-status: draft
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -26,7 +26,12 @@ assumes: []
 3. **Dado:** el rol técnico. **Cuando:** consulta cualquier orden. **Entonces:** no hay ningún cargo, importe ni total en la respuesta.
 4. **Dado:** un cargo. **Cuando:** se edita o se anula. **Entonces:** queda en la auditoría.
 
-## Preguntas abiertas
+## Decisiones (Gonza, 2026-11-10)
 
-- La propuesta no describe cómo se calcula la mano de obra. Hay precios por lista general, abono mensual y presupuesto por trabajo: se necesita el criterio para cada caso.
-- Está ligado a `D-004` (qué datos necesita administración para facturar).
+- La mano de obra se sigue cargando a mano (sin cálculo por lista, abono o presupuesto).
+- Además hay "otros cargos" con descripción e importe.
+
+## Hecho
+
+- Tabla `work_order_charge` con borrado lógico. `GET/POST /admin/orders/{id}/charges`, `PUT/DELETE /admin/orders/{id}/charges/{charge_id}`; cada alta, corrección o baja deja `charges_changed` con el antes y el después.
+- `GET /admin/orders/{id}/billing` devuelve repuestos, mano de obra, otros cargos, total, factura y cobro. Nada de esto llega al técnico (campos en `FORBIDDEN_TECHNICIAN_FIELDS`).

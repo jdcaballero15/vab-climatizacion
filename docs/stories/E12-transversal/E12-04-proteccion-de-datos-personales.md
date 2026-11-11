@@ -26,3 +26,7 @@ assumes: []
 3. **Dado:** la política de retención definida en `D-008`. **Cuando:** se implementa. **Entonces:** hay un procedimiento para anonimizar o eliminar datos vencidos.
 4. **Dado:** los comprobantes e informes. **Cuando:** se generan. **Entonces:** incluyen el aviso legal definido en `D-008`.
 5. **Dado:** los logs y la auditoría. **Cuando:** se revisan. **Entonces:** no contienen DNI ni firmas.
+
+## Hecho
+
+- Lo que no depende de D-008 ya se cumple: el DNI no se pide (retiro y devolución sin DNI, 2026-11-03), firmas y fotos solo con URLs firmadas de 5 minutos (E00-09), y los logs y la auditoría no guardan DNI ni firmas (E12-01, E12-03). Falta la política de retención y el aviso legal: esperan D-008.

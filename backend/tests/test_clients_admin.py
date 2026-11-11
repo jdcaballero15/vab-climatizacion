@@ -476,7 +476,6 @@ async def test_tecnico_y_direccion_reciben_403(schema: None, role: UserRole) -> 
     base = f"{URL}/{cliente.id}"
     async with _client() as client:
         respuestas = [
-            await client.get(URL, headers=_auth(usuario)),
             await client.post(URL, json={"name": "X"}, headers=_auth(usuario)),
             await client.get(f"{URL}/similar", params={"name": "X"}, headers=_auth(usuario)),
             await client.get(base, headers=_auth(usuario)),
@@ -486,3 +485,15 @@ async def test_tecnico_y_direccion_reciben_403(schema: None, role: UserRole) -> 
         ]
 
     assert [r.status_code for r in respuestas] == [403] * len(respuestas)
+
+
+# Dirección ve la lista para filtrar el panel de órdenes (E04-05); el técnico, no.
+@pytest.mark.parametrize(("role", "esperado"), [(UserRole.technician, 403), (UserRole.owner, 200)])
+async def test_lista_de_clientes_para_direccion(
+    schema: None, role: UserRole, esperado: int
+) -> None:
+    usuario = make_user(email=f"{role.value}@ot-demo.com", role=role)
+    await _seed([usuario])
+    async with _client() as client:
+        response = await client.get(URL, headers=_auth(usuario))
+    assert response.status_code == esperado

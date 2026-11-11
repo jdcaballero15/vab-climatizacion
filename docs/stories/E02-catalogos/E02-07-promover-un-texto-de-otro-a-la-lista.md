@@ -4,7 +4,7 @@ title: "Promover un texto de \"Otro\" a la lista"
 epic: E02
 phase: 1
 priority: should
-status: draft
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -29,3 +29,9 @@ assumes: []
 
 - La propuesta al cliente dice: "lo que se repite se suma a la lista".
 - Para **materiales** ya se hizo una versión por orden con E05-05: en la orden, administración toca "Pasar a la lista" en una línea "Otro", se crea el material y esa línea pasa a referenciarlo. Falta la pantalla de textos repetidos (para fallas, reparaciones y materiales).
+
+## Hecho
+
+- `GET /admin/other-texts?kind=failure|repair|part`: los textos de "Otro" agrupados sin mayúsculas ni espacios de más, con sus repeticiones, el más repetido primero.
+- `POST /admin/other-texts/promote`: crea el valor (una reparación nueva pide su falla) o usa uno existente (`target_id`), y las órdenes con ese texto pasan a referenciarlo. `POST /admin/other-texts/dismiss`: deja de mostrarse (`dismissed_other_text`); la orden conserva el texto.
+- web-admin: "Textos de «Otro»" en Catálogos.

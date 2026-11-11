@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -26,6 +27,8 @@ class UserAdminOut(BaseModel):
     role: UserRole
     is_active: bool
     must_change_password: bool
+    # Bloqueada por intentos fallidos (E01-06): hasta cuándo; administración la desbloquea.
+    locked_until: datetime | None = None
 
 
 class PasswordResetOut(BaseModel):

@@ -4,7 +4,7 @@ title: "Pasar un equipo a otro cliente"
 epic: E03
 phase: 2
 priority: should
-status: draft
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -32,10 +32,17 @@ assumes: [D-002]
 - Hoy E03-03 solo permite mudar un equipo entre domicilios del mismo cliente.
 - Respondido por Gonza (2026-10-28): código nuevo, pero tiene que quedar registro del anterior. Propuesta: tabla de traslados (`equipment_transfer`: equipo, cliente y código de origen y destino, quién y cuándo), sin borrar nada.
 
-## Preguntas abiertas
-
-- Propuesta a confirmar: el cliente nuevo no ve en sus informes los trabajos anteriores al traslado (eran de otro cliente); la administración sí los ve en la ficha del equipo.
-
 ## Fuera de alcance
 
 - Unificar dos clientes: E03-08.
+
+## Decisiones (Gonza, 2026-11-10)
+
+- Confirmado: el cliente nuevo no ve en sus informes los trabajos anteriores al traslado; la oficina sí, en la ficha del equipo.
+
+## Hecho
+
+- `POST /admin/equipment/{id}/transfer` con el domicilio de destino: código nuevo con el número del cliente nuevo y fila en `equipment_transfer` (cliente, domicilio y código de origen y destino, quién y cuándo). Un domicilio del mismo cliente o inactivo da 422.
+- La búsqueda (E03-06) encuentra el equipo por su código anterior.
+- Las órdenes anteriores quedan en el cliente de origen; la ficha las marca "anterior al traslado".
+- web-admin: "Pasar a otro cliente" en cada equipo.

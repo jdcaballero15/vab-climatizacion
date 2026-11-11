@@ -221,7 +221,7 @@ async def test_el_cierre_descuenta_de_la_camioneta(mundo: Mundo) -> None:
     primero = await _cerrar(mundo.celular, orden.id, cierre)
     reenvio = await _cerrar(mundo.celular, orden.id, cierre)
     stock = (await _call(admin, "GET", URL)).json()
-    historial = (await _call(admin, "GET", f"{URL}/parts/{gas.id}/movements")).json()
+    historial = (await _call(admin, "GET", f"{URL}/parts/{gas.id}/movements")).json()["items"]
 
     assert primero.status_code == 201, primero.text
     assert reenvio.status_code == 200
@@ -312,3 +312,17 @@ async def test_cantidades_con_decimales_no_usan_float(mundo: Mundo) -> None:
     stock = (await _call(admin, "GET", URL)).json()
 
     assert Decimal(stock[0]["total"]) == Decimal("0.3")
+
+
+# E08-07 y E12-05: el historial va paginado, el más nuevo primero.
+async def test_historial_paginado(mundo: Mundo) -> None:
+    admin = await _admin()
+    gas, _, _ = await _materiales(mundo)
+    deposito = await _ubicacion(admin, "Depósito central")
+    for cantidad in ("1", "2", "3"):
+        await _ingreso(admin, gas, deposito, cantidad)
+
+    pagina = (await _call(admin, "GET", f"{URL}/parts/{gas.id}/movements?limit=2&offset=0")).json()
+
+    assert pagina["total"] == 3
+    assert [m["quantity"] for m in pagina["items"]] == ["3.000", "2.000"]

@@ -4,7 +4,7 @@ title: "Abrir una orden de reparación desde un cierre"
 epic: E04
 phase: 2
 priority: should
-status: draft
+status: done
 roles: [admin]
 size: S
 areas: [backend, web-admin]
@@ -33,3 +33,13 @@ assumes: []
 ## Fuera de alcance
 
 - Que la escuadrilla abra la orden desde el celular.
+
+## Decisiones (Gonza, 2026-11-10)
+
+- Nada nuevo: se implementó como estaba decidido el 2026-10-28.
+
+## Hecho
+
+- `WorkOrderCreate.source_order_id` (opcional): la de origen tiene que estar cerrada (Terminada, Facturada o Cobrada) y ser del mismo cliente. Queda `work_order.source_order_id` y un evento `repair_order_opened` en la de origen.
+- El detalle muestra "Órdenes relacionadas" en las dos.
+- web-admin: "Abrir orden de reparación" en el menú de una Terminada; trae cliente, domicilio, equipo y la observación del cierre.

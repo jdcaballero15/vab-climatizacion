@@ -334,9 +334,18 @@ async def stock_by_part(
     return list(parts.values())
 
 
-async def part_history(session: AsyncSession, part_id: uuid.UUID) -> list[MovementOut]:
+async def part_history(
+    session: AsyncSession, part_id: uuid.UUID, *, limit: int, offset: int
+) -> tuple[list[MovementOut], int]:
+    """Una página del historial del repuesto, el más nuevo primero (E08-07, E12-05)."""
     await _part(session, part_id)
-    return await _movements(session, StockMovement.part_id == part_id)
+    total = await session.scalar(
+        select(func.count()).where(
+            StockMovement.part_id == part_id, StockMovement.deleted_at.is_(None)
+        )
+    )
+    items = await _movements(session, StockMovement.part_id == part_id, limit=limit, offset=offset)
+    return items, int(total or 0)
 
 
 async def truck_for_user(session: AsyncSession, user: User) -> TruckStockTechnicianOut:
@@ -363,7 +372,12 @@ async def truck_for_user(session: AsyncSession, user: User) -> TruckStockTechnic
     )
 
 
-async def _movements(session: AsyncSession, *where: ColumnElement[bool]) -> list[MovementOut]:
+async def _movements(
+    session: AsyncSession,
+    *where: ColumnElement[bool],
+    limit: int | None = None,
+    offset: int = 0,
+) -> list[MovementOut]:
     origin = aliased(StockLocation)
     target = aliased(StockLocation)
     stmt = (
@@ -373,7 +387,13 @@ async def _movements(session: AsyncSession, *where: ColumnElement[bool]) -> list
         .outerjoin(WorkOrder, WorkOrder.id == StockMovement.work_order_id)
         .join(User, User.id == StockMovement.created_by)
         .where(StockMovement.deleted_at.is_(None), *where)
-        .order_by(StockMovement.occurred_at.desc(), StockMovement.created_at.desc())
+        .order_by(
+            StockMovement.occurred_at.desc(),
+            StockMovement.created_at.desc(),
+            StockMovement.id,
+        )
+        .limit(limit)
+        .offset(offset)
     )
     return [
         MovementOut(

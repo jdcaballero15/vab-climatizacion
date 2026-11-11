@@ -1,21 +1,23 @@
 ---
-id: E07-05
+id: E99-10
 title: "Aprobar en bloque las órdenes de mantenimiento generadas"
-epic: E07
+epic: E99
 phase: 1
-priority: must
-status: draft
+priority: could
+status: icebox
 roles: [admin]
 size: M
 areas: [backend, web-admin]
-depends_on: [E07-04, E04-07]
+depends_on: []
 blocked_by: []
 assumes: [D-005]
 ---
 
-# E07-05 Aprobar en bloque las órdenes de mantenimiento generadas
+# E99-10 Aprobar en bloque las órdenes de mantenimiento generadas
 
 > **Descartada el 2026-11-03** (decisión de Gonza): las órdenes de mantenimiento nacen Pendientes y se asignan como cualquier otra (E07-04). Queda en borrador por si el cliente la pide.
+
+> Pasó al icebox el 2026-11-10: Gonza descartó las mediciones y la aprobación en bloque del mantenimiento (decisión del 2026-11-03). Antes era E07.
 
 ## Historia
 

@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import TimestampedBase
@@ -26,3 +27,26 @@ class Equipment(TimestampedBase):
     model: Mapped[str | None] = mapped_column(String(255), nullable=True)
     serial_number: Mapped[str | None] = mapped_column(String(255), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class EquipmentTransfer(TimestampedBase):
+    """Traslado de un equipo a otro cliente (E03-09): cambia de código y no se borra nada.
+
+    Las órdenes anteriores siguen siendo del cliente de origen.
+    """
+
+    __tablename__ = "equipment_transfer"
+
+    equipment_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("equipment.id"), nullable=False, index=True
+    )
+    from_client_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("client.id"), nullable=False)
+    from_site_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("client_site.id"), nullable=False)
+    from_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    to_client_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("client.id"), nullable=False)
+    to_site_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("client_site.id"), nullable=False)
+    to_code: Mapped[str] = mapped_column(String(50), nullable=False)
+    transferred_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_user.id"), nullable=False)
+    transferred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )

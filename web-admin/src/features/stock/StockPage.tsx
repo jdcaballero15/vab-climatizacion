@@ -6,7 +6,14 @@ import { useCrews } from "../crews/useCrews";
 import { formatDateTime } from "../orders/labels";
 import { useParts } from "../parts/useParts";
 import type { MovementKind, StockLocation } from "./types";
-import { useLocations, useMovement, useMovements, useSaveLocation, useStock } from "./useStock";
+import {
+  MOVEMENTS_PAGE,
+  useLocations,
+  useMovement,
+  useMovements,
+  useSaveLocation,
+  useStock,
+} from "./useStock";
 
 const KIND_LABELS: Record<MovementKind, string> = {
   receipt: "Ingreso",
@@ -371,7 +378,10 @@ function MovementForm({ kind, onDone }: { kind: FormKind; onDone: () => void }) 
 
 /** Todos los movimientos del repuesto, el más nuevo primero (E08-07). */
 function History({ partId }: { partId: string }) {
-  const movements = useMovements(partId);
+  const [offset, setOffset] = useState(0);
+  const page = useMovements(partId, offset);
+  const movements = { ...page, data: page.data?.items };
+  const total = page.data?.total ?? 0;
   return (
     <section className="clients__contacts" aria-label="Historial del repuesto">
       <h4>Historial</h4>
@@ -396,6 +406,27 @@ function History({ partId }: { partId: string }) {
           </li>
         ))}
       </ul>
+      {total > MOVEMENTS_PAGE && (
+        <nav className="clients__pager" aria-label="Páginas del historial">
+          <button
+            type="button"
+            onClick={() => setOffset(Math.max(0, offset - MOVEMENTS_PAGE))}
+            disabled={offset === 0}
+          >
+            Más nuevos
+          </button>
+          <span>
+            {offset + 1} a {Math.min(offset + MOVEMENTS_PAGE, total)} de {total}
+          </span>
+          <button
+            type="button"
+            onClick={() => setOffset(offset + MOVEMENTS_PAGE)}
+            disabled={offset + MOVEMENTS_PAGE >= total}
+          >
+            Más viejos
+          </button>
+        </nav>
+      )}
     </section>
   );
 }

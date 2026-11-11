@@ -304,7 +304,6 @@ async def test_tecnico_y_direccion_reciben_403(admin: User, role: UserRole) -> N
         tarea = await _crear_tarea(client, admin, tipo["id"], "Traslado")
         tarea_url = f"{tipo_url}/tasks/{tarea.json()['id']}"
         respuestas = [
-            await client.get("/admin/work-types", headers=_auth(otro)),
             await client.post("/admin/work-types", json={"name": "X"}, headers=_auth(otro)),
             await client.get(tipo_url, headers=_auth(otro)),
             await client.patch(tipo_url, json={"is_active": False}, headers=_auth(otro)),
@@ -360,3 +359,13 @@ async def test_otros_roles_no_cambian_la_marca(admin: User, role: UserRole) -> N
         )
 
     assert response.status_code == 403
+
+
+# Dirección ve la lista para filtrar el panel de órdenes (E04-05); el técnico, no.
+@pytest.mark.parametrize(("role", "esperado"), [(UserRole.technician, 403), (UserRole.owner, 200)])
+async def test_lista_de_tipos_para_direccion(admin: User, role: UserRole, esperado: int) -> None:
+    otro = make_user(email="otro@ot-demo.com", role=role)
+    await _seed([otro])
+    async with _client() as client:
+        response = await client.get("/admin/work-types", headers=_auth(otro))
+    assert response.status_code == esperado

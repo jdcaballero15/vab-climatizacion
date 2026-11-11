@@ -9,3 +9,4 @@ export type ReceiptCreate = components["schemas"]["ReceiptCreate"];
 export type TransferCreate = components["schemas"]["TransferCreate"];
 export type AdjustmentCreate = components["schemas"]["AdjustmentCreate"];
 export type MovementKind = Movement["kind"];
+export type MovementPage = components["schemas"]["MovementPage"];

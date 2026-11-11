@@ -114,6 +114,13 @@ class MovementOut(BaseModel):
     occurred_at: datetime
 
 
+class MovementPage(BaseModel):
+    items: list[MovementOut]
+    total: int
+    limit: int
+    offset: int
+
+
 class TruckStockTechnicianOut(BaseModel):
     """Lo que hay en la camioneta de la escuadrilla, sin precios (E08-04, criterio 4)."""
 

@@ -30,9 +30,19 @@ class ClientRepository(BaseRepository[Client]):
         return result.scalar_one_or_none()
 
     async def list_page(
-        self, *, segment: ClientSegment | None, search: str | None, limit: int, offset: int
+        self,
+        *,
+        segment: ClientSegment | None,
+        search: str | None,
+        deleted: bool = False,
+        limit: int,
+        offset: int,
     ) -> tuple[Sequence[Client], int]:
-        stmt = self._select()
+        stmt = (
+            self._select(include_deleted=True).where(self.model.deleted_at.is_not(None))
+            if deleted
+            else self._select()
+        )
         if segment is not None:
             stmt = stmt.where(self.model.segment == segment)
         if search:

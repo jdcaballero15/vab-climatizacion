@@ -57,6 +57,152 @@
         }
       }
     },
+    "/admin/audit": {
+      "get": {
+        "tags": [
+          "auditoría"
+        ],
+        "summary": "List Audit",
+        "description": "Cambios auditados, el más nuevo primero, filtrables por entidad, usuario y fecha.",
+        "operationId": "list_audit_admin_audit_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entity"
+            }
+          },
+          {
+            "name": "actor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor Id"
+            }
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entity Id"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditLogPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/login": {
       "post": {
         "tags": [
@@ -335,6 +481,55 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/admin/users/{user_id}/unlock": {
+      "post": {
+        "tags": [
+          "usuarios"
+        ],
+        "summary": "Unlock User",
+        "description": "Levanta el bloqueo por intentos fallidos (E01-06, criterio 3).",
+        "operationId": "unlock_user_admin_users__user_id__unlock_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/admin/users/{user_id}": {
@@ -1826,6 +2021,16 @@
             }
           },
           {
+            "name": "deleted",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Deleted"
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -1992,6 +2197,7 @@
           "clientes"
         ],
         "summary": "Get Client",
+        "description": "También los dados de baja: conservan su ficha y su historial (E03-07).",
         "operationId": "get_client_admin_clients__client_id__get",
         "security": [
           {
@@ -2073,6 +2279,274 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClientAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/audit": {
+      "get": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Get Client Audit",
+        "description": "Bajas, restauraciones y unificaciones del cliente (E03-07, criterio 3).",
+        "operationId": "get_client_audit_admin_clients__client_id__audit_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditEntryOut"
+                  },
+                  "title": "Response Get Client Audit Admin Clients  Client Id  Audit Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/deactivation": {
+      "post": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Deactivate Client",
+        "description": "Baja lógica (E03-07): no con órdenes abiertas.",
+        "operationId": "deactivate_client_admin_clients__client_id__deactivation_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/restoration": {
+      "post": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Restore Client",
+        "operationId": "restore_client_admin_clients__client_id__restoration_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/merge-preview": {
+      "get": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Preview Client Merge",
+        "description": "Qué pasaría al unificar este cliente en otro, sin cambiar nada (E03-08).",
+        "operationId": "preview_client_merge_admin_clients__client_id__merge_preview_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          },
+          {
+            "name": "into_client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Into Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientMergePreviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/merge": {
+      "post": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Merge Client",
+        "description": "Unifica este cliente (el que se va) en otro (el que queda), E03-08.",
+        "operationId": "merge_client_admin_clients__client_id__merge_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientMergeCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientMergePreviewOut"
                 }
               }
             }
@@ -2657,6 +3131,16 @@
               ],
               "title": "Site Id"
             }
+          },
+          {
+            "name": "deleted",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Deleted"
+            }
           }
         ],
         "responses": {
@@ -2847,6 +3331,210 @@
         }
       }
     },
+    "/admin/equipment/{equipment_id}/file": {
+      "get": {
+        "tags": [
+          "equipos"
+        ],
+        "summary": "Get Equipment File",
+        "description": "Ficha con traslados y trabajos, también de un equipo dado de baja (E03-05).",
+        "operationId": "get_equipment_file_admin_equipment__equipment_id__file_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentFileOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/equipment/{equipment_id}/deactivation": {
+      "post": {
+        "tags": [
+          "equipos"
+        ],
+        "summary": "Deactivate Equipment",
+        "operationId": "deactivate_equipment_admin_equipment__equipment_id__deactivation_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/equipment/{equipment_id}/restoration": {
+      "post": {
+        "tags": [
+          "equipos"
+        ],
+        "summary": "Restore Equipment",
+        "operationId": "restore_equipment_admin_equipment__equipment_id__restoration_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/equipment/{equipment_id}/transfer": {
+      "post": {
+        "tags": [
+          "equipos"
+        ],
+        "summary": "Transfer Equipment",
+        "description": "Pasa el equipo a un domicilio de otro cliente, con código nuevo (E03-09).",
+        "operationId": "transfer_equipment_admin_equipment__equipment_id__transfer_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentTransferCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/orders": {
       "post": {
         "tags": [
@@ -2914,6 +3602,8 @@
                 "assigned",
                 "in_progress",
                 "done",
+                "invoiced",
+                "paid",
                 "cancelled"
               ],
               "type": "string",
@@ -2921,19 +3611,88 @@
             }
           },
           {
-            "name": "billing",
+            "name": "crew_id",
             "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "$ref": "#/components/schemas/BillingStatus"
+                  "type": "string",
+                  "format": "uuid"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "title": "Billing"
+              "title": "Crew Id"
+            }
+          },
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Id"
+            }
+          },
+          {
+            "name": "work_type_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Work Type Id"
+            }
+          },
+          {
+            "name": "created_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created From"
+            }
+          },
+          {
+            "name": "created_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created To"
             }
           },
           {
@@ -3154,12 +3913,59 @@
       }
     },
     "/admin/orders/{order_id}/billing": {
+      "get": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Get Work Order Billing",
+        "description": "Importes, factura y cobro de la orden (E04-09 a E04-11).",
+        "operationId": "get_work_order_billing_admin_orders__order_id__billing_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "tags": [
           "órdenes"
         ],
         "summary": "Save Work Order Billing",
-        "description": "Importes y estado de cobro de una orden terminada (E04-14, versión mínima).",
+        "description": "Mano de obra de una orden terminada (E04-14).",
         "operationId": "save_work_order_billing_admin_orders__order_id__billing_put",
         "security": [
           {
@@ -3184,6 +3990,370 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/BillingUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/charges": {
+      "get": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "List Work Order Charges",
+        "description": "Otros cargos de la orden (E04-11).",
+        "operationId": "list_work_order_charges_admin_orders__order_id__charges_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChargeAdminOut"
+                  },
+                  "title": "Response List Work Order Charges Admin Orders  Order Id  Charges Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Add Work Order Charge",
+        "operationId": "add_work_order_charge_admin_orders__order_id__charges_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChargeWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChargeAdminOut"
+                  },
+                  "title": "Response Add Work Order Charge Admin Orders  Order Id  Charges Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/charges/{charge_id}": {
+      "put": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Update Work Order Charge",
+        "operationId": "update_work_order_charge_admin_orders__order_id__charges__charge_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "charge_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Charge Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChargeWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChargeAdminOut"
+                  },
+                  "title": "Response Update Work Order Charge Admin Orders  Order Id  Charges  Charge Id  Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Remove Work Order Charge",
+        "description": "Saca el cargo (borrado lógico) y lo anota en la línea de tiempo.",
+        "operationId": "remove_work_order_charge_admin_orders__order_id__charges__charge_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "charge_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Charge Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChargeAdminOut"
+                  },
+                  "title": "Response Remove Work Order Charge Admin Orders  Order Id  Charges  Charge Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/payment": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Register Work Order Payment",
+        "description": "Cobro de una orden facturada: pasa a Cobrada (E04-10).",
+        "operationId": "register_work_order_payment_admin_orders__order_id__payment_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/orders/{order_id}/payment/void": {
+      "post": {
+        "tags": [
+          "órdenes"
+        ],
+        "summary": "Void Work Order Payment",
+        "description": "Anula un cobro registrado por error: vuelve a Facturada (E04-10, criterio 4).",
+        "operationId": "void_work_order_payment_admin_orders__order_id__payment_void_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentVoid"
               }
             }
           }
@@ -3873,6 +5043,436 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OrderMaterialsAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/other-texts": {
+      "get": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "List Other Texts",
+        "description": "Textos de \"Otro\" con sus repeticiones, el más repetido primero (E02-07).",
+        "operationId": "list_other_texts_admin_other_texts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "failure",
+                "repair",
+                "part"
+              ],
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OtherTextOut"
+                  },
+                  "title": "Response List Other Texts Admin Other Texts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/other-texts/promote": {
+      "post": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Promote Other Text",
+        "operationId": "promote_other_text_admin_other_texts_promote_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoteOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/other-texts/dismiss": {
+      "post": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Dismiss Other Text",
+        "description": "Deja de mostrar el texto en la revisión; las órdenes lo conservan (criterio 3).",
+        "operationId": "dismiss_other_text_admin_other_texts_dismiss_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DismissRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/catalog-csv/{catalog}": {
+      "get": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Export Catalog",
+        "description": "El catálogo con las mismas columnas que acepta la importación (E02-08, criterio 3).",
+        "operationId": "export_catalog_admin_catalog_csv__catalog__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "catalog",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "work-types",
+                "equipment-types",
+                "failures",
+                "repairs",
+                "parts"
+              ],
+              "type": "string",
+              "title": "Catalog"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/csv": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/catalog-csv/{catalog}/preview": {
+      "post": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Preview Catalog",
+        "description": "Altas, cambios y errores con su fila, sin aplicar nada (criterio 1).",
+        "operationId": "preview_catalog_admin_catalog_csv__catalog__preview_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "catalog",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "work-types",
+                "equipment-types",
+                "failures",
+                "repairs",
+                "parts"
+              ],
+              "type": "string",
+              "title": "Catalog"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CsvUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsvPreviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/catalog-csv/{catalog}/apply": {
+      "post": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Apply Catalog",
+        "description": "Aplica todo junto; con algún error no aplica nada (criterio 2).",
+        "operationId": "apply_catalog_admin_catalog_csv__catalog__apply_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "catalog",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "work-types",
+                "equipment-types",
+                "failures",
+                "repairs",
+                "parts"
+              ],
+              "type": "string",
+              "title": "Catalog"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CsvUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsvPreviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/invoices": {
+      "post": {
+        "tags": [
+          "facturas"
+        ],
+        "summary": "Create Invoice",
+        "description": "Registra una factura para una o varias órdenes y las pasa a Facturada (E04-09).",
+        "operationId": "create_invoice_admin_invoices_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/invoices/{invoice_id}": {
+      "put": {
+        "tags": [
+          "facturas"
+        ],
+        "summary": "Update Invoice",
+        "description": "Corrige número o fecha; queda en la línea de tiempo de cada orden (criterio 4).",
+        "operationId": "update_invoice_admin_invoices__invoice_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceOut"
                 }
               }
             }
@@ -4956,6 +6556,29 @@
               "format": "uuid",
               "title": "Part Id"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
           }
         ],
         "responses": {
@@ -4964,11 +6587,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MovementOut"
-                  },
-                  "title": "Response Get Part Movements Admin Stock Parts  Part Id  Movements Get"
+                  "$ref": "#/components/schemas/MovementPage"
                 }
               }
             }
@@ -5745,6 +7364,170 @@
         ],
         "title": "AssignmentCreate"
       },
+      "AuditEntryOut": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "actor_name",
+          "occurred_at",
+          "detail"
+        ],
+        "title": "AuditEntryOut",
+        "description": "Una baja, restauración o unificación, con quién y cuándo (E12-02)."
+      },
+      "AuditLogOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "entity": {
+            "type": "string",
+            "title": "Entity"
+          },
+          "entity_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Entity Id"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "changes": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {},
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changes"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "entity",
+          "entity_id",
+          "action",
+          "actor_id",
+          "actor_name",
+          "occurred_at",
+          "changes",
+          "note"
+        ],
+        "title": "AuditLogOut"
+      },
+      "AuditLogPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditLogOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "AuditLogPage"
+      },
       "BillingAdminOut": {
         "properties": {
           "parts_amount": {
@@ -5755,14 +7538,15 @@
             "type": "string",
             "title": "Labor Amount"
           },
+          "charges_amount": {
+            "type": "string",
+            "title": "Charges Amount"
+          },
           "total": {
             "type": "string",
             "title": "Total"
           },
-          "status": {
-            "$ref": "#/components/schemas/BillingStatus"
-          },
-          "invoice_number": {
+          "updated_by_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -5771,38 +7555,54 @@
                 "type": "null"
               }
             ],
-            "title": "Invoice Number"
-          },
-          "updated_by_name": {
-            "type": "string",
             "title": "Updated By Name"
           },
           "updated_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Updated At"
+          },
+          "invoice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvoiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
         "required": [
           "parts_amount",
           "labor_amount",
+          "charges_amount",
           "total",
-          "status",
-          "invoice_number",
           "updated_by_name",
-          "updated_at"
+          "updated_at",
+          "invoice",
+          "payment"
         ],
-        "title": "BillingAdminOut"
-      },
-      "BillingStatus": {
-        "type": "string",
-        "enum": [
-          "pending",
-          "invoiced"
-        ],
-        "title": "BillingStatus",
-        "description": "Estado de cobro de una orden terminada (E04-14, versión mínima)."
+        "title": "BillingAdminOut",
+        "description": "Importes, factura y cobro de una orden cerrada (E04-09 a E04-11)."
       },
       "BillingUpdate": {
         "properties": {
@@ -5817,31 +7617,15 @@
               }
             ],
             "title": "Labor Amount"
-          },
-          "status": {
-            "$ref": "#/components/schemas/BillingStatus"
-          },
-          "invoice_number": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 50
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Invoice Number"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "labor_amount",
-          "status"
+          "labor_amount"
         ],
         "title": "BillingUpdate",
-        "description": "Importes y estado de cobro de una orden terminada (E04-14, versión mínima)."
+        "description": "Mano de obra de una orden terminada, cargada a mano (E04-14, E04-11)."
       },
       "CancelReason": {
         "type": "string",
@@ -5914,6 +7698,70 @@
           "reason"
         ],
         "title": "CancellationCreate"
+      },
+      "ChargeAdminOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          },
+          "created_by_name": {
+            "type": "string",
+            "title": "Created By Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "description",
+          "amount",
+          "created_by_name",
+          "created_at"
+        ],
+        "title": "ChargeAdminOut"
+      },
+      "ChargeWrite": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Description"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "description",
+          "amount"
+        ],
+        "title": "ChargeWrite",
+        "description": "Otro cargo de la orden, además de la mano de obra (E04-11)."
       },
       "CheckAnswerIn": {
         "properties": {
@@ -6105,6 +7953,28 @@
               }
             ],
             "title": "Notes"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "merged_into": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -6172,6 +8042,83 @@
           "name"
         ],
         "title": "ClientCreate"
+      },
+      "ClientMergeCreate": {
+        "properties": {
+          "into_client_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Into Client Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "into_client_id"
+        ],
+        "title": "ClientMergeCreate",
+        "description": "Unificar este cliente (el que se va) en otro (el que queda), E03-08."
+      },
+      "ClientMergePreviewOut": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Id"
+          },
+          "source_name": {
+            "type": "string",
+            "title": "Source Name"
+          },
+          "source_number": {
+            "type": "string",
+            "title": "Source Number"
+          },
+          "target_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Id"
+          },
+          "target_name": {
+            "type": "string",
+            "title": "Target Name"
+          },
+          "target_number": {
+            "type": "string",
+            "title": "Target Number"
+          },
+          "sites": {
+            "type": "integer",
+            "title": "Sites"
+          },
+          "contacts": {
+            "type": "integer",
+            "title": "Contacts"
+          },
+          "equipment": {
+            "type": "integer",
+            "title": "Equipment"
+          },
+          "orders": {
+            "type": "integer",
+            "title": "Orders"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id",
+          "source_name",
+          "source_number",
+          "target_id",
+          "target_name",
+          "target_number",
+          "sites",
+          "contacts",
+          "equipment",
+          "orders"
+        ],
+        "title": "ClientMergePreviewOut",
+        "description": "Lo que pasa del que se va al que queda, para confirmar antes (criterio 4)."
       },
       "ClientOrderOut": {
         "properties": {
@@ -7495,6 +9442,64 @@
         ],
         "title": "CrewUserOut"
       },
+      "CsvPreviewOut": {
+        "properties": {
+          "creates": {
+            "items": {
+              "$ref": "#/components/schemas/RowOut"
+            },
+            "type": "array",
+            "title": "Creates"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/RowOut"
+            },
+            "type": "array",
+            "title": "Changes"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/RowOut"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "unchanged": {
+            "type": "integer",
+            "title": "Unchanged"
+          },
+          "applied": {
+            "type": "boolean",
+            "title": "Applied"
+          }
+        },
+        "type": "object",
+        "required": [
+          "creates",
+          "changes",
+          "errors",
+          "unchanged",
+          "applied"
+        ],
+        "title": "CsvPreviewOut"
+      },
+      "CsvUpload": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 2000000,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "CsvUpload",
+        "description": "El contenido del CSV como texto (lo lee el navegador)."
+      },
       "CurrentAssignmentOut": {
         "properties": {
           "crew_name": {
@@ -7526,6 +9531,32 @@
         ],
         "title": "CurrentAssignmentOut",
         "description": "Escuadrilla y fecha prevista de una orden Asignada o En curso."
+      },
+      "DismissRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "failure",
+              "repair",
+              "part"
+            ],
+            "title": "Kind"
+          },
+          "text_key": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Text Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "text_key"
+        ],
+        "title": "DismissRequest"
       },
       "DoneOrderTechnicianOut": {
         "properties": {
@@ -7692,6 +9723,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
           }
         },
         "type": "object",
@@ -7815,6 +9858,180 @@
           "location_note"
         ],
         "title": "EquipmentCreate"
+      },
+      "EquipmentFileOut": {
+        "properties": {
+          "equipment": {
+            "$ref": "#/components/schemas/EquipmentAdminOut"
+          },
+          "client_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Id"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "client_number": {
+            "type": "string",
+            "title": "Client Number"
+          },
+          "site_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Label"
+          },
+          "site_address": {
+            "type": "string",
+            "title": "Site Address"
+          },
+          "equipment_type_name": {
+            "type": "string",
+            "title": "Equipment Type Name"
+          },
+          "transfers": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentTransferOut"
+            },
+            "type": "array",
+            "title": "Transfers"
+          },
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentHistoryOrderOut"
+            },
+            "type": "array",
+            "title": "Orders"
+          }
+        },
+        "type": "object",
+        "required": [
+          "equipment",
+          "client_id",
+          "client_name",
+          "client_number",
+          "site_label",
+          "site_address",
+          "equipment_type_name",
+          "transfers",
+          "orders"
+        ],
+        "title": "EquipmentFileOut",
+        "description": "Ficha del equipo: datos, traslados y trabajos, el más nuevo primero (E03-05)."
+      },
+      "EquipmentHistoryOrderOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "work_type_name": {
+            "type": "string",
+            "title": "Work Type Name"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "failure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure"
+          },
+          "repair": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repair"
+          },
+          "observation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observation"
+          },
+          "materials": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Materials"
+          },
+          "before_transfer": {
+            "type": "boolean",
+            "title": "Before Transfer"
+          },
+          "imported": {
+            "type": "boolean",
+            "title": "Imported"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "status",
+          "work_type_name",
+          "client_name",
+          "created_at",
+          "closed_at",
+          "failure",
+          "repair",
+          "observation",
+          "materials",
+          "before_transfer",
+          "imported"
+        ],
+        "title": "EquipmentHistoryOrderOut",
+        "description": "Un trabajo del equipo en su ficha (E03-05)."
       },
       "EquipmentSearchOut": {
         "properties": {
@@ -7944,6 +10161,61 @@
           "model"
         ],
         "title": "EquipmentTechnicianOut"
+      },
+      "EquipmentTransferCreate": {
+        "properties": {
+          "client_site_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Site Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "client_site_id"
+        ],
+        "title": "EquipmentTransferCreate",
+        "description": "Pasar el equipo a un domicilio activo de otro cliente (E03-09)."
+      },
+      "EquipmentTransferOut": {
+        "properties": {
+          "from_client_name": {
+            "type": "string",
+            "title": "From Client Name"
+          },
+          "from_code": {
+            "type": "string",
+            "title": "From Code"
+          },
+          "to_client_name": {
+            "type": "string",
+            "title": "To Client Name"
+          },
+          "to_code": {
+            "type": "string",
+            "title": "To Code"
+          },
+          "transferred_by_name": {
+            "type": "string",
+            "title": "Transferred By Name"
+          },
+          "transferred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Transferred At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_client_name",
+          "from_code",
+          "to_client_name",
+          "to_code",
+          "transferred_by_name",
+          "transferred_at"
+        ],
+        "title": "EquipmentTransferOut"
       },
       "EquipmentTypeAdminOut": {
         "properties": {
@@ -8387,6 +10659,99 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "InvoiceCreate": {
+        "properties": {
+          "number": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Number"
+          },
+          "issued_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Issued On"
+          },
+          "order_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Order Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "number",
+          "issued_on",
+          "order_ids"
+        ],
+        "title": "InvoiceCreate",
+        "description": "Una factura para una o varias órdenes terminadas y aprobadas (E04-09)."
+      },
+      "InvoiceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "string",
+            "title": "Number"
+          },
+          "issued_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Issued On"
+          },
+          "created_by_name": {
+            "type": "string",
+            "title": "Created By Name"
+          },
+          "order_numbers": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Order Numbers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "issued_on",
+          "created_by_name",
+          "order_numbers"
+        ],
+        "title": "InvoiceOut"
+      },
+      "InvoiceUpdate": {
+        "properties": {
+          "number": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Number"
+          },
+          "issued_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Issued On"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "number",
+          "issued_on"
+        ],
+        "title": "InvoiceUpdate",
+        "description": "Corrección del número o la fecha de una factura (E04-09, criterio 4)."
       },
       "LocationCreate": {
         "properties": {
@@ -9074,6 +11439,37 @@
         "title": "MovementOut",
         "description": "Un movimiento en el historial del repuesto (E08-07)."
       },
+      "MovementPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MovementOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "MovementPage"
+      },
       "NoSignatureReason": {
         "type": "string",
         "enum": [
@@ -9437,6 +11833,11 @@
               }
             ]
           },
+          "billing_overdue": {
+            "type": "boolean",
+            "title": "Billing Overdue",
+            "default": false
+          },
           "equipment": {
             "anyOf": [
               {
@@ -9693,6 +12094,29 @@
         ],
         "title": "OrderTechnicianOut"
       },
+      "OtherTextOut": {
+        "properties": {
+          "text_key": {
+            "type": "string",
+            "title": "Text Key"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text_key",
+          "text",
+          "count"
+        ],
+        "title": "OtherTextOut"
+      },
       "PartAdminOut": {
         "properties": {
           "id": {
@@ -9927,6 +12351,80 @@
         "title": "PasswordResetOut",
         "description": "La contraseña temporal: solo viaja en esta respuesta (E01-05)."
       },
+      "PaymentCreate": {
+        "properties": {
+          "paid_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Paid On"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "paid_on",
+          "method"
+        ],
+        "title": "PaymentCreate"
+      },
+      "PaymentMethod": {
+        "type": "string",
+        "enum": [
+          "cash",
+          "transfer",
+          "check",
+          "other"
+        ],
+        "title": "PaymentMethod",
+        "description": "Cómo pagó el cliente una orden facturada (E04-10, Gonza 2026-11-10)."
+      },
+      "PaymentOut": {
+        "properties": {
+          "paid_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Paid On"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "created_by_name": {
+            "type": "string",
+            "title": "Created By Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "paid_on",
+          "method",
+          "created_by_name",
+          "created_at"
+        ],
+        "title": "PaymentOut"
+      },
+      "PaymentVoid": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "PaymentVoid"
+      },
       "PlanClientOut": {
         "properties": {
           "id": {
@@ -10046,6 +12544,106 @@
         "title": "PlanOpenOrderOut",
         "description": "La última orden generada que todavía no se cerró ni se canceló."
       },
+      "PromoteOut": {
+        "properties": {
+          "updated": {
+            "type": "integer",
+            "title": "Updated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "updated"
+        ],
+        "title": "PromoteOut"
+      },
+      "PromoteRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "failure",
+              "repair",
+              "part"
+            ],
+            "title": "Kind"
+          },
+          "text_key": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Text Key"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "target_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
+          },
+          "failure_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Id"
+          },
+          "equipment_type_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipment Type Id"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "maxLength": 255,
+            "title": "Unit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "text_key"
+        ],
+        "title": "PromoteRequest",
+        "description": "Sumar un texto a la lista: con target_id, a un valor que ya existe; si no, uno\nnuevo con name (por defecto el texto). Una reparación nueva necesita su falla."
+      },
       "ReceiptCreate": {
         "properties": {
           "part_id": {
@@ -10102,6 +12700,29 @@
           "user"
         ],
         "title": "RefreshResponse"
+      },
+      "RelatedOrderOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "status"
+        ],
+        "title": "RelatedOrderOut"
       },
       "RepairAdminOut": {
         "properties": {
@@ -10283,6 +12904,29 @@
         ],
         "title": "ReturnedFromCrewOut",
         "description": "Por qué volvió a Pendiente desde una escuadrilla (E05-08, criterio 5)."
+      },
+      "RowOut": {
+        "properties": {
+          "row": {
+            "type": "integer",
+            "title": "Row"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "row",
+          "name",
+          "detail"
+        ],
+        "title": "RowOut"
       },
       "SearchOut": {
         "properties": {
@@ -10768,7 +13412,7 @@
           "note"
         ],
         "title": "TimelineEntryOut",
-        "description": "Un paso de la línea de tiempo (E04-06). event_type es el del evento de la orden o\n\"billing_invoiced\", que se arma con el cobro de E04-14 (no deja evento propio)."
+        "description": "Un paso de la línea de tiempo (E04-06): event_type es el del evento de la orden."
       },
       "TokenResponse": {
         "properties": {
@@ -10984,6 +13628,18 @@
           "must_change_password": {
             "type": "boolean",
             "title": "Must Change Password"
+          },
+          "locked_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locked Until"
           }
         },
         "type": "object",
@@ -11331,6 +13987,18 @@
           "kind": {
             "$ref": "#/components/schemas/OrderKind",
             "default": "on_site"
+          },
+          "source_order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Order Id"
           }
         },
         "additionalProperties": false,
@@ -11462,6 +14130,24 @@
           "has_closure": {
             "type": "boolean",
             "title": "Has Closure"
+          },
+          "source_order": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RelatedOrderOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "repair_orders": {
+            "items": {
+              "$ref": "#/components/schemas/RelatedOrderOut"
+            },
+            "type": "array",
+            "title": "Repair Orders",
+            "default": []
           },
           "timeline": {
             "items": {

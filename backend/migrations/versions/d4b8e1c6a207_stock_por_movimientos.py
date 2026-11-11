@@ -1,7 +1,7 @@
 """stock por movimientos: depósitos, camionetas y movimientos (E08-01 a E08-08)
 
 Revision ID: d4b8e1c6a207
-Revises: a968d70ec211
+Revises: c4e6a8b0d215
 Create Date: 2026-11-10
 
 stock_location: depósitos y camionetas (cada camioneta con su escuadrilla). stock_movement:
@@ -15,7 +15,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "d4b8e1c6a207"
-down_revision: str | None = "a968d70ec211"
+down_revision: str | None = "c4e6a8b0d215"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

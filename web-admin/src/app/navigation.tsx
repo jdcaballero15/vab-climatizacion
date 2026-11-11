@@ -1,5 +1,8 @@
 import {
   Boxes,
+  FileSpreadsheet,
+  MessageSquareText,
+  History,
   AirVent,
   Building2,
   CalendarClock,
@@ -14,13 +17,18 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { ForRole } from "./ForRole";
+
 import type { Session } from "../features/auth/types";
+import { AuditPage } from "../features/audit/AuditPage";
+import { CatalogCsvPage } from "../features/catalog-csv/CatalogCsvPage";
 import { ClientsPage } from "../features/clients/ClientsPage";
 import { CrewsPage } from "../features/crews/CrewsPage";
 import { EquipmentTypesPage } from "../features/equipment-types/EquipmentTypesPage";
 import { FailuresPage } from "../features/failures/FailuresPage";
 import { MaintenancePage } from "../features/maintenance/MaintenancePage";
 import { OrdersPage } from "../features/orders/OrdersPage";
+import { OtherTextsPage } from "../features/other-texts/OtherTextsPage";
 import { PartsPage } from "../features/parts/PartsPage";
 import { RepairsPage } from "../features/repairs/RepairsPage";
 import { StockPage } from "../features/stock/StockPage";
@@ -47,16 +55,17 @@ export interface NavSection {
 }
 
 // Solo administración opera órdenes, clientes, escuadrillas y catálogos
-// (roles-permisos.md); dirección gestiona usuarios. El orden del arreglo es el del menú,
+// (roles-permisos.md); dirección ve las órdenes y gestiona usuarios. El orden del arreglo es el del menú,
 // y la primera sección visible es la pantalla de inicio del rol.
 export const NAV_SECTIONS: NavSection[] = [
   {
     path: "/ordenes",
     label: "Órdenes",
     group: null,
-    roles: ["admin"],
+    // Dirección ve el panel en modo lectura (E04-05, criterio 5).
+    roles: ["admin", "owner"],
     icon: ClipboardList,
-    element: <OrdersPage />,
+    element: <ForRole render={(role) => <OrdersPage readOnly={role !== "admin"} />} />,
   },
   {
     path: "/mantenimiento",
@@ -70,9 +79,10 @@ export const NAV_SECTIONS: NavSection[] = [
     path: "/stock",
     label: "Stock",
     group: null,
-    roles: ["admin"],
+    // Dirección ve el stock sin moverlo (roles-permisos.md).
+    roles: ["admin", "owner"],
     icon: Boxes,
-    element: <StockPage />,
+    element: <ForRole render={(role) => <StockPage readOnly={role !== "admin"} />} />,
   },
   {
     path: "/clientes",
@@ -97,6 +107,14 @@ export const NAV_SECTIONS: NavSection[] = [
     roles: ["admin", "owner"],
     icon: Users,
     element: <UsersPage />,
+  },
+  {
+    path: "/auditoria",
+    label: "Auditoría",
+    group: "Equipo",
+    roles: ["admin", "owner"],
+    icon: History,
+    element: <AuditPage />,
   },
   {
     path: "/catalogos/tipos-de-trabajo",
@@ -131,12 +149,28 @@ export const NAV_SECTIONS: NavSection[] = [
     element: <RepairsPage />,
   },
   {
+    path: "/catalogos/textos-otro",
+    label: "Textos de «Otro»",
+    group: "Catálogos",
+    roles: ["admin"],
+    icon: MessageSquareText,
+    element: <OtherTextsPage />,
+  },
+  {
     path: "/catalogos/materiales",
     label: "Materiales y precios",
     group: "Catálogos",
     roles: ["admin"],
     icon: Package,
     element: <PartsPage />,
+  },
+  {
+    path: "/catalogos/importar",
+    label: "Importar y exportar",
+    group: "Catálogos",
+    roles: ["admin"],
+    icon: FileSpreadsheet,
+    element: <CatalogCsvPage />,
   },
 ];
 

@@ -5,30 +5,47 @@ import {
   CircleX,
   Inbox,
   Plus,
+  Receipt,
+  Wallet,
   Warehouse,
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
 
 import { PageHeader } from "../../app/PageHeader";
+import type { ClientSummary } from "../clients/types";
 import { useCrews } from "../crews/useCrews";
+import { useWorkTypes } from "../work-types/useWorkTypes";
 import { AssignOrderForm, type AssignMode } from "./AssignOrderForm";
 import { CancelOrderForm } from "./CancelOrderForm";
 import { ChangeEquipmentForm } from "./ChangeEquipmentForm";
 import { BillingForm } from "./BillingForm";
+import { ClientPicker } from "./ClientPicker";
 import { ClosureDetail } from "./ClosureDetail";
+import { EditInvoiceForm, NewInvoiceForm, PaymentForm, VoidPaymentForm } from "./InvoiceForms";
 import { OrderMaterials } from "./OrderMaterials";
-import { BILLING_STATUS_LABELS, formatDay, initials, LIST_STATUS_LABELS } from "./labels";
+import { formatDay, initials, LIST_STATUS_LABELS } from "./labels";
 import { OrderCard, type CardAction } from "./OrderCard";
 import { OrderForm } from "./OrderForm";
+import { RepairOrderForm } from "./RepairOrderForm";
 import { ReturnOrderForm } from "./ReturnOrderForm";
 import { UnassignOrderForm } from "./UnassignOrderForm";
-import type { BillingStatus, ListableStatus, OrderListItem, OrderView } from "./types";
+import type { ListableStatus, OrderFilters, OrderListItem, OrderView } from "./types";
 import { PAGE_SIZE, useOrderCounts, useOrderList } from "./useOrders";
 
 type RowAction = {
   orderId: string;
-  kind: AssignMode | "unassign" | "cancel" | "closure" | "equipment" | "return";
+  kind:
+    | AssignMode
+    | "unassign"
+    | "cancel"
+    | "closure"
+    | "equipment"
+    | "return"
+    | "repair"
+    | "payment"
+    | "void"
+    | "edit_invoice";
 };
 
 const ASSIGNED_WORD: Record<AssignMode, string> = {
@@ -41,13 +58,16 @@ const STATUSES: { status: OrderView; icon: LucideIcon; hint: string }[] = [
   { status: "pending", icon: Inbox, hint: "Sin escuadrilla" },
   { status: "assigned", icon: CalendarClock, hint: "Esperando a la escuadrilla" },
   { status: "in_progress", icon: Activity, hint: "La escuadrilla está trabajando" },
-  { status: "done", icon: CircleCheck, hint: "Cerradas, para revisar" },
+  { status: "done", icon: CircleCheck, hint: "Cerradas, para revisar y facturar" },
+  { status: "invoiced", icon: Receipt, hint: "Esperando el cobro" },
+  { status: "paid", icon: Wallet, hint: "Circuito cerrado" },
   { status: "cancelled", icon: CircleX, hint: "No se van a hacer" },
   { status: "in_workshop", icon: Warehouse, hint: "Retirados, sin devolver" },
 ];
 const KPI_STATUSES = STATUSES.filter(
-  ({ status }) => status !== "cancelled" && status !== "in_workshop",
+  ({ status }) => status !== "cancelled" && status !== "in_workshop" && status !== "paid",
 );
+const CLOSED_VIEWS = new Set<OrderView>(["done", "invoiced", "paid"]);
 
 /** La acción más común de cada estado va a la vista; el resto, al menú de tres puntos. */
 function cardActions(
@@ -56,8 +76,50 @@ function cardActions(
   current: RowAction | null,
   open: (kind: RowAction["kind"]) => void,
   close: () => void,
+  readOnly: boolean,
 ): { primary?: CardAction; more: CardAction[] } {
   const n = `la orden N° ${order.number}`;
+  const showingClosure = current?.orderId === order.id && current.kind === "closure";
+  const closure: CardAction = {
+    label: showingClosure ? "Ocultar cierre e importes" : "Ver cierre e importes",
+    name: `Ver el cierre de ${n}`,
+    onClick: showingClosure ? close : () => open("closure"),
+    expanded: showingClosure,
+  };
+  // Dirección ve el panel en modo lectura (E04-05, criterio 5).
+  if (readOnly) {
+    return CLOSED_VIEWS.has(status) ? { primary: closure, more: [] } : { more: [] };
+  }
+  if (status === "invoiced") {
+    return {
+      primary: {
+        label: "Registrar cobro",
+        name: `Registrar el cobro de ${n}`,
+        onClick: () => open("payment"),
+      },
+      more: [
+        { ...closure, name: `Ver el cierre de ${n}` },
+        {
+          label: "Corregir factura",
+          name: `Corregir la factura de ${n}`,
+          onClick: () => open("edit_invoice"),
+        },
+      ],
+    };
+  }
+  if (status === "paid") {
+    return {
+      primary: closure,
+      more: [
+        {
+          label: "Anular cobro",
+          name: `Anular el cobro de ${n}`,
+          onClick: () => open("void"),
+          danger: true,
+        },
+      ],
+    };
+  }
   const cancel: CardAction = {
     label: "Cancelar orden",
     name: `Cancelar ${n}`,
@@ -65,20 +127,20 @@ function cardActions(
     danger: true,
   };
   if (status === "done") {
-    const showing = current?.orderId === order.id && current.kind === "closure";
     return {
-      primary: {
-        label: showing ? "Ocultar cierre y cobro" : "Ver cierre y cobro",
-        name: `Ver el cierre de ${n}`,
-        onClick: showing ? close : () => open("closure"),
-        expanded: showing,
-      },
+      primary: closure,
       // E04-08, criterio 3. Si ya está aprobada, la API lo rechaza con su mensaje.
       more: [
         {
           label: "Devolver a la escuadrilla",
           name: `Devolver ${n} a la escuadrilla`,
           onClick: () => open("return"),
+        },
+        // E04-13: con lo que anotó la escuadrilla en el cierre.
+        {
+          label: "Abrir orden de reparación",
+          name: `Abrir una orden de reparación desde ${n}`,
+          onClick: () => open("repair"),
         },
       ],
     };
@@ -129,19 +191,27 @@ function cardActions(
  * Alta de órdenes y listado por estado: desde Pendientes se asignan (E04-03) o reprograman,
  * Asignadas y En curso se reasignan, y las Asignadas se desasignan (E04-04). Hasta En curso
  * se cancelan (E04-07). De las terminadas se ve el cierre y se devuelven a la escuadrilla
- * (E04-08); las canceladas se consultan sin acciones.
+ * (E04-08) o se facturan, solas o varias juntas (E04-09); las facturadas se cobran y las
+ * cobradas se anulan (E04-10). Las canceladas se consultan sin acciones. Dirección ve todo
+ * en modo lectura (E04-05).
  */
-export function OrdersPage() {
-  const [status, setStatus] = useState<OrderView>("pending");
+export function OrdersPage({ readOnly = false }: { readOnly?: boolean }) {
+  const [status, setStatus] = useState<OrderView>(readOnly ? "done" : "pending");
   const [offset, setOffset] = useState(0);
-  // Filtro de cobro de las terminadas (E04-14).
-  const [billing, setBilling] = useState<BillingStatus | "">("");
+  const [filters, setFilters] = useState<OrderFilters>({});
+  const [filterClient, setFilterClient] = useState<ClientSummary | null>(null);
+  const [selected, setSelected] = useState<Map<string, OrderListItem>>(new Map());
+  const [invoicing, setInvoicing] = useState(false);
   const [action, setAction] = useState<RowAction | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const page = useOrderList(status, offset, (status === "done" && billing) || undefined);
-  const counts = useOrderCounts(STATUSES.map((item) => item.status));
+  const page = useOrderList(status, offset, status === "in_workshop" ? {} : filters);
+  const counts = useOrderCounts(
+    STATUSES.map((item) => item.status),
+    filters,
+  );
   const crews = useCrews(false);
+  const workTypes = useWorkTypes(false);
   const total = page.data?.total ?? 0;
   const items = page.data?.items ?? [];
   const statusName = LIST_STATUS_LABELS[status].toLowerCase();
@@ -151,6 +221,24 @@ export function OrdersPage() {
     setOffset(0);
     setAction(null);
     setNotice(null);
+    setSelected(new Map());
+    setInvoicing(false);
+  }
+
+  function filter(changes: Partial<OrderFilters>) {
+    setFilters({ ...filters, ...changes });
+    setOffset(0);
+    setAction(null);
+  }
+
+  function toggle(order: OrderListItem, checked: boolean) {
+    const next = new Map(selected);
+    if (checked) {
+      next.set(order.id, order);
+    } else {
+      next.delete(order.id);
+    }
+    setSelected(next);
   }
 
   function panel(order: OrderListItem) {
@@ -162,9 +250,60 @@ export function OrdersPage() {
       return (
         <>
           <ClosureDetail order={order} />
-          <OrderMaterials orderId={order.id} orderNumber={order.number} />
-          <BillingForm order={order} />
+          {!readOnly && <OrderMaterials orderId={order.id} orderNumber={order.number} />}
+          <BillingForm order={order} readOnly={readOnly} />
         </>
+      );
+    }
+    if (action.kind === "repair") {
+      return (
+        <RepairOrderForm
+          order={order}
+          onCancel={close}
+          onCreated={(number) => {
+            close();
+            setNotice(`Orden de reparación N° ${number} creada desde la N° ${order.number}.`);
+          }}
+        />
+      );
+    }
+    if (action.kind === "payment") {
+      return (
+        <PaymentForm
+          order={order}
+          onCancel={close}
+          onDone={() => {
+            close();
+            setNotice(`Orden N° ${order.number} cobrada.`);
+          }}
+        />
+      );
+    }
+    if (action.kind === "void") {
+      return (
+        <VoidPaymentForm
+          order={order}
+          onCancel={close}
+          onDone={() => {
+            close();
+            setNotice(`Cobro de la orden N° ${order.number} anulado: volvió a Facturadas.`);
+          }}
+        />
+      );
+    }
+    if (action.kind === "edit_invoice") {
+      const invoice = order.billing?.invoice;
+      return invoice ? (
+        <EditInvoiceForm
+          invoice={invoice}
+          onCancel={close}
+          onDone={() => {
+            close();
+            setNotice(`Factura de la orden N° ${order.number} corregida.`);
+          }}
+        />
+      ) : (
+        <p role="alert">La orden no tiene factura.</p>
       );
     }
     if (action.kind === "unassign") {
@@ -242,21 +381,23 @@ export function OrdersPage() {
         title="Órdenes"
         subtitle="Del pedido del cliente al cierre de la escuadrilla."
         actions={
-          <button
-            type="button"
-            className={creating ? undefined : "btn--primary"}
-            aria-expanded={creating}
-            onClick={() => setCreating((open) => !open)}
-          >
-            {creating ? (
-              "Cerrar"
-            ) : (
-              <>
-                <Plus size={16} aria-hidden="true" />
-                Nueva orden
-              </>
-            )}
-          </button>
+          !readOnly && (
+            <button
+              type="button"
+              className={creating ? undefined : "btn--primary"}
+              aria-expanded={creating}
+              onClick={() => setCreating((open) => !open)}
+            >
+              {creating ? (
+                "Cerrar"
+              ) : (
+                <>
+                  <Plus size={16} aria-hidden="true" />
+                  Nueva orden
+                </>
+              )}
+            </button>
+          )
         }
       />
 
@@ -328,26 +469,94 @@ export function OrdersPage() {
             <h3 id="orders-list-title">Órdenes {statusName}</h3>
             {page.data && <span className="muted">{total} en total</span>}
           </div>
-          {status === "done" && (
-            <div className="orders__billing-filter">
-              <label htmlFor="billing-filter">Cobro</label>
-              <select
-                id="billing-filter"
-                value={billing}
-                onChange={(event) => {
-                  setBilling(event.target.value as BillingStatus | "");
-                  setOffset(0);
-                  setAction(null);
-                }}
-              >
-                <option value="">Todas</option>
-                {(Object.keys(BILLING_STATUS_LABELS) as BillingStatus[]).map((value) => (
-                  <option key={value} value={value}>
-                    {BILLING_STATUS_LABELS[value]}
-                  </option>
-                ))}
-              </select>
+          {status !== "in_workshop" && (
+            <div className="orders__filters" role="group" aria-label="Filtros del panel">
+              <label>
+                Escuadrilla
+                <select
+                  value={filters.crewId ?? ""}
+                  onChange={(event) => filter({ crewId: event.target.value || undefined })}
+                >
+                  <option value="">Todas</option>
+                  {crews.data?.map((crew) => (
+                    <option key={crew.id} value={crew.id}>
+                      {crew.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Tipo de trabajo
+                <select
+                  value={filters.workTypeId ?? ""}
+                  onChange={(event) => filter({ workTypeId: event.target.value || undefined })}
+                >
+                  <option value="">Todos</option>
+                  {workTypes.data?.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Creada desde
+                <input
+                  type="date"
+                  value={filters.createdFrom ?? ""}
+                  onChange={(event) => filter({ createdFrom: event.target.value || undefined })}
+                />
+              </label>
+              <label>
+                Hasta
+                <input
+                  type="date"
+                  value={filters.createdTo ?? ""}
+                  onChange={(event) => filter({ createdTo: event.target.value || undefined })}
+                />
+              </label>
+              <div className="orders__filter-client">
+                <ClientPicker
+                  selected={filterClient}
+                  onSelect={(client) => {
+                    setFilterClient(client);
+                    filter({ clientId: client?.id });
+                  }}
+                />
+              </div>
             </div>
+          )}
+          {status === "done" && !readOnly && (
+            <div className="orders__bulk">
+              <span className="muted">
+                {selected.size === 0
+                  ? "Elegí las órdenes que van en una misma factura."
+                  : `${selected.size} elegida${selected.size === 1 ? "" : "s"}`}
+              </span>
+              <button
+                type="button"
+                className="btn--primary"
+                disabled={selected.size === 0}
+                onClick={() => setInvoicing(true)}
+              >
+                Facturar elegidas
+              </button>
+            </div>
+          )}
+          {invoicing && selected.size > 0 && (
+            <NewInvoiceForm
+              orders={[...selected.values()]}
+              onCancel={() => setInvoicing(false)}
+              onDone={(invoice) => {
+                setInvoicing(false);
+                setSelected(new Map());
+                setNotice(
+                  `Factura ${invoice.number} registrada: ${invoice.order_numbers
+                    .map((n) => `N° ${n}`)
+                    .join(", ")} pasaron a Facturadas.`,
+                );
+              }}
+            />
           )}
           {notice && <p role="status">{notice}</p>}
           {page.isLoading && <p className="muted">Cargando órdenes…</p>}
@@ -371,9 +580,23 @@ export function OrdersPage() {
                       setAction({ orderId: order.id, kind });
                     },
                     () => setAction(null),
+                    readOnly,
                   );
                   return (
-                    <OrderCard key={order.id} order={order} primary={primary} more={more}>
+                    <OrderCard
+                      key={order.id}
+                      order={order}
+                      primary={primary}
+                      more={more}
+                      selection={
+                        status === "done" && !readOnly
+                          ? {
+                              checked: selected.has(order.id),
+                              onChange: (checked) => toggle(order, checked),
+                            }
+                          : undefined
+                      }
+                    >
                       {panel(order)}
                     </OrderCard>
                   );

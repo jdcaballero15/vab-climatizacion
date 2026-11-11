@@ -4,7 +4,7 @@ title: "Importar y exportar catálogos por CSV"
 epic: E02
 phase: 1
 priority: could
-status: draft
+status: done
 roles: [admin]
 size: M
 areas: [backend, web-admin]
@@ -28,3 +28,13 @@ assumes: [D-003]
 ## Notas técnicas
 
 - Los CSV con datos reales no se suben al repositorio (ver `.gitignore`).
+
+## Decisiones (2026-11-10)
+
+- No se pidió D-003 para esto: el CSV usa los mismos nombres que la pantalla.
+
+## Hecho
+
+- Tipos de trabajo, tipos de equipo, fallas, reparaciones y materiales (sin precios: tienen su historial aparte). `GET /admin/catalog-csv/{catálogo}` exporta; `POST .../preview` muestra altas, cambios, sin cambios y errores con su fila; `POST .../apply` aplica todo en una transacción o, con algún error, nada.
+- Se compara por nombre sin mayúsculas ni espacios de más (y por tipo de equipo y falla en fallas y reparaciones). "activo" acepta sí o no.
+- web-admin: "Importar y exportar" en Catálogos.

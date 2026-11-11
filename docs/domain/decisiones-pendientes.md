@@ -10,10 +10,10 @@ El índice [docs/stories/INDEX.md](../stories/INDEX.md) lista las historias bloq
 | ID | Decisión | Quién resuelve | Estado | Afecta |
 |---|---|---|---|---|
 | D-001 | Conectividad en campo: ¿hace falta modo offline? | Cliente | Resuelta | E99-06 a E99-08, E05-13, ADR 0003, ADR 0009 |
-| D-002 | Identificación de equipos: código propio o por ubicación | Negocio | **Propuesta** | E03-03, E03-05, E04-12, E07-03, E07-09, E11-02, E11-06 |
+| D-002 | Identificación de equipos: código propio o por ubicación | Negocio | **Propuesta** | E03-03, E03-05, E04-12, E07-03, E99-12, E11-02, E11-06 |
 | D-003 | Edición de catálogos en el sistema nuevo | Negocio | **Propuesta** | E02-01 a E02-06, E02-08 |
-| D-004 | Datos exactos que necesita administración para facturar | Negocio | Pospuesta | E04-09 |
-| D-005 | Revisión y aprobación en bloque: ¿acciones o estados? | Negocio | **Propuesta** | E04-08, E07-04, E07-05 |
+| D-004 | Datos exactos que necesita administración para facturar | Negocio | Resuelta | E04-09 |
+| D-005 | Revisión y aprobación en bloque: ¿acciones o estados? | Negocio | **Propuesta** | E04-08, E07-04, E99-10 |
 | D-006 | Costo recurrente de hosting y cómo se informa al cliente | Dirección de MendoData | **Abierta** | E00-05 |
 | D-007 | Método de inicio de sesión | Desarrollo y negocio | **Propuesta** | E01-01 |
 | D-008 | Retención y texto legal de datos personales (DNI y firmas) | Negocio y asesoría legal | **Abierta** | E12-04 |
@@ -93,6 +93,8 @@ La decisión original era sobre listas de SharePoint ("editables de las dos form
 ### D-004 Datos para facturar
 
 Se pospone. El modelo guarda número de factura y fecha de registro (`invoice_record`). Si administración necesita más (importe, condición de venta, CUIT), se agrega.
+
+**Resuelta** (Gonza, 2026-11-10): alcanza con el número y la fecha de la factura. Una factura puede cubrir varias órdenes (`invoice` y `work_order_invoice`). El cobro guarda fecha y medio; el importe es el total de la orden. La mano de obra se carga a mano y hay otros cargos con descripción e importe (E04-09 a E04-11).
 
 ### D-005 Revisión y aprobación en bloque
 

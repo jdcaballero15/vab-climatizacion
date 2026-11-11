@@ -19,6 +19,12 @@ FORBIDDEN_TECHNICIAN_FIELDS: frozenset[str] = frozenset(
         "parts_amount",
         "labor_amount",
         "invoice_number",
+        # Factura, cobro y otros cargos (E04-09 a E04-11).
+        "invoice",
+        "payment",
+        "charges",
+        "charges_amount",
+        "billing_overdue",
         # Materiales de la orden con precio (E05-05).
         "subtotal",
         "price_updated_at",

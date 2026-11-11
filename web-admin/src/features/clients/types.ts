@@ -19,3 +19,7 @@ export type EquipmentUpdate = components["schemas"]["EquipmentUpdate"];
 export type ClientOrder = components["schemas"]["ClientOrderOut"];
 export type ClientOrderPage = components["schemas"]["ClientOrderPage"];
 export type SearchResults = components["schemas"]["SearchOut"];
+export type AuditEntry = components["schemas"]["AuditEntryOut"];
+export type MergePreview = components["schemas"]["ClientMergePreviewOut"];
+export type EquipmentFile = components["schemas"]["EquipmentFileOut"];
+export type EquipmentHistoryOrder = components["schemas"]["EquipmentHistoryOrderOut"];

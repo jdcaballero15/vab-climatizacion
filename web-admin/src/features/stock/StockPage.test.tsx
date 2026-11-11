@@ -78,7 +78,7 @@ function mockApi() {
       return json([GAS]);
     }
     if (url.pathname.endsWith("/movements")) {
-      return json([USO]);
+      return json({ items: [USO], total: 1, limit: 50, offset: 0 });
     }
     if (url.pathname.endsWith("/admin/parts")) {
       return json([{ id: "p1", name: "Gas R410A", unit: "kg", is_active: true }]);

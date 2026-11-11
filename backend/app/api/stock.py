@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Coroutine
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.deps import SessionDep, require_role
 from app.api.schemas.stock import (
@@ -11,6 +11,7 @@ from app.api.schemas.stock import (
     LocationOut,
     LocationUpdate,
     MovementOut,
+    MovementPage,
     ReceiptCreate,
     StockPartOut,
     TransferCreate,
@@ -86,15 +87,22 @@ async def get_stock(
     return await stock_service.stock_by_part(session, part_id=part_id, location_id=location_id)
 
 
-@router.get("/parts/{part_id}/movements", response_model=list[MovementOut])
+@router.get("/parts/{part_id}/movements", response_model=MovementPage)
 async def get_part_movements(
-    part_id: uuid.UUID, session: SessionDep, _: AdminOrOwner
-) -> list[MovementOut]:
+    part_id: uuid.UUID,
+    session: SessionDep,
+    _: AdminOrOwner,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> MovementPage:
     """Historial de movimientos de un repuesto, el más nuevo primero (E08-07)."""
     try:
-        return await stock_service.part_history(session, part_id)
+        items, total = await stock_service.part_history(
+            session, part_id, limit=limit, offset=offset
+        )
     except stock_service.PartNotFoundError:
         raise _part_not_found() from None
+    return MovementPage(items=items, total=total, limit=limit, offset=offset)
 
 
 @router.post("/receipts", response_model=MovementOut, status_code=status.HTTP_201_CREATED)
