@@ -41,7 +41,7 @@ HISTORY_PAGE_SIZE = 20
 @router.get("", response_model=ClientPage)
 async def list_clients(
     session: SessionDep,
-    _: AdminOnly,
+    _: AdminOrOwner,
     segment: ClientSegment | None = None,
     q: Annotated[str | None, Query(max_length=255)] = None,
     # Solo los dados de baja, para restaurarlos (E03-07).

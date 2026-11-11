@@ -422,24 +422,25 @@ async def test_listado_paginado(
     assert [item["id"] for item in body["items"]] == [creadas[1]["id"], creadas[2]["id"]]
 
 
-# Facturadas y cobradas llegan con el panel por estado (E04-05).
 async def test_listado_exige_un_estado_admitido(admin: User) -> None:
     async with _client() as client:
         sin_filtro = await client.get(ORDERS_URL, headers=_auth(admin))
-        otro = await client.get(f"{ORDERS_URL}?status=invoiced", headers=_auth(admin))
+        otro = await client.get(f"{ORDERS_URL}?status=archivada", headers=_auth(admin))
 
     assert sin_filtro.status_code == 422
     assert otro.status_code == 422
 
 
-# Criterio 9: técnico y dirección reciben 403.
-@pytest.mark.parametrize("rol", [UserRole.technician, UserRole.owner])
-async def test_tecnico_y_direccion_no_crean_ni_listan(
+# Criterio 9: técnico y dirección no crean. Dirección ve el panel en modo lectura (E04-05,
+# criterio 5); el técnico, no.
+@pytest.mark.parametrize(("rol", "lista"), [(UserRole.technician, 403), (UserRole.owner, 200)])
+async def test_tecnico_y_direccion_no_crean(
     schema: None,
     cliente: Client,
     sede: ClientSite,
     reparacion: WorkType,
     rol: UserRole,
+    lista: int,
 ) -> None:
     usuario = make_user(email=f"{rol.value}@ot-demo.com", role=rol)
     await _seed([usuario])
@@ -451,4 +452,4 @@ async def test_tecnico_y_direccion_no_crean_ni_listan(
         listar = await client.get(PENDING_URL, headers=_auth(usuario))
 
     assert crear.status_code == 403
-    assert listar.status_code == 403
+    assert listar.status_code == lista

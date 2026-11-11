@@ -4,6 +4,7 @@ import { EquipmentFilePage } from "../features/clients/EquipmentFilePage";
 import { OrderDetailPage } from "../features/orders/OrderDetailPage";
 import { AppRoot } from "./AppRoot";
 import { NAV_SECTIONS } from "./navigation";
+import { ForRole } from "./ForRole";
 import { HomeRedirect, RequireRole } from "./RouteGuards";
 
 // AppRoot pide el login antes de mostrar cualquier pantalla. La dirección pedida se
@@ -22,8 +23,8 @@ const routes: RouteObject[] = [
       {
         path: "ordenes/:orderId",
         element: (
-          <RequireRole roles={["admin"]}>
-            <OrderDetailPage />
+          <RequireRole roles={["admin", "owner"]}>
+            <ForRole render={(role) => <OrderDetailPage readOnly={role !== "admin"} />} />
           </RequireRole>
         ),
       },

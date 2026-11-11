@@ -20,7 +20,7 @@ import { useOrderDetail } from "./useOrders";
  * Todo lo de una orden en una pantalla (E04-06): sus datos, el cierre con fotos y firma,
  * los materiales con su precio y la línea de tiempo con quién hizo cada paso y cuándo.
  */
-export function OrderDetailPage() {
+export function OrderDetailPage({ readOnly = false }: { readOnly?: boolean }) {
   const { orderId = "" } = useParams();
   const detail = useOrderDetail(orderId);
 
@@ -69,7 +69,29 @@ export function OrderDetailPage() {
           </div>
         )}
 
-        <OrderMaterials orderId={order.id} orderNumber={order.number} />
+        {!readOnly && <OrderMaterials orderId={order.id} orderNumber={order.number} />}
+
+        {(order.source_order || order.repair_orders.length > 0) && (
+          <div className="card order-detail__card">
+            <h3>Órdenes relacionadas</h3>
+            <ul>
+              {order.source_order && (
+                <li>
+                  Nace del cierre de la{" "}
+                  <Link to={`/ordenes/${order.source_order.id}`}>
+                    orden N° {order.source_order.number}
+                  </Link>
+                </li>
+              )}
+              {order.repair_orders.map((repair) => (
+                <li key={repair.id}>
+                  Orden de reparación <Link to={`/ordenes/${repair.id}`}>N° {repair.number}</Link> (
+                  {ORDER_STATUS_LABELS[repair.status]})
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="card order-detail__card">
           <h3 id="order-timeline">Línea de tiempo</h3>

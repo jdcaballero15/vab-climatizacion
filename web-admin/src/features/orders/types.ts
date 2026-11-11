@@ -19,9 +19,26 @@ export type OrderDetail = components["schemas"]["WorkOrderDetailAdminOut"];
 export type TimelineEntry = components["schemas"]["TimelineEntryOut"];
 export type Billing = components["schemas"]["BillingAdminOut"];
 export type BillingUpdate = components["schemas"]["BillingUpdate"];
-export type BillingStatus = components["schemas"]["BillingStatus"];
-/** Los estados que lista hoy la API; Facturadas y Cobradas llegan con E04-05. */
-export type ListableStatus = "pending" | "assigned" | "in_progress" | "done" | "cancelled";
+export type Invoice = components["schemas"]["InvoiceOut"];
+export type InvoiceCreate = components["schemas"]["InvoiceCreate"];
+export type InvoiceUpdate = components["schemas"]["InvoiceUpdate"];
+export type Payment = components["schemas"]["PaymentOut"];
+export type PaymentCreate = components["schemas"]["PaymentCreate"];
+export type PaymentVoid = components["schemas"]["PaymentVoid"];
+export type PaymentMethod = components["schemas"]["PaymentMethod"];
+export type Charge = components["schemas"]["ChargeAdminOut"];
+export type ChargeWrite = components["schemas"]["ChargeWrite"];
+export type RelatedOrder = components["schemas"]["RelatedOrderOut"];
+/** Todos los estados de la orden: el panel los lista a todos (E04-05). */
+export type ListableStatus = OrderListItem["status"];
+/** Filtros del panel (E04-05, criterio 2). Vacío es "todas". */
+export interface OrderFilters {
+  crewId?: string;
+  clientId?: string;
+  workTypeId?: string;
+  createdFrom?: string;
+  createdTo?: string;
+}
 /** Lo que se elige en Órdenes: un estado o los equipos en el galpón (E06-07). */
 export type OrderView = ListableStatus | "in_workshop";
 export type WorkshopStage = components["schemas"]["WorkshopStage"];

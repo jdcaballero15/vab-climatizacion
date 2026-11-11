@@ -1,19 +1,21 @@
 ---
-id: E07-02
+id: E99-09
 title: "Definir mediciones con unidad y rango esperado"
-epic: E07
+epic: E99
 phase: 1
-priority: must
-status: draft
+priority: could
+status: icebox
 roles: [admin]
 size: S
 areas: [backend, web-admin]
-depends_on: [E07-01]
+depends_on: []
 blocked_by: []
 assumes: []
 ---
 
-# E07-02 Definir mediciones con unidad y rango esperado
+# E99-09 Definir mediciones con unidad y rango esperado
+
+> Pasó al icebox el 2026-11-10: Gonza descartó las mediciones y la aprobación en bloque del mantenimiento (decisión del 2026-11-03). Antes era E07.
 
 ## Historia
 

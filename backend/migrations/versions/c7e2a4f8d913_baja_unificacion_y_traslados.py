@@ -1,7 +1,7 @@
 """baja de clientes y equipos, unificación y traslados (E03-07, E03-08, E03-09, E12-02)
 
 Revision ID: c7e2a4f8d913
-Revises: a968d70ec211
+Revises: b3f1d7a9c524
 Create Date: 2026-11-10
 
 audit_event: quién dio de baja, restauró o unificó (base de la auditoría de E12-01).
@@ -15,7 +15,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "c7e2a4f8d913"
-down_revision: str | None = "a968d70ec211"
+down_revision: str | None = "b3f1d7a9c524"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

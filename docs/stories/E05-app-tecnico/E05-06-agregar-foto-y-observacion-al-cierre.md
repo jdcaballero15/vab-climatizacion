@@ -42,7 +42,7 @@ assumes: []
 - `ClosureCreate` suma `photo_ids: list[uuid] = []` (máximo 5). Tabla `work_order_closure_photo` (`closure_id`, `file_id`, `position`), con `file_id` único. Migración reversible.
 - Orden de envío: subir cada foto (pedir subida, `PUT`, confirmar) y después el `POST` del cierre con los ids. Con la idempotencia de E05-12, reenviar el cierre con las mismas fotos no duplica nada.
 - `ClosureAdminOut` suma las fotos con URL firmada de descarga (5 minutos). `ClosureTechnicianOut` no las devuelve.
-- Medición fuera de rango como motivo para exigir observación queda para E07-07 (todavía no hay mediciones).
+- Medición fuera de rango como motivo para exigir observación queda para E99-11 (todavía no hay mediciones).
 
 ## Notas de implementación
 
