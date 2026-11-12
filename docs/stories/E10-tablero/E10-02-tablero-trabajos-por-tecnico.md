@@ -4,7 +4,7 @@ title: "Tablero: trabajos por técnico"
 epic: E10
 phase: 1
 priority: must
-status: draft
+status: done
 roles: [owner, admin]
 size: S
 areas: [backend, web-admin]
@@ -27,3 +27,8 @@ assumes: []
 ## Notas técnicas
 
 - Por D-013 los técnicos no tienen usuario: el conteo por persona sale de `work_order_closure_technician`; lo que está en curso se cuenta por escuadrilla.
+
+## Hecho
+
+- `GET /admin/dashboard` (administración y dirección; el técnico recibe 403) devuelve todas las secciones con los mismos filtros: período (por defecto los últimos 30 días), cliente, escuadrilla, tipo de trabajo y tipo de equipo. Sin precios.
+- Por técnico: los cierres del período en los que fue tildado (D-013). Por escuadrilla: lo asignado o en curso ahora.

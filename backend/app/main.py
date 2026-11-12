@@ -7,6 +7,7 @@ from app.api import (
     catalog_csv,
     clients,
     crews,
+    dashboard,
     documents,
     equipment,
     equipment_types,
@@ -57,6 +58,7 @@ def create_app() -> FastAPI:
     app.include_router(equipment.router)
     app.include_router(work_orders.router)
     app.include_router(order_materials.router)
+    app.include_router(dashboard.router)
     app.include_router(documents.router)
     app.include_router(other_texts.router)
     app.include_router(catalog_csv.router)

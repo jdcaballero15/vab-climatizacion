@@ -5060,6 +5060,181 @@
         }
       }
     },
+    "/admin/dashboard": {
+      "get": {
+        "tags": [
+          "tablero"
+        ],
+        "summary": "Get Dashboard",
+        "description": "Todos los indicadores con los mismos filtros; sin período, los últimos 30 días.",
+        "operationId": "get_dashboard_admin_dashboard_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Id"
+            }
+          },
+          {
+            "name": "crew_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Crew Id"
+            }
+          },
+          {
+            "name": "work_type_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Work Type Id"
+            }
+          },
+          {
+            "name": "equipment_type_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Equipment Type Id"
+            }
+          },
+          {
+            "name": "compare_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Compare From"
+            }
+          },
+          {
+            "name": "compare_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Compare To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/orders/{order_id}/documents/{kind}": {
       "post": {
         "tags": [
@@ -9372,6 +9547,40 @@
         "title": "ContactUpdate",
         "description": "Solo se cambian los campos enviados; un campo en null se borra."
       },
+      "CountOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "count"
+        ],
+        "title": "CountOut"
+      },
       "CrewAdminOut": {
         "properties": {
           "id": {
@@ -9671,6 +9880,126 @@
         ],
         "title": "CurrentAssignmentOut",
         "description": "Escuadrilla y fecha prevista de una orden Asignada o En curso."
+      },
+      "DashboardOut": {
+        "properties": {
+          "date_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Date From"
+          },
+          "date_to": {
+            "type": "string",
+            "format": "date",
+            "title": "Date To"
+          },
+          "by_status": {
+            "items": {
+              "$ref": "#/components/schemas/CountOut"
+            },
+            "type": "array",
+            "title": "By Status"
+          },
+          "weeks": {
+            "items": {
+              "$ref": "#/components/schemas/WeekOut"
+            },
+            "type": "array",
+            "title": "Weeks"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/PeriodTotalsOut"
+          },
+          "compare": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PeriodTotalsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "by_technician": {
+            "items": {
+              "$ref": "#/components/schemas/CountOut"
+            },
+            "type": "array",
+            "title": "By Technician"
+          },
+          "in_progress_by_crew": {
+            "items": {
+              "$ref": "#/components/schemas/CountOut"
+            },
+            "type": "array",
+            "title": "In Progress By Crew"
+          },
+          "top_failures": {
+            "items": {
+              "$ref": "#/components/schemas/CountOut"
+            },
+            "type": "array",
+            "title": "Top Failures"
+          },
+          "top_repairs": {
+            "items": {
+              "$ref": "#/components/schemas/CountOut"
+            },
+            "type": "array",
+            "title": "Top Repairs"
+          },
+          "other_failures": {
+            "items": {
+              "$ref": "#/components/schemas/CountOut"
+            },
+            "type": "array",
+            "title": "Other Failures"
+          },
+          "other_repairs": {
+            "items": {
+              "$ref": "#/components/schemas/CountOut"
+            },
+            "type": "array",
+            "title": "Other Repairs"
+          },
+          "maintenance": {
+            "$ref": "#/components/schemas/MaintenanceProgressOut"
+          },
+          "unbilled": {
+            "items": {
+              "$ref": "#/components/schemas/UnbilledOrderOut"
+            },
+            "type": "array",
+            "title": "Unbilled"
+          },
+          "top_parts": {
+            "items": {
+              "$ref": "#/components/schemas/CountOut"
+            },
+            "type": "array",
+            "title": "Top Parts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date_from",
+          "date_to",
+          "by_status",
+          "weeks",
+          "totals",
+          "compare",
+          "by_technician",
+          "in_progress_by_crew",
+          "top_failures",
+          "top_repairs",
+          "other_failures",
+          "other_repairs",
+          "maintenance",
+          "unbilled",
+          "top_parts"
+        ],
+        "title": "DashboardOut",
+        "description": "El tablero con los filtros aplicados (E10). Sin precios ni importes."
       },
       "DismissRequest": {
         "properties": {
@@ -11300,6 +11629,39 @@
         "title": "MaintenancePlanUpdate",
         "description": "Solo se cambian los campos enviados; crew_id, ends_on y notes en null los borran.\n\nEl equipo no se cambia: para otro equipo se termina el plan y se crea uno nuevo."
       },
+      "MaintenanceProgressOut": {
+        "properties": {
+          "generated": {
+            "type": "integer",
+            "title": "Generated"
+          },
+          "pending": {
+            "type": "integer",
+            "title": "Pending"
+          },
+          "assigned": {
+            "type": "integer",
+            "title": "Assigned"
+          },
+          "closed": {
+            "type": "integer",
+            "title": "Closed"
+          },
+          "cancelled": {
+            "type": "integer",
+            "title": "Cancelled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated",
+          "pending",
+          "assigned",
+          "closed",
+          "cancelled"
+        ],
+        "title": "MaintenanceProgressOut"
+      },
       "MaintenanceRunOut": {
         "properties": {
           "generated": {
@@ -12588,6 +12950,36 @@
         ],
         "title": "PaymentVoid"
       },
+      "PeriodTotalsOut": {
+        "properties": {
+          "date_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Date From"
+          },
+          "date_to": {
+            "type": "string",
+            "format": "date",
+            "title": "Date To"
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created"
+          },
+          "done": {
+            "type": "integer",
+            "title": "Done"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date_from",
+          "date_to",
+          "created",
+          "done"
+        ],
+        "title": "PeriodTotalsOut"
+      },
       "PlanClientOut": {
         "properties": {
           "id": {
@@ -13711,6 +14103,55 @@
         "type": "object",
         "title": "UnassignmentCreate"
       },
+      "UnbilledOrderOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "client_name",
+          "closed_at",
+          "days"
+        ],
+        "title": "UnbilledOrderOut"
+      },
       "UploadOut": {
         "properties": {
           "file_id": {
@@ -13959,6 +14400,30 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WeekOut": {
+        "properties": {
+          "week_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Week Start"
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created"
+          },
+          "done": {
+            "type": "integer",
+            "title": "Done"
+          }
+        },
+        "type": "object",
+        "required": [
+          "week_start",
+          "created",
+          "done"
+        ],
+        "title": "WeekOut"
       },
       "WorkOrderAdminOut": {
         "properties": {

@@ -50,6 +50,10 @@ function apiFor(role: Role, { cookie = false } = {}) {
     if (path.endsWith("/auth/refresh")) {
       return cookie ? json(sessionFor(role)) : json({ detail: "sin sesión" }, 401);
     }
+    if (path.endsWith("/admin/dashboard")) {
+      // El tablero tiene sus propios tests: acá alcanza con que la pantalla abra.
+      return json({ detail: "sin datos" }, 404);
+    }
     return path.includes("/admin/") ? json([]) : json(sessionFor(role));
   };
 }
@@ -138,6 +142,7 @@ describe("AppRoot", () => {
       .getAllByRole("link")
       .map((link) => link.textContent);
     expect(links).toEqual([
+      "Tablero",
       "Órdenes",
       "Mantenimiento",
       "Stock",
@@ -175,21 +180,20 @@ describe("AppRoot", () => {
     expect(currentPath()).toBe("/ordenes");
   });
 
-  it("dirección ve Órdenes (en lectura) y Usuarios; una sección de administración la devuelve al inicio", async () => {
+  it("dirección entra al tablero, ve Órdenes (en lectura) y Usuarios; una sección de administración la devuelve al inicio", async () => {
     stubApi("owner");
     renderApp("/clientes");
 
     await iniciarSesion();
 
-    expect(await screen.findByRole("heading", { name: "Órdenes" })).toBeInTheDocument();
-    expect(currentPath()).toBe("/ordenes");
+    // E10-07: el tablero es su pantalla principal.
+    expect(await screen.findByRole("heading", { name: "Tablero" })).toBeInTheDocument();
+    expect(currentPath()).toBe("/tablero");
     expect(screen.queryByRole("heading", { name: "Clientes" })).not.toBeInTheDocument();
-    // E04-05, criterio 5: en lectura, sin alta de órdenes.
-    expect(screen.queryByRole("button", { name: "Nueva orden" })).not.toBeInTheDocument();
     const links = within(menu())
       .getAllByRole("link")
       .map((link) => link.textContent);
-    expect(links).toEqual(["Órdenes", "Stock", "Usuarios", "Auditoría"]);
+    expect(links).toEqual(["Tablero", "Órdenes", "Stock", "Usuarios", "Auditoría"]);
   });
 
   it("un rol sin secciones ve el saludo con su rol", async () => {

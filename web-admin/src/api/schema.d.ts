@@ -1193,6 +1193,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Dashboard
+         * @description Todos los indicadores con los mismos filtros; sin período, los últimos 30 días.
+         */
+        get: operations["get_dashboard_admin_dashboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/orders/{order_id}/documents/{kind}": {
         parameters: {
             query?: never;
@@ -2626,6 +2646,17 @@ export interface components {
             /** Receives Monthly Report */
             receives_monthly_report?: boolean | null;
         };
+        /** CountOut */
+        CountOut: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Count */
+            count: number;
+            /** Quantity */
+            quantity?: string | null;
+        };
         /** CrewAdminOut */
         CrewAdminOut: {
             /**
@@ -2732,6 +2763,45 @@ export interface components {
             scheduled_for: string;
             /** Return Reason */
             return_reason: string | null;
+        };
+        /**
+         * DashboardOut
+         * @description El tablero con los filtros aplicados (E10). Sin precios ni importes.
+         */
+        DashboardOut: {
+            /**
+             * Date From
+             * Format: date
+             */
+            date_from: string;
+            /**
+             * Date To
+             * Format: date
+             */
+            date_to: string;
+            /** By Status */
+            by_status: components["schemas"]["CountOut"][];
+            /** Weeks */
+            weeks: components["schemas"]["WeekOut"][];
+            totals: components["schemas"]["PeriodTotalsOut"];
+            compare: components["schemas"]["PeriodTotalsOut"] | null;
+            /** By Technician */
+            by_technician: components["schemas"]["CountOut"][];
+            /** In Progress By Crew */
+            in_progress_by_crew: components["schemas"]["CountOut"][];
+            /** Top Failures */
+            top_failures: components["schemas"]["CountOut"][];
+            /** Top Repairs */
+            top_repairs: components["schemas"]["CountOut"][];
+            /** Other Failures */
+            other_failures: components["schemas"]["CountOut"][];
+            /** Other Repairs */
+            other_repairs: components["schemas"]["CountOut"][];
+            maintenance: components["schemas"]["MaintenanceProgressOut"];
+            /** Unbilled */
+            unbilled: components["schemas"]["UnbilledOrderOut"][];
+            /** Top Parts */
+            top_parts: components["schemas"]["CountOut"][];
         };
         /** DismissRequest */
         DismissRequest: {
@@ -3309,6 +3379,19 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /** MaintenanceProgressOut */
+        MaintenanceProgressOut: {
+            /** Generated */
+            generated: number;
+            /** Pending */
+            pending: number;
+            /** Assigned */
+            assigned: number;
+            /** Closed */
+            closed: number;
+            /** Cancelled */
+            cancelled: number;
+        };
         /**
          * MaintenanceRunOut
          * @description Resumen de una corrida (E07-04, criterio 5): qué se generó y qué se omitió.
@@ -3765,6 +3848,23 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** PeriodTotalsOut */
+        PeriodTotalsOut: {
+            /**
+             * Date From
+             * Format: date
+             */
+            date_from: string;
+            /**
+             * Date To
+             * Format: date
+             */
+            date_to: string;
+            /** Created */
+            created: number;
+            /** Done */
+            done: number;
+        };
         /** PlanClientOut */
         PlanClientOut: {
             /**
@@ -4218,6 +4318,22 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
+        /** UnbilledOrderOut */
+        UnbilledOrderOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            /** Client Name */
+            client_name: string;
+            /** Closed At */
+            closed_at: string | null;
+            /** Days */
+            days: number | null;
+        };
         /** UploadOut */
         UploadOut: {
             /**
@@ -4318,6 +4434,18 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WeekOut */
+        WeekOut: {
+            /**
+             * Week Start
+             * Format: date
+             */
+            week_start: string;
+            /** Created */
+            created: number;
+            /** Done */
+            done: number;
         };
         /** WorkOrderAdminOut */
         WorkOrderAdminOut: {
@@ -7374,6 +7502,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderMaterialsAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dashboard_admin_dashboard_get: {
+        parameters: {
+            query?: {
+                date_from?: string | null;
+                date_to?: string | null;
+                client_id?: string | null;
+                crew_id?: string | null;
+                work_type_id?: string | null;
+                equipment_type_id?: string | null;
+                compare_from?: string | null;
+                compare_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOut"];
                 };
             };
             /** @description Validation Error */

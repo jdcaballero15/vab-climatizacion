@@ -2,12 +2,12 @@ import type { ReactNode } from "react";
 import { Navigate, useOutletContext } from "react-router-dom";
 
 import type { Session } from "../features/auth/types";
-import { ROLE_LABELS, sectionsFor, type Role } from "./navigation";
+import { homeFor, ROLE_LABELS, type Role } from "./navigation";
 
 /** Pantalla de inicio: la primera sección del rol, o un saludo si no tiene ninguna. */
 export function HomeRedirect() {
   const session = useOutletContext<Session>();
-  const [first] = sectionsFor(session.user.role);
+  const first = homeFor(session.user.role);
   if (first) {
     return <Navigate to={first.path} replace />;
   }
