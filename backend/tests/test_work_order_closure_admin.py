@@ -85,6 +85,22 @@ TABLES = [
     PartUsage.__table__,
 ]
 ORDERS_URL = "/admin/orders"
+ENUM_TYPES = (
+    "user_role",
+    "client_segment",
+    "tax_condition",
+    "order_status",
+    "order_kind",
+    "order_source",
+    "order_channel",
+    "closure_outcome",
+    "equipment_condition",
+    "not_done_reason",
+    "cancel_reason",
+    "no_signature_reason",
+    "signature_purpose",
+    "payment_method",
+)
 AYER = datetime.now(UTC) - timedelta(days=1)
 
 
@@ -95,22 +111,7 @@ async def schema() -> AsyncGenerator[None, None]:
     yield
     async with engine.begin() as conn:
         await conn.run_sync(User.metadata.drop_all, tables=list(reversed(TABLES)))
-        for enum_type in (
-            "user_role",
-            "client_segment",
-            "tax_condition",
-            "order_status",
-            "order_kind",
-            "order_source",
-            "order_channel",
-            "closure_outcome",
-            "equipment_condition",
-            "not_done_reason",
-            "cancel_reason",
-            "no_signature_reason",
-            "signature_purpose",
-            "payment_method",
-        ):
+        for enum_type in ENUM_TYPES:
             await conn.execute(text(f"DROP TYPE IF EXISTS {enum_type}"))
         await conn.execute(text("DROP SEQUENCE IF EXISTS work_order_number_seq"))
 

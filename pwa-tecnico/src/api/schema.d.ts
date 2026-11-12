@@ -1193,6 +1193,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/orders/{order_id}/documents/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get Receipt
+         * @description Comprobante de retiro o devolución (E09-01, E09-02). La primera vez se arma y se
+         *     guarda; después devuelve el mismo archivo. Es POST porque puede crearlo.
+         */
+        post: operations["get_receipt_admin_orders__order_id__documents__kind__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/clients/{client_id}/monthly-report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Monthly Report
+         * @description Informe mensual del cliente en PDF, sin precios (E09-04).
+         */
+        get: operations["get_monthly_report_admin_clients__client_id__monthly_report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/other-texts": {
         parameters: {
             query?: never;
@@ -2701,6 +2742,19 @@ export interface components {
             kind: "failure" | "repair" | "part";
             /** Text Key */
             text_key: string;
+        };
+        /**
+         * DocumentKind
+         * @enum {string}
+         */
+        DocumentKind: "pickup_receipt" | "delivery_receipt";
+        /**
+         * DocumentLinkOut
+         * @description URL firmada del PDF guardado en el bucket; vence como las de fotos y firmas.
+         */
+        DocumentLinkOut: {
+            /** Url */
+            url: string;
         };
         /**
          * DoneOrderTechnicianOut
@@ -7320,6 +7374,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderMaterialsAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_receipt_admin_orders__order_id__documents__kind__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+                kind: components["schemas"]["DocumentKind"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentLinkOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_monthly_report_admin_clients__client_id__monthly_report_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+            };
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
                 };
             };
             /** @description Validation Error */

@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 124 historias.** done: 89, draft: 21, icebox: 12, in_progress: 2
+**Total: 124 historias.** done: 92, draft: 18, icebox: 12, in_progress: 2
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -138,10 +138,10 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 
 | ID | Historia | Prioridad | Tamaño | Estado | Roles | Bloq. | Supone | Depende de |
 |---|---|---|---|---|---|---|---|---|
-| [E09-01](E09-comprobantes-informes/E09-01-generar-el-comprobante-pdf-de-retiro.md) | Generar el comprobante PDF de retiro | Debe | M | draft | admin | - | - | E06-04, E00-09 |
-| [E09-02](E09-comprobantes-informes/E09-02-generar-el-comprobante-pdf-de-devolucion.md) | Generar el comprobante PDF de devolución | Debe | S | draft | admin | - | - | E06-06, E09-01 |
+| [E09-01](E09-comprobantes-informes/E09-01-generar-el-comprobante-pdf-de-retiro.md) | Generar el comprobante PDF de retiro | Debe | M | done | admin | - | - | E06-04, E00-09 |
+| [E09-02](E09-comprobantes-informes/E09-02-generar-el-comprobante-pdf-de-devolucion.md) | Generar el comprobante PDF de devolución | Debe | S | done | admin | - | - | E06-06, E09-01 |
 | [E09-03](E09-comprobantes-informes/E09-03-enviar-el-comprobante-al-cliente-por-mail.md) | Enviar el comprobante al cliente por mail | Debe | S | draft | admin | - | - | E09-01, E00-10 |
-| [E09-04](E09-comprobantes-informes/E09-04-generar-el-informe-mensual-de-un-cliente.md) | Generar el informe mensual de un cliente | Debe | M | draft | admin | - | - | E04-06 |
+| [E09-04](E09-comprobantes-informes/E09-04-generar-el-informe-mensual-de-un-cliente.md) | Generar el informe mensual de un cliente | Debe | M | done | admin | - | - | E04-06 |
 | [E09-05](E09-comprobantes-informes/E09-05-enviar-el-informe-mensual-por-mail-a-cada-cliente.md) | Enviar el informe mensual por mail a cada cliente | Debe | M | draft | admin | - | - | E09-04, E00-10, E00-11, E03-01 |
 | [E09-06](E09-comprobantes-informes/E09-06-previsualizar-y-reenviar-el-informe-mensual.md) | Previsualizar y reenviar el informe mensual | Podría | S | draft | admin | - | - | E09-05 |
 

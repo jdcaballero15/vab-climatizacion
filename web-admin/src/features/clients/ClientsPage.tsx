@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ClientContacts } from "./ClientContacts";
 import { ClientEquipment } from "./ClientEquipment";
 import { ClientHistory } from "./ClientHistory";
+import { MonthlyReport } from "./MonthlyReport";
 import { ClientLifecycle } from "./ClientLifecycle";
 import { ClientSearch } from "./ClientSearch";
 import { ClientSites } from "./ClientSites";
@@ -67,6 +68,7 @@ function ClientDetail({ clientId, onClose }: { clientId: string; onClose: () => 
       <ClientEquipment clientId={id} />
       <ClientContacts clientId={id} />
       <ClientHistory clientId={id} />
+      <MonthlyReport clientId={id} />
       <ClientLifecycle client={client.data} />
     </section>
   );
