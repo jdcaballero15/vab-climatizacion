@@ -26,6 +26,7 @@ from app.api.schemas.work_order import (
     OrderListItemOut,
     OrderMaintenanceOut,
     OrderTechnicianOut,
+    RelatedOrderOut,
     ReturnedFromCrewOut,
     ReturnToCrewCreate,
     TimelineEntryOut,
@@ -34,6 +35,7 @@ from app.api.schemas.work_order import (
     WorkOrderCreate,
     WorkOrderDetailAdminOut,
 )
+from app.core.config import get_settings
 from app.core.dates import business_today, format_date
 from app.db.models.client import ClientSite
 from app.db.models.crew import Crew
@@ -43,7 +45,6 @@ from app.db.models.user import User
 from app.db.models.work_order import (
     WorkOrder,
     WorkOrderAssignment,
-    WorkOrderBilling,
     WorkOrderCancellation,
     WorkOrderClosure,
     WorkOrderEvent,
@@ -57,10 +58,11 @@ from app.domain.work_order import (
     CANCEL_REASON_LABELS,
     CREW_OPEN_STATUSES,
     STATUSLESS_EVENT_TYPES,
-    BillingStatus,
     CancelReason,
     ClosureOutcome,
+    ImportedOrderReadOnlyError,
     OrderAction,
+    OrderFilters,
     OrderKind,
     OrderSource,
     OrderStatus,
@@ -115,8 +117,16 @@ class OrderApprovedError(Exception):
     """La orden ya está aprobada: sus precios están estampados (E04-08)."""
 
 
-class OrderInvoicedError(Exception):
-    """La orden ya está facturada (E04-14): no vuelve a la escuadrilla."""
+class SourceOrderNotFoundError(Exception):
+    """La orden de origen de una de reparación no existe (E04-13)."""
+
+
+class SourceOrderNotClosedError(Exception):
+    """La orden de origen no está cerrada por la escuadrilla (E04-13)."""
+
+
+class SourceOrderOfAnotherClientError(Exception):
+    """La orden de reparación es de otro cliente que la de origen (E04-13)."""
 
 
 class CancellationValidationError(Exception):
@@ -140,6 +150,11 @@ async def create_work_order(
         raise WorkTypeInactiveError
     if data.equipment_id is not None:
         await _check_equipment(session, data.equipment_id, data.client_site_id)
+    source = (
+        await _source_order(session, data.source_order_id, data.client_id)
+        if data.source_order_id is not None
+        else None
+    )
 
     order = WorkOrder(
         status=OrderStatus.pending,
@@ -157,10 +172,35 @@ async def create_work_order(
         actor_id=actor.id,
     )
     WorkOrderRepository(session).add_event(event)
+    if source is not None:
+        await record_event(
+            session,
+            source,
+            WorkOrderEventType.repair_order_opened,
+            actor,
+            f"Se abrió la orden N° {order.number}",
+        )
     await session.commit()
     await session.refresh(order)
     await session.refresh(event)
     return WorkOrderAdminOut.model_validate({**_columns(order), "created_at": event.occurred_at})
+
+
+# Las que ya cerró la escuadrilla: de su cierre sale una orden de reparación (E04-13).
+_CLOSED_STATUSES = frozenset({OrderStatus.done, OrderStatus.invoiced, OrderStatus.paid})
+
+
+async def _source_order(
+    session: AsyncSession, source_order_id: uuid.UUID, client_id: uuid.UUID
+) -> WorkOrder:
+    source = await WorkOrderRepository(session).get(source_order_id)
+    if source is None:
+        raise SourceOrderNotFoundError
+    if source.status not in _CLOSED_STATUSES:
+        raise SourceOrderNotClosedError
+    if source.client_id != client_id:
+        raise SourceOrderOfAnotherClientError
+    return source
 
 
 # El equipo se elige o se cambia hasta que la escuadrilla inicia la orden (E04-12).
@@ -188,7 +228,7 @@ async def change_equipment(
     """
     repo = WorkOrderRepository(session)
     order = await get_work_order(session, order_id)
-    if order.status not in EQUIPMENT_EDITABLE_STATUSES:
+    if order.source == OrderSource.persat or order.status not in EQUIPMENT_EDITABLE_STATUSES:
         raise OrderNotEditableError
     new = (
         await _check_equipment(session, equipment_id, order.client_site_id)
@@ -227,7 +267,7 @@ async def get_detail(session: AsyncSession, order_id: uuid.UUID) -> WorkOrderDet
     """La orden con sus datos, escuadrilla, cancelación y línea de tiempo (E04-06)."""
     order = await get_work_order(session, order_id)
     repository = WorkOrderRepository(session)
-    client = await clients_service.get_client(session, order.client_id)
+    client = await clients_service.get_client(session, order.client_id, include_deleted=True)
     site = await session.get(ClientSite, order.client_site_id)
     if site is None:
         # La orden apunta siempre a un domicilio (FK): no pasa con datos sanos.
@@ -260,20 +300,12 @@ async def get_detail(session: AsyncSession, order_id: uuid.UUID) -> WorkOrderDet
         )
         for event, actor_name in await repository.timeline(order.id)
     ]
-    billed = await repository.invoiced_billing(order.id)
-    if billed is not None:
-        billing, billed_by = billed
-        timeline.append(
-            TimelineEntryOut(
-                occurred_at=billing.updated_at,
-                event_type="billing_invoiced",
-                from_status=None,
-                to_status=None,
-                actor_name=billed_by,
-                note=f"Factura {billing.invoice_number}" if billing.invoice_number else None,
-            )
-        )
-        timeline.sort(key=lambda entry: entry.occurred_at)
+    source = (
+        await repository.get(order.source_order_id, include_deleted=True)
+        if order.source_order_id is not None
+        else None
+    )
+    repairs = await repository.repair_orders_of(order.id)
     return WorkOrderDetailAdminOut(
         id=order.id,
         number=order.number,
@@ -313,8 +345,14 @@ async def get_detail(session: AsyncSession, order_id: uuid.UUID) -> WorkOrderDet
             else None
         ),
         has_closure=await repository.has_closure(order.id),
+        source_order=_related(source) if source is not None else None,
+        repair_orders=[_related(repair) for repair in repairs],
         timeline=timeline,
     )
+
+
+def _related(order: WorkOrder) -> RelatedOrderOut:
+    return RelatedOrderOut(id=order.id, number=order.number, status=order.status)
 
 
 async def list_by_status(
@@ -322,14 +360,15 @@ async def list_by_status(
     status: OrderStatus | None,
     *,
     in_workshop: bool = False,
-    billing: BillingStatus | None = None,
+    filters: OrderFilters | None = None,
     limit: int,
     offset: int,
 ) -> tuple[list[OrderListItemOut], int]:
     """Órdenes en un estado o, con in_workshop, los equipos en el galpón (E06-07)."""
     rows, total = await WorkOrderRepository(session).list_by_status_page(
-        status, in_workshop=in_workshop, billing=billing, limit=limit, offset=offset
+        status, in_workshop=in_workshop, filters=filters, limit=limit, offset=offset
     )
+    overdue_before = datetime.now(UTC) - timedelta(days=get_settings().billing_overdue_days)
     plans = await MaintenancePlanRepository(session).by_ids(
         [row[0].maintenance_plan_id for row in rows if row[0].maintenance_plan_id is not None]
     )
@@ -365,11 +404,16 @@ async def list_by_status(
                 if cancellation is not None and cancelled_by_name is not None
                 else None
             ),
-            # La última asignación de una Terminada es la de la escuadrilla que la cerró.
+            # La última asignación de una cerrada es la de la escuadrilla que la cerró.
             completed=(
                 CompletedOut(crew_name=crew_name, closed_at=closure.closed_at)
-                if order.status == OrderStatus.done and closure is not None
+                if order.status in _CLOSED_STATUSES and closure is not None
                 else None
+            ),
+            billing_overdue=(
+                order.status == OrderStatus.done
+                and closure is not None
+                and closure.closed_at < overdue_before
             ),
             equipment=(
                 OrderEquipmentOut(
@@ -426,7 +470,7 @@ async def list_for_client(
     offset: int,
 ) -> tuple[list[ClientOrderOut], int]:
     """Historial de órdenes de un cliente para su ficha (E03-04). 404 si no existe."""
-    await clients_service.get_client(session, client_id)
+    await clients_service.get_client(session, client_id, include_deleted=True)
     rows, total = await WorkOrderRepository(session).list_for_client_page(
         client_id,
         equipment_id=equipment_id,
@@ -456,6 +500,8 @@ async def list_for_client(
             ),
             crew_name=crew_name,
             has_closure=has_closure,
+            imported=order.source == OrderSource.persat,
+            description=order.description,
         )
         for (
             order,
@@ -696,6 +742,9 @@ async def stage_transition(
     note: str | None,
 ) -> WorkOrderEvent:
     """Cambia el estado y agrega el evento sin confirmar, para sumar más en la transacción."""
+    if order.source == OrderSource.persat:
+        # El historial importado de Persat es de solo lectura (E11-03, criterio 4).
+        raise ImportedOrderReadOnlyError
     current = order.status
     transition = resolve_transition(current, action, actor.role, note)
     repository = WorkOrderRepository(session)
@@ -847,16 +896,6 @@ async def return_to_crew(
     )
     if approved is not None:
         raise OrderApprovedError
-    # Las facturadas antes de exigir la aprobación (E05-05) pueden no estar aprobadas.
-    invoiced = await session.scalar(
-        select(WorkOrderBilling.id).where(
-            WorkOrderBilling.work_order_id == order.id,
-            WorkOrderBilling.status == BillingStatus.invoiced,
-            WorkOrderBilling.deleted_at.is_(None),
-        )
-    )
-    if invoiced is not None:
-        raise OrderInvoicedError
     resolve_transition(order.status, OrderAction.return_to_technician, actor.role, data.reason)
     # Una Terminada conserva la asignación de la escuadrilla que la cerró.
     current = await WorkOrderRepository(session).current_assignment(order.id)

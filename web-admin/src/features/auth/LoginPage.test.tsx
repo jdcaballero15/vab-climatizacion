@@ -75,4 +75,21 @@ describe("LoginPage", () => {
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
     expect(onSuccess.mock.calls[0][0]).toEqual(session);
   });
+
+  // E01-06: con la cuenta bloqueada, el mensaje dice cuánto esperar.
+  it("muestra el bloqueo por intentos fallidos con el tiempo de espera", async () => {
+    mockFetch(429, {
+      detail: {
+        code: "account_locked",
+        message: "Demasiados intentos fallidos. Probá de nuevo en 15 minutos.",
+      },
+    });
+    renderLogin();
+
+    await userEvent.type(screen.getByLabelText("Correo electrónico"), "ana@ot-demo.com");
+    await userEvent.type(screen.getByLabelText("Contraseña"), "Secreta123");
+    await userEvent.click(screen.getByRole("button", { name: "Iniciar sesión" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Probá de nuevo en 15 minutos.");
+  });
 });

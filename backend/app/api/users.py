@@ -1,12 +1,13 @@
 import uuid
-from collections.abc import Sequence
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import SessionDep, require_role
 from app.api.schemas.user import PasswordResetOut, UserAdminOut, UserCreate, UserUpdate
 from app.db.models.user import User, UserRole
+from app.services import login_guard
 from app.services import users as users_service
 
 router = APIRouter(prefix="/admin/users", tags=["usuarios"])
@@ -30,8 +31,25 @@ async def create_user(payload: UserCreate, session: SessionDep, _: AdminOrOwner)
 
 
 @router.get("", response_model=list[UserAdminOut])
-async def list_users(session: SessionDep, _: AdminOrOwner) -> Sequence[User]:
-    return await users_service.list_users(session)
+async def list_users(session: SessionDep, _: AdminOrOwner) -> list[UserAdminOut]:
+    return [await _with_lock(session, user) for user in await users_service.list_users(session)]
+
+
+@router.post("/{user_id}/unlock", response_model=UserAdminOut)
+async def unlock_user(user_id: uuid.UUID, session: SessionDep, _: AdminOrOwner) -> UserAdminOut:
+    """Levanta el bloqueo por intentos fallidos (E01-06, criterio 3)."""
+    try:
+        user = await users_service.get_user(session, user_id)
+    except users_service.UserNotFoundError:
+        raise _not_found() from None
+    await login_guard.unlock(session, user)
+    return await _with_lock(session, user)
+
+
+async def _with_lock(session: AsyncSession, user: User) -> UserAdminOut:
+    out = UserAdminOut.model_validate(user)
+    out.locked_until = await login_guard.locked_until(session, user.email)
+    return out
 
 
 @router.get("/{user_id}", response_model=UserAdminOut)

@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -12,8 +13,12 @@ from app.api.schemas.work_order import (
     BillingUpdate,
     CancellationAdminOut,
     CancellationCreate,
+    ChargeAdminOut,
+    ChargeWrite,
     EquipmentChange,
     OrderListPage,
+    PaymentCreate,
+    PaymentVoid,
     ReturnToCrewCreate,
     UnassignmentCreate,
     WorkOrderAdminOut,
@@ -23,8 +28,9 @@ from app.api.schemas.work_order import (
 from app.db.models.user import User, UserRole
 from app.db.models.work_order import WorkOrderAssignment
 from app.domain.work_order import (
-    BillingStatus,
+    ImportedOrderReadOnlyError,
     InvalidTransitionError,
+    OrderFilters,
     OrderStatus,
     ReasonRequiredError,
     TransitionRoleError,
@@ -58,6 +64,21 @@ _CHOICE_ERROR_DETAIL: dict[type[Exception], tuple[int, str, str]] = {
         "work_type_inactive",
         "El tipo de trabajo está desactivado.",
     ),
+    work_orders_service.SourceOrderNotFoundError: (
+        404,
+        "source_order_not_found",
+        "No se encontró la orden de origen.",
+    ),
+    work_orders_service.SourceOrderNotClosedError: (
+        422,
+        "source_order_not_closed",
+        "La orden de origen tiene que estar terminada.",
+    ),
+    work_orders_service.SourceOrderOfAnotherClientError: (
+        422,
+        "source_order_of_another_client",
+        "La orden de reparación tiene que ser del mismo cliente que la de origen.",
+    ),
 }
 _CHOICE_ERRORS = tuple(_CHOICE_ERROR_DETAIL)
 
@@ -77,6 +98,7 @@ def _equipment_not_available() -> HTTPException:
 # Reglas de la máquina de estados: no se puede en el estado actual es un conflicto (409).
 _RULE_STATUS: dict[type[WorkOrderRuleError], int] = {
     InvalidTransitionError: 409,
+    ImportedOrderReadOnlyError: 409,
     TransitionRoleError: 403,
     ReasonRequiredError: 422,
 }
@@ -159,25 +181,37 @@ async def change_equipment(
         raise _equipment_not_available() from None
 
 
-# Los estados desde los que se asigna (E04-03) o se cancela (E04-07), las terminadas para
-# revisarlas (E04-08) y las canceladas; el panel completo con filtros llega con E04-05.
-ListableStatus = Literal["pending", "assigned", "in_progress", "done", "cancelled"]
+# El panel por estado (E04-05): todos los estados de la orden.
+ListableStatus = Literal[
+    "pending", "assigned", "in_progress", "done", "invoiced", "paid", "cancelled"
+]
 
 
 @router.get("", response_model=OrderListPage)
 async def list_work_orders(
     session: SessionDep,
-    _: AdminOnly,
+    _: AdminOrOwner,
     status: ListableStatus,
-    # Estado de cobro de las terminadas (E04-14).
-    billing: BillingStatus | None = None,
+    crew_id: uuid.UUID | None = None,
+    client_id: uuid.UUID | None = None,
+    work_type_id: uuid.UUID | None = None,
+    # Período por fecha de creación de la orden, los dos inclusive.
+    created_from: date | None = None,
+    created_to: date | None = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> OrderListPage:
-    items, total = await work_orders_service.list_by_status(
-        session, OrderStatus(status), billing=billing, limit=limit, offset=offset
+    filters = OrderFilters(
+        crew_id=crew_id,
+        client_id=client_id,
+        work_type_id=work_type_id,
+        created_from=created_from,
+        created_to=created_to,
     )
-    if status == "done":
+    items, total = await work_orders_service.list_by_status(
+        session, OrderStatus(status), filters=filters, limit=limit, offset=offset
+    )
+    if OrderStatus(status) in billing_service.CLOSED_STATUSES:
         billings = await billing_service.billing_by_order(session, [item.id for item in items])
         for item in items:
             item.billing = billings.get(item.id)
@@ -188,7 +222,7 @@ async def list_work_orders(
 @router.get("/in-workshop", response_model=OrderListPage)
 async def list_in_workshop(
     session: SessionDep,
-    _: AdminOnly,
+    _: AdminOrOwner,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> OrderListPage:
@@ -210,16 +244,117 @@ async def get_work_order_detail(
         raise _error(404, "order_not_found", "No se encontró la orden.") from None
 
 
+_BILLING_ERRORS = (
+    billing_service.ImportedOrderError,
+    billing_service.OrderNotDoneError,
+    billing_service.OrderNotInvoicedError,
+    billing_service.OrderNotPaidError,
+)
+
+
+@router.get("/{order_id}/billing", response_model=BillingAdminOut)
+async def get_work_order_billing(
+    order_id: uuid.UUID, session: SessionDep, _: AdminOrOwner
+) -> BillingAdminOut:
+    """Importes, factura y cobro de la orden (E04-09 a E04-11)."""
+    try:
+        return await billing_service.get_billing(session, order_id)
+    except work_orders_service.WorkOrderNotFoundError:
+        raise _error(404, "order_not_found", "No se encontró la orden.") from None
+
+
 @router.put("/{order_id}/billing", response_model=BillingAdminOut)
 async def save_work_order_billing(
     order_id: uuid.UUID, payload: BillingUpdate, session: SessionDep, admin: AdminOnly
 ) -> BillingAdminOut:
-    """Importes y estado de cobro de una orden terminada (E04-14, versión mínima)."""
+    """Mano de obra de una orden terminada (E04-14)."""
     try:
         return await billing_service.save_billing(session, order_id, payload, admin)
     except work_orders_service.WorkOrderNotFoundError:
         raise _error(404, "order_not_found", "No se encontró la orden.") from None
-    except (billing_service.OrderNotDoneError, billing_service.OrderNotApprovedError) as exc:
+    except _BILLING_ERRORS as exc:
+        raise _error(409, exc.code, exc.message) from None
+
+
+@router.get("/{order_id}/charges", response_model=list[ChargeAdminOut])
+async def list_work_order_charges(
+    order_id: uuid.UUID, session: SessionDep, _: AdminOrOwner
+) -> list[ChargeAdminOut]:
+    """Otros cargos de la orden (E04-11)."""
+    try:
+        return await billing_service.list_charges(session, order_id)
+    except work_orders_service.WorkOrderNotFoundError:
+        raise _error(404, "order_not_found", "No se encontró la orden.") from None
+
+
+@router.post(
+    "/{order_id}/charges",
+    response_model=list[ChargeAdminOut],
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_work_order_charge(
+    order_id: uuid.UUID, payload: ChargeWrite, session: SessionDep, admin: AdminOnly
+) -> list[ChargeAdminOut]:
+    try:
+        return await billing_service.add_charge(session, order_id, payload, admin)
+    except work_orders_service.WorkOrderNotFoundError:
+        raise _error(404, "order_not_found", "No se encontró la orden.") from None
+    except _BILLING_ERRORS as exc:
+        raise _error(409, exc.code, exc.message) from None
+
+
+@router.put("/{order_id}/charges/{charge_id}", response_model=list[ChargeAdminOut])
+async def update_work_order_charge(
+    order_id: uuid.UUID,
+    charge_id: uuid.UUID,
+    payload: ChargeWrite,
+    session: SessionDep,
+    admin: AdminOnly,
+) -> list[ChargeAdminOut]:
+    try:
+        return await billing_service.update_charge(session, order_id, charge_id, payload, admin)
+    except (work_orders_service.WorkOrderNotFoundError, billing_service.ChargeNotFoundError):
+        raise _error(404, "charge_not_found", "No se encontró el cargo.") from None
+    except _BILLING_ERRORS as exc:
+        raise _error(409, exc.code, exc.message) from None
+
+
+@router.delete("/{order_id}/charges/{charge_id}", response_model=list[ChargeAdminOut])
+async def remove_work_order_charge(
+    order_id: uuid.UUID, charge_id: uuid.UUID, session: SessionDep, admin: AdminOnly
+) -> list[ChargeAdminOut]:
+    """Saca el cargo (borrado lógico) y lo anota en la línea de tiempo."""
+    try:
+        return await billing_service.remove_charge(session, order_id, charge_id, admin)
+    except (work_orders_service.WorkOrderNotFoundError, billing_service.ChargeNotFoundError):
+        raise _error(404, "charge_not_found", "No se encontró el cargo.") from None
+    except _BILLING_ERRORS as exc:
+        raise _error(409, exc.code, exc.message) from None
+
+
+@router.post("/{order_id}/payment", response_model=BillingAdminOut)
+async def register_work_order_payment(
+    order_id: uuid.UUID, payload: PaymentCreate, session: SessionDep, admin: AdminOnly
+) -> BillingAdminOut:
+    """Cobro de una orden facturada: pasa a Cobrada (E04-10)."""
+    try:
+        return await billing_service.register_payment(session, order_id, payload, admin)
+    except work_orders_service.WorkOrderNotFoundError:
+        raise _error(404, "order_not_found", "No se encontró la orden.") from None
+    except _BILLING_ERRORS as exc:
+        raise _error(409, exc.code, exc.message) from None
+
+
+@router.post("/{order_id}/payment/void", response_model=BillingAdminOut)
+async def void_work_order_payment(
+    order_id: uuid.UUID, payload: PaymentVoid, session: SessionDep, admin: AdminOnly
+) -> BillingAdminOut:
+    """Anula un cobro registrado por error: vuelve a Facturada (E04-10, criterio 4)."""
+    try:
+        return await billing_service.void_payment(session, order_id, payload, admin)
+    except work_orders_service.WorkOrderNotFoundError:
+        raise _error(404, "order_not_found", "No se encontró la orden.") from None
+    except _BILLING_ERRORS as exc:
         raise _error(409, exc.code, exc.message) from None
 
 
@@ -269,10 +404,6 @@ async def return_to_crew(
     except work_orders_service.OrderApprovedError:
         raise _error(
             409, "order_approved", "La orden ya está aprobada: no se puede devolver."
-        ) from None
-    except work_orders_service.OrderInvoicedError:
-        raise _error(
-            409, "order_invoiced", "La orden ya está facturada: no se puede devolver."
         ) from None
     except _ASSIGNMENT_ERRORS as exc:
         raise _assignment_error(exc) from None

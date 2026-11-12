@@ -166,10 +166,15 @@ interface HistoryRowProps {
 }
 
 function HistoryRow({ order, open, onToggle }: HistoryRowProps) {
+  // E11-03: el historial de Persat se marca y muestra su detalle; es de solo lectura.
+  const [showDetail, setShowDetail] = useState(false);
   return (
     <>
       <tr>
-        <td>{order.number}</td>
+        <td>
+          {order.number}
+          {order.imported && <span className="badge">Importada de Persat</span>}
+        </td>
         <td>{formatDate(order.created_at)}</td>
         <td>
           <span className={`badge badge--${order.status}`}>
@@ -192,8 +197,26 @@ function HistoryRow({ order, open, onToggle }: HistoryRowProps) {
               {open ? "Ocultar cierre" : "Ver cierre"}
             </button>
           )}
+          {order.imported && order.description && (
+            <button
+              type="button"
+              className="btn--sm"
+              aria-expanded={showDetail}
+              aria-label={`${showDetail ? "Ocultar" : "Ver"} el detalle de Persat de la orden N° ${order.number}`}
+              onClick={() => setShowDetail((shown) => !shown)}
+            >
+              {showDetail ? "Ocultar detalle" : "Ver detalle"}
+            </button>
+          )}
         </td>
       </tr>
+      {showDetail && order.description && (
+        <tr>
+          <td colSpan={8} className="clients__persat-detail">
+            {order.description}
+          </td>
+        </tr>
+      )}
       {open && (
         <tr>
           <td colSpan={8}>

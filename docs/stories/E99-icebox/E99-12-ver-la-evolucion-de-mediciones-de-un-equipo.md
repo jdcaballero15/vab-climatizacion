@@ -1,19 +1,21 @@
 ---
-id: E07-09
+id: E99-12
 title: "Ver la evolución de mediciones de un equipo"
-epic: E07
+epic: E99
 phase: 1
-priority: should
-status: draft
+priority: could
+status: icebox
 roles: [admin, owner]
 size: M
 areas: [backend, web-admin]
-depends_on: [E07-07, E03-05]
+depends_on: []
 blocked_by: []
 assumes: [D-002]
 ---
 
-# E07-09 Ver la evolución de mediciones de un equipo
+# E99-12 Ver la evolución de mediciones de un equipo
+
+> Pasó al icebox el 2026-11-10: Gonza descartó las mediciones y la aprobación en bloque del mantenimiento (decisión del 2026-11-03). Antes era E07.
 
 ## Historia
 

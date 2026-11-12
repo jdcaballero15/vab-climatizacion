@@ -91,9 +91,11 @@ Enum cancel_reason {
   other              [note: 'Otro, con texto obligatorio (E04-07). Lista a validar con la oficina']
 }
 
-Enum billing_status {
-  pending  [note: 'Pendiente de enviar a cobrar (también sin fila de cobro)']
-  invoiced [note: 'Facturada (E04-14, versión mínima; no es el estado de la orden)']
+Enum payment_method {
+  cash
+  transfer
+  check
+  other
 }
 
 Enum no_signature_reason {
@@ -119,12 +121,12 @@ Enum check_result {
   not_ok
 }
 
-Enum stock_location_type {
-  depot
-  vehicle
+Enum stock_location_kind {
+  warehouse
+  truck
 }
 
-Enum stock_movement_reason {
+Enum stock_movement_kind {
   receipt
   transfer
   usage
@@ -228,6 +230,7 @@ Table client {
   tax_id varchar [note: 'CUIT o DNI. Dato personal, ver SECURITY.md']
   tax_condition tax_condition [note: 'Opcional']
   notes text
+  merged_into_id uuid [ref: > client.id, note: 'Dado de baja al unificarlo en este cliente (E03-08)']
 }
 
 Table client_contact {
@@ -280,6 +283,7 @@ Table work_order {
   requester_area varchar [note: 'Dónde: sector, piso o ala. Opcional, el técnico lo ve']
   requires_approval boolean [default: false, note: 'Sin uso: el mantenimiento se genera Pendiente, sin aprobación en bloque (decisión del 2026-11-03, D-005). Siempre false']
   maintenance_plan_id uuid [ref: > maintenance_plan.id, note: 'Plan que generó la orden (E07-04)']
+  source_order_id uuid [ref: > work_order.id, note: 'De reparación abierta desde el cierre de esta orden (E04-13)']
   maintenance_due_on date [note: 'Día de la visita del plan. Único junto con maintenance_plan_id: generar dos veces no duplica. CHECK: los dos nulos o los dos con valor']
 }
 
@@ -350,11 +354,9 @@ Table work_order_billing {
   work_order_id uuid [ref: > work_order.id, not null, note: 'Única por orden (índice parcial sin borradas); se reemplaza al editar']
   parts_amount numeric(12,2) [not null, note: 'Repuestos, un total en pesos (CHECK >= 0)']
   labor_amount numeric(12,2) [not null, note: 'Mano de obra en pesos (CHECK >= 0)']
-  status billing_status [not null]
-  invoice_number varchar(50)
   updated_by uuid [ref: > app_user.id, not null, note: 'Último usuario de administración que lo cargó']
 
-  Note: 'Importes y estado de cobro de una orden Terminada (E04-14). Provisorio hasta E04-09 a E04-11: la orden sigue Terminada'
+  Note: 'Mano de obra cargada a mano de una orden Terminada (E04-14). Factura, cobro y otros cargos van en sus tablas (E04-09 a E04-11)'
 }
 
 Table work_order_closure_technician {
@@ -448,48 +450,66 @@ Table part_usage {
 Table work_order_charge {
   id uuid [pk]
   work_order_id uuid [ref: > work_order.id, not null]
-  concept varchar [not null, note: 'Mano de obra, visita, otro']
-  amount numeric(14,2) [not null, note: 'ADMIN']
-  charged_at timestamptz [not null]
+  description varchar(200) [not null, note: 'Otros cargos además de la mano de obra (E04-11)']
+  amount numeric(12,2) [not null, note: 'ADMIN. CHECK >= 0']
+  created_by uuid [ref: > app_user.id, not null]
+  deleted_at timestamptz [note: 'Sacado; cada cambio queda en la línea de tiempo']
 }
 
 // ---------- Facturación y cobro ----------
 
-Table invoice_record {
+Table invoice {
   id uuid [pk]
-  work_order_id uuid [ref: > work_order.id, not null]
-  invoice_number varchar [not null, note: 'La factura se emite en el sistema de facturación del cliente. Datos exactos: D-004']
-  recorded_at timestamptz [not null]
-  recorded_by uuid [ref: > app_user.id, not null]
+  number varchar(50) [not null, note: 'La factura se emite en el sistema de facturación del cliente (D-004)']
+  issued_on date [not null]
+  created_by uuid [ref: > app_user.id, not null]
+
+  Note: 'Una factura puede cubrir varias órdenes, por ejemplo las de un abonado (E04-09)'
 }
 
-Table payment_record {
+Table work_order_invoice {
   id uuid [pk]
-  work_order_id uuid [ref: > work_order.id, not null]
-  recorded_at timestamptz [not null]
-  recorded_by uuid [ref: > app_user.id, not null]
+  work_order_id uuid [ref: > work_order.id, not null, note: 'Única por orden (índice parcial sin borradas)']
+  invoice_id uuid [ref: > invoice.id, not null]
+}
+
+Table work_order_payment {
+  id uuid [pk]
+  work_order_id uuid [ref: > work_order.id, not null, note: 'Un cobro vigente por orden (índice parcial sin anulados ni borrados)']
+  paid_on date [not null]
+  method payment_method [not null]
+  created_by uuid [ref: > app_user.id, not null]
+  voided_at timestamptz [note: 'Anulado por error (E04-10, criterio 4): la orden vuelve a Facturada']
+  voided_by uuid [ref: > app_user.id]
+  void_reason varchar(255)
+
+  Note: 'El importe cobrado es el total de la orden: no se guarda aparte'
 }
 
 // ---------- Stock ----------
 
 Table stock_location {
   id uuid [pk]
-  type stock_location_type [not null]
-  name varchar [not null]
-  technician_id uuid [ref: > app_user.id, note: 'Para camionetas']
+  kind stock_location_kind [not null]
+  name varchar(255) [not null]
+  crew_id uuid [ref: > crew.id, note: 'Solo camionetas (CHECK). Una camioneta activa por escuadrilla: de ahí salen sus usos (E08-01, D-013)']
+  is_active boolean [not null, note: 'Con movimientos no se borra: se desactiva']
 }
 
 Table stock_movement {
   id uuid [pk]
+  kind stock_movement_kind [not null]
   part_id uuid [ref: > part.id, not null]
+  quantity numeric(12,3) [not null, note: 'Siempre > 0: sale del origen y entra en el destino']
   from_location_id uuid [ref: > stock_location.id]
-  to_location_id uuid [ref: > stock_location.id]
-  quantity numeric(12,3) [not null]
-  reason stock_movement_reason [not null]
-  part_usage_id uuid [ref: > part_usage.id]
-  moved_at timestamptz [not null]
-  moved_by uuid [ref: > app_user.id, not null]
-  note varchar
+  to_location_id uuid [ref: > stock_location.id, note: 'CHECK: al menos uno de los dos']
+  work_order_id uuid [ref: > work_order.id, note: 'En los usos de un cierre']
+  part_usage_id uuid [ref: > part_usage.id, note: 'Único: un cierre reenviado no descuenta dos veces (E08-04)']
+  reason varchar(255) [note: 'Obligatorio en los ajustes (E08-06)']
+  created_by uuid [ref: > app_user.id, not null]
+  occurred_at timestamptz [not null]
+
+  Note: 'El saldo de cada ubicación es entradas menos salidas (regla 6). Un uso sin stock deja la camioneta en negativo, destacada para ajustarla (E08-08)'
 }
 
 // ---------- Mantenimiento preventivo ----------
@@ -500,7 +520,7 @@ Table maintenance_check_step {
   position int [not null]
   is_active boolean [not null, note: 'Quitar un paso lo desactiva (E07-01)']
 
-  Note: 'Checklist único de mantenimiento, editable por la oficina (decisión de Gonza, 2026-11-03). Sin plantillas por frecuencia ni por tipo de equipo; las mediciones (E07-02) quedan para más adelante'
+  Note: 'Checklist único de mantenimiento, editable por la oficina (decisión de Gonza, 2026-11-03). Sin plantillas por frecuencia ni por tipo de equipo; las mediciones (E99-09) quedan para más adelante'
 }
 
 Table work_order_check_item {
@@ -568,8 +588,9 @@ Table legacy_reference {
   source varchar [not null, default: 'persat']
   legacy_id varchar [not null]
   imported_at timestamptz [not null]
+  batch_id uuid [ref: > import_batch.id, note: 'El lote que lo creó (E11-05)']
   indexes {
-    (entity, source, legacy_id) [unique]
+    (entity, source, legacy_id) [unique, note: 'Sin las borradas: un lote deshecho se puede volver a importar']
   }
 }
 
@@ -583,4 +604,61 @@ Table order_document {
   created_by uuid [ref: > app_user.id, not null]
 
   Note: 'Comprobantes de retiro y devolución con la firma, sin precios (E09-01, E09-02)'
+}
+
+// ---------- Importación ----------
+
+Table import_batch {
+  id uuid [pk]
+  source varchar(50) [not null, note: 'persat']
+  run_by varchar(255) [not null, note: 'Quién corrió la importación (línea de comandos)']
+  started_at timestamptz [not null]
+  summary text [not null, note: 'Cantidades creadas, para leer']
+  undone_at timestamptz [note: 'Lote deshecho: lo creado quedó dado de baja (E11-05)']
+}
+
+// ---------- Auditoría y traslados ----------
+
+Table audit_event {
+  id uuid [pk]
+  entity varchar(50) [not null, note: 'client, equipment...']
+  entity_id uuid [not null]
+  action varchar(50) [not null, note: 'deactivated, restored, merged, merged_in']
+  actor_id uuid [note: 'Quién hizo el cambio; sin clave foránea, el registro no depende del usuario']
+  occurred_at timestamptz [not null]
+  detail text [note: 'Diferencias en JSON (campo: [antes, después]); CUIT/DNI enmascarado']
+
+  Note: 'Auditoría de cambios (E12-01): la llena un listener del flush con el usuario del pedido. Las órdenes además tienen work_order_event'
+}
+
+Table login_failure {
+  id uuid [pk]
+  email varchar(320) [not null, note: 'En minúsculas; no se loguea']
+  ip varchar(64) [not null]
+  occurred_at timestamptz [not null]
+
+  Note: 'Intentos de ingreso fallidos para bloquear la cuenta (E01-06)'
+}
+
+Table dismissed_other_text {
+  id uuid [pk]
+  kind varchar(20) [not null, note: 'failure, repair o part']
+  text_key varchar(255) [not null, note: 'Texto normalizado; único por tipo (índice parcial)']
+
+  Note: 'Textos de "Otro" descartados de la revisión (E02-07)'
+}
+
+Table equipment_transfer {
+  id uuid [pk]
+  equipment_id uuid [ref: > equipment.id, not null]
+  from_client_id uuid [ref: > client.id, not null]
+  from_site_id uuid [ref: > client_site.id, not null]
+  from_code varchar(50) [not null, note: 'Se sigue encontrando por este código (E03-09)']
+  to_client_id uuid [ref: > client.id, not null]
+  to_site_id uuid [ref: > client_site.id, not null]
+  to_code varchar(50) [not null]
+  transferred_by uuid [ref: > app_user.id, not null]
+  transferred_at timestamptz [not null]
+
+  Note: 'Paso de un equipo a otro cliente con código nuevo (E03-09). Las órdenes anteriores siguen en el cliente de origen'
 }

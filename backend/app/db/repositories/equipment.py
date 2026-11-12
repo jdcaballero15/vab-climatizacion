@@ -12,12 +12,15 @@ class EquipmentRepository(BaseRepository[Equipment]):
     model = Equipment
 
     async def list_for_client(
-        self, client_id: uuid.UUID, *, site_id: uuid.UUID | None
+        self, client_id: uuid.UUID, *, site_id: uuid.UUID | None, deleted: bool = False
     ) -> Sequence[Equipment]:
-        stmt = (
-            self._select()
-            .join(ClientSite, ClientSite.id == self.model.client_site_id)
-            .where(ClientSite.client_id == client_id)
+        base = (
+            self._select(include_deleted=True).where(self.model.deleted_at.is_not(None))
+            if deleted
+            else self._select()
+        )
+        stmt = base.join(ClientSite, ClientSite.id == self.model.client_site_id).where(
+            ClientSite.client_id == client_id
         )
         if site_id is not None:
             stmt = stmt.where(self.model.client_site_id == site_id)

@@ -76,6 +76,15 @@ class _Document(FPDF):
         self.set_font("Helvetica", "", 10)
         self.multi_cell(0, 6, _latin(value or "-"), new_x="LMARGIN", new_y="NEXT")
 
+    def fit(self, text: str, width: float) -> str:
+        """El texto que entra en la celda; si no entra, recortado con "..."."""
+        clean = _latin(text)
+        if self.get_string_width(clean) <= width:
+            return clean
+        while clean and self.get_string_width(clean + "...") > width:
+            clean = clean[:-1]
+        return clean.rstrip() + "..."
+
     def output_bytes(self) -> bytes:
         return bytes(self.output())
 
@@ -129,6 +138,6 @@ def build_monthly_report(data: MonthlyReportData) -> bytes:
             line.repair,
         )
         for width, value in zip(widths, values, strict=True):
-            pdf.cell(width, 6, _latin(value[:40] or "-"), border=1)
+            pdf.cell(width, 6, pdf.fit(value or "-", width - 2), border=1)
         pdf.ln()
     return pdf.output_bytes()

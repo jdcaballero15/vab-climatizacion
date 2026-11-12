@@ -21,15 +21,19 @@ from app.db.models.signature import Signature
 from app.db.models.stored_file import StoredFile
 from app.db.models.user import User, UserRole
 from app.db.models.work_order import (
+    Invoice,
     WorkOrder,
     WorkOrderAssignment,
     WorkOrderBilling,
     WorkOrderCancellation,
+    WorkOrderCharge,
     WorkOrderClosure,
     WorkOrderClosurePhoto,
     WorkOrderClosureTask,
     WorkOrderClosureTechnician,
     WorkOrderEvent,
+    WorkOrderInvoice,
+    WorkOrderPayment,
 )
 from app.db.session import SessionLocal, engine
 from app.domain.work_order import (
@@ -69,8 +73,12 @@ TABLES = [
     StoredFile.__table__,
     WorkOrderClosurePhoto.__table__,
     Signature.__table__,
-    # El listado de terminadas trae el cobro (E04-14).
+    # El listado de cerradas trae importes, factura y cobro (E04-09 a E04-14).
     WorkOrderBilling.__table__,
+    WorkOrderCharge.__table__,
+    Invoice.__table__,
+    WorkOrderInvoice.__table__,
+    WorkOrderPayment.__table__,
     # Los materiales de la orden suman al cobro (E05-05).
     Part.__table__,
     PartPrice.__table__,
@@ -91,7 +99,7 @@ ENUM_TYPES = (
     "cancel_reason",
     "no_signature_reason",
     "signature_purpose",
-    "billing_status",
+    "payment_method",
 )
 AYER = datetime.now(UTC) - timedelta(days=1)
 

@@ -55,6 +55,7 @@ from app.domain.work_order import (
 )
 from app.services import catalog as catalog_service
 from app.services import parts as parts_service
+from app.services import stock as stock_service
 from app.services import work_orders as work_orders_service
 
 
@@ -198,6 +199,17 @@ async def close_order(
     )
     session.add(closure)
     await session.flush()
+    usages = [
+        PartUsage(
+            work_order_id=order.id,
+            closure_id=closure.id,
+            part_id=line.part_id,
+            other_text=line.other_text,
+            quantity=line.quantity,
+            created_by=user.id,
+        )
+        for line in data.parts
+    ]
     session.add_all(
         [
             WorkOrderClosureTechnician(closure_id=closure.id, field_technician_id=tech_id)
@@ -211,17 +223,7 @@ async def close_order(
             WorkOrderClosurePhoto(closure_id=closure.id, file_id=file_id, position=position)
             for position, file_id in enumerate(data.photo_ids)
         ]
-        + [
-            PartUsage(
-                work_order_id=order.id,
-                closure_id=closure.id,
-                part_id=line.part_id,
-                other_text=line.other_text,
-                quantity=line.quantity,
-                created_by=user.id,
-            )
-            for line in data.parts
-        ]
+        + usages
         + [
             WorkOrderClosureCheck(
                 closure_id=closure.id,
@@ -232,6 +234,11 @@ async def close_order(
             )
             for answer in data.checklist
         ]
+    )
+    # E08-04: lo usado sale de la camioneta de la escuadrilla, en la misma transacción.
+    await session.flush()
+    await stock_service.record_closure_usage(
+        session, await work_orders_service.active_crew_of(session, user), usages, user
     )
     if data.signature is not None and data.signature.signer_name is not None:
         session.add(

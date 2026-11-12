@@ -10,7 +10,7 @@ from sqlalchemy import text
 from app.core.security import create_access_token
 from app.db.models.catalog import EquipmentType
 from app.db.models.client import Client, ClientContact, ClientSite
-from app.db.models.equipment import Equipment
+from app.db.models.equipment import Equipment, EquipmentTransfer
 from app.db.models.user import User, UserRole
 from app.db.session import SessionLocal, engine
 from app.main import app
@@ -24,6 +24,8 @@ TABLES = [
     ClientContact.__table__,
     EquipmentType.__table__,
     Equipment.__table__,
+    # Para encontrar un equipo por su código anterior a un traslado (E03-09).
+    EquipmentTransfer.__table__,
 ]
 URL = "/admin/search"
 

@@ -1,6 +1,9 @@
+import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import SessionDep, require_role
 from app.api.schemas.auth import (
@@ -14,6 +17,7 @@ from app.core.config import get_settings
 from app.core.security import create_access_token
 from app.db.models.user import User, UserRole
 from app.services import auth as auth_service
+from app.services import login_guard
 from app.services import session as session_service
 from app.services.auth import authenticate
 
@@ -63,9 +67,22 @@ def _clear_refresh_cookie(response: Response) -> None:
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(payload: LoginRequest, session: SessionDep, response: Response) -> TokenResponse:
+async def login(
+    payload: LoginRequest, session: SessionDep, request: Request, response: Response
+) -> TokenResponse:
+    ip = request.client.host if request.client else "desconocida"
+    try:
+        await login_guard.check(session, payload.email, ip)
+    except (login_guard.AccountLockedError, login_guard.TooManyAttemptsError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={"code": exc.code, "message": exc.message},
+        ) from None
     user = await authenticate(session, payload.email, payload.password)
     if user is None:
+        await login_guard.record_failure(
+            session, payload.email, ip, await _user_id(session, payload.email)
+        )
         # Mensaje genérico: no revela si el correo existe.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -77,9 +94,14 @@ async def login(payload: LoginRequest, session: SessionDep, response: Response) 
 
     access = create_access_token(subject=str(user.id), role=user.role.value)
     refresh = await session_service.issue_refresh_token(session, user)
+    await login_guard.clear(session, payload.email)
     await session.commit()
     _set_refresh_cookie(response, refresh)
     return TokenResponse(access_token=access, user=UserOut.model_validate(user))
+
+
+async def _user_id(session: AsyncSession, email: str) -> uuid.UUID | None:
+    return await session.scalar(select(User.id).where(func.lower(User.email) == email.lower()))
 
 
 @router.post("/refresh", response_model=RefreshResponse)

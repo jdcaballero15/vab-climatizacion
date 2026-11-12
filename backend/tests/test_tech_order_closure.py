@@ -19,6 +19,7 @@ from app.db.models.equipment import Equipment
 from app.db.models.maintenance import MaintenancePlan
 from app.db.models.part import Part, PartPrice, PartUsage
 from app.db.models.signature import Signature
+from app.db.models.stock import StockLocation, StockMovement
 from app.db.models.stored_file import StoredFile
 from app.db.models.user import User, UserRole
 from app.db.models.work_order import (
@@ -65,6 +66,9 @@ TABLES = [
     Part.__table__,
     PartPrice.__table__,
     PartUsage.__table__,
+    # Los materiales del cierre salen de la camioneta de la escuadrilla (E08-04).
+    StockLocation.__table__,
+    StockMovement.__table__,
 ]
 HOY = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")).date()
 
@@ -90,6 +94,8 @@ async def schema() -> AsyncGenerator[None, None]:
             "not_done_reason",
             "no_signature_reason",
             "signature_purpose",
+            "stock_location_kind",
+            "stock_movement_kind",
         ):
             await conn.execute(text(f"DROP TYPE IF EXISTS {enum_type}"))
         await conn.execute(text("DROP SEQUENCE IF EXISTS work_order_number_seq"))

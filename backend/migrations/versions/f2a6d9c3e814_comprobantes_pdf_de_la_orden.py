@@ -1,7 +1,7 @@
 """comprobantes PDF de retiro y devolución (E09-01, E09-02)
 
 Revision ID: f2a6d9c3e814
-Revises: a968d70ec211
+Revises: e5c9f2a8b316
 Create Date: 2026-11-10
 
 order_document: el PDF guardado en el bucket, uno por orden y tipo.
@@ -14,7 +14,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "f2a6d9c3e814"
-down_revision: str | None = "a968d70ec211"
+down_revision: str | None = "e5c9f2a8b316"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

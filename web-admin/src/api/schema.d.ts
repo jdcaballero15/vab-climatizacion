@@ -44,6 +44,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Audit
+         * @description Cambios auditados, el más nuevo primero, filtrables por entidad, usuario y fecha.
+         */
+        get: operations["list_audit_admin_audit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -147,6 +167,26 @@ export interface paths {
         put?: never;
         /** Create User */
         post: operations["create_user_admin_users_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{user_id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unlock User
+         * @description Levanta el bloqueo por intentos fallidos (E01-06, criterio 3).
+         */
+        post: operations["unlock_user_admin_users__user_id__unlock_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -469,7 +509,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Client */
+        /**
+         * Get Client
+         * @description También los dados de baja: conservan su ficha y su historial (E03-07).
+         */
         get: operations["get_client_admin_clients__client_id__get"];
         put?: never;
         post?: never;
@@ -478,6 +521,103 @@ export interface paths {
         head?: never;
         /** Update Client */
         patch: operations["update_client_admin_clients__client_id__patch"];
+        trace?: never;
+    };
+    "/admin/clients/{client_id}/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Client Audit
+         * @description Bajas, restauraciones y unificaciones del cliente (E03-07, criterio 3).
+         */
+        get: operations["get_client_audit_admin_clients__client_id__audit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/clients/{client_id}/deactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deactivate Client
+         * @description Baja lógica (E03-07): no con órdenes abiertas.
+         */
+        post: operations["deactivate_client_admin_clients__client_id__deactivation_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/clients/{client_id}/restoration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Client */
+        post: operations["restore_client_admin_clients__client_id__restoration_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/clients/{client_id}/merge-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Client Merge
+         * @description Qué pasaría al unificar este cliente en otro, sin cambiar nada (E03-08).
+         */
+        get: operations["preview_client_merge_admin_clients__client_id__merge_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/clients/{client_id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Merge Client
+         * @description Unifica este cliente (el que se va) en otro (el que queda), E03-08.
+         */
+        post: operations["merge_client_admin_clients__client_id__merge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/admin/clients/{client_id}/orders": {
@@ -607,6 +747,80 @@ export interface paths {
         patch: operations["update_equipment_admin_equipment__equipment_id__patch"];
         trace?: never;
     };
+    "/admin/equipment/{equipment_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Equipment File
+         * @description Ficha con traslados y trabajos, también de un equipo dado de baja (E03-05).
+         */
+        get: operations["get_equipment_file_admin_equipment__equipment_id__file_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/equipment/{equipment_id}/deactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deactivate Equipment */
+        post: operations["deactivate_equipment_admin_equipment__equipment_id__deactivation_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/equipment/{equipment_id}/restoration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Equipment */
+        post: operations["restore_equipment_admin_equipment__equipment_id__restoration_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/equipment/{equipment_id}/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transfer Equipment
+         * @description Pasa el equipo a un domicilio de otro cliente, con código nuevo (E03-09).
+         */
+        post: operations["transfer_equipment_admin_equipment__equipment_id__transfer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/orders": {
         parameters: {
             query?: never;
@@ -689,13 +903,99 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get Work Order Billing
+         * @description Importes, factura y cobro de la orden (E04-09 a E04-11).
+         */
+        get: operations["get_work_order_billing_admin_orders__order_id__billing_get"];
         /**
          * Save Work Order Billing
-         * @description Importes y estado de cobro de una orden terminada (E04-14, versión mínima).
+         * @description Mano de obra de una orden terminada (E04-14).
          */
         put: operations["save_work_order_billing_admin_orders__order_id__billing_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Work Order Charges
+         * @description Otros cargos de la orden (E04-11).
+         */
+        get: operations["list_work_order_charges_admin_orders__order_id__charges_get"];
+        put?: never;
+        /** Add Work Order Charge */
+        post: operations["add_work_order_charge_admin_orders__order_id__charges_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/charges/{charge_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Work Order Charge */
+        put: operations["update_work_order_charge_admin_orders__order_id__charges__charge_id__put"];
+        post?: never;
+        /**
+         * Remove Work Order Charge
+         * @description Saca el cargo (borrado lógico) y lo anota en la línea de tiempo.
+         */
+        delete: operations["remove_work_order_charge_admin_orders__order_id__charges__charge_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register Work Order Payment
+         * @description Cobro de una orden facturada: pasa a Cobrada (E04-10).
+         */
+        post: operations["register_work_order_payment_admin_orders__order_id__payment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/orders/{order_id}/payment/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Void Work Order Payment
+         * @description Anula un cobro registrado por error: vuelve a Facturada (E04-10, criterio 4).
+         */
+        post: operations["void_work_order_payment_admin_orders__order_id__payment_void_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -927,6 +1227,163 @@ export interface paths {
          */
         get: operations["get_monthly_report_admin_clients__client_id__monthly_report_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/other-texts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Other Texts
+         * @description Textos de "Otro" con sus repeticiones, el más repetido primero (E02-07).
+         */
+        get: operations["list_other_texts_admin_other_texts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/other-texts/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Promote Other Text */
+        post: operations["promote_other_text_admin_other_texts_promote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/other-texts/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dismiss Other Text
+         * @description Deja de mostrar el texto en la revisión; las órdenes lo conservan (criterio 3).
+         */
+        post: operations["dismiss_other_text_admin_other_texts_dismiss_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/catalog-csv/{catalog}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Catalog
+         * @description El catálogo con las mismas columnas que acepta la importación (E02-08, criterio 3).
+         */
+        get: operations["export_catalog_admin_catalog_csv__catalog__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/catalog-csv/{catalog}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Catalog
+         * @description Altas, cambios y errores con su fila, sin aplicar nada (criterio 1).
+         */
+        post: operations["preview_catalog_admin_catalog_csv__catalog__preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/catalog-csv/{catalog}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Catalog
+         * @description Aplica todo junto; con algún error no aplica nada (criterio 2).
+         */
+        post: operations["apply_catalog_admin_catalog_csv__catalog__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Invoice
+         * @description Registra una factura para una o varias órdenes y las pasa a Facturada (E04-09).
+         */
+        post: operations["create_invoice_admin_invoices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/invoices/{invoice_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Invoice
+         * @description Corrige número o fecha; queda en la línea de tiempo de cada orden (criterio 4).
+         */
+        put: operations["update_invoice_admin_invoices__invoice_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1178,6 +1635,167 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/stock/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Locations */
+        get: operations["list_locations_admin_stock_locations_get"];
+        put?: never;
+        /**
+         * Create Location
+         * @description Depósito o camioneta; la camioneta lleva su escuadrilla (E08-01).
+         */
+        post: operations["create_location_admin_stock_locations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/stock/locations/{location_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Location
+         * @description Renombrar, cambiar la escuadrilla o desactivar; no se borra (criterio 3).
+         */
+        patch: operations["update_location_admin_stock_locations__location_id__patch"];
+        trace?: never;
+    };
+    "/admin/stock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Stock
+         * @description Cada repuesto con su cantidad por ubicación y el total (E08-05).
+         */
+        get: operations["get_stock_admin_stock_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/stock/parts/{part_id}/movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Part Movements
+         * @description Historial de movimientos de un repuesto, el más nuevo primero (E08-07).
+         */
+        get: operations["get_part_movements_admin_stock_parts__part_id__movements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/stock/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receive
+         * @description Ingreso de repuestos (E08-02).
+         */
+        post: operations["receive_admin_stock_receipts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/stock/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transfer
+         * @description Transferencia entre ubicaciones en una sola transacción (E08-03).
+         */
+        post: operations["transfer_admin_stock_transfers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/stock/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Adjust
+         * @description Ajuste con motivo, positivo o negativo (E08-06).
+         */
+        post: operations["adjust_admin_stock_adjustments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tech/stock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Truck Stock
+         * @description Lo que hay en la camioneta de mi escuadrilla, sin precios (E08-04, E08-05).
+         */
+        get: operations["get_truck_stock_tech_stock_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/maintenance/plans": {
         parameters: {
             query?: never;
@@ -1290,6 +1908,26 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AdjustmentCreate
+         * @description Corrección de inventario con motivo; positiva suma y negativa resta (E08-06).
+         */
+        AdjustmentCreate: {
+            /**
+             * Part Id
+             * Format: uuid
+             */
+            part_id: string;
+            /**
+             * Location Id
+             * Format: uuid
+             */
+            location_id: string;
+            /** Quantity */
+            quantity: number | string;
+            /** Reason */
+            reason: string;
+        };
         /** AssignmentAdminOut */
         AssignmentAdminOut: {
             /**
@@ -1335,41 +1973,93 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
-        /** BillingAdminOut */
+        /**
+         * AuditEntryOut
+         * @description Una baja, restauración o unificación, con quién y cuándo (E12-02).
+         */
+        AuditEntryOut: {
+            /** Action */
+            action: string;
+            /** Actor Name */
+            actor_name: string | null;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Detail */
+            detail: string | null;
+        };
+        /** AuditLogOut */
+        AuditLogOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Entity */
+            entity: string;
+            /**
+             * Entity Id
+             * Format: uuid
+             */
+            entity_id: string;
+            /** Action */
+            action: string;
+            /** Actor Id */
+            actor_id: string | null;
+            /** Actor Name */
+            actor_name: string | null;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Changes */
+            changes: {
+                [key: string]: unknown[];
+            } | null;
+            /** Note */
+            note: string | null;
+        };
+        /** AuditLogPage */
+        AuditLogPage: {
+            /** Items */
+            items: components["schemas"]["AuditLogOut"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * BillingAdminOut
+         * @description Importes, factura y cobro de una orden cerrada (E04-09 a E04-11).
+         */
         BillingAdminOut: {
             /** Parts Amount */
             parts_amount: string;
             /** Labor Amount */
             labor_amount: string;
+            /** Charges Amount */
+            charges_amount: string;
             /** Total */
             total: string;
-            status: components["schemas"]["BillingStatus"];
-            /** Invoice Number */
-            invoice_number: string | null;
             /** Updated By Name */
-            updated_by_name: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
+            updated_by_name: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            invoice: components["schemas"]["InvoiceOut"] | null;
+            payment: components["schemas"]["PaymentOut"] | null;
         };
         /**
-         * BillingStatus
-         * @description Estado de cobro de una orden terminada (E04-14, versión mínima).
-         * @enum {string}
-         */
-        BillingStatus: "pending" | "invoiced";
-        /**
          * BillingUpdate
-         * @description Importes y estado de cobro de una orden terminada (E04-14, versión mínima).
+         * @description Mano de obra de una orden terminada, cargada a mano (E04-14, E04-11).
          */
         BillingUpdate: {
             /** Labor Amount */
             labor_amount: number | string;
-            status: components["schemas"]["BillingStatus"];
-            /** Invoice Number */
-            invoice_number?: string | null;
         };
         /**
          * CancelReason
@@ -1398,6 +2088,35 @@ export interface components {
             reason: components["schemas"]["CancelReason"];
             /** Reason Text */
             reason_text?: string | null;
+        };
+        /** ChargeAdminOut */
+        ChargeAdminOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Description */
+            description: string;
+            /** Amount */
+            amount: string;
+            /** Created By Name */
+            created_by_name: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ChargeWrite
+         * @description Otro cargo de la orden, además de la mano de obra (E04-11).
+         */
+        ChargeWrite: {
+            /** Description */
+            description: string;
+            /** Amount */
+            amount: number | string;
         };
         /**
          * CheckAnswerIn
@@ -1475,6 +2194,9 @@ export interface components {
             tax_condition: components["schemas"]["TaxCondition"] | null;
             /** Notes */
             notes: string | null;
+            /** Deleted At */
+            deleted_at?: string | null;
+            merged_into?: components["schemas"]["ClientSummaryOut"] | null;
         };
         /** ClientCreate */
         ClientCreate: {
@@ -1487,6 +2209,49 @@ export interface components {
             tax_condition?: components["schemas"]["TaxCondition"] | null;
             /** Notes */
             notes?: string | null;
+        };
+        /**
+         * ClientMergeCreate
+         * @description Unificar este cliente (el que se va) en otro (el que queda), E03-08.
+         */
+        ClientMergeCreate: {
+            /**
+             * Into Client Id
+             * Format: uuid
+             */
+            into_client_id: string;
+        };
+        /**
+         * ClientMergePreviewOut
+         * @description Lo que pasa del que se va al que queda, para confirmar antes (criterio 4).
+         */
+        ClientMergePreviewOut: {
+            /**
+             * Source Id
+             * Format: uuid
+             */
+            source_id: string;
+            /** Source Name */
+            source_name: string;
+            /** Source Number */
+            source_number: string;
+            /**
+             * Target Id
+             * Format: uuid
+             */
+            target_id: string;
+            /** Target Name */
+            target_name: string;
+            /** Target Number */
+            target_number: string;
+            /** Sites */
+            sites: number;
+            /** Contacts */
+            contacts: number;
+            /** Equipment */
+            equipment: number;
+            /** Orders */
+            orders: number;
         };
         /**
          * ClientOrderOut
@@ -1517,6 +2282,13 @@ export interface components {
             crew_name: string | null;
             /** Has Closure */
             has_closure: boolean;
+            /**
+             * Imported
+             * @default false
+             */
+            imported: boolean;
+            /** Description */
+            description?: string | null;
         };
         /** ClientOrderPage */
         ClientOrderPage: {
@@ -1925,6 +2697,27 @@ export interface components {
             /** Is Active */
             is_active: boolean;
         };
+        /** CsvPreviewOut */
+        CsvPreviewOut: {
+            /** Creates */
+            creates: components["schemas"]["RowOut"][];
+            /** Changes */
+            changes: components["schemas"]["RowOut"][];
+            /** Errors */
+            errors: components["schemas"]["RowOut"][];
+            /** Unchanged */
+            unchanged: number;
+            /** Applied */
+            applied: boolean;
+        };
+        /**
+         * CsvUpload
+         * @description El contenido del CSV como texto (lo lee el navegador).
+         */
+        CsvUpload: {
+            /** Content */
+            content: string;
+        };
         /**
          * CurrentAssignmentOut
          * @description Escuadrilla y fecha prevista de una orden Asignada o En curso.
@@ -1939,6 +2732,16 @@ export interface components {
             scheduled_for: string;
             /** Return Reason */
             return_reason: string | null;
+        };
+        /** DismissRequest */
+        DismissRequest: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "failure" | "repair" | "part";
+            /** Text Key */
+            text_key: string;
         };
         /**
          * DocumentKind
@@ -2018,6 +2821,8 @@ export interface components {
             serial_number: string | null;
             /** Notes */
             notes: string | null;
+            /** Deleted At */
+            deleted_at?: string | null;
         };
         /**
          * EquipmentChange
@@ -2055,6 +2860,69 @@ export interface components {
             serial_number?: string | null;
             /** Notes */
             notes?: string | null;
+        };
+        /**
+         * EquipmentFileOut
+         * @description Ficha del equipo: datos, traslados y trabajos, el más nuevo primero (E03-05).
+         */
+        EquipmentFileOut: {
+            equipment: components["schemas"]["EquipmentAdminOut"];
+            /**
+             * Client Id
+             * Format: uuid
+             */
+            client_id: string;
+            /** Client Name */
+            client_name: string;
+            /** Client Number */
+            client_number: string;
+            /** Site Label */
+            site_label: string | null;
+            /** Site Address */
+            site_address: string;
+            /** Equipment Type Name */
+            equipment_type_name: string;
+            /** Transfers */
+            transfers: components["schemas"]["EquipmentTransferOut"][];
+            /** Orders */
+            orders: components["schemas"]["EquipmentHistoryOrderOut"][];
+        };
+        /**
+         * EquipmentHistoryOrderOut
+         * @description Un trabajo del equipo en su ficha (E03-05).
+         */
+        EquipmentHistoryOrderOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            status: components["schemas"]["OrderStatus"];
+            /** Work Type Name */
+            work_type_name: string;
+            /** Client Name */
+            client_name: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Closed At */
+            closed_at: string | null;
+            /** Failure */
+            failure: string | null;
+            /** Repair */
+            repair: string | null;
+            /** Observation */
+            observation: string | null;
+            /** Materials */
+            materials: string[];
+            /** Before Transfer */
+            before_transfer: boolean;
+            /** Imported */
+            imported: boolean;
         };
         /**
          * EquipmentSearchOut
@@ -2100,6 +2968,35 @@ export interface components {
             brand: string | null;
             /** Model */
             model: string | null;
+        };
+        /**
+         * EquipmentTransferCreate
+         * @description Pasar el equipo a un domicilio activo de otro cliente (E03-09).
+         */
+        EquipmentTransferCreate: {
+            /**
+             * Client Site Id
+             * Format: uuid
+             */
+            client_site_id: string;
+        };
+        /** EquipmentTransferOut */
+        EquipmentTransferOut: {
+            /** From Client Name */
+            from_client_name: string;
+            /** From Code */
+            from_code: string;
+            /** To Client Name */
+            to_client_name: string;
+            /** To Code */
+            to_code: string;
+            /** Transferred By Name */
+            transferred_by_name: string;
+            /**
+             * Transferred At
+             * Format: date-time
+             */
+            transferred_at: string;
         };
         /** EquipmentTypeAdminOut */
         EquipmentTypeAdminOut: {
@@ -2249,6 +3146,87 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * InvoiceCreate
+         * @description Una factura para una o varias órdenes terminadas y aprobadas (E04-09).
+         */
+        InvoiceCreate: {
+            /** Number */
+            number: string;
+            /**
+             * Issued On
+             * Format: date
+             */
+            issued_on: string;
+            /** Order Ids */
+            order_ids: string[];
+        };
+        /** InvoiceOut */
+        InvoiceOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: string;
+            /**
+             * Issued On
+             * Format: date
+             */
+            issued_on: string;
+            /** Created By Name */
+            created_by_name: string;
+            /** Order Numbers */
+            order_numbers: number[];
+        };
+        /**
+         * InvoiceUpdate
+         * @description Corrección del número o la fecha de una factura (E04-09, criterio 4).
+         */
+        InvoiceUpdate: {
+            /** Number */
+            number: string;
+            /**
+             * Issued On
+             * Format: date
+             */
+            issued_on: string;
+        };
+        /** LocationCreate */
+        LocationCreate: {
+            kind: components["schemas"]["StockLocationKind"];
+            /** Name */
+            name: string;
+            /** Crew Id */
+            crew_id?: string | null;
+        };
+        /** LocationOut */
+        LocationOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["StockLocationKind"];
+            /** Name */
+            name: string;
+            /** Crew Id */
+            crew_id: string | null;
+            /** Crew Name */
+            crew_name: string | null;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** LocationUpdate */
+        LocationUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Crew Id */
+            crew_id?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -2393,6 +3371,48 @@ export interface components {
             quantity: number | string;
         };
         /**
+         * MovementOut
+         * @description Un movimiento en el historial del repuesto (E08-07).
+         */
+        MovementOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["StockMovementKind"];
+            /** Quantity */
+            quantity: string;
+            /** From Location Name */
+            from_location_name: string | null;
+            /** To Location Name */
+            to_location_name: string | null;
+            /** Work Order Id */
+            work_order_id: string | null;
+            /** Work Order Number */
+            work_order_number: number | null;
+            /** Reason */
+            reason: string | null;
+            /** Created By Name */
+            created_by_name: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+        };
+        /** MovementPage */
+        MovementPage: {
+            /** Items */
+            items: components["schemas"]["MovementOut"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
          * NoSignatureReason
          * @description Por qué un cierre no tiene la firma del cliente (E05-07, D-011). Lista a validar.
          * @enum {string}
@@ -2530,6 +3550,11 @@ export interface components {
             cancellation: components["schemas"]["CancellationAdminOut"] | null;
             completed: components["schemas"]["CompletedOut"] | null;
             billing?: components["schemas"]["BillingAdminOut"] | null;
+            /**
+             * Billing Overdue
+             * @default false
+             */
+            billing_overdue: boolean;
             equipment: components["schemas"]["OrderEquipmentOut"] | null;
             maintenance?: components["schemas"]["OrderMaintenanceOut"] | null;
         };
@@ -2575,7 +3600,7 @@ export interface components {
          * OrderSource
          * @enum {string}
          */
-        OrderSource: "manual" | "maintenance";
+        OrderSource: "manual" | "maintenance" | "persat";
         /**
          * OrderStatus
          * @enum {string}
@@ -2607,6 +3632,15 @@ export interface components {
             /** Return Reason */
             return_reason: string | null;
             workshop_stage: components["schemas"]["WorkshopStage"] | null;
+        };
+        /** OtherTextOut */
+        OtherTextOut: {
+            /** Text Key */
+            text_key: string;
+            /** Text */
+            text: string;
+            /** Count */
+            count: number;
         };
         /**
          * PartAdminOut
@@ -2695,6 +3729,42 @@ export interface components {
             /** Temporary Password */
             temporary_password: string;
         };
+        /** PaymentCreate */
+        PaymentCreate: {
+            /**
+             * Paid On
+             * Format: date
+             */
+            paid_on: string;
+            method: components["schemas"]["PaymentMethod"];
+        };
+        /**
+         * PaymentMethod
+         * @description Cómo pagó el cliente una orden facturada (E04-10, Gonza 2026-11-10).
+         * @enum {string}
+         */
+        PaymentMethod: "cash" | "transfer" | "check" | "other";
+        /** PaymentOut */
+        PaymentOut: {
+            /**
+             * Paid On
+             * Format: date
+             */
+            paid_on: string;
+            method: components["schemas"]["PaymentMethod"];
+            /** Created By Name */
+            created_by_name: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** PaymentVoid */
+        PaymentVoid: {
+            /** Reason */
+            reason: string;
+        };
         /** PlanClientOut */
         PlanClientOut: {
             /**
@@ -2754,6 +3824,53 @@ export interface components {
              */
             due_on: string;
         };
+        /** PromoteOut */
+        PromoteOut: {
+            /** Updated */
+            updated: number;
+        };
+        /**
+         * PromoteRequest
+         * @description Sumar un texto a la lista: con target_id, a un valor que ya existe; si no, uno
+         *     nuevo con name (por defecto el texto). Una reparación nueva necesita su falla.
+         */
+        PromoteRequest: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "failure" | "repair" | "part";
+            /** Text Key */
+            text_key: string;
+            /** Name */
+            name?: string | null;
+            /** Target Id */
+            target_id?: string | null;
+            /** Failure Id */
+            failure_id?: string | null;
+            /** Equipment Type Id */
+            equipment_type_id?: string | null;
+            /** Unit */
+            unit?: string | null;
+        };
+        /**
+         * ReceiptCreate
+         * @description Ingreso de repuestos a una ubicación (E08-02).
+         */
+        ReceiptCreate: {
+            /**
+             * Part Id
+             * Format: uuid
+             */
+            part_id: string;
+            /**
+             * Location Id
+             * Format: uuid
+             */
+            location_id: string;
+            /** Quantity */
+            quantity: number | string;
+        };
         /** RefreshResponse */
         RefreshResponse: {
             /** Access Token */
@@ -2764,6 +3881,17 @@ export interface components {
              */
             token_type: string;
             user: components["schemas"]["UserOut"];
+        };
+        /** RelatedOrderOut */
+        RelatedOrderOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            status: components["schemas"]["OrderStatus"];
         };
         /** RepairAdminOut */
         RepairAdminOut: {
@@ -2837,6 +3965,15 @@ export interface components {
             not_done_reason: components["schemas"]["NotDoneReason"] | null;
             /** Observation */
             observation: string | null;
+        };
+        /** RowOut */
+        RowOut: {
+            /** Row */
+            row: number;
+            /** Name */
+            name: string;
+            /** Detail */
+            detail: string;
         };
         /** SearchOut */
         SearchOut: {
@@ -2918,6 +4055,58 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * StockBalanceOut
+         * @description Cuánto hay de un repuesto en una ubicación. Negativo: hubo usos sin stock (E08-08).
+         */
+        StockBalanceOut: {
+            /**
+             * Part Id
+             * Format: uuid
+             */
+            part_id: string;
+            /** Part Name */
+            part_name: string;
+            /** Unit */
+            unit: string;
+            /**
+             * Location Id
+             * Format: uuid
+             */
+            location_id: string;
+            /** Location Name */
+            location_name: string;
+            /** Quantity */
+            quantity: string;
+        };
+        /**
+         * StockLocationKind
+         * @enum {string}
+         */
+        StockLocationKind: "warehouse" | "truck";
+        /**
+         * StockMovementKind
+         * @enum {string}
+         */
+        StockMovementKind: "receipt" | "transfer" | "usage" | "adjustment";
+        /** StockPartOut */
+        StockPartOut: {
+            /**
+             * Part Id
+             * Format: uuid
+             */
+            part_id: string;
+            /** Part Name */
+            part_name: string;
+            /** Unit */
+            unit: string;
+            /** Total */
+            total: string;
+            /** By Location */
+            by_location: components["schemas"]["StockBalanceOut"][];
+            /** Has Negative */
+            has_negative: boolean;
+        };
         /** TaskAdminOut */
         TaskAdminOut: {
             /**
@@ -2954,8 +4143,7 @@ export interface components {
         TaxCondition: "final_consumer" | "registered_taxpayer" | "monotributo";
         /**
          * TimelineEntryOut
-         * @description Un paso de la línea de tiempo (E04-06). event_type es el del evento de la orden o
-         *     "billing_invoiced", que se arma con el cobro de E04-14 (no deja evento propio).
+         * @description Un paso de la línea de tiempo (E04-06): event_type es el del evento de la orden.
          */
         TimelineEntryOut: {
             /**
@@ -2982,6 +4170,48 @@ export interface components {
              */
             token_type: string;
             user: components["schemas"]["UserOut"];
+        };
+        /**
+         * TransferCreate
+         * @description De una ubicación a otra en una sola transacción (E08-03).
+         */
+        TransferCreate: {
+            /**
+             * Part Id
+             * Format: uuid
+             */
+            part_id: string;
+            /**
+             * From Location Id
+             * Format: uuid
+             */
+            from_location_id: string;
+            /**
+             * To Location Id
+             * Format: uuid
+             */
+            to_location_id: string;
+            /** Quantity */
+            quantity: number | string;
+        };
+        /** TruckItemTechnicianOut */
+        TruckItemTechnicianOut: {
+            /** Part Name */
+            part_name: string;
+            /** Unit */
+            unit: string;
+            /** Quantity */
+            quantity: string;
+        };
+        /**
+         * TruckStockTechnicianOut
+         * @description Lo que hay en la camioneta de la escuadrilla, sin precios (E08-04, criterio 4).
+         */
+        TruckStockTechnicianOut: {
+            /** Location Name */
+            location_name: string | null;
+            /** Items */
+            items: components["schemas"]["TruckItemTechnicianOut"][];
         };
         /** UnassignmentCreate */
         UnassignmentCreate: {
@@ -3031,6 +4261,8 @@ export interface components {
             is_active: boolean;
             /** Must Change Password */
             must_change_password: boolean;
+            /** Locked Until */
+            locked_until?: string | null;
         };
         /** UserCreate */
         UserCreate: {
@@ -3158,6 +4390,8 @@ export interface components {
             equipment_id?: string | null;
             /** @default on_site */
             kind: components["schemas"]["OrderKind"];
+            /** Source Order Id */
+            source_order_id?: string | null;
         };
         /**
          * WorkOrderDetailAdminOut
@@ -3197,6 +4431,12 @@ export interface components {
             cancellation: components["schemas"]["CancellationAdminOut"] | null;
             /** Has Closure */
             has_closure: boolean;
+            source_order?: components["schemas"]["RelatedOrderOut"] | null;
+            /**
+             * Repair Orders
+             * @default []
+             */
+            repair_orders: components["schemas"]["RelatedOrderOut"][];
             /** Timeline */
             timeline: components["schemas"]["TimelineEntryOut"][];
         };
@@ -3283,6 +4523,43 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    list_audit_admin_audit_get: {
+        parameters: {
+            query?: {
+                entity?: string | null;
+                actor_id?: string | null;
+                entity_id?: string | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -3468,6 +4745,37 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlock_user_admin_users__user_id__unlock_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4378,6 +5686,7 @@ export interface operations {
             query?: {
                 segment?: components["schemas"]["ClientSegment"] | null;
                 q?: string | null;
+                deleted?: boolean;
                 limit?: number;
                 offset?: number;
             };
@@ -4525,6 +5834,167 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClientAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_client_audit_admin_clients__client_id__audit_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEntryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deactivate_client_admin_clients__client_id__deactivation_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_client_admin_clients__client_id__restoration_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_client_merge_admin_clients__client_id__merge_preview_get: {
+        parameters: {
+            query: {
+                into_client_id: string;
+            };
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientMergePreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_client_admin_clients__client_id__merge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientMergeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientMergePreviewOut"];
                 };
             };
             /** @description Validation Error */
@@ -4814,6 +6284,7 @@ export interface operations {
         parameters: {
             query?: {
                 site_id?: string | null;
+                deleted?: boolean;
             };
             header?: never;
             path: {
@@ -4944,11 +6415,143 @@ export interface operations {
             };
         };
     };
+    get_equipment_file_admin_equipment__equipment_id__file_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                equipment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentFileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deactivate_equipment_admin_equipment__equipment_id__deactivation_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                equipment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_equipment_admin_equipment__equipment_id__restoration_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                equipment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transfer_equipment_admin_equipment__equipment_id__transfer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                equipment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentTransferCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_work_orders_admin_orders_get: {
         parameters: {
             query: {
-                status: "pending" | "assigned" | "in_progress" | "done" | "cancelled";
-                billing?: components["schemas"]["BillingStatus"] | null;
+                status: "pending" | "assigned" | "in_progress" | "done" | "invoiced" | "paid" | "cancelled";
+                crew_id?: string | null;
+                client_id?: string | null;
+                work_type_id?: string | null;
+                created_from?: string | null;
+                created_to?: string | null;
                 limit?: number;
                 offset?: number;
             };
@@ -5109,6 +6712,37 @@ export interface operations {
             };
         };
     };
+    get_work_order_billing_admin_orders__order_id__billing_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     save_work_order_billing_admin_orders__order_id__billing_put: {
         parameters: {
             query?: never;
@@ -5121,6 +6755,210 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BillingUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_work_order_charges_admin_orders__order_id__charges_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_work_order_charge_admin_orders__order_id__charges_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChargeWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_work_order_charge_admin_orders__order_id__charges__charge_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+                charge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChargeWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_work_order_charge_admin_orders__order_id__charges__charge_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+                charge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeAdminOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_work_order_payment_admin_orders__order_id__payment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    void_work_order_payment_admin_orders__order_id__payment_void_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentVoid"];
             };
         };
         responses: {
@@ -5602,6 +7440,270 @@ export interface operations {
                 };
                 content: {
                     "application/pdf": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_other_texts_admin_other_texts_get: {
+        parameters: {
+            query: {
+                kind: "failure" | "repair" | "part";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtherTextOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    promote_other_text_admin_other_texts_promote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dismiss_other_text_admin_other_texts_dismiss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DismissRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_catalog_admin_catalog_csv__catalog__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                catalog: "work-types" | "equipment-types" | "failures" | "repairs" | "parts";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_catalog_admin_catalog_csv__catalog__preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                catalog: "work-types" | "equipment-types" | "failures" | "repairs" | "parts";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CsvUpload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CsvPreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_catalog_admin_catalog_csv__catalog__apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                catalog: "work-types" | "equipment-types" | "failures" | "repairs" | "parts";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CsvUpload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CsvPreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_invoice_admin_invoices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_invoice_admin_invoices__invoice_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
                 };
             };
             /** @description Validation Error */
@@ -6135,6 +8237,290 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_locations_admin_stock_locations_get: {
+        parameters: {
+            query?: {
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_location_admin_stock_locations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_location_admin_stock_locations__location_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_stock_admin_stock_get: {
+        parameters: {
+            query?: {
+                part_id?: string | null;
+                location_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockPartOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_part_movements_admin_stock_parts__part_id__movements_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                part_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovementPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    receive_admin_stock_receipts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiptCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovementOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transfer_admin_stock_transfers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovementOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    adjust_admin_stock_adjustments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovementOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_truck_stock_tech_stock_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TruckStockTechnicianOut"];
                 };
             };
         };

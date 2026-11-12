@@ -3,7 +3,13 @@ import { useOutletContext } from "react-router-dom";
 
 import { ResetPasswordPanel } from "./ResetPasswordPanel";
 import type { UserRole } from "./types";
-import { EmailAlreadyExistsError, useCreateUser, useDeactivateUser, useUsers } from "./useUsers";
+import {
+  EmailAlreadyExistsError,
+  useCreateUser,
+  useDeactivateUser,
+  useUnlockUser,
+  useUsers,
+} from "./useUsers";
 import { PageHeader } from "../../app/PageHeader";
 import type { Session } from "../auth/types";
 
@@ -13,12 +19,19 @@ const ROLE_LABELS: Record<UserRole, string> = {
   owner: "Dirección",
 };
 
+const TIME = new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit" });
+
+function formatTime(iso: string): string {
+  return TIME.format(new Date(iso));
+}
+
 export function UsersPage() {
   // La sesión llega por el Outlet de AppLayout; puede faltar fuera del router (tests).
   const session = useOutletContext<Session | undefined>();
   const users = useUsers();
   const createUser = useCreateUser();
   const deactivateUser = useDeactivateUser();
+  const unlockUser = useUnlockUser();
   const [resetting, setResetting] = useState<string | null>(null);
 
   const [fullName, setFullName] = useState("");
@@ -124,9 +137,25 @@ export function UsersPage() {
                 <tr>
                   <td>{user.full_name}</td>
                   <td>{user.email}</td>
-                  <td>{ROLE_LABELS[user.role]}</td>
+                  <td>
+                    {ROLE_LABELS[user.role]}
+                    {user.locked_until && (
+                      <span className="badge badge--danger">
+                        Bloqueado hasta las {formatTime(user.locked_until)}
+                      </span>
+                    )}
+                  </td>
                   <td>
                     <div className="users__actions">
+                      {user.locked_until && (
+                        <button
+                          type="button"
+                          onClick={() => unlockUser.mutate(user.id)}
+                          disabled={unlockUser.isPending}
+                        >
+                          Desbloquear
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => setResetting(user.id)}

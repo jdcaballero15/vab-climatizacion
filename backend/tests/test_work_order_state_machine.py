@@ -31,12 +31,14 @@ PERMITIDAS = [
     (OrderStatus.done, OrderAction.return_to_technician, ADMIN, OrderStatus.assigned),
     (OrderStatus.done, OrderAction.invoice, ADMIN, OrderStatus.invoiced),
     (OrderStatus.invoiced, OrderAction.collect, ADMIN, OrderStatus.paid),
+    # E04-10, criterio 4: un cobro cargado por error se anula con motivo.
+    (OrderStatus.paid, OrderAction.void_payment, ADMIN, OrderStatus.invoiced),
     (OrderStatus.pending, OrderAction.cancel, ADMIN, OrderStatus.cancelled),
     (OrderStatus.assigned, OrderAction.cancel, ADMIN, OrderStatus.cancelled),
     (OrderStatus.in_progress, OrderAction.cancel, ADMIN, OrderStatus.cancelled),
 ]
 
-CON_MOTIVO = {OrderAction.cancel, OrderAction.return_to_technician}
+CON_MOTIVO = {OrderAction.cancel, OrderAction.return_to_technician, OrderAction.void_payment}
 
 
 def test_la_tabla_tiene_exactamente_las_transiciones_permitidas() -> None:
@@ -104,9 +106,9 @@ def test_falta_de_motivo_se_rechaza(
         resolve_transition(origen, accion, ADMIN, nota)
 
 
-# Criterio 6: Cobrada y Cancelada son finales.
+# Criterio 6: Cobrada y Cancelada son finales; de Cobrada solo se anula el cobro (E04-10).
 @pytest.mark.parametrize("final", [OrderStatus.paid, OrderStatus.cancelled])
-@pytest.mark.parametrize("accion", list(OrderAction))
+@pytest.mark.parametrize("accion", [a for a in OrderAction if a != OrderAction.void_payment])
 @pytest.mark.parametrize("rol", [ADMIN, TECH])
 def test_estado_final_no_cambia(final: OrderStatus, accion: OrderAction, rol: UserRole) -> None:
     with pytest.raises(InvalidTransitionError):
