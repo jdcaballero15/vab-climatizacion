@@ -31,6 +31,7 @@ from app.domain.work_order import (
     CREW_OPEN_STATUSES,
     OrderFilters,
     OrderKind,
+    OrderSource,
     OrderStatus,
     WorkOrderEventType,
     WorkshopStage,
@@ -155,6 +156,8 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
             if in_workshop
             else self.model.status == status
         )
+        # El historial de Persat no entra en el panel (E11-03, criterio 3).
+        scope = and_(scope, self.model.source != OrderSource.persat)
         panel = self._panel_filters(filters)
         filtered = self._select().where(scope, *panel)
         total = await self.session.scalar(select(func.count()).select_from(filtered.subquery()))

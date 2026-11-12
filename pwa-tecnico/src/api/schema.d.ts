@@ -2241,6 +2241,13 @@ export interface components {
             crew_name: string | null;
             /** Has Closure */
             has_closure: boolean;
+            /**
+             * Imported
+             * @default false
+             */
+            imported: boolean;
+            /** Description */
+            description?: string | null;
         };
         /** ClientOrderPage */
         ClientOrderPage: {
@@ -3539,7 +3546,7 @@ export interface components {
          * OrderSource
          * @enum {string}
          */
-        OrderSource: "manual" | "maintenance";
+        OrderSource: "manual" | "maintenance" | "persat";
         /**
          * OrderStatus
          * @enum {string}

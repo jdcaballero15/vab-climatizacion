@@ -12,6 +12,7 @@ from app.db.base import Base
 from app.db.models.catalog import EquipmentType
 from app.db.models.client import Client, ClientContact, ClientSegment, ClientSite, TaxCondition
 from app.db.models.equipment import Equipment
+from app.db.models.import_batch import ImportBatch
 from app.db.models.legacy_reference import LegacyReference
 from app.db.session import SessionLocal, engine
 from app.services.persat_import import (
@@ -25,6 +26,8 @@ from app.services.persat_import import (
 )
 
 TABLES = [
+    # Cada importación queda en un lote (E11-05).
+    ImportBatch.__table__,
     Client.__table__,
     ClientSite.__table__,
     ClientContact.__table__,

@@ -15,6 +15,7 @@ from app.db.models.audit import AuditEvent
 from app.db.models.catalog import EquipmentType, WorkType
 from app.db.models.client import Client, ClientContact, ClientSite
 from app.db.models.equipment import Equipment, EquipmentTransfer
+from app.db.models.import_batch import ImportBatch
 from app.db.models.legacy_reference import LegacyReference
 from app.db.models.part import Part, PartUsage
 from app.db.models.user import User, UserRole
@@ -30,6 +31,8 @@ TABLES = [
     *CLOSURE_TABLES,
     AuditEvent.__table__,
     EquipmentTransfer.__table__,
+    # Las referencias de Persat llevan su lote (E11-05).
+    ImportBatch.__table__,
     LegacyReference.__table__,
 ]
 ENUMS = (

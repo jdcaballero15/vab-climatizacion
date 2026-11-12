@@ -2146,6 +2146,12 @@ button[type="submit"]:hover:not(:disabled),
   border-radius: var(--radius-sm);
 }
 
+/* Historial importado de Persat (E11-03): el detalle viene en varias líneas */
+.clients__persat-detail {
+  white-space: pre-line;
+  color: var(--text-muted);
+}
+
 /* Stock (E08): saldos negativos por usos sin stock, para ajustar (E08-08) */
 .stock__negative td {
   background: #fef2f2;

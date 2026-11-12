@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 124 historias.** done: 86, draft: 24, icebox: 12, in_progress: 2
+**Total: 124 historias.** done: 89, draft: 21, icebox: 12, in_progress: 2
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -164,9 +164,9 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 |---|---|---|---|---|---|---|---|---|
 | [E11-01](E11-migracion/E11-01-importar-clientes-desde-persat.md) | Importar clientes desde Persat | Debe | M | done | admin | - | - | E03-01 |
 | [E11-02](E11-migracion/E11-02-importar-equipos-desde-persat.md) | Importar equipos desde Persat | Debe | M | done | admin | - | D-002 | E11-01, E03-03 |
-| [E11-03](E11-migracion/E11-03-importar-el-historial-de-trabajos-de-persat.md) | Importar el historial de trabajos de Persat | Debe | L | draft | admin | - | - | E11-02, E04-06 |
-| [E11-04](E11-migracion/E11-04-informe-de-calidad-de-datos-de-la-importacion.md) | Informe de calidad de datos de la importación | Debería | M | draft | admin | - | - | E11-01 |
-| [E11-05](E11-migracion/E11-05-importacion-repetible-y-reversible.md) | Importación repetible y reversible | Debe | M | draft | admin | - | - | E00-01 |
+| [E11-03](E11-migracion/E11-03-importar-el-historial-de-trabajos-de-persat.md) | Importar el historial de trabajos de Persat | Debe | L | done | admin | - | - | E11-02, E04-06 |
+| [E11-04](E11-migracion/E11-04-informe-de-calidad-de-datos-de-la-importacion.md) | Informe de calidad de datos de la importación | Debería | M | done | admin | - | - | E11-01 |
+| [E11-05](E11-migracion/E11-05-importacion-repetible-y-reversible.md) | Importación repetible y reversible | Debe | M | done | admin | - | - | E00-01 |
 | [E11-06](E11-migracion/E11-06-cargar-los-abonados-y-los-equipos-de-cada-abono.md) | Cargar los abonados y los equipos de cada abono | Debe | M | draft | admin | - | D-002 | E07-03, E11-02, E11-05 |
 | [E11-07](E11-migracion/E11-07-guia-de-uso-y-practica-con-datos-de-prueba.md) | Guía de uso y práctica con datos de prueba | Debe | M | done | admin, technician | - | - | E11-09 |
 | [E11-08](E11-migracion/E11-08-criterios-de-salida-de-la-convivencia-con-persat.md) | Criterios de salida de la convivencia con Persat | Debería | S | draft | owner | - | - | E11-03 |

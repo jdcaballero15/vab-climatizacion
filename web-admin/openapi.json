@@ -8182,6 +8182,22 @@
           "has_closure": {
             "type": "boolean",
             "title": "Has Closure"
+          },
+          "imported": {
+            "type": "boolean",
+            "title": "Imported",
+            "default": false
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
           }
         },
         "type": "object",
@@ -11988,7 +12004,8 @@
         "type": "string",
         "enum": [
           "manual",
-          "maintenance"
+          "maintenance",
+          "persat"
         ],
         "title": "OrderSource"
       },

@@ -4,7 +4,7 @@ title: "Informe de calidad de datos de la importación"
 epic: E11
 phase: 1
 priority: should
-status: draft
+status: done
 roles: [admin]
 size: M
 areas: [backend, datos]
@@ -28,3 +28,8 @@ assumes: []
 ## Notas técnicas
 
 - Los problemas a informar salen de las reglas de `docs/domain/migracion-persat.md`: registros que no se migran, códigos corregidos, sin dirección, sin ubicación, tipo asumido, gas corregido, columnas corridas, códigos repetidos y servicios repetidos.
+
+## Hecho
+
+- `--informe problemas.csv` escribe cada problema (no se migra, error, para revisar) con entidad, fila, referencia, motivo y una sugerencia, y los posibles duplicados de clientes (mismo nombre sin mayúsculas, acentos ni signos) agrupados para unificarlos con E03-08.
+- Solo números de fila, cliente, equipo u orden: no repite nombres ni contactos.

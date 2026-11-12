@@ -294,6 +294,9 @@ class ClientOrderOut(BaseModel):
     crew_name: str | None
     # Con cierre se puede abrir "Ver cierre" (Terminada, o que volvió a Pendientes).
     has_closure: bool
+    # Historial importado de Persat (E11-03): de solo lectura; su detalle va en description.
+    imported: bool = False
+    description: str | None = None
 
 
 class ClientOrderPage(BaseModel):
