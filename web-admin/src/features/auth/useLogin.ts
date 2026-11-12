@@ -15,7 +15,14 @@ export function useLogin() {
         body: { email, password },
       });
       if (error || !data) {
-        throw new Error("login_failed");
+        // Con la cuenta bloqueada por intentos fallidos (E01-06), el mensaje de la API.
+        const detail = (error as { detail?: { code?: unknown; message?: unknown } } | undefined)
+          ?.detail;
+        throw new Error(
+          detail?.code === "account_locked" || detail?.code === "too_many_attempts"
+            ? String(detail.message)
+            : "login_failed",
+        );
       }
       return data;
     },

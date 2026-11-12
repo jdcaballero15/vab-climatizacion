@@ -60,6 +60,7 @@ from app.domain.work_order import (
     STATUSLESS_EVENT_TYPES,
     CancelReason,
     ClosureOutcome,
+    ImportedOrderReadOnlyError,
     OrderAction,
     OrderFilters,
     OrderKind,
@@ -227,7 +228,7 @@ async def change_equipment(
     """
     repo = WorkOrderRepository(session)
     order = await get_work_order(session, order_id)
-    if order.status not in EQUIPMENT_EDITABLE_STATUSES:
+    if order.source == OrderSource.persat or order.status not in EQUIPMENT_EDITABLE_STATUSES:
         raise OrderNotEditableError
     new = (
         await _check_equipment(session, equipment_id, order.client_site_id)
@@ -266,7 +267,7 @@ async def get_detail(session: AsyncSession, order_id: uuid.UUID) -> WorkOrderDet
     """La orden con sus datos, escuadrilla, cancelación y línea de tiempo (E04-06)."""
     order = await get_work_order(session, order_id)
     repository = WorkOrderRepository(session)
-    client = await clients_service.get_client(session, order.client_id)
+    client = await clients_service.get_client(session, order.client_id, include_deleted=True)
     site = await session.get(ClientSite, order.client_site_id)
     if site is None:
         # La orden apunta siempre a un domicilio (FK): no pasa con datos sanos.
@@ -469,7 +470,7 @@ async def list_for_client(
     offset: int,
 ) -> tuple[list[ClientOrderOut], int]:
     """Historial de órdenes de un cliente para su ficha (E03-04). 404 si no existe."""
-    await clients_service.get_client(session, client_id)
+    await clients_service.get_client(session, client_id, include_deleted=True)
     rows, total = await WorkOrderRepository(session).list_for_client_page(
         client_id,
         equipment_id=equipment_id,
@@ -499,6 +500,8 @@ async def list_for_client(
             ),
             crew_name=crew_name,
             has_closure=has_closure,
+            imported=order.source == OrderSource.persat,
+            description=order.description,
         )
         for (
             order,
@@ -739,6 +742,9 @@ async def stage_transition(
     note: str | None,
 ) -> WorkOrderEvent:
     """Cambia el estado y agrega el evento sin confirmar, para sumar más en la transacción."""
+    if order.source == OrderSource.persat:
+        # El historial importado de Persat es de solo lectura (E11-03, criterio 4).
+        raise ImportedOrderReadOnlyError
     current = order.status
     transition = resolve_transition(current, action, actor.role, note)
     repository = WorkOrderRepository(session)

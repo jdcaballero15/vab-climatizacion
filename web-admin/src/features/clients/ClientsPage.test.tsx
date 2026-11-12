@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ClientsPage } from "./ClientsPage";
@@ -133,7 +134,9 @@ function renderClients() {
   });
   return render(
     <QueryClientProvider client={client}>
-      <ClientsPage />
+      <MemoryRouter>
+        <ClientsPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -739,6 +742,7 @@ describe("ClientsPage", () => {
       equipment: { id: "e1", internal_code: "EA1064201", location_note: "Habitación 12" },
       crew_name: "Escuadrilla 1",
       has_closure: true,
+      imported: false,
     };
     const PENDIENTE: ClientOrder = {
       ...TERMINADA,
@@ -876,6 +880,42 @@ describe("ClientsPage", () => {
       await userEvent.click(historial.getByRole("button", { name: "Limpiar filtros" }));
       expect(await historial.findByRole("table")).toBeInTheDocument();
     });
+
+    // E11-03: el historial de Persat se marca y deja ver su detalle.
+    it("marca las importadas de Persat y muestra su detalle", async () => {
+      mockApi((request, url) => {
+        if (url.pathname.endsWith("/admin/clients") && request.method === "GET") {
+          return json(page([HOTEL]));
+        }
+        if (url.pathname.endsWith("/admin/clients/c1")) {
+          return json(HOTEL);
+        }
+        if (url.pathname.endsWith("/c1/orders")) {
+          return json({
+            items: [
+              {
+                ...TERMINADA,
+                has_closure: false,
+                imported: true,
+                description: "Persat N° 5001 · cerrada\nNo enfría",
+              },
+            ],
+            total: 1,
+            limit: 20,
+            offset: 0,
+          });
+        }
+        return undefined;
+      });
+      renderClients();
+      await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
+
+      expect(await screen.findByText("Importada de Persat")).toBeInTheDocument();
+      await userEvent.click(
+        screen.getByRole("button", { name: "Ver el detalle de Persat de la orden N° 12" }),
+      );
+      expect(screen.getByText(/Persat N° 5001 · cerrada/)).toBeInTheDocument();
+    });
   });
 
   describe("búsqueda (E03-06)", () => {
@@ -969,6 +1009,136 @@ describe("ClientsPage", () => {
       await new Promise((resolve) => setTimeout(resolve, 400));
 
       expect(calls(fetchMock, "GET", "/admin/search")).toHaveLength(0);
+    });
+  });
+
+  describe("baja, unificación y traslados (E03-07, E03-08, E03-09)", () => {
+    function conCliente(extra: Handler = () => undefined) {
+      return mockApi(async (request, url) => {
+        const propio = await extra(request, url);
+        if (propio) {
+          return propio;
+        }
+        if (url.pathname.endsWith("/admin/clients") && request.method === "GET") {
+          const q = url.searchParams.get("q");
+          if (q) {
+            return json(page([PANADERIA]));
+          }
+          return json(page(url.searchParams.get("deleted") === "true" ? [] : [HOTEL]));
+        }
+        if (url.pathname.endsWith("/admin/clients/c1") && request.method === "GET") {
+          return json(HOTEL);
+        }
+        if (url.pathname.endsWith("/c1/audit")) {
+          return json([]);
+        }
+        if (url.pathname.endsWith("/c1/sites") && request.method === "GET") {
+          return json([SEDE]);
+        }
+        if (url.pathname.endsWith("/c2/sites") && request.method === "GET") {
+          return json([{ ...OTRA_SEDE, id: "s9", client_id: "c2" }]);
+        }
+        if (url.pathname.endsWith("/admin/equipment-types")) {
+          return json(TIPOS);
+        }
+        if (url.pathname.endsWith("/c1/equipment") && request.method === "GET") {
+          return json(url.searchParams.get("deleted") === "true" ? [] : [SPLIT]);
+        }
+        return undefined;
+      });
+    }
+
+    async function abrirCliente() {
+      renderClients();
+      await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
+      return within(await screen.findByRole("region", { name: "Baja y unificación" }));
+    }
+
+    it("da de baja al cliente y muestra el error si tiene órdenes abiertas", async () => {
+      const fetchMock = conCliente((request, url) =>
+        request.method === "POST" && url.pathname.endsWith("/c1/deactivation")
+          ? json(
+              {
+                detail: {
+                  code: "client_has_open_orders",
+                  message: "El cliente tiene órdenes abiertas: N° 7. Cerralas o cancelalas antes.",
+                },
+              },
+              409,
+            )
+          : undefined,
+      );
+      const baja = await abrirCliente();
+
+      await userEvent.click(baja.getByRole("button", { name: "Dar de baja" }));
+
+      expect(await baja.findByRole("alert")).toHaveTextContent("órdenes abiertas: N° 7");
+      expect(calls(fetchMock, "POST", "/c1/deactivation")).toHaveLength(1);
+    });
+
+    it("unifica en otro cliente después de ver qué se mueve", async () => {
+      const fetchMock = conCliente((request, url) => {
+        if (url.pathname.endsWith("/c1/merge-preview")) {
+          return json({
+            source_id: "c1",
+            source_name: "Hotel Ficticio",
+            source_number: "10642",
+            target_id: "c2",
+            target_name: "Panadería El Trigal",
+            target_number: "10643",
+            sites: 1,
+            contacts: 2,
+            equipment: 3,
+            orders: 4,
+          });
+        }
+        if (request.method === "POST" && url.pathname.endsWith("/c1/merge")) {
+          return json({});
+        }
+        return undefined;
+      });
+      const baja = await abrirCliente();
+
+      await userEvent.click(baja.getByRole("button", { name: "Unificar en otro cliente" }));
+      await userEvent.type(baja.getByRole("combobox"), "Panad");
+      await userEvent.click(
+        await screen.findByRole("button", { name: /Elegir Panadería El Trigal/ }),
+      );
+
+      expect(
+        await baja.findByText(/1 domicilios, 3 equipos, 2 contactos y 4 órdenes/),
+      ).toBeInTheDocument();
+      await userEvent.click(baja.getByRole("button", { name: "Confirmar unificación" }));
+      await waitFor(() => expect(calls(fetchMock, "POST", "/c1/merge")).toHaveLength(1));
+      const [post] = calls(fetchMock, "POST", "/c1/merge");
+      expect(await post.json()).toEqual({ into_client_id: "c2" });
+    });
+
+    it("pasa un equipo a un domicilio de otro cliente", async () => {
+      const fetchMock = conCliente((request, url) =>
+        request.method === "POST" && url.pathname.endsWith("/e1/transfer")
+          ? json({ ...SPLIT, internal_code: "EA1064301", client_site_id: "s9" })
+          : undefined,
+      );
+      renderClients();
+      await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
+      const equipos = within(await screen.findByRole("region", { name: "Equipos" }));
+
+      await userEvent.click(
+        await equipos.findByRole("button", { name: "Pasar EA1064201 a otro cliente" }),
+      );
+      await userEvent.type(
+        equipos.getByPlaceholderText("Elegí de la lista o escribí el nombre o número"),
+        "Panad",
+      );
+      await userEvent.click(
+        await screen.findByRole("button", { name: /Elegir Panadería El Trigal/ }),
+      );
+      await userEvent.click(await equipos.findByRole("button", { name: "Pasar el equipo" }));
+
+      await waitFor(() => expect(calls(fetchMock, "POST", "/e1/transfer")).toHaveLength(1));
+      const [post] = calls(fetchMock, "POST", "/e1/transfer");
+      expect(await post.json()).toEqual({ client_site_id: "s9" });
     });
   });
 });

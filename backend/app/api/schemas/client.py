@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import Annotated, Any
 from urllib.parse import quote
 
@@ -96,6 +97,9 @@ class ClientAdminOut(BaseModel):
     tax_id: str | None
     tax_condition: TaxCondition | None
     notes: str | None
+    # Dado de baja (E03-07) y, si fue por unificación, en qué cliente (E03-08).
+    deleted_at: datetime | None = None
+    merged_into: "ClientSummaryOut | None" = None
 
 
 class ClientSummaryOut(BaseModel):
@@ -105,6 +109,38 @@ class ClientSummaryOut(BaseModel):
     number: str
     name: str
     segment: ClientSegment
+
+
+class ClientMergeCreate(BaseModel):
+    """Unificar este cliente (el que se va) en otro (el que queda), E03-08."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    into_client_id: uuid.UUID
+
+
+class ClientMergePreviewOut(BaseModel):
+    """Lo que pasa del que se va al que queda, para confirmar antes (criterio 4)."""
+
+    source_id: uuid.UUID
+    source_name: str
+    source_number: str
+    target_id: uuid.UUID
+    target_name: str
+    target_number: str
+    sites: int
+    contacts: int
+    equipment: int
+    orders: int
+
+
+class AuditEntryOut(BaseModel):
+    """Una baja, restauración o unificación, con quién y cuándo (E12-02)."""
+
+    action: str
+    actor_name: str | None
+    occurred_at: datetime
+    detail: str | None
 
 
 class ClientPage(BaseModel):
@@ -200,3 +236,6 @@ class ClientSiteTechnicianOut(BaseModel):
     map_url: str
     # Solo nombres: teléfono y email del contacto no llegan al técnico.
     contact_names: list[str]
+
+
+ClientAdminOut.model_rebuild()

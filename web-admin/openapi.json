@@ -57,6 +57,152 @@
         }
       }
     },
+    "/admin/audit": {
+      "get": {
+        "tags": [
+          "auditoría"
+        ],
+        "summary": "List Audit",
+        "description": "Cambios auditados, el más nuevo primero, filtrables por entidad, usuario y fecha.",
+        "operationId": "list_audit_admin_audit_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entity"
+            }
+          },
+          {
+            "name": "actor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor Id"
+            }
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entity Id"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditLogPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/login": {
       "post": {
         "tags": [
@@ -335,6 +481,55 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/admin/users/{user_id}/unlock": {
+      "post": {
+        "tags": [
+          "usuarios"
+        ],
+        "summary": "Unlock User",
+        "description": "Levanta el bloqueo por intentos fallidos (E01-06, criterio 3).",
+        "operationId": "unlock_user_admin_users__user_id__unlock_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/admin/users/{user_id}": {
@@ -1826,6 +2021,16 @@
             }
           },
           {
+            "name": "deleted",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Deleted"
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -1992,6 +2197,7 @@
           "clientes"
         ],
         "summary": "Get Client",
+        "description": "También los dados de baja: conservan su ficha y su historial (E03-07).",
         "operationId": "get_client_admin_clients__client_id__get",
         "security": [
           {
@@ -2073,6 +2279,274 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClientAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/audit": {
+      "get": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Get Client Audit",
+        "description": "Bajas, restauraciones y unificaciones del cliente (E03-07, criterio 3).",
+        "operationId": "get_client_audit_admin_clients__client_id__audit_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditEntryOut"
+                  },
+                  "title": "Response Get Client Audit Admin Clients  Client Id  Audit Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/deactivation": {
+      "post": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Deactivate Client",
+        "description": "Baja lógica (E03-07): no con órdenes abiertas.",
+        "operationId": "deactivate_client_admin_clients__client_id__deactivation_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/restoration": {
+      "post": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Restore Client",
+        "operationId": "restore_client_admin_clients__client_id__restoration_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/merge-preview": {
+      "get": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Preview Client Merge",
+        "description": "Qué pasaría al unificar este cliente en otro, sin cambiar nada (E03-08).",
+        "operationId": "preview_client_merge_admin_clients__client_id__merge_preview_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          },
+          {
+            "name": "into_client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Into Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientMergePreviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/merge": {
+      "post": {
+        "tags": [
+          "clientes"
+        ],
+        "summary": "Merge Client",
+        "description": "Unifica este cliente (el que se va) en otro (el que queda), E03-08.",
+        "operationId": "merge_client_admin_clients__client_id__merge_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientMergeCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientMergePreviewOut"
                 }
               }
             }
@@ -2657,6 +3131,16 @@
               ],
               "title": "Site Id"
             }
+          },
+          {
+            "name": "deleted",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Deleted"
+            }
           }
         ],
         "responses": {
@@ -2819,6 +3303,210 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/EquipmentUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/equipment/{equipment_id}/file": {
+      "get": {
+        "tags": [
+          "equipos"
+        ],
+        "summary": "Get Equipment File",
+        "description": "Ficha con traslados y trabajos, también de un equipo dado de baja (E03-05).",
+        "operationId": "get_equipment_file_admin_equipment__equipment_id__file_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentFileOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/equipment/{equipment_id}/deactivation": {
+      "post": {
+        "tags": [
+          "equipos"
+        ],
+        "summary": "Deactivate Equipment",
+        "operationId": "deactivate_equipment_admin_equipment__equipment_id__deactivation_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/equipment/{equipment_id}/restoration": {
+      "post": {
+        "tags": [
+          "equipos"
+        ],
+        "summary": "Restore Equipment",
+        "operationId": "restore_equipment_admin_equipment__equipment_id__restoration_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/equipment/{equipment_id}/transfer": {
+      "post": {
+        "tags": [
+          "equipos"
+        ],
+        "summary": "Transfer Equipment",
+        "description": "Pasa el equipo a un domicilio de otro cliente, con código nuevo (E03-09).",
+        "operationId": "transfer_equipment_admin_equipment__equipment_id__transfer_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentTransferCreate"
               }
             }
           }
@@ -4547,6 +5235,454 @@
         }
       }
     },
+    "/admin/orders/{order_id}/documents/{kind}": {
+      "post": {
+        "tags": [
+          "comprobantes e informes"
+        ],
+        "summary": "Get Receipt",
+        "description": "Comprobante de retiro o devolución (E09-01, E09-02). La primera vez se arma y se\nguarda; después devuelve el mismo archivo. Es POST porque puede crearlo.",
+        "operationId": "get_receipt_admin_orders__order_id__documents__kind__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DocumentKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentLinkOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/clients/{client_id}/monthly-report": {
+      "get": {
+        "tags": [
+          "comprobantes e informes"
+        ],
+        "summary": "Get Monthly Report",
+        "description": "Informe mensual del cliente en PDF, sin precios (E09-04).",
+        "operationId": "get_monthly_report_admin_clients__client_id__monthly_report_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2100,
+              "minimum": 2020,
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/pdf": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/other-texts": {
+      "get": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "List Other Texts",
+        "description": "Textos de \"Otro\" con sus repeticiones, el más repetido primero (E02-07).",
+        "operationId": "list_other_texts_admin_other_texts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "failure",
+                "repair",
+                "part"
+              ],
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OtherTextOut"
+                  },
+                  "title": "Response List Other Texts Admin Other Texts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/other-texts/promote": {
+      "post": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Promote Other Text",
+        "operationId": "promote_other_text_admin_other_texts_promote_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoteOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/other-texts/dismiss": {
+      "post": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Dismiss Other Text",
+        "description": "Deja de mostrar el texto en la revisión; las órdenes lo conservan (criterio 3).",
+        "operationId": "dismiss_other_text_admin_other_texts_dismiss_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DismissRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/catalog-csv/{catalog}": {
+      "get": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Export Catalog",
+        "description": "El catálogo con las mismas columnas que acepta la importación (E02-08, criterio 3).",
+        "operationId": "export_catalog_admin_catalog_csv__catalog__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "catalog",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "work-types",
+                "equipment-types",
+                "failures",
+                "repairs",
+                "parts"
+              ],
+              "type": "string",
+              "title": "Catalog"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/csv": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/catalog-csv/{catalog}/preview": {
+      "post": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Preview Catalog",
+        "description": "Altas, cambios y errores con su fila, sin aplicar nada (criterio 1).",
+        "operationId": "preview_catalog_admin_catalog_csv__catalog__preview_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "catalog",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "work-types",
+                "equipment-types",
+                "failures",
+                "repairs",
+                "parts"
+              ],
+              "type": "string",
+              "title": "Catalog"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CsvUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsvPreviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/catalog-csv/{catalog}/apply": {
+      "post": {
+        "tags": [
+          "catálogos"
+        ],
+        "summary": "Apply Catalog",
+        "description": "Aplica todo junto; con algún error no aplica nada (criterio 2).",
+        "operationId": "apply_catalog_admin_catalog_csv__catalog__apply_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "catalog",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "work-types",
+                "equipment-types",
+                "failures",
+                "repairs",
+                "parts"
+              ],
+              "type": "string",
+              "title": "Catalog"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CsvUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsvPreviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/invoices": {
       "post": {
         "tags": [
@@ -5463,6 +6599,479 @@
         }
       }
     },
+    "/admin/stock/locations": {
+      "get": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "List Locations",
+        "operationId": "list_locations_admin_stock_locations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "include_inactive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Inactive"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LocationOut"
+                  },
+                  "title": "Response List Locations Admin Stock Locations Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Create Location",
+        "description": "Depósito o camioneta; la camioneta lleva su escuadrilla (E08-01).",
+        "operationId": "create_location_admin_stock_locations_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/stock/locations/{location_id}": {
+      "patch": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Update Location",
+        "description": "Renombrar, cambiar la escuadrilla o desactivar; no se borra (criterio 3).",
+        "operationId": "update_location_admin_stock_locations__location_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "location_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Location Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/stock": {
+      "get": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Get Stock",
+        "description": "Cada repuesto con su cantidad por ubicación y el total (E08-05).",
+        "operationId": "get_stock_admin_stock_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "part_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Part Id"
+            }
+          },
+          {
+            "name": "location_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Location Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StockPartOut"
+                  },
+                  "title": "Response Get Stock Admin Stock Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/stock/parts/{part_id}/movements": {
+      "get": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Get Part Movements",
+        "description": "Historial de movimientos de un repuesto, el más nuevo primero (E08-07).",
+        "operationId": "get_part_movements_admin_stock_parts__part_id__movements_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "part_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Part Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovementPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/stock/receipts": {
+      "post": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Receive",
+        "description": "Ingreso de repuestos (E08-02).",
+        "operationId": "receive_admin_stock_receipts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiptCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovementOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/stock/transfers": {
+      "post": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Transfer",
+        "description": "Transferencia entre ubicaciones en una sola transacción (E08-03).",
+        "operationId": "transfer_admin_stock_transfers_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovementOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/stock/adjustments": {
+      "post": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Adjust",
+        "description": "Ajuste con motivo, positivo o negativo (E08-06).",
+        "operationId": "adjust_admin_stock_adjustments_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjustmentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovementOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/tech/stock": {
+      "get": {
+        "tags": [
+          "stock"
+        ],
+        "summary": "Get Truck Stock",
+        "description": "Lo que hay en la camioneta de mi escuadrilla, sin precios (E08-04, E08-05).",
+        "operationId": "get_truck_stock_tech_stock_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TruckStockTechnicianOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/admin/maintenance/plans": {
       "get": {
         "tags": [
@@ -5931,6 +7540,46 @@
   },
   "components": {
     "schemas": {
+      "AdjustmentCreate": {
+        "properties": {
+          "part_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Part Id"
+          },
+          "location_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Location Id"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "part_id",
+          "location_id",
+          "quantity",
+          "reason"
+        ],
+        "title": "AdjustmentCreate",
+        "description": "Corrección de inventario con motivo; positiva suma y negativa resta (E08-06)."
+      },
       "AssignmentAdminOut": {
         "properties": {
           "id": {
@@ -6013,6 +7662,170 @@
           "scheduled_for"
         ],
         "title": "AssignmentCreate"
+      },
+      "AuditEntryOut": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "actor_name",
+          "occurred_at",
+          "detail"
+        ],
+        "title": "AuditEntryOut",
+        "description": "Una baja, restauración o unificación, con quién y cuándo (E12-02)."
+      },
+      "AuditLogOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "entity": {
+            "type": "string",
+            "title": "Entity"
+          },
+          "entity_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Entity Id"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "changes": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {},
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changes"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "entity",
+          "entity_id",
+          "action",
+          "actor_id",
+          "actor_name",
+          "occurred_at",
+          "changes",
+          "note"
+        ],
+        "title": "AuditLogOut"
+      },
+      "AuditLogPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditLogOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "AuditLogPage"
       },
       "BillingAdminOut": {
         "properties": {
@@ -6439,6 +8252,28 @@
               }
             ],
             "title": "Notes"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "merged_into": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -6507,6 +8342,83 @@
         ],
         "title": "ClientCreate"
       },
+      "ClientMergeCreate": {
+        "properties": {
+          "into_client_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Into Client Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "into_client_id"
+        ],
+        "title": "ClientMergeCreate",
+        "description": "Unificar este cliente (el que se va) en otro (el que queda), E03-08."
+      },
+      "ClientMergePreviewOut": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Id"
+          },
+          "source_name": {
+            "type": "string",
+            "title": "Source Name"
+          },
+          "source_number": {
+            "type": "string",
+            "title": "Source Number"
+          },
+          "target_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Id"
+          },
+          "target_name": {
+            "type": "string",
+            "title": "Target Name"
+          },
+          "target_number": {
+            "type": "string",
+            "title": "Target Number"
+          },
+          "sites": {
+            "type": "integer",
+            "title": "Sites"
+          },
+          "contacts": {
+            "type": "integer",
+            "title": "Contacts"
+          },
+          "equipment": {
+            "type": "integer",
+            "title": "Equipment"
+          },
+          "orders": {
+            "type": "integer",
+            "title": "Orders"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id",
+          "source_name",
+          "source_number",
+          "target_id",
+          "target_name",
+          "target_number",
+          "sites",
+          "contacts",
+          "equipment",
+          "orders"
+        ],
+        "title": "ClientMergePreviewOut",
+        "description": "Lo que pasa del que se va al que queda, para confirmar antes (criterio 4)."
+      },
       "ClientOrderOut": {
         "properties": {
           "id": {
@@ -6569,6 +8481,22 @@
           "has_closure": {
             "type": "boolean",
             "title": "Has Closure"
+          },
+          "imported": {
+            "type": "boolean",
+            "title": "Imported",
+            "default": false
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
           }
         },
         "type": "object",
@@ -7863,6 +9791,64 @@
         ],
         "title": "CrewUserOut"
       },
+      "CsvPreviewOut": {
+        "properties": {
+          "creates": {
+            "items": {
+              "$ref": "#/components/schemas/RowOut"
+            },
+            "type": "array",
+            "title": "Creates"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/RowOut"
+            },
+            "type": "array",
+            "title": "Changes"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/RowOut"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "unchanged": {
+            "type": "integer",
+            "title": "Unchanged"
+          },
+          "applied": {
+            "type": "boolean",
+            "title": "Applied"
+          }
+        },
+        "type": "object",
+        "required": [
+          "creates",
+          "changes",
+          "errors",
+          "unchanged",
+          "applied"
+        ],
+        "title": "CsvPreviewOut"
+      },
+      "CsvUpload": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 2000000,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "CsvUpload",
+        "description": "El contenido del CSV como texto (lo lee el navegador)."
+      },
       "CurrentAssignmentOut": {
         "properties": {
           "crew_name": {
@@ -8014,6 +10000,54 @@
         ],
         "title": "DashboardOut",
         "description": "El tablero con los filtros aplicados (E10). Sin precios ni importes."
+      },
+      "DismissRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "failure",
+              "repair",
+              "part"
+            ],
+            "title": "Kind"
+          },
+          "text_key": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Text Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "text_key"
+        ],
+        "title": "DismissRequest"
+      },
+      "DocumentKind": {
+        "type": "string",
+        "enum": [
+          "pickup_receipt",
+          "delivery_receipt"
+        ],
+        "title": "DocumentKind"
+      },
+      "DocumentLinkOut": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "DocumentLinkOut",
+        "description": "URL firmada del PDF guardado en el bucket; vence como las de fotos y firmas."
       },
       "DoneOrderTechnicianOut": {
         "properties": {
@@ -8180,6 +10214,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
           }
         },
         "type": "object",
@@ -8303,6 +10349,180 @@
           "location_note"
         ],
         "title": "EquipmentCreate"
+      },
+      "EquipmentFileOut": {
+        "properties": {
+          "equipment": {
+            "$ref": "#/components/schemas/EquipmentAdminOut"
+          },
+          "client_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Id"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "client_number": {
+            "type": "string",
+            "title": "Client Number"
+          },
+          "site_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Label"
+          },
+          "site_address": {
+            "type": "string",
+            "title": "Site Address"
+          },
+          "equipment_type_name": {
+            "type": "string",
+            "title": "Equipment Type Name"
+          },
+          "transfers": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentTransferOut"
+            },
+            "type": "array",
+            "title": "Transfers"
+          },
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentHistoryOrderOut"
+            },
+            "type": "array",
+            "title": "Orders"
+          }
+        },
+        "type": "object",
+        "required": [
+          "equipment",
+          "client_id",
+          "client_name",
+          "client_number",
+          "site_label",
+          "site_address",
+          "equipment_type_name",
+          "transfers",
+          "orders"
+        ],
+        "title": "EquipmentFileOut",
+        "description": "Ficha del equipo: datos, traslados y trabajos, el más nuevo primero (E03-05)."
+      },
+      "EquipmentHistoryOrderOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "work_type_name": {
+            "type": "string",
+            "title": "Work Type Name"
+          },
+          "client_name": {
+            "type": "string",
+            "title": "Client Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "failure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure"
+          },
+          "repair": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repair"
+          },
+          "observation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observation"
+          },
+          "materials": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Materials"
+          },
+          "before_transfer": {
+            "type": "boolean",
+            "title": "Before Transfer"
+          },
+          "imported": {
+            "type": "boolean",
+            "title": "Imported"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "status",
+          "work_type_name",
+          "client_name",
+          "created_at",
+          "closed_at",
+          "failure",
+          "repair",
+          "observation",
+          "materials",
+          "before_transfer",
+          "imported"
+        ],
+        "title": "EquipmentHistoryOrderOut",
+        "description": "Un trabajo del equipo en su ficha (E03-05)."
       },
       "EquipmentSearchOut": {
         "properties": {
@@ -8432,6 +10652,61 @@
           "model"
         ],
         "title": "EquipmentTechnicianOut"
+      },
+      "EquipmentTransferCreate": {
+        "properties": {
+          "client_site_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Site Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "client_site_id"
+        ],
+        "title": "EquipmentTransferCreate",
+        "description": "Pasar el equipo a un domicilio activo de otro cliente (E03-09)."
+      },
+      "EquipmentTransferOut": {
+        "properties": {
+          "from_client_name": {
+            "type": "string",
+            "title": "From Client Name"
+          },
+          "from_code": {
+            "type": "string",
+            "title": "From Code"
+          },
+          "to_client_name": {
+            "type": "string",
+            "title": "To Client Name"
+          },
+          "to_code": {
+            "type": "string",
+            "title": "To Code"
+          },
+          "transferred_by_name": {
+            "type": "string",
+            "title": "Transferred By Name"
+          },
+          "transferred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Transferred At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_client_name",
+          "from_code",
+          "to_client_name",
+          "to_code",
+          "transferred_by_name",
+          "transferred_at"
+        ],
+        "title": "EquipmentTransferOut"
       },
       "EquipmentTypeAdminOut": {
         "properties": {
@@ -8969,6 +11244,132 @@
         "title": "InvoiceUpdate",
         "description": "Corrección del número o la fecha de una factura (E04-09, criterio 4)."
       },
+      "LocationCreate": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/StockLocationKind"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "crew_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "name"
+        ],
+        "title": "LocationCreate"
+      },
+      "LocationOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/StockLocationKind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "crew_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Id"
+          },
+          "crew_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Name"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "crew_id",
+          "crew_name",
+          "is_active"
+        ],
+        "title": "LocationOut"
+      },
+      "LocationUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "crew_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crew Id"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "LocationUpdate"
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -9465,6 +11866,133 @@
           "quantity"
         ],
         "title": "MaterialLineUpdate"
+      },
+      "MovementOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/StockMovementKind"
+          },
+          "quantity": {
+            "type": "string",
+            "title": "Quantity"
+          },
+          "from_location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Location Name"
+          },
+          "to_location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Location Name"
+          },
+          "work_order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Order Id"
+          },
+          "work_order_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Order Number"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "created_by_name": {
+            "type": "string",
+            "title": "Created By Name"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "quantity",
+          "from_location_name",
+          "to_location_name",
+          "work_order_id",
+          "work_order_number",
+          "reason",
+          "created_by_name",
+          "occurred_at"
+        ],
+        "title": "MovementOut",
+        "description": "Un movimiento en el historial del repuesto (E08-07)."
+      },
+      "MovementPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MovementOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "MovementPage"
       },
       "NoSignatureReason": {
         "type": "string",
@@ -9984,7 +12512,8 @@
         "type": "string",
         "enum": [
           "manual",
-          "maintenance"
+          "maintenance",
+          "persat"
         ],
         "title": "OrderSource"
       },
@@ -10089,6 +12618,29 @@
           "workshop_stage"
         ],
         "title": "OrderTechnicianOut"
+      },
+      "OtherTextOut": {
+        "properties": {
+          "text_key": {
+            "type": "string",
+            "title": "Text Key"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text_key",
+          "text",
+          "count"
+        ],
+        "title": "OtherTextOut"
       },
       "PartAdminOut": {
         "properties": {
@@ -10547,6 +13099,141 @@
         "title": "PlanOpenOrderOut",
         "description": "La última orden generada que todavía no se cerró ni se canceló."
       },
+      "PromoteOut": {
+        "properties": {
+          "updated": {
+            "type": "integer",
+            "title": "Updated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "updated"
+        ],
+        "title": "PromoteOut"
+      },
+      "PromoteRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "failure",
+              "repair",
+              "part"
+            ],
+            "title": "Kind"
+          },
+          "text_key": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Text Key"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "target_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
+          },
+          "failure_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Id"
+          },
+          "equipment_type_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipment Type Id"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "maxLength": 255,
+            "title": "Unit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "text_key"
+        ],
+        "title": "PromoteRequest",
+        "description": "Sumar un texto a la lista: con target_id, a un valor que ya existe; si no, uno\nnuevo con name (por defecto el texto). Una reparación nueva necesita su falla."
+      },
+      "ReceiptCreate": {
+        "properties": {
+          "part_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Part Id"
+          },
+          "location_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Location Id"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "part_id",
+          "location_id",
+          "quantity"
+        ],
+        "title": "ReceiptCreate",
+        "description": "Ingreso de repuestos a una ubicación (E08-02)."
+      },
       "RefreshResponse": {
         "properties": {
           "access_token": {
@@ -10772,6 +13459,29 @@
         ],
         "title": "ReturnedFromCrewOut",
         "description": "Por qué volvió a Pendiente desde una escuadrilla (E05-08, criterio 5)."
+      },
+      "RowOut": {
+        "properties": {
+          "row": {
+            "type": "integer",
+            "title": "Row"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "row",
+          "name",
+          "detail"
+        ],
+        "title": "RowOut"
       },
       "SearchOut": {
         "properties": {
@@ -11008,6 +13718,107 @@
         ],
         "title": "SkippedPlanOut"
       },
+      "StockBalanceOut": {
+        "properties": {
+          "part_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Part Id"
+          },
+          "part_name": {
+            "type": "string",
+            "title": "Part Name"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "location_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Location Id"
+          },
+          "location_name": {
+            "type": "string",
+            "title": "Location Name"
+          },
+          "quantity": {
+            "type": "string",
+            "title": "Quantity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "part_id",
+          "part_name",
+          "unit",
+          "location_id",
+          "location_name",
+          "quantity"
+        ],
+        "title": "StockBalanceOut",
+        "description": "Cuánto hay de un repuesto en una ubicación. Negativo: hubo usos sin stock (E08-08)."
+      },
+      "StockLocationKind": {
+        "type": "string",
+        "enum": [
+          "warehouse",
+          "truck"
+        ],
+        "title": "StockLocationKind"
+      },
+      "StockMovementKind": {
+        "type": "string",
+        "enum": [
+          "receipt",
+          "transfer",
+          "usage",
+          "adjustment"
+        ],
+        "title": "StockMovementKind"
+      },
+      "StockPartOut": {
+        "properties": {
+          "part_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Part Id"
+          },
+          "part_name": {
+            "type": "string",
+            "title": "Part Name"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "total": {
+            "type": "string",
+            "title": "Total"
+          },
+          "by_location": {
+            "items": {
+              "$ref": "#/components/schemas/StockBalanceOut"
+            },
+            "type": "array",
+            "title": "By Location"
+          },
+          "has_negative": {
+            "type": "boolean",
+            "title": "Has Negative"
+          }
+        },
+        "type": "object",
+        "required": [
+          "part_id",
+          "part_name",
+          "unit",
+          "total",
+          "by_location",
+          "has_negative"
+        ],
+        "title": "StockPartOut"
+      },
       "TaskAdminOut": {
         "properties": {
           "id": {
@@ -11180,6 +13991,99 @@
         ],
         "title": "TokenResponse"
       },
+      "TransferCreate": {
+        "properties": {
+          "part_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Part Id"
+          },
+          "from_location_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "From Location Id"
+          },
+          "to_location_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "To Location Id"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "part_id",
+          "from_location_id",
+          "to_location_id",
+          "quantity"
+        ],
+        "title": "TransferCreate",
+        "description": "De una ubicación a otra en una sola transacción (E08-03)."
+      },
+      "TruckItemTechnicianOut": {
+        "properties": {
+          "part_name": {
+            "type": "string",
+            "title": "Part Name"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "quantity": {
+            "type": "string",
+            "title": "Quantity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "part_name",
+          "unit",
+          "quantity"
+        ],
+        "title": "TruckItemTechnicianOut"
+      },
+      "TruckStockTechnicianOut": {
+        "properties": {
+          "location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Name"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TruckItemTechnicianOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "location_name",
+          "items"
+        ],
+        "title": "TruckStockTechnicianOut",
+        "description": "Lo que hay en la camioneta de la escuadrilla, sin precios (E08-04, criterio 4)."
+      },
       "UnassignmentCreate": {
         "properties": {
           "reason": {
@@ -11328,6 +14232,18 @@
           "must_change_password": {
             "type": "boolean",
             "title": "Must Change Password"
+          },
+          "locked_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locked Until"
           }
         },
         "type": "object",

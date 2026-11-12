@@ -38,6 +38,7 @@ from app.db.models.work_order import (
 from app.domain.work_order import (
     PAYMENT_METHOD_LABELS,
     OrderAction,
+    OrderSource,
     OrderStatus,
     WorkOrderEventType,
 )
@@ -81,6 +82,13 @@ class InvoiceNotFoundError(Exception):
 
 class ChargeNotFoundError(Exception):
     pass
+
+
+class ImportedOrderError(Exception):
+    """Historial de Persat (E11-03): no se le cargan importes, facturas ni cobros."""
+
+    code = "imported_order_read_only"
+    message = "La orden es del historial de Persat: es de solo lectura."
 
 
 class OrderNotInvoicedError(Exception):
@@ -195,6 +203,11 @@ async def create_invoice(session: AsyncSession, data: InvoiceCreate, actor: User
     ).all()
     if len(orders) != len(order_ids):
         raise WorkOrderNotFoundError
+    imported = [o.number for o in orders if o.source == OrderSource.persat]
+    if imported:
+        raise InvoiceOrdersError(
+            f"Son del historial de Persat y no se facturan: {_numbers(imported)}."
+        )
     not_done = [o.number for o in orders if o.status != OrderStatus.done]
     if not_done:
         raise InvoiceOrdersError(
@@ -410,6 +423,8 @@ async def _invoice_orders(session: AsyncSession, invoice_id: uuid.UUID) -> Seque
 async def _editable(session: AsyncSession, order_id: uuid.UUID) -> WorkOrder:
     """Los importes se tocan con la orden Terminada: facturada, ya no."""
     order = await get_work_order(session, order_id)
+    if order.source == OrderSource.persat:
+        raise ImportedOrderError
     if order.status != OrderStatus.done:
         raise OrderNotDoneError
     return order
@@ -423,6 +438,8 @@ async def _locked(session: AsyncSession, order_id: uuid.UUID) -> WorkOrder:
     )
     if order is None:
         raise WorkOrderNotFoundError
+    if order.source == OrderSource.persat:
+        raise ImportedOrderError
     return order
 
 

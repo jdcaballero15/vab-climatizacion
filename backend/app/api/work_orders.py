@@ -28,6 +28,7 @@ from app.api.schemas.work_order import (
 from app.db.models.user import User, UserRole
 from app.db.models.work_order import WorkOrderAssignment
 from app.domain.work_order import (
+    ImportedOrderReadOnlyError,
     InvalidTransitionError,
     OrderFilters,
     OrderStatus,
@@ -97,6 +98,7 @@ def _equipment_not_available() -> HTTPException:
 # Reglas de la máquina de estados: no se puede en el estado actual es un conflicto (409).
 _RULE_STATUS: dict[type[WorkOrderRuleError], int] = {
     InvalidTransitionError: 409,
+    ImportedOrderReadOnlyError: 409,
     TransitionRoleError: 403,
     ReasonRequiredError: 422,
 }
@@ -243,6 +245,7 @@ async def get_work_order_detail(
 
 
 _BILLING_ERRORS = (
+    billing_service.ImportedOrderError,
     billing_service.OrderNotDoneError,
     billing_service.OrderNotInvoicedError,
     billing_service.OrderNotPaidError,

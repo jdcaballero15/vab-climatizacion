@@ -15,7 +15,7 @@ from sqlalchemy.orm import InstrumentedAttribute
 
 from app.db.models.catalog import EquipmentType
 from app.db.models.client import Client, ClientContact, ClientSite
-from app.db.models.equipment import Equipment
+from app.db.models.equipment import Equipment, EquipmentTransfer
 
 _ACCENTED = "áàäâéèëêíìïîóòöôúùüûñç"
 _PLAIN = "aaaaeeeeiiiioooouuuunc"
@@ -102,10 +102,17 @@ class SearchRepository:
     async def equipment(
         self, query: str, *, include_deleted: bool, limit: int
     ) -> Sequence[EquipmentHit]:
+        # Los códigos que tuvo antes de pasar a otro cliente (E03-09, criterio 2).
+        previous_codes = (
+            select(func.string_agg(EquipmentTransfer.from_code, " "))
+            .where(EquipmentTransfer.equipment_id == Equipment.id)
+            .scalar_subquery()
+        )
         haystack = _plain(
             func.concat_ws(
                 " ",
                 Equipment.internal_code,
+                previous_codes,
                 Equipment.serial_number,
                 Equipment.brand,
                 Equipment.model,

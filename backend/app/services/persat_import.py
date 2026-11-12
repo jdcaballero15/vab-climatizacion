@@ -1,4 +1,5 @@
-"""Importación de clientes y equipos desde la exportación de Persat (E11-01, E11-02).
+"""Importación desde la exportación de Persat: clientes y equipos (E11-01, E11-02) e
+historial de órdenes (E11-03), en un lote que se puede deshacer (E11-05).
 
 Todo en una transacción: en modo prueba se deshace al final, así las cantidades y los
 códigos que informa son los mismos que daría la importación real. Lo ya importado se
@@ -17,13 +18,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models.catalog import EquipmentType
 from app.db.models.client import Client, ClientContact, ClientSegment, ClientSite, TaxCondition
 from app.db.models.equipment import Equipment
+from app.db.models.import_batch import ImportBatch
 from app.db.models.legacy_reference import LegacyReference
 from app.db.repositories.client import ClientRepository, ClientSiteRepository
 from app.db.repositories.equipment import EquipmentRepository
 from app.domain import persat
 from app.services.equipment import next_code
+from app.services.persat_common import (
+    SOURCE,
+    Issue,
+    PersatFileError,
+    current_batch,
+    reference,
+)
+from app.services.persat_orders import OrderRow, OrdersReport, import_orders
 
-SOURCE = "persat"
 CLIENT_ENTITY = "client"
 EQUIPMENT_ENTITY = "equipment"
 
@@ -64,23 +73,6 @@ _MAX_LENGTHS = {
 Row = dict[str, str]
 
 
-class PersatFileError(Exception):
-    """El archivo no se puede leer o no tiene las columnas de la exportación de Persat."""
-
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
-        self.message = message
-
-
-@dataclass(frozen=True)
-class Issue:
-    """Una fila del archivo con algo que informar. Sin nombres ni datos personales."""
-
-    row: int
-    ref: str
-    reason: str
-
-
 @dataclass
 class EntityReport:
     created: int = 0
@@ -95,6 +87,11 @@ class ImportReport:
     applied: bool
     clients: EntityReport = field(default_factory=EntityReport)
     equipment: EntityReport = field(default_factory=EntityReport)
+    orders: OrdersReport = field(default_factory=OrdersReport)
+    # Clientes con el mismo nombre: posibles sedes de uno solo, para unificar (E11-04).
+    probable_duplicates: list[list[str]] = field(default_factory=list)
+    # El lote registrado (E11-05); nulo en modo prueba.
+    batch_id: uuid.UUID | None = None
 
 
 def read_rows(path: Path, headers: tuple[str, ...]) -> list[tuple[int, Row]]:
@@ -122,22 +119,51 @@ async def import_persat(
     *,
     clients: list[tuple[int, Row]] | None,
     equipment: list[tuple[int, Row]] | None,
+    orders: list[OrderRow] | None = None,
     apply: bool,
+    run_by: str = "",
 ) -> ImportReport:
+    """Todo en una transacción y en un lote (E11-05): en modo prueba se deshace al final."""
     report = ImportReport(applied=apply)
+    batch = ImportBatch(source=SOURCE, run_by=run_by or "sin nombre", summary="")
+    session.add(batch)
+    await session.flush()
+    token = current_batch.set(batch.id)
     try:
         if clients is not None:
+            report.probable_duplicates = _probable_duplicates(clients)
             await _import_clients(session, clients, report.clients)
         if equipment is not None:
             await _import_equipment(session, equipment, report.equipment)
+        if orders is not None:
+            await import_orders(session, orders, report.orders)
     except BaseException:
         await session.rollback()
         raise
+    finally:
+        current_batch.reset(token)
+    batch.summary = (
+        f"clientes: {report.clients.created}, equipos: {report.equipment.created}, "
+        f"órdenes: {report.orders.created}"
+    )
     if apply:
         await session.commit()
+        report.batch_id = batch.id
     else:
         await session.rollback()
     return report
+
+
+def _probable_duplicates(rows: list[tuple[int, Row]]) -> list[list[str]]:
+    """Números de cliente con el mismo nombre (sin mayúsculas, acentos ni signos): suelen
+    ser sedes de un mismo cliente. Se informan para unificar a mano (E03-08)."""
+    groups: dict[str, list[str]] = {}
+    for _, cells in rows:
+        number = persat.client_number(cells["Nro. de Cliente"])
+        key = persat.name_key(cells["Razón Social"])
+        if number and key:
+            groups.setdefault(key, []).append(number)
+    return [numbers for numbers in groups.values() if len(numbers) > 1]
 
 
 # ---------- Clientes ----------
@@ -168,7 +194,7 @@ async def _import_clients(
             report.errors.append(Issue(row, ref, "repetido en el archivo"))
             continue
         seen.add(legacy_id)
-        if await _has_reference(session, CLIENT_ENTITY, legacy_id):
+        if await _hasreference(session, CLIENT_ENTITY, legacy_id):
             report.existing += 1
             continue
         if not number:
@@ -228,7 +254,7 @@ async def _create_client(
         address=address or NO_ADDRESS,
         reference=description.reference,
     )
-    session.add_all([client, site, _reference(CLIENT_ENTITY, client.id, legacy_id)])
+    session.add_all([client, site, reference(CLIENT_ENTITY, client.id, legacy_id)])
     contact = ClientContact(
         client_id=client.id,
         name=cells["Nombre"] or None,
@@ -265,7 +291,7 @@ async def _import_equipment(
         if problem:
             report.errors.append(Issue(row, ref, problem))
             continue
-        if await _has_reference(session, EQUIPMENT_ENTITY, legacy_id):
+        if await _hasreference(session, EQUIPMENT_ENTITY, legacy_id):
             report.existing += 1
             continue
         client = await ClientRepository(session).get_by_number(number) if number else None
@@ -308,7 +334,7 @@ async def _import_equipment(
         if needs_new_code:
             pending.append((row, equipment, client, equipment_type, legacy_id))
             continue
-        session.add_all([equipment, _reference(EQUIPMENT_ENTITY, equipment.id, legacy_id)])
+        session.add_all([equipment, reference(EQUIPMENT_ENTITY, equipment.id, legacy_id)])
         await session.flush()
         report.created += 1
 
@@ -322,7 +348,7 @@ async def _import_equipment(
         else:
             reason = f"sin código en Persat: se le asignó {equipment.internal_code}"
         report.to_review.append(Issue(row, f"equipo {persat_code or 'sin código'}", reason))
-        session.add_all([equipment, _reference(EQUIPMENT_ENTITY, equipment.id, legacy_id)])
+        session.add_all([equipment, reference(EQUIPMENT_ENTITY, equipment.id, legacy_id)])
         await session.flush()
         report.created += 1
 
@@ -345,7 +371,7 @@ async def _first_active_site(session: AsyncSession, client_id: uuid.UUID) -> Cli
 # ---------- Comunes ----------
 
 
-async def _has_reference(session: AsyncSession, entity: str, legacy_id: str) -> bool:
+async def _hasreference(session: AsyncSession, entity: str, legacy_id: str) -> bool:
     stmt = select(LegacyReference.id).where(
         LegacyReference.entity == entity,
         LegacyReference.source == SOURCE,
@@ -353,10 +379,6 @@ async def _has_reference(session: AsyncSession, entity: str, legacy_id: str) -> 
         LegacyReference.deleted_at.is_(None),
     )
     return await session.scalar(select(stmt.exists())) or False
-
-
-def _reference(entity: str, entity_id: uuid.UUID, legacy_id: str) -> LegacyReference:
-    return LegacyReference(entity=entity, entity_id=entity_id, source=SOURCE, legacy_id=legacy_id)
 
 
 def _too_long(**values: str) -> str | None:

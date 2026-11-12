@@ -14,6 +14,7 @@ import { PendingClosuresRetry } from "../features/orders/PendingClosuresRetry";
 import { ClosurePage } from "../features/orders/ClosurePage";
 import { MyOrdersPage } from "../features/orders/MyOrdersPage";
 import { OrderDetailPage } from "../features/orders/OrderDetailPage";
+import { TruckStockPage } from "../features/stock/TruckStockPage";
 
 export function AppRoot() {
   // undefined: todavía se está viendo si la cookie trae una sesión (E01-07).
@@ -93,6 +94,7 @@ export function AppRoot() {
         <Route path="/" element={<MyOrdersPage userId={session.user.id} onLogout={onLogout} />} />
         <Route path="/ordenes/:orderId" element={<OrderDetailPage />} />
         <Route path="/ordenes/:orderId/cerrar" element={<ClosurePage userId={session.user.id} />} />
+        <Route path="/camioneta" element={<TruckStockPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

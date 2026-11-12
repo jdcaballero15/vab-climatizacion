@@ -41,6 +41,7 @@ from app.db.repositories.work_order import WorkOrderRepository
 from app.domain.work_order import (
     ClosureOutcome,
     OrderFilters,
+    OrderSource,
     OrderStatus,
     WorkOrderEventType,
 )
@@ -80,7 +81,11 @@ def _start(day: date) -> datetime:
 
 def _scope(filters: DashboardFilters) -> list[ColumnElement[bool]]:
     """Cliente, tipo de trabajo, tipo de equipo y escuadrilla (la de la última asignación)."""
-    out: list[ColumnElement[bool]] = [WorkOrder.deleted_at.is_(None)]
+    # El historial de Persat no entra en las estadísticas (E11-03, criterio 3).
+    out: list[ColumnElement[bool]] = [
+        WorkOrder.deleted_at.is_(None),
+        WorkOrder.source != OrderSource.persat,
+    ]
     if filters.client_id is not None:
         out.append(WorkOrder.client_id == filters.client_id)
     if filters.work_type_id is not None:

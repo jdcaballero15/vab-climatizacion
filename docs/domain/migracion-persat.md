@@ -70,9 +70,15 @@ Generales: se recortan los espacios de más en todos los textos.
 
 ```bash
 cd backend
-python -m app.persat_import --clientes <clientes.xlsx> --equipos <equipos.xlsx>            # prueba
-python -m app.persat_import --clientes <clientes.xlsx> --equipos <equipos.xlsx> --aplicar  # guarda
+python -m app.persat_import --clientes <clientes.xlsx> --equipos <equipos.xlsx> \
+    --ordenes <carpeta de órdenes> --informe problemas.csv                    # prueba
+python -m app.persat_import --clientes <clientes.xlsx> --equipos <equipos.xlsx> \
+    --ordenes <carpeta de órdenes> --aplicar --por "Nombre"                   # guarda en un lote
+python -m app.persat_import --lotes                                           # lista los lotes
+python -m app.persat_import --deshacer <id del lote>                          # deshace uno
 ```
+
+El informe de calidad (`--informe`) es un CSV con cada problema y una sugerencia, sin nombres ni contactos (E11-04). Cada importación guardada es un lote que se puede deshacer entero mientras no haya órdenes nuevas sobre lo importado (E11-05).
 
 Se puede repetir: lo que ya tiene referencia en `legacy_reference` no se vuelve a crear. Para importar en producción se corre desde una máquina con los archivos, con `DATABASE_URL` apuntando a la base de producción, así los archivos no salen de esa máquina.
 

@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 30
+    # Bloqueo por intentos fallidos (E01-06): por cuenta y, más alto, por dirección IP.
+    login_max_failures: int = 5
+    login_failure_window_minutes: int = 10
+    login_lock_minutes: int = 15
+    login_ip_max_failures: int = 20
     # Cookie del refresh token (ADR 0010). La ruta es la que ve el navegador: los sitios
     # llaman a la API por /api, que Render (o Vite en local) reenvía sin el prefijo.
     refresh_cookie_path: str = "/api/auth"

@@ -1,5 +1,9 @@
 import {
   LayoutDashboard,
+  Boxes,
+  FileSpreadsheet,
+  MessageSquareText,
+  History,
   AirVent,
   Building2,
   CalendarClock,
@@ -17,6 +21,8 @@ import type { ReactNode } from "react";
 import { ForRole } from "./ForRole";
 
 import type { Session } from "../features/auth/types";
+import { AuditPage } from "../features/audit/AuditPage";
+import { CatalogCsvPage } from "../features/catalog-csv/CatalogCsvPage";
 import { ClientsPage } from "../features/clients/ClientsPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { CrewsPage } from "../features/crews/CrewsPage";
@@ -24,8 +30,10 @@ import { EquipmentTypesPage } from "../features/equipment-types/EquipmentTypesPa
 import { FailuresPage } from "../features/failures/FailuresPage";
 import { MaintenancePage } from "../features/maintenance/MaintenancePage";
 import { OrdersPage } from "../features/orders/OrdersPage";
+import { OtherTextsPage } from "../features/other-texts/OtherTextsPage";
 import { PartsPage } from "../features/parts/PartsPage";
 import { RepairsPage } from "../features/repairs/RepairsPage";
+import { StockPage } from "../features/stock/StockPage";
 import { UsersPage } from "../features/users/UsersPage";
 import { WorkTypesPage } from "../features/work-types/WorkTypesPage";
 
@@ -82,6 +90,15 @@ export const NAV_SECTIONS: NavSection[] = [
     element: <MaintenancePage />,
   },
   {
+    path: "/stock",
+    label: "Stock",
+    group: null,
+    // Dirección ve el stock sin moverlo (roles-permisos.md).
+    roles: ["admin", "owner"],
+    icon: Boxes,
+    element: <ForRole render={(role) => <StockPage readOnly={role !== "admin"} />} />,
+  },
+  {
     path: "/clientes",
     label: "Clientes",
     group: null,
@@ -104,6 +121,14 @@ export const NAV_SECTIONS: NavSection[] = [
     roles: ["admin", "owner"],
     icon: Users,
     element: <UsersPage />,
+  },
+  {
+    path: "/auditoria",
+    label: "Auditoría",
+    group: "Equipo",
+    roles: ["admin", "owner"],
+    icon: History,
+    element: <AuditPage />,
   },
   {
     path: "/catalogos/tipos-de-trabajo",
@@ -138,12 +163,28 @@ export const NAV_SECTIONS: NavSection[] = [
     element: <RepairsPage />,
   },
   {
+    path: "/catalogos/textos-otro",
+    label: "Textos de «Otro»",
+    group: "Catálogos",
+    roles: ["admin"],
+    icon: MessageSquareText,
+    element: <OtherTextsPage />,
+  },
+  {
     path: "/catalogos/materiales",
     label: "Materiales y precios",
     group: "Catálogos",
     roles: ["admin"],
     icon: Package,
     element: <PartsPage />,
+  },
+  {
+    path: "/catalogos/importar",
+    label: "Importar y exportar",
+    group: "Catálogos",
+    roles: ["admin"],
+    icon: FileSpreadsheet,
+    element: <CatalogCsvPage />,
   },
 ];
 

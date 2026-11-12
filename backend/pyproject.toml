@@ -16,6 +16,8 @@ dependencies = [
   "openpyxl>=3.1",
   "boto3>=1.35",
   "boto3-stubs[s3]>=1.35",
+  # PDF de comprobantes e informes (E09): Python puro, sin binarios en la imagen.
+  "fpdf2>=2.8",
 ]
 
 [project.optional-dependencies]

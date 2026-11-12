@@ -1,10 +1,18 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 
 import { useEquipmentTypes } from "../equipment-types/useEquipmentTypes";
 import type { EquipmentType } from "../equipment-types/types";
+import { ClientPicker } from "../orders/ClientPicker";
 import { siteName } from "./labels";
-import type { Equipment, EquipmentCreate, Site } from "./types";
-import { useCreateEquipment, useEquipment, useSites, useUpdateEquipment } from "./useClients";
+import type { ClientSummary, Equipment, EquipmentCreate, Site } from "./types";
+import {
+  useCreateEquipment,
+  useEquipment,
+  useEquipmentAction,
+  useSites,
+  useUpdateEquipment,
+} from "./useClients";
 
 const EMPTY_EQUIPMENT: EquipmentCreate = {
   client_site_id: "",
@@ -132,8 +140,66 @@ interface EquipmentRowProps {
   choices: Choices;
 }
 
+/** Pasar el equipo a un domicilio de otro cliente: queda con un código nuevo (E03-09). */
+function TransferForm({ equipment, onDone }: { equipment: Equipment; onDone: () => void }) {
+  const [client, setClient] = useState<ClientSummary | null>(null);
+  const [siteId, setSiteId] = useState("");
+  const sites = useSites(client?.id ?? "", { enabled: client !== null });
+  const action = useEquipmentAction(equipment.id);
+  const active = (sites.data ?? []).filter((site) => site.is_active);
+  const chosen = siteId || (active.length === 1 ? active[0].id : "");
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!chosen) {
+      return;
+    }
+    action.mutate({ kind: "transfer", siteId: chosen }, { onSuccess: onDone });
+  }
+
+  return (
+    <div className="clients__form" aria-label={`Pasar ${equipment.internal_code} a otro cliente`}>
+      <p className="muted">
+        Elegí el cliente y el domicilio. El equipo toma un código nuevo; el anterior queda
+        registrado y las órdenes hechas siguen en este cliente.
+      </p>
+      <ClientPicker selected={client} onSelect={setClient} />
+      {client && (
+        <form onSubmit={handleSubmit}>
+          <label htmlFor={`transfer-site-${equipment.id}`}>Domicilio</label>
+          <select
+            id={`transfer-site-${equipment.id}`}
+            value={chosen}
+            onChange={(event) => setSiteId(event.target.value)}
+          >
+            <option value="">Elegí un domicilio</option>
+            {active.map((site) => (
+              <option key={site.id} value={site.id}>
+                {siteName(site)}
+              </option>
+            ))}
+          </select>
+          {action.isError && (
+            <p className="clients__error" role="alert">
+              {action.error.message}
+            </p>
+          )}
+          <button type="submit" disabled={!chosen || action.isPending}>
+            Pasar el equipo
+          </button>
+          <button type="button" onClick={onDone}>
+            Cancelar
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 function EquipmentRow({ clientId, equipment, choices }: EquipmentRowProps) {
   const updateEquipment = useUpdateEquipment(clientId, equipment.id);
+  const action = useEquipmentAction(equipment.id);
+  const [transferring, setTransferring] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<EquipmentCreate>(() => editable(equipment));
   const [missing, setMissing] = useState<string | null>(null);
@@ -189,6 +255,33 @@ function EquipmentRow({ clientId, equipment, choices }: EquipmentRowProps) {
     );
   }
 
+  if (equipment.deleted_at) {
+    return (
+      <li className="clients__contact" aria-label={code}>
+        <strong>{equipment.location_note}</strong>
+        <span className="catalog__badge">{code}</span>
+        <span className="muted">Dado de baja</span>
+        <button
+          type="button"
+          aria-label={`Restaurar ${code}`}
+          disabled={action.isPending}
+          onClick={() => action.mutate({ kind: "restoration" })}
+        >
+          Restaurar
+        </button>
+        {action.isError && <span role="alert">{action.error.message}</span>}
+      </li>
+    );
+  }
+
+  if (transferring) {
+    return (
+      <li aria-label={code}>
+        <TransferForm equipment={equipment} onDone={() => setTransferring(false)} />
+      </li>
+    );
+  }
+
   return (
     <li className="clients__contact" aria-label={code}>
       <strong>{equipment.location_note}</strong>
@@ -207,14 +300,40 @@ function EquipmentRow({ clientId, equipment, choices }: EquipmentRowProps) {
       >
         Editar
       </button>
+      <Link to={`/equipos/${equipment.id}`} aria-label={`Ficha de ${code}`}>
+        Ficha
+      </Link>
+      <button
+        type="button"
+        aria-label={`Pasar ${code} a otro cliente`}
+        onClick={() => setTransferring(true)}
+      >
+        Pasar a otro cliente
+      </button>
+      <button
+        type="button"
+        className="btn--danger"
+        aria-label={`Dar de baja ${code}`}
+        disabled={action.isPending}
+        onClick={() => action.mutate({ kind: "deactivation" })}
+      >
+        Dar de baja
+      </button>
+      {action.isError && (
+        <span className="clients__error" role="alert">
+          {action.error.message}
+        </span>
+      )}
     </li>
   );
 }
 
-/** Equipos de un cliente. El código lo genera el sistema; no se borran (baja en E03-07). */
+/** Equipos de un cliente. El código lo genera el sistema; no se borran: se dan de baja y
+ * se restauran (E03-07), o pasan a otro cliente (E03-09). */
 export function ClientEquipment({ clientId }: { clientId: string }) {
   const [siteFilter, setSiteFilter] = useState<string | null>(null);
-  const equipment = useEquipment(clientId, siteFilter);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const equipment = useEquipment(clientId, siteFilter, showDeleted);
   const sites = useSites(clientId).data ?? [];
   // Con los inactivos, para mostrar el tipo de un equipo viejo; el formulario los filtra.
   const types = useEquipmentTypes(true).data ?? [];
@@ -256,11 +375,21 @@ export function ClientEquipment({ clientId }: { clientId: string }) {
             </option>
           ))}
         </select>
+        <label>
+          <input
+            type="checkbox"
+            checked={showDeleted}
+            onChange={(event) => setShowDeleted(event.target.checked)}
+          />{" "}
+          Ver dados de baja
+        </label>
       </div>
 
       {equipment.isLoading && <p>Cargando equipos…</p>}
       {equipment.isError && <p role="alert">No se pudieron cargar los equipos.</p>}
-      {equipment.data?.length === 0 && <p>No hay equipos cargados.</p>}
+      {equipment.data?.length === 0 && (
+        <p>{showDeleted ? "No hay equipos dados de baja." : "No hay equipos cargados."}</p>
+      )}
       {equipment.data && equipment.data.length > 0 && (
         <ul className="clients__contact-list">
           {equipment.data.map((item) => (

@@ -4,7 +4,7 @@ title: "Uso de repuestos sin stock disponible"
 epic: E08
 phase: 1
 priority: should
-status: draft
+status: done
 roles: [technician, admin]
 size: S
 areas: [backend, web-admin]
@@ -25,6 +25,10 @@ assumes: []
 2. **Dado:** un saldo negativo. **Cuando:** administración abre el stock. **Entonces:** se destaca para corregirlo.
 3. **Dado:** un técnico. **Cuando:** recibe el resultado del cierre. **Entonces:** no se lo bloquea ni se le muestra un error.
 
-## Preguntas abiertas
+## Decisiones (Gonza, 2026-11-10)
 
-- No hay requisito del cliente sobre este caso. Propuesta: permitirlo y marcarlo. Alternativa: bloquear el cierre. Validar con negocio.
+- Se permite y se marca: el cierre no se bloquea ni muestra error, la camioneta queda en negativo y la oficina la ve destacada para ajustarla.
+
+## Hecho
+
+- El uso no valida stock. `StockPartOut.has_negative` marca el repuesto con alguna ubicación en negativo; web-admin lo resalta con "Saldo negativo: ajustar".

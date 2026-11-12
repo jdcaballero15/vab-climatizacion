@@ -2265,3 +2265,29 @@ button[type="submit"]:hover:not(:disabled),
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+/* Historial importado de Persat (E11-03): el detalle viene en varias líneas */
+.clients__persat-detail {
+  white-space: pre-line;
+  color: var(--text-muted);
+}
+
+/* Stock (E08): saldos negativos por usos sin stock, para ajustar (E08-08) */
+.stock__negative td {
+  background: #fef2f2;
+}
+
+/* Cuenta bloqueada por intentos fallidos (E01-06) */
+.badge--danger {
+  margin-left: 0.5rem;
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* Auditoría (E12-01): las diferencias pueden ser largas */
+.audit__changes {
+  max-width: 32rem;
+  word-break: break-word;
+  font-size: 0.8125rem;
+}

@@ -41,6 +41,8 @@ class Client(TimestampedBase):
         Enum(TaxCondition, name="tax_condition"), nullable=True
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Dado de baja al unificarlo en otro cliente (E03-08): el que quedó.
+    merged_into_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("client.id"), nullable=True)
 
 
 class ClientSite(TimestampedBase):

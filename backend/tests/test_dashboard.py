@@ -184,3 +184,20 @@ async def test_permisos(mundo: Mundo, role: UserRole, esperado: int) -> None:
     usuario = make_user(email=f"{role.value}@ot-demo.com", role=role)
     await _seed([usuario])
     assert (await _get(usuario)).status_code == esperado
+
+
+# E11-03, criterio 3: el historial de Persat no se mezcla con las estadísticas.
+async def test_el_historial_de_persat_no_cuenta(mundo: Mundo) -> None:
+    m = mundo
+    orden = await _terminada(m)
+    async with SessionLocal() as session:
+        await session.execute(
+            update(WorkOrder).where(WorkOrder.id == orden.id).values(source="persat")
+        )
+        await session.commit()
+
+    body = (await _get(m.admin)).json()
+
+    assert sum(item["count"] for item in body["by_status"]) == 0
+    assert body["unbilled"] == []
+    assert body["totals"]["done"] == 0
