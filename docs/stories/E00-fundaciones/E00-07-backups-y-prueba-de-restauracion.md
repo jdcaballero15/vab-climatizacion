@@ -57,3 +57,4 @@ assumes: []
 - Pasos de R2 (bucket de copias, regla de 30 días, locks) en `docs/workflow/despliegue.md`; recuperación y prueba de restauración en `docs/workflow/backups.md` (criterios 2, 4, 5 y 6).
 - Tests en `tests/test_backup.py` con Postgres y MinIO reales: crean bases temporales, así que el rol de la base necesita `CREATEDB` (en el CI y en Docker ya lo tiene).
 - **Queda `in_progress`** hasta que en Render corra la primera copia y la primera prueba de restauración, con la fecha anotada en `backups.md`.
+- **2026-11-14:** en producción ya están el bucket `vab-ot-backups` con sus dos reglas, el token del cron y el cron `vab-ot-backup` creado en Render. Faltan la primera corrida y la prueba de restauración.
