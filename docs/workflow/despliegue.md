@@ -107,5 +107,6 @@ Un merge a `main` despliega solo los servicios que cambiaron (a `main` solo lleg
 
 ## Pendiente
 
+- Primera corrida de `vab-ot-backup` (*Trigger Run* y `Copia OK` en los logs): el cron ya está creado (2026-11-14). E00-07.
 - Primera prueba de restauración en Render: E00-07 ([backups.md](backups.md)).
 - Staging aparte y publicación por tag con aprobación: E00-05 y E00-06.
