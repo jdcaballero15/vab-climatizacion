@@ -2,9 +2,9 @@
 
 Cómo se protegen la base y los archivos en producción, y cómo se prueba la restauración (E00-07). La creación de los buckets y los servicios está en [despliegue.md](despliegue.md).
 
-**Estado en producción (2026-11-14):** bucket `vab-ot-backups` con la regla de borrado a los 30 días y el lock de 30 días, token de lectura y escritura para el cron, y cron `vab-ot-backup` creado y desplegado en Render. Falta la primera corrida (*Trigger Run*, `Copia OK`) y la prueba de restauración.
+**Estado en producción (2026-11-16):** bucket `vab-ot-backups` con la regla de borrado a los 30 días y el lock de 30 días, token de lectura y escritura para el cron (`vab-ot-backup-cron-2`) y cron `vab-ot-backup` corriendo `python -m app.nightly_run` (copia y después mantenimiento). Avisos por correo de fallas del cron activados (valor por defecto del workspace). Primera copia buena el 2026-11-16.
 
-**Última prueba de restauración:** todavía no se hizo. Repetirla cada trimestre y anotar acá la fecha, la copia usada y el resultado.
+**Última prueba de restauración:** 2026-11-16, con la copia `db/2026-11-16T1435Z.dump`, en una base temporal de Render (borrada al terminar). Resultado: `Restauración OK`. Repetirla cada trimestre y anotar acá la fecha, la copia usada y el resultado.
 
 ## Qué hay
 

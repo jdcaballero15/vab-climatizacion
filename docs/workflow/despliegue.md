@@ -106,6 +106,4 @@ Un merge a `main` despliega solo los servicios que cambiaron (a `main` solo lleg
 
 ## Pendiente
 
-- Primera corrida de `vab-ot-backup` (*Trigger Run*, `Copia OK` y `Órdenes generadas` en los logs): el cron ya está creado (2026-11-14). Cambiar su *Command* (*Settings*) a `python -m app.nightly_run`. E00-07 y E07-04.
-- Primera prueba de restauración en Render: E00-07 ([backups.md](backups.md)).
 - Staging aparte y publicación por tag con aprobación: E00-05 y E00-06.
