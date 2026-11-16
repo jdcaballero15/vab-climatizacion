@@ -4,7 +4,7 @@ title: "Backups y prueba de restauración"
 epic: E00
 phase: 1
 priority: must
-status: in_progress
+status: done
 roles: [dev]
 size: S
 areas: [infra]
@@ -56,6 +56,7 @@ assumes: []
 - `render.yaml`: cron `vab-ot-backup` a las 07:00 UTC, misma imagen que la API con otro comando (`python -m app.nightly_run`: la copia y después el mantenimiento de E07-04, en un solo cron para pagar uno). La API recibe un token de solo lectura del bucket de copias para la prueba de restauración.
 - Pasos de R2 (bucket de copias, regla de 30 días, locks) en `docs/workflow/despliegue.md`; recuperación y prueba de restauración en `docs/workflow/backups.md` (criterios 2, 4, 5 y 6).
 - Tests en `tests/test_backup.py` con Postgres y MinIO reales: crean bases temporales, así que el rol de la base necesita `CREATEDB` (en el CI y en Docker ya lo tiene).
-- **Queda `in_progress`** hasta que en Render corra la primera copia y la primera prueba de restauración, con la fecha anotada en `backups.md`.
+- Quedaba `in_progress` hasta la primera copia y la primera prueba de restauración en Render, con la fecha anotada en `backups.md` (las dos el 2026-11-16).
 - **2026-11-14:** en producción ya están el bucket `vab-ot-backups` con sus dos reglas, el token del cron y el cron `vab-ot-backup` creado en Render. Faltan la primera corrida y la prueba de restauración.
 - **2026-11-16:** las dos corridas programadas (15/11 y 16/11) fallaron al subir: `BACKUP_S3_ACCESS_KEY` del cron tiene 64 caracteres y R2 pide el *Access Key ID* de 32. `pg_dump` anduvo. El cron pasa a correr también el mantenimiento (`app/nightly_run.py`).
+- **2026-11-16, terminada:** con el token nuevo (`vab-ot-backup-cron-2`, *Access Key ID* de 32) la corrida manual dio `Copia OK: db/2026-11-16T1435Z.dump` y `Órdenes generadas: 0`. Prueba de restauración en una base temporal de Render (`restore_check`): `Restauración OK`; la base temporal se borró. Avisos de fallas del cron por correo activados (valor por defecto del workspace). Token viejo borrado. Próxima prueba: febrero de 2027.
