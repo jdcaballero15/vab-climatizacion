@@ -35,6 +35,6 @@ Decisión de Gonza (2026-11-03): **una semana antes de cada visita** se genera l
 ## Notas técnicas
 
 - `app/services/maintenance.py` (`run_generation`). Los planes se bloquean con `FOR UPDATE SKIP LOCKED`. Sumar meses usa el último día del mes si ese día no existe (31/1 + 1 = 28/2).
-- Cron de Render `vab-ot-maintenance` (`python -m app.maintenance_run`, 6 de la mañana en Argentina), igual que el de las copias. E00-11 (jobs en general) sigue abierta.
+- `python -m app.maintenance_run`. En Render lo corre el cron `vab-ot-backup` después de la copia (`python -m app.nightly_run`, 4 de la mañana en Argentina): un solo cron para pagar uno (2026-11-16). El `vab-ot-maintenance` aparte nunca se creó. E00-11 (jobs en general) sigue abierta.
 - `POST /admin/maintenance/run` ("Generar ahora") corre lo mismo.
 - `work_order.maintenance_plan_id` y `maintenance_due_on`; `OrderListItemOut.maintenance` con el día, la frecuencia y la escuadrilla del plan.

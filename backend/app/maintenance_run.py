@@ -1,7 +1,7 @@
 """Corrida diaria del mantenimiento (E07-04): `python -m app.maintenance_run`.
 
-La corre el cron vab-ot-maintenance de Render todas las mañanas. Genera la orden de cada
-visita que vence en la próxima semana; correrla de más no duplica nada.
+En Render la corre `app.nightly_run` todas las noches, después de la copia. Genera la orden
+de cada visita que vence en la próxima semana; correrla de más no duplica nada.
 """
 
 import asyncio

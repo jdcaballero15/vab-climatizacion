@@ -10,8 +10,7 @@ Hoy hay **un solo entorno**, que es el de producción. Staging y la publicación
 |---|---|---|
 | `vab-ot-db` | Postgres 18 | La base. Solo acepta conexiones desde Render, salvo que se habilite una IP (ver importación). |
 | `vab-ot-api` | Web, Docker (`backend/Dockerfile`) | La API. Corre las migraciones al arrancar. Chequeo de salud en `/health/ready`. |
-| `vab-ot-backup` | Cron, Docker (misma imagen que la API) | Copia nocturna de la base al bucket `vab-ot-backups` ([backups.md](backups.md)). |
-| `vab-ot-maintenance` | Cron, Docker (misma imagen que la API) | Todas las mañanas genera las órdenes de mantenimiento de las visitas de la semana (E07-04). Solo necesita la base. |
+| `vab-ot-backup` | Cron, Docker (misma imagen que la API) | Corrida nocturna (`python -m app.nightly_run`): copia de la base al bucket `vab-ot-backups` ([backups.md](backups.md)) y después las órdenes de mantenimiento de las visitas de la semana (E07-04). Un solo cron para pagar uno; cada paso corre aunque el otro falle. |
 | `vab-ot-admin` | Sitio estático (`web-admin`) | La administración, para la PC de la oficina. |
 | `vab-ot-tecnico` | Sitio estático (`pwa-tecnico`) | La app del celular de cada escuadrilla. |
 
@@ -23,7 +22,7 @@ Región: Virginia (Render no tiene región en Sudamérica).
 
 1. **Cuenta (la persona responsable, no el agente).** Crear la cuenta de Render a nombre de la empresa cliente, o anotar el plan de traspaso. Cargar el medio de pago y conectar el repositorio de GitHub.
 2. **Buckets en Cloudflare R2** (antes del Blueprint, porque la API y el cron piden sus datos). Ver [Bucket de archivos](#bucket-de-archivos-cloudflare-r2) y [Bucket de copias](#bucket-de-copias-cloudflare-r2).
-3. **Crear todo.** En Render: *New* > *Blueprint*, elegir el repositorio y la rama `main`. Render lee `render.yaml` y muestra la base y los cinco servicios con sus planes. Pide los valores que no están en el archivo, del paso anterior: en la API `S3_ENDPOINT_URL`, `S3_ACCESS_KEY` y `S3_SECRET_KEY` (bucket de archivos) y `BACKUP_S3_ENDPOINT_URL`, `BACKUP_S3_ACCESS_KEY` y `BACKUP_S3_SECRET_KEY` (token de **solo lectura** del bucket de copias); en `vab-ot-backup` los mismos tres `BACKUP_S3_*`, con el token de **lectura y escritura**. Confirmar. Si el Blueprint ya existía antes de sumar el cron, Render crea `vab-ot-backup` al sincronizar y esos valores se cargan a mano en *Environment*.
+3. **Crear todo.** En Render: *New* > *Blueprint*, elegir el repositorio y la rama `main`. Render lee `render.yaml` y muestra la base y los cuatro servicios con sus planes. Pide los valores que no están en el archivo, del paso anterior: en la API `S3_ENDPOINT_URL`, `S3_ACCESS_KEY` y `S3_SECRET_KEY` (bucket de archivos) y `BACKUP_S3_ENDPOINT_URL`, `BACKUP_S3_ACCESS_KEY` y `BACKUP_S3_SECRET_KEY` (token de **solo lectura** del bucket de copias); en `vab-ot-backup` los mismos tres `BACKUP_S3_*`, con el token de **lectura y escritura**. Confirmar. Si el Blueprint ya existía antes de sumar el cron, Render crea `vab-ot-backup` al sincronizar y esos valores se cargan a mano en *Environment*.
 4. **Revisar las direcciones.** Si un nombre estaba ocupado, Render le agrega un sufijo (por ejemplo `vab-ot-api-x1y2`). En ese caso, corregir `CORS_ORIGINS` en la API con las direcciones reales de los sitios y, si el sufijo lo tiene la API, el destino de la regla `/api/*` de los dos sitios (*Redirects/Rewrites*). `VITE_API_URL` queda en `/api`. Volver a desplegar.
 5. **Comprobar la API.** `https://<api>/health/ready` tiene que responder `{"status":"ready","database":"ok"}`, y lo mismo por la regla de cada sitio: `https://<sitio>/api/health/ready`.
 6. **Crear el primer administrador.** En la API: *Shell*, y ahí:
@@ -46,7 +45,7 @@ Región: Virginia (Render no tiene región en Sudamérica).
 
 9. **Comprobar la copia nocturna.** En `vab-ot-backup`: *Trigger Run*. En *Logs* tiene que decir `Copia OK: db/<fecha>.dump`. En *Workspace settings* > *Notifications*, dejar activados los avisos por correo de fallas de cron jobs. La prueba de restauración está en [backups.md](backups.md).
 
-10. **Comprobar el mantenimiento.** En `vab-ot-maintenance`: *Trigger Run*. En *Logs* tiene que decir `Órdenes generadas: N. Planes omitidos: M.` Si el Blueprint ya existía, Render lo crea al sincronizar; no pide valores a mano.
+10. **Comprobar el mantenimiento.** En la misma corrida de `vab-ot-backup`, después de la copia, *Logs* tiene que decir `Órdenes generadas: N. Planes omitidos: M.` Si la copia falló, el mantenimiento corre igual y la corrida termina con `Falló: copia.`
 
 ## Bucket de archivos (Cloudflare R2)
 
@@ -107,6 +106,6 @@ Un merge a `main` despliega solo los servicios que cambiaron (a `main` solo lleg
 
 ## Pendiente
 
-- Primera corrida de `vab-ot-backup` (*Trigger Run* y `Copia OK` en los logs): el cron ya está creado (2026-11-14). E00-07.
+- Primera corrida de `vab-ot-backup` (*Trigger Run*, `Copia OK` y `Órdenes generadas` en los logs): el cron ya está creado (2026-11-14). Cambiar su *Command* (*Settings*) a `python -m app.nightly_run`. E00-07 y E07-04.
 - Primera prueba de restauración en Render: E00-07 ([backups.md](backups.md)).
 - Staging aparte y publicación por tag con aprobación: E00-05 y E00-06.
