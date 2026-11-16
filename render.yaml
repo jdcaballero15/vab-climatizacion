@@ -59,8 +59,9 @@ services:
       - key: BACKUP_S3_REGION
         value: auto
 
-  # Copia nocturna de la base al bucket vab-ot-backups (E00-07, docs/workflow/backups.md).
-  # Misma imagen que la API, con otro comando: no corre migraciones.
+  # Corrida nocturna (app/nightly_run.py): copia de la base al bucket vab-ot-backups (E00-07,
+  # docs/workflow/backups.md) y después las órdenes de mantenimiento de la semana (E07-04).
+  # Un solo cron para pagar uno. Misma imagen que la API, con otro comando: no corre migraciones.
   - type: cron
     name: vab-ot-backup
     runtime: docker
@@ -69,7 +70,7 @@ services:
     schedule: "0 7 * * *" # 4 de la mañana en Argentina (Render usa UTC)
     rootDir: backend
     dockerfilePath: ./Dockerfile
-    dockerCommand: python -m app.backup_db
+    dockerCommand: python -m app.nightly_run
     envVars:
       - key: APP_ENV
         value: production
@@ -90,27 +91,6 @@ services:
         value: vab-ot-backups
       - key: BACKUP_S3_REGION
         value: auto
-
-  # Órdenes de mantenimiento de los planes que vencen en la semana (E07-04). Correrlo de
-  # más no duplica nada. Misma imagen que la API, con otro comando.
-  - type: cron
-    name: vab-ot-maintenance
-    runtime: docker
-    plan: starter
-    region: virginia
-    schedule: "0 9 * * *" # 6 de la mañana en Argentina, después de la copia
-    rootDir: backend
-    dockerfilePath: ./Dockerfile
-    dockerCommand: python -m app.maintenance_run
-    envVars:
-      - key: APP_ENV
-        value: production
-      - key: APP_SECRET_KEY
-        generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: vab-ot-db
-          property: connectionString
 
   - type: web
     name: vab-ot-admin

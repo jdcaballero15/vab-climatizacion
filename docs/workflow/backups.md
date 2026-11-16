@@ -11,7 +11,7 @@ Cómo se protegen la base y los archivos en producción, y cómo se prueba la re
 | Qué | Cómo | Hasta cuándo atrás |
 |---|---|---|
 | Base, recuperación a un momento puntual | Incluida en la base paga de Render | 3 días (plan Hobby; 7 en Pro) |
-| Base, copia nocturna | Cron `vab-ot-backup`: `pg_dump` al bucket `vab-ot-backups`, en `db/<fecha y hora UTC>.dump` | 30 días |
+| Base, copia nocturna | Cron `vab-ot-backup` (`python -m app.nightly_run`, que después corre el mantenimiento): `pg_dump` al bucket `vab-ot-backups`, en `db/<fecha y hora UTC>.dump` | 30 días |
 | Fotos y firmas | Bucket lock sin vencimiento sobre `closures/` en `vab-ot-files`: R2 no deja borrarlas ni sobrescribirlas | Siempre |
 
 - La copia nocturna corre a las 4 de la mañana de Argentina (07:00 UTC). Guarda en el objeto cuántas filas tenía cada tabla, para comprobar la restauración.
@@ -52,7 +52,7 @@ Si una copia es de una migración vieja (la API se actualizó después), `restor
 
 ## Correr la copia a mano
 
-En `vab-ot-backup` > *Trigger Run*. O en local, contra la base y el MinIO locales:
+En `vab-ot-backup` > *Trigger Run* (corre la copia y después el mantenimiento). O solo la copia en local, contra la base y el MinIO locales:
 
 ```bash
 cd backend

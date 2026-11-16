@@ -5,7 +5,7 @@ Guarda en el objeto cuántas filas tenía cada tabla, para que la prueba de rest
 (`python -m app.restore_check`) compruebe que no falta nada. La retención de 30 días es
 una regla del bucket, no de este comando (docs/workflow/backups.md).
 
-Uso (lo corre el cron de Render todas las noches):
+Uso (en Render lo corre `app.nightly_run` todas las noches, antes del mantenimiento):
     python -m app.backup_db
 """
 
