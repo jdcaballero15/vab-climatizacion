@@ -2,21 +2,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { api } from "../../api/client";
-import type { components } from "../../api/schema";
 import { PageHeader } from "../../app/PageHeader";
 import { useFailures } from "../failures/useFailures";
 import { useParts } from "../parts/useParts";
 import { useRepairs } from "../repairs/useRepairs";
-
-type Kind = components["schemas"]["PromoteRequest"]["kind"];
-type OtherText = components["schemas"]["OtherTextOut"];
-
-const KINDS: Record<Kind, string> = {
-  failure: "Fallas",
-  repair: "Reparaciones",
-  part: "Materiales",
-};
-const KEY = ["other-texts"] as const;
+import {
+  KINDS,
+  OTHER_TEXTS_KEY as KEY,
+  OTHER_TEXT_KINDS,
+  otherTextsQuery,
+  type Kind,
+  type OtherText,
+} from "./useOtherTexts";
 
 function saveError(error: unknown, fallback: string): Error {
   const detail = (error as { detail?: { message?: unknown } } | undefined)?.detail;
@@ -30,28 +27,17 @@ function saveError(error: unknown, fallback: string): Error {
  */
 export function OtherTextsPage() {
   const [kind, setKind] = useState<Kind>("failure");
-  const texts = useQuery<OtherText[]>({
-    queryKey: [...KEY, kind],
-    queryFn: async () => {
-      const { data, error } = await api.GET("/admin/other-texts", {
-        params: { query: { kind } },
-      });
-      if (error || !data) {
-        throw new Error("no se pudieron cargar los textos");
-      }
-      return data;
-    },
-  });
+  const texts = useQuery(otherTextsQuery(kind));
 
   return (
     <section className="catalog">
       <PageHeader
         eyebrow="Catálogos"
-        title="Textos de «Otro»"
-        subtitle="Lo que se repite se suma a la lista; las órdenes anteriores pasan a usarlo."
+        title="Escrito por escuadrillas"
+        subtitle="Cuando una escuadrilla no encuentra la falla, la reparación o el material en la lista, elige «Otro» y lo escribe. Acá ves esos textos: sumalos a la lista para que la próxima vez aparezcan (las órdenes que ya lo usaron pasan a usar el de la lista), o descartalos."
       />
       <div className="clients__filters" role="group" aria-label="Qué revisar">
-        {(Object.keys(KINDS) as Kind[]).map((value) => (
+        {OTHER_TEXT_KINDS.map((value) => (
           <button
             key={value}
             type="button"
@@ -65,7 +51,7 @@ export function OtherTextsPage() {
       </div>
       {texts.isLoading && <p>Cargando…</p>}
       {texts.isError && <p role="alert">No se pudieron cargar los textos.</p>}
-      {texts.data?.length === 0 && <p>No hay textos de «Otro» para revisar.</p>}
+      {texts.data?.length === 0 && <p>No hay nada escrito por las escuadrillas para revisar.</p>}
       <ul className="clients__contact-list" aria-label={`Textos de ${KINDS[kind]}`}>
         {texts.data?.map((item) => (
           <TextRow key={item.text_key} kind={kind} item={item} />

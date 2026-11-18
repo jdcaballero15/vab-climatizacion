@@ -1,19 +1,15 @@
 import {
   LayoutDashboard,
+  ListChecks,
   Boxes,
   FileSpreadsheet,
-  MessageSquareText,
   History,
-  AirVent,
   Building2,
   CalendarClock,
   ClipboardList,
-  Hammer,
   Package,
-  TriangleAlert,
   Truck,
   Users,
-  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -22,6 +18,7 @@ import { ForRole } from "./ForRole";
 
 import type { Session } from "../features/auth/types";
 import { AuditPage } from "../features/audit/AuditPage";
+import { CatalogListsPage, type NavTab } from "../features/catalog-lists/CatalogListsPage";
 import { CatalogCsvPage } from "../features/catalog-csv/CatalogCsvPage";
 import { ClientsPage } from "../features/clients/ClientsPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
@@ -56,7 +53,22 @@ export interface NavSection {
   homeFor?: Role[];
   icon: LucideIcon;
   element: ReactNode;
+  /** Pestañas de la pantalla: cada una con su ruta debajo de la de la sección. */
+  tabs?: NavTab[];
 }
+
+const LIST_TABS: NavTab[] = [
+  { path: "tipos-de-trabajo", label: "Tipos de trabajo", element: <WorkTypesPage /> },
+  { path: "tipos-de-equipo", label: "Tipos de equipo", element: <EquipmentTypesPage /> },
+  { path: "fallas", label: "Fallas", element: <FailuresPage /> },
+  { path: "reparaciones", label: "Reparaciones", element: <RepairsPage /> },
+  {
+    path: "escrito-por-escuadrillas",
+    label: "Escrito por escuadrillas",
+    element: <OtherTextsPage />,
+    countsPending: true,
+  },
+];
 
 // Solo administración opera órdenes, clientes, escuadrillas y catálogos
 // (roles-permisos.md); dirección ve las órdenes y gestiona usuarios. El orden del arreglo es el del menú,
@@ -131,44 +143,13 @@ export const NAV_SECTIONS: NavSection[] = [
     element: <AuditPage />,
   },
   {
-    path: "/catalogos/tipos-de-trabajo",
-    label: "Tipos de trabajo",
+    path: "/catalogos/listas",
+    label: "Listas",
     group: "Catálogos",
     roles: ["admin"],
-    icon: Wrench,
-    element: <WorkTypesPage />,
-  },
-  {
-    path: "/catalogos/tipos-de-equipo",
-    label: "Tipos de equipo",
-    group: "Catálogos",
-    roles: ["admin"],
-    icon: AirVent,
-    element: <EquipmentTypesPage />,
-  },
-  {
-    path: "/catalogos/fallas",
-    label: "Fallas",
-    group: "Catálogos",
-    roles: ["admin"],
-    icon: TriangleAlert,
-    element: <FailuresPage />,
-  },
-  {
-    path: "/catalogos/reparaciones",
-    label: "Reparaciones",
-    group: "Catálogos",
-    roles: ["admin"],
-    icon: Hammer,
-    element: <RepairsPage />,
-  },
-  {
-    path: "/catalogos/textos-otro",
-    label: "Textos de «Otro»",
-    group: "Catálogos",
-    roles: ["admin"],
-    icon: MessageSquareText,
-    element: <OtherTextsPage />,
+    icon: ListChecks,
+    element: <CatalogListsPage tabs={LIST_TABS} />,
+    tabs: LIST_TABS,
   },
   {
     path: "/catalogos/materiales",
