@@ -135,6 +135,18 @@ describe("AppRoot", () => {
     );
   });
 
+  it("la auditoría no está en el menú: se abre desde Usuarios", async () => {
+    stubApi("admin");
+    renderApp("/usuarios");
+    await iniciarSesion();
+    await screen.findByRole("heading", { name: "Usuarios" });
+
+    await userEvent.click(screen.getByRole("link", { name: "Ver auditoría" }));
+
+    expect(await screen.findByRole("heading", { name: "Auditoría" })).toBeInTheDocument();
+    expect(currentPath()).toBe("/auditoria");
+  });
+
   it("administración ve todas las secciones en el menú", async () => {
     stubApi("admin");
     renderApp();
@@ -152,7 +164,6 @@ describe("AppRoot", () => {
       "Clientes",
       "Escuadrillas",
       "Usuarios",
-      "Auditoría",
       "Listas",
       "Materiales y precios",
       "Importar y exportar",
@@ -192,7 +203,7 @@ describe("AppRoot", () => {
     const links = within(menu())
       .getAllByRole("link")
       .map((link) => link.textContent);
-    expect(links).toEqual(["Tablero", "Órdenes", "Stock", "Usuarios", "Auditoría"]);
+    expect(links).toEqual(["Tablero", "Órdenes", "Stock", "Usuarios"]);
   });
 
   it("un rol sin secciones ve el saludo con su rol", async () => {

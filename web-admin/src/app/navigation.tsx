@@ -51,6 +51,8 @@ export interface NavSection {
   roles: Role[];
   /** Roles para los que es la pantalla de inicio, aunque no sea la primera del menú. */
   homeFor?: Role[];
+  /** false = no va en la barra lateral; se llega desde otra pantalla. */
+  inMenu?: boolean;
   icon: LucideIcon;
   element: ReactNode;
   /** Pestañas de la pantalla: cada una con su ruta debajo de la de la sección. */
@@ -140,6 +142,8 @@ export const NAV_SECTIONS: NavSection[] = [
     group: "Equipo",
     roles: ["admin", "owner"],
     icon: History,
+    // Desde Usuarios: para investigar algo puntual, no para el día a día.
+    inMenu: false,
     element: <AuditPage />,
   },
   {
