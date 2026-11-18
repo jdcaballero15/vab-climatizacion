@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import type { ClientSummary } from "../clients/types";
 import { useEquipment, useSites } from "../clients/useClients";
@@ -43,6 +43,11 @@ function initialValues(plan: MaintenancePlan | undefined): Values {
 
 /** Alta o edición de un plan (E07-03). El equipo se elige solo en el alta. */
 export function PlanForm({ plan, onDone }: PlanFormProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  // Al editar desde una fila de más abajo, el formulario aparece arriba: se lo trae a la vista.
+  useEffect(() => {
+    sectionRef.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+  }, []);
   const [client, setClient] = useState<ClientSummary | null>(null);
   const [siteId, setSiteId] = useState("");
   const [equipmentId, setEquipmentId] = useState("");
@@ -94,7 +99,11 @@ export function PlanForm({ plan, onDone }: PlanFormProps) {
   }
 
   return (
-    <section className="orders__new" aria-label={plan ? "Editar plan" : "Nuevo plan"}>
+    <section
+      ref={sectionRef}
+      className="orders__new plan-form__card"
+      aria-label={plan ? "Editar plan" : "Nuevo plan"}
+    >
       <h3>{plan ? `Plan de ${plan.equipment.internal_code}` : "Nuevo plan"}</h3>
       {!plan && (
         <>
@@ -119,7 +128,7 @@ export function PlanForm({ plan, onDone }: PlanFormProps) {
           )}
         </>
       )}
-      <form className="clients__form" onSubmit={handleSubmit} aria-label="Datos del plan">
+      <form className="clients__form plan-form" onSubmit={handleSubmit} aria-label="Datos del plan">
         {!plan && client && site && (
           <>
             <label htmlFor={`${prefix}-equipment`}>Equipo</label>
