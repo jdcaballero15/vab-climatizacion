@@ -37,6 +37,11 @@ const TABLERO: Dashboard = {
     },
   ],
   top_parts: [{ key: "p1", label: "Gas R410A (kg)", count: 0, quantity: "2.500" }],
+  parts_cost: {
+    total: "2500.00",
+    items: [{ key: "p1", label: "Gas R410A (kg)", quantity: "2.500", amount: "2500.00" }],
+    unpriced: 1,
+  },
 };
 
 function Location() {
@@ -95,6 +100,18 @@ describe("DashboardPage", () => {
     await userEvent.type(screen.getByLabelText("Comparar desde"), "2026-09-01");
     await waitFor(() =>
       expect(screen.getByTestId("url").textContent).toContain("compare_from=2026-09-01"),
+    );
+  });
+
+  it("muestra el gasto en materiales y avisa lo que no tiene precio", async () => {
+    renderDashboard();
+
+    const gasto = within(await screen.findByRole("region", { name: "Gasto en materiales" }));
+    expect(gasto.getAllByText(/2\.500,00/)).toHaveLength(2);
+    expect(gasto.getByText(/1 material usado no tiene precio/)).toBeInTheDocument();
+    expect(gasto.getByRole("link", { name: "Cargar precios" })).toHaveAttribute(
+      "href",
+      "/catalogos/materiales",
     );
   });
 

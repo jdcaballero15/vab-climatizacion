@@ -2766,7 +2766,7 @@ export interface components {
         };
         /**
          * DashboardOut
-         * @description El tablero con los filtros aplicados (E10). Sin precios ni importes.
+         * @description El tablero con los filtros aplicados (E10). El único importe es el gasto en materiales.
          */
         DashboardOut: {
             /**
@@ -2802,6 +2802,7 @@ export interface components {
             unbilled: components["schemas"]["UnbilledOrderOut"][];
             /** Top Parts */
             top_parts: components["schemas"]["CountOut"][];
+            parts_cost: components["schemas"]["PartsCostOut"];
         };
         /** DismissRequest */
         DismissRequest: {
@@ -3761,6 +3762,17 @@ export interface components {
             /** Unit */
             unit: string;
         };
+        /** PartCostOut */
+        PartCostOut: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Quantity */
+            quantity: string;
+            /** Amount */
+            amount: string;
+        };
         /** PartCreate */
         PartCreate: {
             /** Name */
@@ -3796,6 +3808,18 @@ export interface components {
             other_text?: string | null;
             /** Quantity */
             quantity: number | string;
+        };
+        /**
+         * PartsCostOut
+         * @description Lo gastado en materiales en el período. Solo administración y dirección ven el tablero.
+         */
+        PartsCostOut: {
+            /** Total */
+            total: string;
+            /** Items */
+            items: components["schemas"]["PartCostOut"][];
+            /** Unpriced */
+            unpriced: number;
         };
         /** PasswordChange */
         PasswordChange: {

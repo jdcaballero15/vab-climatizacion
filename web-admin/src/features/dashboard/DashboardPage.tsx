@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../app/PageHeader";
 import { useCrews } from "../crews/useCrews";
 import { useEquipmentTypes } from "../equipment-types/useEquipmentTypes";
-import { formatDate, formatDay } from "../orders/labels";
+import { formatDate, formatDay, formatMoney } from "../orders/labels";
 import { useWorkTypes } from "../work-types/useWorkTypes";
 import { Ranking, WeeklyChart } from "./charts";
 import { useDashboard, type DashboardFilters } from "./useDashboard";
@@ -137,7 +137,30 @@ export function DashboardPage() {
               </p>
               <WeeklyChart weeks={data.weeks} />
             </section>
-
+            <section className="card dashboard__card" aria-label="Gasto en materiales">
+              <h3>Gasto en materiales</h3>
+              <p className="dashboard__hero">{formatMoney(data.parts_cost.total)}</p>
+              <p className="muted">
+                En los cierres del período, con el precio de cada orden: el aprobado o, si todavía
+                no se aprobó, el de la lista.
+              </p>
+              <Ranking
+                items={data.parts_cost.items.map((p) => ({
+                  ...p,
+                  value: Number(p.amount),
+                  display: formatMoney(p.amount),
+                }))}
+                empty="Sin materiales con precio en el período."
+              />
+              {data.parts_cost.unpriced > 0 && (
+                <p className="muted">
+                  {data.parts_cost.unpriced === 1
+                    ? "1 material usado no tiene precio en la lista y no suma."
+                    : `${data.parts_cost.unpriced} materiales usados no tienen precio en la lista y no suman.`}{" "}
+                  <Link to="/catalogos/materiales">Cargar precios</Link>
+                </p>
+              )}
+            </section>
             <section className="card dashboard__card" aria-label="Sin facturar">
               <h3>Terminadas sin facturar</h3>
               {data.unbilled.length === 0 ? (
@@ -167,28 +190,17 @@ export function DashboardPage() {
                 </table>
               )}
             </section>
-
-            <section className="card dashboard__card" aria-label="Trabajos por técnico">
-              <h3>Trabajos por técnico</h3>
+            <section className="card dashboard__card" aria-label="Materiales más usados">
+              <h3>Materiales más usados</h3>
               <Ranking
-                items={data.by_technician.map((t) => ({
-                  ...t,
-                  value: t.count,
-                  display: String(t.count),
+                items={data.top_parts.map((p) => ({
+                  ...p,
+                  value: Number(p.quantity ?? 0),
+                  display: quantity(p.quantity),
                 }))}
-                empty="Sin cierres en el período."
-              />
-              <h3>En curso por escuadrilla</h3>
-              <Ranking
-                items={data.in_progress_by_crew.map((c) => ({
-                  ...c,
-                  value: c.count,
-                  display: String(c.count),
-                }))}
-                empty="Ninguna escuadrilla tiene órdenes asignadas."
+                empty="Sin materiales usados en el período."
               />
             </section>
-
             <section className="card dashboard__card" aria-label="Fallas y reparaciones">
               <h3>Fallas más comunes</h3>
               <Ranking
@@ -218,8 +230,30 @@ export function DashboardPage() {
                 </p>
               )}
             </section>
-
-            <section className="card dashboard__card" aria-label="Mantenimiento">
+            <section className="card dashboard__card" aria-label="Trabajos por técnico">
+              <h3>Trabajos por técnico</h3>
+              <Ranking
+                items={data.by_technician.map((t) => ({
+                  ...t,
+                  value: t.count,
+                  display: String(t.count),
+                }))}
+                empty="Sin cierres en el período."
+              />
+              <h3>En curso por escuadrilla</h3>
+              <Ranking
+                items={data.in_progress_by_crew.map((c) => ({
+                  ...c,
+                  value: c.count,
+                  display: String(c.count),
+                }))}
+                empty="Ninguna escuadrilla tiene órdenes asignadas."
+              />
+            </section>
+            <section
+              className="card dashboard__card dashboard__card--wide"
+              aria-label="Mantenimiento"
+            >
               <h3>Mantenimiento preventivo</h3>
               <dl className="dashboard__facts">
                 {(
@@ -237,18 +271,6 @@ export function DashboardPage() {
                   </div>
                 ))}
               </dl>
-            </section>
-
-            <section className="card dashboard__card" aria-label="Materiales más usados">
-              <h3>Materiales más usados</h3>
-              <Ranking
-                items={data.top_parts.map((p) => ({
-                  ...p,
-                  value: Number(p.quantity ?? 0),
-                  display: quantity(p.quantity),
-                }))}
-                empty="Sin materiales usados en el período."
-              />
             </section>
           </div>
         </>

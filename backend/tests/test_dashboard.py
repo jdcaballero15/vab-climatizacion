@@ -11,7 +11,7 @@ from sqlalchemy import select, update
 
 from app.core.dates import business_today
 from app.db.models.catalog import Failure
-from app.db.models.part import Part, PartUsage
+from app.db.models.part import Part, PartPrice, PartUsage
 from app.db.models.user import UserRole
 from app.db.models.work_order import (
     WorkOrder,
@@ -142,6 +142,69 @@ async def test_materiales_mas_usados(mundo: Mundo) -> None:
     body = (await _get(m.admin)).json()
 
     assert [(p["label"], p["quantity"]) for p in body["top_parts"]] == [("Gas R410A (kg)", "2.500")]
+
+
+# Gasto en materiales: precio estampado si la orden está aprobada, si no el vigente.
+async def test_gasto_en_materiales(mundo: Mundo) -> None:
+    m = mundo
+    aprobada = await _terminada(m)
+    sin_aprobar = await _terminada(m)
+    gas = Part(name="Gas R410A", unit="kg")
+    cinta = Part(name="Cinta aisladora", unit="unidad")
+    sin_precio = Part(name="Tornillo", unit="unidad")
+    en_cero = Part(name="Precinto", unit="unidad")
+    await _seed([gas, cinta, sin_precio, en_cero])
+    await _seed(
+        [
+            PartPrice(part_id=gas.id, list_price=Decimal("1000.00"), valid_from=AHORA),
+            PartPrice(part_id=cinta.id, list_price=Decimal("50.00"), valid_from=AHORA),
+            PartPrice(part_id=en_cero.id, list_price=Decimal("0.00"), valid_from=AHORA),
+            WorkOrderEvent(
+                work_order_id=aprobada.id,
+                event_type=WorkOrderEventType.review_approved,
+                occurred_at=AHORA,
+            ),
+        ]
+    )
+    async with SessionLocal() as session:
+        cierres = {
+            orden_id: closure_id
+            for closure_id, orden_id in await session.execute(
+                select(WorkOrderClosure.id, WorkOrderClosure.work_order_id)
+            )
+        }
+
+    def uso(orden: WorkOrder, parte: Part, cantidad: str, precio: str | None = None) -> PartUsage:
+        return PartUsage(
+            work_order_id=orden.id,
+            closure_id=cierres[orden.id],
+            part_id=parte.id,
+            quantity=Decimal(cantidad),
+            unit_price=Decimal(precio) if precio else None,
+            created_by=m.celular.id,
+        )
+
+    await _seed(
+        [
+            # Aprobada: vale el precio estampado (800), no el vigente (1000).
+            uso(aprobada, gas, "2", "800.00"),
+            # Sin aprobar: el precio vigente.
+            uso(sin_aprobar, gas, "0.5"),
+            uso(sin_aprobar, cinta, "3"),
+            # Sin precio en la lista, o en cero: no suma, se avisa.
+            uso(sin_aprobar, sin_precio, "4"),
+            uso(sin_aprobar, en_cero, "1"),
+        ]
+    )
+
+    body = (await _get(m.admin)).json()["parts_cost"]
+
+    assert body["total"] == "2250.00"
+    assert [(p["label"], p["amount"]) for p in body["items"]] == [
+        ("Gas R410A (kg)", "2100.00"),
+        ("Cinta aisladora (unidad)", "150.00"),
+    ]
+    assert body["unpriced"] == 2
 
 
 # E10-08: los filtros recalculan todo y se comparan dos períodos.

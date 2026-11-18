@@ -2230,6 +2230,19 @@ button[type="submit"]:hover:not(:disabled),
   padding: 1rem 1.25rem;
 }
 
+.dashboard__card--wide {
+  grid-column: 1 / -1;
+}
+
+/* El número principal de una tarjeta (el gasto del período). */
+.dashboard__hero {
+  margin: 0.25rem 0 0;
+  font-size: 1.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
 .dashboard__card .parts__table {
   width: 100%;
 }

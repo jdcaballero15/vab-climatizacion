@@ -2,8 +2,8 @@
 
 Los filtros son los del panel de órdenes (E04-05): cliente, escuadrilla, tipo de trabajo
 y período por fecha de creación; el tablero suma el tipo de equipo. Las cantidades por
-estado salen de la misma consulta que el panel, así coinciden (E10-01, criterio 3). Sin
-precios: dirección ve importes en el panel de órdenes, no acá.
+estado salen de la misma consulta que el panel, así coinciden (E10-01, criterio 3). El único
+importe es el gasto en materiales, con el mismo precio que muestra cada orden.
 """
 
 import uuid
@@ -20,6 +20,8 @@ from app.api.schemas.dashboard import (
     CountOut,
     DashboardOut,
     MaintenanceProgressOut,
+    PartCostOut,
+    PartsCostOut,
     PeriodTotalsOut,
     UnbilledOrderOut,
     WeekOut,
@@ -45,6 +47,7 @@ from app.domain.work_order import (
     OrderStatus,
     WorkOrderEventType,
 )
+from app.services import parts as parts_service
 
 _TOP = 10
 
@@ -129,6 +132,7 @@ async def build(
         maintenance=await _maintenance(session, filters),
         unbilled=await _unbilled(session, filters),
         top_parts=await _top_parts(session, filters),
+        parts_cost=await _parts_cost(session, filters),
     )
 
 
@@ -409,3 +413,58 @@ async def _top_parts(session: AsyncSession, filters: DashboardFilters) -> list[C
         CountOut(key=str(pid), label=f"{name} ({unit})", count=0, quantity=Decimal(total))
         for pid, name, unit, total in (await session.execute(stmt)).all()
     ]
+
+
+async def _parts_cost(session: AsyncSession, filters: DashboardFilters) -> PartsCostOut:
+    """Gasto en materiales de los cierres del período. Cada uso vale lo mismo que en su orden:
+    el precio estampado si la orden está aprobada y, si no, el vigente de la lista (E04-08).
+    """
+    rows = (
+        await session.execute(
+            select(Part.id, Part.name, Part.unit, PartUsage)
+            .join(PartUsage, PartUsage.part_id == Part.id)
+            .where(
+                PartUsage.deleted_at.is_(None),
+                PartUsage.closure_id.in_(_closures_in_period(filters)),
+            )
+        )
+    ).all()
+    approved = set(
+        (
+            await session.scalars(
+                select(WorkOrderEvent.work_order_id).where(
+                    WorkOrderEvent.work_order_id.in_({usage.work_order_id for *_, usage in rows}),
+                    WorkOrderEvent.event_type == WorkOrderEventType.review_approved,
+                    WorkOrderEvent.deleted_at.is_(None),
+                )
+            )
+        ).all()
+    )
+    prices = await parts_service.current_price_map(session, list({pid for pid, *_ in rows}))
+    totals: dict[uuid.UUID, tuple[str, Decimal, Decimal]] = {}
+    unpriced: set[uuid.UUID] = set()
+    for part_id, name, unit, usage in rows:
+        stamped = usage.unit_price if usage.work_order_id in approved else None
+        price = stamped if stamped is not None else prices.get(part_id)
+        # Un precio en cero es uno que todavía no se cargó: tampoco suma.
+        if not price:
+            unpriced.add(part_id)
+            continue
+        label, quantity, amount = totals.get(part_id, (f"{name} ({unit})", Decimal(0), Decimal(0)))
+        totals[part_id] = (label, quantity + usage.quantity, amount + price * usage.quantity)
+    items = sorted(
+        (
+            PartCostOut(key=str(part_id), label=label, quantity=quantity, amount=_money(amount))
+            for part_id, (label, quantity, amount) in totals.items()
+        ),
+        key=lambda item: (-item.amount, item.label),
+    )
+    return PartsCostOut(
+        total=_money(sum((amount for _, _, amount in totals.values()), Decimal(0))),
+        items=items[:_TOP],
+        unpriced=len(unpriced),
+    )
+
+
+def _money(value: Decimal) -> Decimal:
+    return value.quantize(Decimal("0.01"))

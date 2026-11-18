@@ -9978,6 +9978,9 @@
             },
             "type": "array",
             "title": "Top Parts"
+          },
+          "parts_cost": {
+            "$ref": "#/components/schemas/PartsCostOut"
           }
         },
         "type": "object",
@@ -9996,10 +9999,11 @@
           "other_repairs",
           "maintenance",
           "unbilled",
-          "top_parts"
+          "top_parts",
+          "parts_cost"
         ],
         "title": "DashboardOut",
-        "description": "El tablero con los filtros aplicados (E10). Sin precios ni importes."
+        "description": "El tablero con los filtros aplicados (E10). El único importe es el gasto en materiales."
       },
       "DismissRequest": {
         "properties": {
@@ -12707,6 +12711,34 @@
         ],
         "title": "PartChoiceTechnicianOut"
       },
+      "PartCostOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "quantity": {
+            "type": "string",
+            "title": "Quantity"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "quantity",
+          "amount"
+        ],
+        "title": "PartCostOut"
+      },
       "PartCreate": {
         "properties": {
           "name": {
@@ -12840,6 +12872,33 @@
         ],
         "title": "PartUsageIn",
         "description": "Un material usado: de la lista (part_id) o escrito en \"Otro\" (other_text)."
+      },
+      "PartsCostOut": {
+        "properties": {
+          "total": {
+            "type": "string",
+            "title": "Total"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PartCostOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "unpriced": {
+            "type": "integer",
+            "title": "Unpriced"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "items",
+          "unpriced"
+        ],
+        "title": "PartsCostOut",
+        "description": "Lo gastado en materiales en el período. Solo administración y dirección ven el tablero."
       },
       "PasswordChange": {
         "properties": {
