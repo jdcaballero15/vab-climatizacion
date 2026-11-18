@@ -35,6 +35,14 @@ Región: Virginia (Render no tiene región en Sudamérica).
 
    Pide la contraseña dos veces (no se escribe en la línea de comandos). Se niega si ya hay un administrador. Los demás usuarios se crean desde la administración (*Usuarios*), y las escuadrillas desde *Escuadrillas*.
 
+   Si nadie de administración recuerda su contraseña, en la misma *Shell* de `vab-ot-api`:
+
+   ```bash
+   python -m app.reset_password --email <correo>
+   ```
+
+   Muestra una contraseña temporal una sola vez, cierra las sesiones de ese usuario y al entrar le pide elegir una nueva (lo mismo que el botón de *Usuarios*). La Shell llega a la base por adentro de Render: no hace falta abrirla a internet.
+
 7. **Comprobar la sesión por la regla `/api/*`.** En la administración, ingresar con ese usuario y recargar la página: tiene que entrar directo, sin pedir la contraseña. En las herramientas del navegador (*Red*), la llamada a `/api/auth/login` es un `POST` que responde `200` con un `Set-Cookie` `ot_refresh` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/api/auth`). Cerrar sesión y recargar tiene que mostrar el login. Repetir en la app del técnico con un usuario de escuadrilla. Si la regla no deja pasar el `POST` o el `Set-Cookie`, la sesión se pierde al recargar: pasar al plan B del ADR 0010 (dominio propio con subdominios).
 
 8. **Comprobar el bucket.** En la API: *Shell*, y ahí:

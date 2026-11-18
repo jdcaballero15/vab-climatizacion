@@ -89,13 +89,24 @@ async def reset_password(session: AsyncSession, user_id: uuid.UUID, actor: User)
 
     La temporal solo vive en esta respuesta: en la base queda el hash.
     """
-    user = await get_user(session, user_id)
+    return await _set_temporary_password(session, await get_user(session, user_id), actor)
+
+
+async def reset_password_by_email(session: AsyncSession, email: str) -> str:
+    """Lo mismo desde la consola, cuando nadie de administración puede entrar: sin autor."""
+    user = await UserRepository(session).get_by_email(email)
+    if user is None or not user.is_active:
+        raise UserNotFoundError
+    return await _set_temporary_password(session, user, None)
+
+
+async def _set_temporary_password(session: AsyncSession, user: User, actor: User | None) -> str:
     temporary = generate_temporary_password()
     now = datetime.now(UTC)
     user.password_hash = hash_password(temporary)
     user.must_change_password = True
     user.password_reset_at = now
-    user.password_reset_by = actor.id
+    user.password_reset_by = actor.id if actor else None
     await RefreshTokenRepository(session).revoke_all_for_user(user.id, now)
     await session.commit()
     return temporary
