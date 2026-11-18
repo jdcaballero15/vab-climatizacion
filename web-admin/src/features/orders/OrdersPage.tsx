@@ -24,7 +24,6 @@ import { BillingForm } from "./BillingForm";
 import { ClientPicker } from "./ClientPicker";
 import { ClosureDetail } from "./ClosureDetail";
 import { EditInvoiceForm, NewInvoiceForm, PaymentForm, VoidPaymentForm } from "./InvoiceForms";
-import { OrderMaterials } from "./OrderMaterials";
 import { formatDay, initials, LIST_STATUS_LABELS } from "./labels";
 import { OrderCard, type CardAction } from "./OrderCard";
 import { OrderForm } from "./OrderForm";
@@ -256,7 +255,6 @@ export function OrdersPage({ readOnly = false }: { readOnly?: boolean }) {
       return (
         <>
           <ClosureDetail order={order} />
-          {!readOnly && <OrderMaterials orderId={order.id} orderNumber={order.number} />}
           <BillingForm order={order} readOnly={readOnly} />
         </>
       );

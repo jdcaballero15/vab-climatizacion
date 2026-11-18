@@ -13,7 +13,7 @@ import {
   timelineLabel,
   workshopStageText,
 } from "./labels";
-import { OrderMaterials } from "./OrderMaterials";
+import { BillingForm } from "./BillingForm";
 import type { OrderDetail } from "./types";
 import { useOrderDetail } from "./useOrders";
 
@@ -70,7 +70,11 @@ export function OrderDetailPage({ readOnly = false }: { readOnly?: boolean }) {
           </div>
         )}
 
-        {!readOnly && <OrderMaterials orderId={order.id} orderNumber={order.number} />}
+        {order.has_closure && (
+          <div className="card order-detail__card">
+            <BillingForm order={order} readOnly={readOnly} />
+          </div>
+        )}
 
         {(order.source_order || order.repair_orders.length > 0) && (
           <div className="card order-detail__card">

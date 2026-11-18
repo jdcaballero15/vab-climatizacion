@@ -1,15 +1,19 @@
 import { useState, type FormEvent } from "react";
 
 import { formatDateTime, formatDay, formatMoney, PAYMENT_METHOD_LABELS, toAmount } from "./labels";
+import { ApproveOrder, OrderMaterials } from "./OrderMaterials";
 import type { Billing, Charge, OrderListItem } from "./types";
 import { useChangeCharge, useCharges, useOrderBilling, useSaveBilling } from "./useOrders";
 
+type BillingOrder = Pick<OrderListItem, "id" | "number" | "status">;
+
 /**
- * Importes de una orden cerrada (E04-14, E04-11): repuestos (total de materiales, E05-05),
- * mano de obra a mano y otros cargos con descripción e importe. Se editan con la orden
- * Terminada; facturada o cobrada, o para dirección, se ven sin editar.
+ * Importes de una orden cerrada, de arriba a abajo como una factura: materiales (E05-05),
+ * mano de obra a mano, otros cargos (E04-14, E04-11), el total y, al final, aprobar
+ * (E04-08). Se editan con la orden Terminada; facturada o cobrada, o para dirección, se
+ * ven sin editar.
  */
-export function BillingForm({ order, readOnly }: { order: OrderListItem; readOnly?: boolean }) {
+export function BillingForm({ order, readOnly }: { order: BillingOrder; readOnly?: boolean }) {
   const billing = useOrderBilling(order.id);
   const editable = !readOnly && order.status === "done";
   if (!billing.data) {
@@ -20,29 +24,33 @@ export function BillingForm({ order, readOnly }: { order: OrderListItem; readOnl
     );
   }
   return (
-    <section
-      className="clients__form orders__billing"
-      aria-label={`Importes y cobro de la orden N° ${order.number}`}
-    >
-      <h4>Importes y cobro</h4>
+    <section className="orders__billing" aria-label={`Importes de la orden N° ${order.number}`}>
+      <h4>Importes</h4>
+      {readOnly ? (
+        <p className="orders__billing-line">
+          <span>Materiales</span> <strong>{formatMoney(billing.data.parts_amount)}</strong>
+        </p>
+      ) : (
+        <OrderMaterials orderId={order.id} orderNumber={order.number} embedded />
+      )}
       {editable ? (
         <LaborForm order={order} billing={billing.data} />
       ) : (
-        <p>
-          Repuestos {formatMoney(billing.data.parts_amount)} · Mano de obra{" "}
-          {formatMoney(billing.data.labor_amount)}
+        <p className="orders__billing-line">
+          <span>Mano de obra</span> <strong>{formatMoney(billing.data.labor_amount)}</strong>
         </p>
       )}
       <ChargesEditor orderId={order.id} editable={editable} />
       <p className="orders__billing-total">
-        Total: <strong>{formatMoney(billing.data.total)}</strong>
+        <span>Total</span> <strong>{formatMoney(billing.data.total)}</strong>
       </p>
+      {!readOnly && <ApproveOrder orderId={order.id} />}
       <InvoiceAndPayment billing={billing.data} />
     </section>
   );
 }
 
-function LaborForm({ order, billing }: { order: OrderListItem; billing: Billing }) {
+function LaborForm({ order, billing }: { order: BillingOrder; billing: Billing }) {
   const save = useSaveBilling(order.id);
   const [labor, setLabor] = useState(
     Number(billing.labor_amount) ? String(Number(billing.labor_amount)) : "",
@@ -65,21 +73,18 @@ function LaborForm({ order, billing }: { order: OrderListItem; billing: Billing 
 
   return (
     <form onSubmit={handleSubmit} aria-label={`Mano de obra de la orden N° ${order.number}`}>
-      <div className="orders__billing-amounts">
-        <div>
-          <span className="orders__billing-label">Repuestos (materiales)</span>
-          <p className="orders__billing-parts">{formatMoney(billing.parts_amount)}</p>
-        </div>
-        <div>
-          <label htmlFor={id}>Mano de obra ($)</label>
-          <input
-            id={id}
-            inputMode="decimal"
-            value={labor}
-            onChange={(event) => setLabor(event.target.value)}
-            placeholder="0"
-          />
-        </div>
+      <div className="orders__billing-labor">
+        <label htmlFor={id}>Mano de obra ($)</label>
+        <input
+          id={id}
+          inputMode="decimal"
+          value={labor}
+          onChange={(event) => setLabor(event.target.value)}
+          placeholder="0"
+        />
+        <button type="submit" disabled={save.isPending} aria-label="Guardar mano de obra">
+          {save.isPending ? "Guardando…" : "Guardar"}
+        </button>
       </div>
       {invalid && (
         <p className="clients__error" role="alert">
@@ -97,9 +102,6 @@ function LaborForm({ order, billing }: { order: OrderListItem; billing: Billing 
           Última carga: {billing.updated_by_name}, {formatDateTime(billing.updated_at)}
         </p>
       )}
-      <button type="submit" disabled={save.isPending}>
-        {save.isPending ? "Guardando…" : "Guardar mano de obra"}
-      </button>
     </form>
   );
 }
