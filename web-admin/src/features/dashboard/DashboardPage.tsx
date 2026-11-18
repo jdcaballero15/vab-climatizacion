@@ -229,7 +229,7 @@ export function DashboardPage() {
                   {[...data.other_failures, ...data.other_repairs]
                     .map((o) => `${o.label} (${o.count})`)
                     .join(", ")}
-                  . <Link to="/catalogos/textos-otro">Sumarlos a la lista</Link>
+                  . <Link to="/catalogos/listas/escrito-por-escuadrillas">Sumarlos a la lista</Link>
                 </p>
               )}
             </section>
