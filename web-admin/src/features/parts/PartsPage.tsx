@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { PageHeader } from "../../app/PageHeader";
 import { NameTakenError } from "../catalogs/errors";
@@ -16,7 +17,9 @@ const NAME_TAKEN = "Ya existe un material con ese nombre (puede estar desactivad
  */
 export function PartsPage() {
   const [showInactive, setShowInactive] = useState(false);
-  const [search, setSearch] = useState("");
+  // El tablero manda acá con ?buscar=<material> para cargarle el precio.
+  const [params] = useSearchParams();
+  const [search, setSearch] = useState(params.get("buscar") ?? "");
   const parts = useParts(showInactive);
   const visible = (parts.data ?? []).filter((part) => matchesSearch(part.name, search));
 

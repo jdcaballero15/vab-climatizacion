@@ -32,3 +32,4 @@ assumes: []
 
 - `GET /admin/dashboard` (administración y dirección; el técnico recibe 403) devuelve todas las secciones con los mismos filtros: período (por defecto los últimos 30 días), cliente, escuadrilla, tipo de trabajo y tipo de equipo. Sin precios.
 - Mantenimientos con visita prevista en el período: generados, pendientes, asignados (o en curso), cerrados y cancelados. Un mes anterior se ve eligiendo su período.
+- **Cambio del 2026-11-18 (Gonza):** el avance del mantenimiento pasa del tablero a la pantalla de Mantenimiento, como "Visitas de <mes>" (las del mes en curso). Usa los mismos números de `GET /admin/dashboard`. El tablero ya no lo muestra.

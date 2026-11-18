@@ -3,8 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../app/PageHeader";
 import { useCrews } from "../crews/useCrews";
 import { useEquipmentTypes } from "../equipment-types/useEquipmentTypes";
-import { formatDate, formatDay, ORDER_STATUS_LABELS } from "../orders/labels";
-import type { ListableStatus } from "../orders/types";
+import { formatDate, formatDay, formatMoney } from "../orders/labels";
 import { useWorkTypes } from "../work-types/useWorkTypes";
 import { Ranking, WeeklyChart } from "./charts";
 import { useDashboard, type DashboardFilters } from "./useDashboard";
@@ -19,6 +18,9 @@ const FILTER_KEYS: (keyof DashboardFilters)[] = [
   "compare_from",
   "compare_to",
 ];
+
+// Desde cuántos días sin facturar una orden se marca para que no se olvide.
+const LATE_DAYS = 15;
 
 function difference(now: number, before: number): string {
   const delta = now - before;
@@ -124,20 +126,6 @@ export function DashboardPage() {
       {dashboard.isError && <p role="alert">No se pudo cargar el tablero.</p>}
       {data && (
         <>
-          <div className="kpis dashboard__kpis">
-            {data.by_status.map((item) => (
-              <Link
-                key={item.key}
-                to={`/ordenes?estado=${item.key}`}
-                className={`card kpi kpi--${item.key}`}
-                aria-label={`${ORDER_STATUS_LABELS[item.key as ListableStatus]}: ${item.count}`}
-              >
-                <p className="eyebrow">{ORDER_STATUS_LABELS[item.key as ListableStatus]}</p>
-                <p className="kpi__value">{item.count}</p>
-              </Link>
-            ))}
-          </div>
-
           <div className="dashboard__grid">
             <section className="card dashboard__card" aria-label="Evolución">
               <h3>Evolución por semana</h3>
@@ -152,58 +140,85 @@ export function DashboardPage() {
               </p>
               <WeeklyChart weeks={data.weeks} />
             </section>
-
+            <section className="card dashboard__card" aria-label="Gasto en materiales">
+              <h3>Gasto en materiales</h3>
+              <p className="dashboard__hero">{formatMoney(data.parts_cost.total)}</p>
+              <p className="muted">
+                En los cierres del período, con el precio de cada orden: el aprobado o, si todavía
+                no se aprobó, el de la lista.
+              </p>
+              <Ranking
+                items={data.parts_cost.items.map((p) => ({
+                  ...p,
+                  value: Number(p.amount),
+                  display: formatMoney(p.amount),
+                }))}
+                empty="Sin materiales con precio en el período."
+              />
+              {data.parts_cost.unpriced.length > 0 && (
+                <div className="dashboard__notice">
+                  <p>
+                    {data.parts_cost.unpriced.length === 1
+                      ? "Este material se usó pero no tiene precio, así que no suma:"
+                      : "Estos materiales se usaron pero no tienen precio, así que no suman:"}
+                  </p>
+                  <ul aria-label="Materiales sin precio">
+                    {data.parts_cost.unpriced.map((part) => (
+                      <li key={part.key}>
+                        {part.label}{" "}
+                        <Link to={`/catalogos/materiales?buscar=${encodeURIComponent(part.label)}`}>
+                          Cargar precio
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
             <section className="card dashboard__card" aria-label="Sin facturar">
               <h3>Terminadas sin facturar</h3>
               {data.unbilled.length === 0 ? (
                 <p className="muted">No hay trabajos terminados sin facturar.</p>
               ) : (
-                <table className="parts__table">
-                  <thead>
-                    <tr>
-                      <th scope="col">Orden</th>
-                      <th scope="col">Cliente</th>
-                      <th scope="col">Cerrada</th>
-                      <th scope="col">Días</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.unbilled.map((order) => (
-                      <tr key={order.id}>
-                        <td>
-                          <Link to={`/ordenes/${order.id}`}>N° {order.number}</Link>
-                        </td>
-                        <td>{order.client_name}</td>
-                        <td>{order.closed_at ? formatDate(order.closed_at) : "-"}</td>
-                        <td>{order.days ?? "-"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <ul className="unbilled">
+                  {data.unbilled.map((order) => (
+                    <li key={order.id}>
+                      <Link to={`/ordenes/${order.id}`} className="unbilled__number">
+                        N° {order.number}
+                      </Link>
+                      <span className="unbilled__client">
+                        {order.client_name}
+                        <small>
+                          {order.closed_at ? `Cerrada el ${formatDate(order.closed_at)}` : "-"}
+                        </small>
+                      </span>
+                      {order.days !== null && order.days !== undefined && (
+                        <span
+                          className={
+                            order.days >= LATE_DAYS
+                              ? "unbilled__age unbilled__age--late"
+                              : "unbilled__age"
+                          }
+                        >
+                          {order.days === 1 ? "1 día" : `${order.days} días`}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               )}
             </section>
-
-            <section className="card dashboard__card" aria-label="Trabajos por técnico">
-              <h3>Trabajos por técnico</h3>
+            <section className="card dashboard__card" aria-label="Materiales más usados">
+              <h3>Materiales más usados</h3>
               <Ranking
-                items={data.by_technician.map((t) => ({
-                  ...t,
-                  value: t.count,
-                  display: String(t.count),
+                items={data.top_parts.map((p) => ({
+                  ...p,
+                  value: Number(p.quantity ?? 0),
+                  display: quantity(p.quantity),
                 }))}
-                empty="Sin cierres en el período."
-              />
-              <h4>En curso por escuadrilla</h4>
-              <Ranking
-                items={data.in_progress_by_crew.map((c) => ({
-                  ...c,
-                  value: c.count,
-                  display: String(c.count),
-                }))}
-                empty="Ninguna escuadrilla tiene órdenes asignadas."
+                empty="Sin materiales usados en el período."
               />
             </section>
-
             <section className="card dashboard__card" aria-label="Fallas y reparaciones">
               <h3>Fallas más comunes</h3>
               <Ranking
@@ -229,36 +244,28 @@ export function DashboardPage() {
                   {[...data.other_failures, ...data.other_repairs]
                     .map((o) => `${o.label} (${o.count})`)
                     .join(", ")}
-                  . <Link to="/catalogos/textos-otro">Sumarlos a la lista</Link>
+                  . <Link to="/catalogos/listas/escrito-por-escuadrillas">Sumarlos a la lista</Link>
                 </p>
               )}
             </section>
-
-            <section className="card dashboard__card" aria-label="Mantenimiento">
-              <h3>Mantenimiento preventivo</h3>
-              <dl className="dashboard__facts">
-                <dt>Generados</dt>
-                <dd>{data.maintenance.generated}</dd>
-                <dt>Pendientes</dt>
-                <dd>{data.maintenance.pending}</dd>
-                <dt>Asignados</dt>
-                <dd>{data.maintenance.assigned}</dd>
-                <dt>Cerrados</dt>
-                <dd>{data.maintenance.closed}</dd>
-                <dt>Cancelados</dt>
-                <dd>{data.maintenance.cancelled}</dd>
-              </dl>
-            </section>
-
-            <section className="card dashboard__card" aria-label="Materiales más usados">
-              <h3>Materiales más usados</h3>
+            <section className="card dashboard__card" aria-label="Trabajos por técnico">
+              <h3>Trabajos por técnico</h3>
               <Ranking
-                items={data.top_parts.map((p) => ({
-                  ...p,
-                  value: Number(p.quantity ?? 0),
-                  display: quantity(p.quantity),
+                items={data.by_technician.map((t) => ({
+                  ...t,
+                  value: t.count,
+                  display: String(t.count),
                 }))}
-                empty="Sin materiales usados en el período."
+                empty="Sin cierres en el período."
+              />
+              <h3>En curso por escuadrilla</h3>
+              <Ranking
+                items={data.in_progress_by_crew.map((c) => ({
+                  ...c,
+                  value: c.count,
+                  display: String(c.count),
+                }))}
+                empty="Ninguna escuadrilla tiene órdenes asignadas."
               />
             </section>
           </div>

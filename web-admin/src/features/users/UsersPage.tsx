@@ -1,5 +1,5 @@
 import { Fragment, useState, type FormEvent } from "react";
-import { useOutletContext } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 
 import { ResetPasswordPanel } from "./ResetPasswordPanel";
 import type { UserRole } from "./types";
@@ -60,6 +60,11 @@ export function UsersPage() {
         eyebrow="Equipo"
         title="Usuarios"
         subtitle="Quién entra al sistema y con qué rol. Cada escuadrilla usa el usuario de su celular."
+        actions={
+          <Link to="/auditoria" className="btn btn--sm">
+            Ver auditoría
+          </Link>
+        }
       />
 
       <form className="users__form" onSubmit={handleCreate} aria-label="Crear usuario">

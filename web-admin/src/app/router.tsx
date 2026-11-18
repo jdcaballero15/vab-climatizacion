@@ -18,6 +18,11 @@ const routes: RouteObject[] = [
       ...NAV_SECTIONS.map((section) => ({
         path: section.path.slice(1),
         element: <RequireRole roles={section.roles}>{section.element}</RequireRole>,
+        // Con pestañas, la dirección de la sección abre la primera.
+        children: section.tabs && [
+          { index: true, element: <Navigate to={section.tabs[0].path} replace /> },
+          ...section.tabs.map((tab) => ({ path: tab.path, element: tab.element })),
+        ],
       })),
       // E04-06: el detalle de una orden, con el mismo permiso que Órdenes.
       {

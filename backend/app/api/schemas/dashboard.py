@@ -42,8 +42,30 @@ class UnbilledOrderOut(BaseModel):
     days: int | None
 
 
+class PartCostOut(BaseModel):
+    key: str
+    label: str
+    quantity: Decimal
+    amount: Decimal
+
+
+class PartRefOut(BaseModel):
+    key: str
+    label: str
+
+
+class PartsCostOut(BaseModel):
+    """Lo gastado en materiales en el período. Solo administración y dirección ven el tablero."""
+
+    total: Decimal
+    # Los materiales que más plata se llevaron, de mayor a menor.
+    items: list[PartCostOut]
+    # Materiales usados sin precio en la lista (o en cero): no suman al total.
+    unpriced: list[PartRefOut]
+
+
 class DashboardOut(BaseModel):
-    """El tablero con los filtros aplicados (E10). Sin precios ni importes."""
+    """El tablero con los filtros aplicados (E10). El único importe es el gasto en materiales."""
 
     date_from: date
     date_to: date
@@ -61,3 +83,4 @@ class DashboardOut(BaseModel):
     maintenance: MaintenanceProgressOut
     unbilled: list[UnbilledOrderOut]
     top_parts: list[CountOut]
+    parts_cost: PartsCostOut

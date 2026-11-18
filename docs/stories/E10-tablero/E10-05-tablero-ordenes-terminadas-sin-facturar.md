@@ -29,3 +29,4 @@ assumes: []
 
 - `GET /admin/dashboard` (administración y dirección; el técnico recibe 403) devuelve todas las secciones con los mismos filtros: período (por defecto los últimos 30 días), cliente, escuadrilla, tipo de trabajo y tipo de equipo. Sin precios.
 - Terminadas sin facturar, la más vieja primero, con cliente, número, fecha de cierre y días; no dependen del período. Al facturarse pasan a Facturada y salen de la lista.
+- **2026-11-18:** se muestran como lista, una fila por orden con el cliente, la fecha de cierre y los días sin facturar. Desde los 15 días se marcan en amarillo.

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { PageHeader } from "../../app/PageHeader";
 import { businessToday, formatDay, ORDER_STATUS_LABELS } from "../orders/labels";
 import { ChecklistEditor } from "./ChecklistEditor";
+import { MonthProgress } from "./MonthProgress";
 import { everyText, SKIP_REASONS } from "./labels";
 import { PlanForm } from "./PlanForm";
 import type { MaintenancePlan, MaintenanceRun } from "./types";
@@ -16,6 +17,8 @@ import { usePlans, useRunMaintenance, useUpdatePlan } from "./useMaintenance";
 export function MaintenancePage() {
   const [showEnded, setShowEnded] = useState(false);
   const [creating, setCreating] = useState(false);
+  // Se edita arriba de la tabla, como el alta: dentro de una fila el formulario no entra.
+  const [editing, setEditing] = useState<MaintenancePlan | null>(null);
   const [editingChecklist, setEditingChecklist] = useState(false);
   const plans = usePlans(showEnded);
   const run = useRunMaintenance();
@@ -41,16 +44,25 @@ export function MaintenancePage() {
             <button type="button" onClick={() => run.mutate()} disabled={run.isPending}>
               Generar ahora
             </button>
-            <button type="button" onClick={() => setCreating(true)} disabled={creating}>
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(null);
+                setCreating(true);
+              }}
+              disabled={creating}
+            >
               Nuevo plan
             </button>
           </div>
         }
       />
+      <MonthProgress />
       {editingChecklist && <ChecklistEditor />}
       {run.isError && <p role="alert">{run.error.message}</p>}
       {run.data && <RunSummary result={run.data} />}
       {creating && <PlanForm onDone={() => setCreating(false)} />}
+      {editing && <PlanForm key={editing.id} plan={editing} onDone={() => setEditing(null)} />}
       <label className="catalog__toggle">
         <input
           type="checkbox"
@@ -79,7 +91,15 @@ export function MaintenancePage() {
             </thead>
             <tbody>
               {plans.data.map((plan) => (
-                <PlanRow key={plan.id} plan={plan} />
+                <PlanRow
+                  key={plan.id}
+                  plan={plan}
+                  editing={editing?.id === plan.id}
+                  onEdit={() => {
+                    setCreating(false);
+                    setEditing(plan);
+                  }}
+                />
               ))}
             </tbody>
           </table>
@@ -113,23 +133,21 @@ function RunSummary({ result }: { result: MaintenanceRun }) {
   );
 }
 
-function PlanRow({ plan }: { plan: MaintenancePlan }) {
-  const [editing, setEditing] = useState(false);
+function PlanRow({
+  plan,
+  editing,
+  onEdit,
+}: {
+  plan: MaintenancePlan;
+  editing: boolean;
+  onEdit: () => void;
+}) {
   const [ending, setEnding] = useState(false);
   const update = useUpdatePlan(plan.id);
   const name = plan.equipment.internal_code;
 
-  if (editing) {
-    return (
-      <tr>
-        <td colSpan={6}>
-          <PlanForm plan={plan} onDone={() => setEditing(false)} />
-        </td>
-      </tr>
-    );
-  }
   return (
-    <tr>
+    <tr className={editing ? "maintenance__editing" : undefined}>
       <td>
         <strong>{plan.client.name}</strong>
         <br />
@@ -174,11 +192,7 @@ function PlanRow({ plan }: { plan: MaintenancePlan }) {
           </div>
         ) : (
           <div className="users__actions">
-            <button
-              type="button"
-              aria-label={`Editar el plan de ${name}`}
-              onClick={() => setEditing(true)}
-            >
+            <button type="button" aria-label={`Editar el plan de ${name}`} onClick={onEdit}>
               Editar
             </button>
             {plan.active && (

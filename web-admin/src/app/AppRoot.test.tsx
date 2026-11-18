@@ -135,6 +135,18 @@ describe("AppRoot", () => {
     );
   });
 
+  it("la auditoría no está en el menú: se abre desde Usuarios", async () => {
+    stubApi("admin");
+    renderApp("/usuarios");
+    await iniciarSesion();
+    await screen.findByRole("heading", { name: "Usuarios" });
+
+    await userEvent.click(screen.getByRole("link", { name: "Ver auditoría" }));
+
+    expect(await screen.findByRole("heading", { name: "Auditoría" })).toBeInTheDocument();
+    expect(currentPath()).toBe("/auditoria");
+  });
+
   it("administración ve todas las secciones en el menú", async () => {
     stubApi("admin");
     renderApp();
@@ -152,12 +164,7 @@ describe("AppRoot", () => {
       "Clientes",
       "Escuadrillas",
       "Usuarios",
-      "Auditoría",
-      "Tipos de trabajo",
-      "Tipos de equipo",
-      "Fallas",
-      "Reparaciones",
-      "Textos de «Otro»",
+      "Listas",
       "Materiales y precios",
       "Importar y exportar",
     ]);
@@ -165,12 +172,12 @@ describe("AppRoot", () => {
 
   it("un link directo lleva a esa pantalla después del login", async () => {
     stubApi("admin");
-    renderApp("/catalogos/fallas");
+    renderApp("/catalogos/listas/fallas");
 
     await iniciarSesion();
 
     expect(await screen.findByRole("heading", { name: "Fallas" })).toBeInTheDocument();
-    expect(currentPath()).toBe("/catalogos/fallas");
+    expect(currentPath()).toBe("/catalogos/listas/fallas");
   });
 
   it("una dirección que no existe vuelve a la pantalla de inicio", async () => {
@@ -196,7 +203,7 @@ describe("AppRoot", () => {
     const links = within(menu())
       .getAllByRole("link")
       .map((link) => link.textContent);
-    expect(links).toEqual(["Tablero", "Órdenes", "Stock", "Usuarios", "Auditoría"]);
+    expect(links).toEqual(["Tablero", "Órdenes", "Stock", "Usuarios"]);
   });
 
   it("un rol sin secciones ve el saludo con su rol", async () => {
@@ -222,7 +229,7 @@ describe("AppRoot", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "true");
 
     // Elegir una sección cierra el menú.
-    await userEvent.click(within(menu()).getByRole("link", { name: "Fallas" }));
+    await userEvent.click(within(menu()).getByRole("link", { name: "Listas" }));
     expect(toggle).toHaveAttribute("aria-expanded", "false");
   });
 

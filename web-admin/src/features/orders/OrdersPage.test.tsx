@@ -1029,8 +1029,9 @@ describe("OrdersPage", () => {
         await screen.findByRole("button", { name: "Ver el cierre de la orden N° 3" }),
       );
       const form = await screen.findByRole("form", { name: "Mano de obra de la orden N° 3" });
-      // E05-05: los repuestos salen del total de materiales; no se escriben.
-      expect(within(form).getByText(/1\.500,50/)).toBeInTheDocument();
+      // E05-05: los materiales van arriba, en el mismo bloque de importes; no se escriben.
+      const importes = screen.getByRole("region", { name: "Importes de la orden N° 3" });
+      expect(within(importes).getByRole("heading", { name: "Materiales" })).toBeInTheDocument();
       await user.type(within(form).getByLabelText("Mano de obra ($)"), "2000");
       await user.click(within(form).getByRole("button", { name: "Guardar mano de obra" }));
       expect(await within(form).findByText("Mano de obra guardada.")).toBeInTheDocument();

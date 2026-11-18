@@ -59,7 +59,7 @@ export function AppLayout({ session, onLogout }: AppLayoutProps) {
   }
   const { pathname } = useLocation();
   const sections = sectionsFor(session.user.role);
-  const groups = groupSections(sections);
+  const groups = groupSections(sections.filter((section) => section.inMenu !== false));
   const current = sections.find((section) => pathname.startsWith(section.path));
 
   return (

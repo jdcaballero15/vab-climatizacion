@@ -37,6 +37,11 @@ const TABLERO: Dashboard = {
     },
   ],
   top_parts: [{ key: "p1", label: "Gas R410A (kg)", count: 0, quantity: "2.500" }],
+  parts_cost: {
+    total: "2500.00",
+    items: [{ key: "p1", label: "Gas R410A (kg)", quantity: "2.500", amount: "2500.00" }],
+    unpriced: [{ key: "p9", label: "Tornillo" }],
+  },
 };
 
 function Location() {
@@ -68,13 +73,12 @@ function renderDashboard(search = "") {
 describe("DashboardPage", () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  // E10-01: por estado, con link a la lista; evolución y comparación (E10-08).
-  it("muestra los indicadores y lleva a la lista de un estado", async () => {
+  // E10-01: evolución y comparación (E10-08). Las cantidades por estado están en Órdenes.
+  it("muestra los indicadores sin repetir las cantidades por estado", async () => {
     renderDashboard();
 
-    const pendientes = await screen.findByRole("link", { name: "Pendiente: 4" });
-    expect(pendientes).toHaveAttribute("href", "/ordenes?estado=pending");
-    expect(screen.getByText(/contra 6 y 2: -2 y igual/)).toBeInTheDocument();
+    expect(await screen.findByText(/contra 6 y 2: -2 y igual/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Pendiente: 4" })).not.toBeInTheDocument();
     expect(
       screen.getByRole("img", { name: "Órdenes creadas y terminadas por semana" }),
     ).toBeInTheDocument();
@@ -89,13 +93,27 @@ describe("DashboardPage", () => {
   it("lee y escribe los filtros en la URL", async () => {
     const fetchMock = renderDashboard("?crew_id=c1");
 
-    await screen.findByRole("link", { name: "Pendiente: 4" });
+    await screen.findByText(/contra 6 y 2/);
     const [primero] = fetchMock.mock.calls.map(([r]) => new URL((r as Request).url));
     expect(primero.searchParams.get("crew_id")).toBe("c1");
 
     await userEvent.type(screen.getByLabelText("Comparar desde"), "2026-09-01");
     await waitFor(() =>
       expect(screen.getByTestId("url").textContent).toContain("compare_from=2026-09-01"),
+    );
+  });
+
+  it("muestra el gasto en materiales y avisa lo que no tiene precio", async () => {
+    renderDashboard();
+
+    const gasto = within(await screen.findByRole("region", { name: "Gasto en materiales" }));
+    expect(gasto.getAllByText(/2\.500,00/)).toHaveLength(2);
+    expect(gasto.getByText(/se usó pero no tiene precio/)).toBeInTheDocument();
+    const tornillo = within(gasto.getByRole("list", { name: "Materiales sin precio" }));
+    expect(tornillo.getByText(/Tornillo/)).toBeInTheDocument();
+    expect(tornillo.getByRole("link", { name: "Cargar precio" })).toHaveAttribute(
+      "href",
+      "/catalogos/materiales?buscar=Tornillo",
     );
   });
 

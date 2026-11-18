@@ -18,15 +18,16 @@ const QUANTITY_HINT = "Revisá la cantidad: mayor que cero, con hasta tres decim
 interface OrderMaterialsProps {
   orderId: string;
   orderNumber: number;
+  /** Dentro de Importes: sin el botón de aprobar, que va abajo del total de la orden. */
+  embedded?: boolean;
 }
 
 /**
  * Materiales de la orden con precio y total (E05-05). Hasta aprobarla, administración
  * corrige, agrega, saca y pasa a la lista los "Otro"; al aprobarla el precio queda fijo.
  */
-export function OrderMaterials({ orderId, orderNumber }: OrderMaterialsProps) {
+export function OrderMaterials({ orderId, orderNumber, embedded = false }: OrderMaterialsProps) {
   const materials = useOrderMaterials(orderId);
-  const approve = useApproveOrder(orderId);
 
   if (materials.isLoading) {
     return <p>Cargando materiales…</p>;
@@ -34,17 +35,16 @@ export function OrderMaterials({ orderId, orderNumber }: OrderMaterialsProps) {
   if (materials.isError || !materials.data) {
     return <p role="alert">No se pudieron cargar los materiales.</p>;
   }
-  const { approved, approved_at: approvedAt, lines, total } = materials.data;
+  const { approved, lines, total } = materials.data;
   const editable = !approved;
-  // Los precios arrancan en $0: aprobar con uno así lo deja en $0 para siempre.
-  const atZero = lines.filter((line) => line.unit_price !== null && Number(line.unit_price) === 0);
+  const Title = embedded ? "h5" : "h4";
 
   return (
     <section
-      className="order-materials"
+      className={embedded ? "order-materials order-materials--embedded" : "order-materials"}
       aria-label={`Materiales y aprobación de la orden N° ${orderNumber}`}
     >
-      <h4>Materiales</h4>
+      <Title>Materiales</Title>
       {lines.length === 0 ? (
         <p className="muted">La escuadrilla no cargó materiales.</p>
       ) : (
@@ -76,33 +76,54 @@ export function OrderMaterials({ orderId, orderNumber }: OrderMaterialsProps) {
 
       {editable && <AddMaterialForm orderId={orderId} />}
 
-      {approved ? (
-        <p className="order-materials__approved" role="status">
-          Aprobada el {approvedAt ? formatDate(approvedAt) : "-"}. Los precios quedaron fijos.
-        </p>
-      ) : (
-        <div className="order-materials__approve">
-          <p className="muted">
-            Al aprobar, cada material queda con el precio de hoy y ya no se puede cambiar.
-          </p>
-          {atZero.length > 0 && (
-            <p className="order-materials__warning">
-              Ojo: {atZero.length} {atZero.length === 1 ? "material" : "materiales"} con precio $0:
-              si aprobás ahora, queda en $0. Cargá el precio en Materiales y precios antes de
-              aprobar.
-            </p>
-          )}
-          <button type="button" disabled={approve.isPending} onClick={() => approve.mutate()}>
-            Aprobar orden
-          </button>
-          {approve.isError && (
-            <p className="clients__error" role="alert">
-              {approve.error.message}
-            </p>
-          )}
-        </div>
-      )}
+      {!embedded && <ApproveOrder orderId={orderId} />}
     </section>
+  );
+}
+
+/**
+ * Aprobar la orden (E04-08): cada material queda con el precio de hoy y ya no se cambia.
+ * Avisa antes si hay materiales con precio $0, que quedarían en $0 para siempre.
+ */
+export function ApproveOrder({ orderId }: { orderId: string }) {
+  const materials = useOrderMaterials(orderId);
+  const approve = useApproveOrder(orderId);
+  if (!materials.data) {
+    return null;
+  }
+  const { approved, approved_at: approvedAt, lines } = materials.data;
+  // Los precios arrancan en $0: aprobar con uno así lo deja en $0 para siempre.
+  const atZero = lines.filter((line) => line.unit_price !== null && Number(line.unit_price) === 0);
+
+  return approved ? (
+    <p className="order-materials__approved" role="status">
+      Aprobada el {approvedAt ? formatDate(approvedAt) : "-"}. Los precios quedaron fijos.
+    </p>
+  ) : (
+    <div className="order-materials__approve">
+      <p className="muted">
+        Al aprobar, cada material queda con el precio de hoy y ya no se puede cambiar.
+      </p>
+      {atZero.length > 0 && (
+        <p className="order-materials__warning">
+          Ojo: {atZero.length} {atZero.length === 1 ? "material" : "materiales"} con precio $0: si
+          aprobás ahora, queda en $0. Cargá el precio en Materiales y precios antes de aprobar.
+        </p>
+      )}
+      <button
+        type="button"
+        className="btn--primary"
+        disabled={approve.isPending}
+        onClick={() => approve.mutate()}
+      >
+        Aprobar orden
+      </button>
+      {approve.isError && (
+        <p className="clients__error" role="alert">
+          {approve.error.message}
+        </p>
+      )}
+    </div>
   );
 }
 
