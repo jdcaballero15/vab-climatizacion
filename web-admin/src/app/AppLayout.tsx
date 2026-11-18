@@ -1,4 +1,4 @@
-import { LogOut, Menu } from "lucide-react";
+import { LogOut, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
@@ -31,6 +31,9 @@ function groupSections(sections: NavSection[]) {
   return groups;
 }
 
+// La elección de cerrar la barra vale para esta compu, no para el usuario.
+const SIDEBAR_KEY = "ot.barra-lateral";
+
 function initials(fullName: string): string {
   return fullName
     .split(" ")
@@ -40,16 +43,27 @@ function initials(fullName: string): string {
     .join("");
 }
 
-/** Barra de íconos con las secciones del rol, encabezado con la ruta y la pantalla elegida. */
+/** Barra lateral con las secciones del rol (abierta o solo íconos), encabezado con la ruta y la
+pantalla elegida. */
 export function AppLayout({ session, onLogout }: AppLayoutProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => localStorage.getItem(SIDEBAR_KEY) !== "cerrada",
+  );
+  const SidebarIcon = sidebarOpen ? PanelLeftClose : PanelLeftOpen;
+
+  function toggleSidebar() {
+    const open = !sidebarOpen;
+    setSidebarOpen(open);
+    localStorage.setItem(SIDEBAR_KEY, open ? "abierta" : "cerrada");
+  }
   const { pathname } = useLocation();
   const sections = sectionsFor(session.user.role);
   const groups = groupSections(sections);
   const current = sections.find((section) => pathname.startsWith(section.path));
 
   return (
-    <div className="layout">
+    <div className={sidebarOpen ? "layout" : "layout layout--collapsed"}>
       <header className="layout__topbar">
         <button
           type="button"
@@ -69,9 +83,22 @@ export function AppLayout({ session, onLogout }: AppLayoutProps) {
         aria-label="Menú principal"
         className={menuOpen ? "layout__nav layout__nav--open" : "layout__nav"}
       >
-        <span className="layout__mark" aria-hidden="true">
-          OT
-        </span>
+        <div className="layout__head">
+          <span className="layout__mark" aria-hidden="true">
+            OT
+          </span>
+          <span className="layout__name">OT Platform</span>
+          <button
+            type="button"
+            className="layout__collapse btn--ghost"
+            aria-expanded={sidebarOpen}
+            aria-label={sidebarOpen ? "Cerrar barra lateral" : "Abrir barra lateral"}
+            title={sidebarOpen ? "Cerrar barra lateral" : "Abrir barra lateral"}
+            onClick={toggleSidebar}
+          >
+            <SidebarIcon size={16} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+        </div>
         {groups.map((group, index) => (
           <div key={group.title ?? `grupo-${index}`} className="layout__group">
             {group.title && <p className="layout__group-title">{group.title}</p>}
@@ -93,7 +120,8 @@ export function AppLayout({ session, onLogout }: AppLayoutProps) {
             {initials(session.user.full_name)}
           </span>
           <p className="layout__user-name">
-            <span>{session.user.full_name}</span> <span>{ROLE_LABELS[session.user.role]}</span>
+            <span>{session.user.full_name}</span>{" "}
+            <span className="layout__user-role">{ROLE_LABELS[session.user.role]}</span>
           </p>
           <button
             type="button"
