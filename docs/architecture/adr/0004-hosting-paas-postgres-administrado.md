@@ -31,6 +31,8 @@ La carga es mínima, pero perder órdenes o cobros es el peor escenario, y el si
 - Planes pagos desde el inicio: la base gratuita se borra a los 30 días y el servicio gratuito se suspende sin uso.
 - Por ahora un solo entorno (producción). Staging y la publicación por tag llegan después (E00-05, E00-06).
 - Cumple el criterio 5: solo Docker y variables de entorno; `render.yaml` es lo único propio de Render.
+- Los servicios se crearon a mano en el panel, sin aplicar el Blueprint: `render.yaml` queda como referencia de cada servicio.
+- Las cuentas de Render y Cloudflare R2 están hoy a nombre de MendoData, no del cliente. El traspaso está escrito en `docs/workflow/despliegue.md` ("Traspaso de las cuentas al cliente") y conviene hacerlo antes de que el cliente empiece a usar el sistema.
 
 ## Alternativas descartadas
 
