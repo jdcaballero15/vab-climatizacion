@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PartsPage } from "./PartsPage";
@@ -61,13 +62,15 @@ function stubApi(handler?: (call: Call) => Response | undefined) {
   return calls;
 }
 
-function renderPage() {
+function renderPage(path = "/catalogos/materiales") {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return render(
     <QueryClientProvider client={client}>
-      <PartsPage />
+      <MemoryRouter initialEntries={[path]}>
+        <PartsPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -196,5 +199,14 @@ describe("PartsPage", () => {
 
     expect(screen.queryByText("Gas R410A")).not.toBeInTheDocument();
     expect(screen.getByText("Caño de cobre 1/4")).toBeInTheDocument();
+  });
+
+  it("llega desde el tablero con el material ya buscado", async () => {
+    stubApi();
+    renderPage("/catalogos/materiales?buscar=Gas%20R410A");
+
+    expect(await screen.findByText("Gas R410A")).toBeInTheDocument();
+    expect(screen.getByLabelText("Buscar material")).toHaveValue("Gas R410A");
+    expect(screen.queryByText("Caño de cobre 1/4")).not.toBeInTheDocument();
   });
 });

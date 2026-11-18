@@ -40,7 +40,7 @@ const TABLERO: Dashboard = {
   parts_cost: {
     total: "2500.00",
     items: [{ key: "p1", label: "Gas R410A (kg)", quantity: "2.500", amount: "2500.00" }],
-    unpriced: 1,
+    unpriced: [{ key: "p9", label: "Tornillo" }],
   },
 };
 
@@ -108,10 +108,12 @@ describe("DashboardPage", () => {
 
     const gasto = within(await screen.findByRole("region", { name: "Gasto en materiales" }));
     expect(gasto.getAllByText(/2\.500,00/)).toHaveLength(2);
-    expect(gasto.getByText(/1 material usado no tiene precio/)).toBeInTheDocument();
-    expect(gasto.getByRole("link", { name: "Cargar precios" })).toHaveAttribute(
+    expect(gasto.getByText(/se usó pero no tiene precio/)).toBeInTheDocument();
+    const tornillo = within(gasto.getByRole("list", { name: "Materiales sin precio" }));
+    expect(tornillo.getByText(/Tornillo/)).toBeInTheDocument();
+    expect(tornillo.getByRole("link", { name: "Cargar precio" })).toHaveAttribute(
       "href",
-      "/catalogos/materiales",
+      "/catalogos/materiales?buscar=Tornillo",
     );
   });
 

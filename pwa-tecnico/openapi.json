@@ -12783,6 +12783,24 @@
         ],
         "title": "PartPriceUpdate"
       },
+      "PartRefOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "PartRefOut"
+      },
       "PartUpdate": {
         "properties": {
           "name": {
@@ -12887,7 +12905,10 @@
             "title": "Items"
           },
           "unpriced": {
-            "type": "integer",
+            "items": {
+              "$ref": "#/components/schemas/PartRefOut"
+            },
+            "type": "array",
             "title": "Unpriced"
           }
         },

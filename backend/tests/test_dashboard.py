@@ -204,7 +204,7 @@ async def test_gasto_en_materiales(mundo: Mundo) -> None:
         ("Gas R410A (kg)", "2100.00"),
         ("Cinta aisladora (unidad)", "150.00"),
     ]
-    assert body["unpriced"] == 2
+    assert [p["label"] for p in body["unpriced"]] == ["Precinto", "Tornillo"]
 
 
 # E10-08: los filtros recalculan todo y se comparan dos períodos.

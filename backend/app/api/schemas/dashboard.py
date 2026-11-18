@@ -49,6 +49,11 @@ class PartCostOut(BaseModel):
     amount: Decimal
 
 
+class PartRefOut(BaseModel):
+    key: str
+    label: str
+
+
 class PartsCostOut(BaseModel):
     """Lo gastado en materiales en el período. Solo administración y dirección ven el tablero."""
 
@@ -56,7 +61,7 @@ class PartsCostOut(BaseModel):
     # Los materiales que más plata se llevaron, de mayor a menor.
     items: list[PartCostOut]
     # Materiales usados sin precio en la lista (o en cero): no suman al total.
-    unpriced: int
+    unpriced: list[PartRefOut]
 
 
 class DashboardOut(BaseModel):

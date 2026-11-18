@@ -21,6 +21,7 @@ from app.api.schemas.dashboard import (
     DashboardOut,
     MaintenanceProgressOut,
     PartCostOut,
+    PartRefOut,
     PartsCostOut,
     PeriodTotalsOut,
     UnbilledOrderOut,
@@ -442,13 +443,13 @@ async def _parts_cost(session: AsyncSession, filters: DashboardFilters) -> Parts
     )
     prices = await parts_service.current_price_map(session, list({pid for pid, *_ in rows}))
     totals: dict[uuid.UUID, tuple[str, Decimal, Decimal]] = {}
-    unpriced: set[uuid.UUID] = set()
+    unpriced: dict[uuid.UUID, str] = {}
     for part_id, name, unit, usage in rows:
         stamped = usage.unit_price if usage.work_order_id in approved else None
         price = stamped if stamped is not None else prices.get(part_id)
         # Un precio en cero es uno que todavía no se cargó: tampoco suma.
         if not price:
-            unpriced.add(part_id)
+            unpriced[part_id] = name
             continue
         label, quantity, amount = totals.get(part_id, (f"{name} ({unit})", Decimal(0), Decimal(0)))
         totals[part_id] = (label, quantity + usage.quantity, amount + price * usage.quantity)
@@ -462,7 +463,10 @@ async def _parts_cost(session: AsyncSession, filters: DashboardFilters) -> Parts
     return PartsCostOut(
         total=_money(sum((amount for _, _, amount in totals.values()), Decimal(0))),
         items=items[:_TOP],
-        unpriced=len(unpriced),
+        unpriced=[
+            PartRefOut(key=str(part_id), label=name)
+            for part_id, name in sorted(unpriced.items(), key=lambda item: item[1])
+        ],
     )
 
 

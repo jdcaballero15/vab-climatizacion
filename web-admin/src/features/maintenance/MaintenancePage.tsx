@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { PageHeader } from "../../app/PageHeader";
 import { businessToday, formatDay, ORDER_STATUS_LABELS } from "../orders/labels";
 import { ChecklistEditor } from "./ChecklistEditor";
+import { MonthProgress } from "./MonthProgress";
 import { everyText, SKIP_REASONS } from "./labels";
 import { PlanForm } from "./PlanForm";
 import type { MaintenancePlan, MaintenanceRun } from "./types";
@@ -47,6 +48,7 @@ export function MaintenancePage() {
           </div>
         }
       />
+      <MonthProgress />
       {editingChecklist && <ChecklistEditor />}
       {run.isError && <p role="alert">{run.error.message}</p>}
       {run.data && <RunSummary result={run.data} />}

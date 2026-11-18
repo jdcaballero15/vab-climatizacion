@@ -3788,6 +3788,13 @@ export interface components {
             /** List Price */
             list_price: number | string;
         };
+        /** PartRefOut */
+        PartRefOut: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+        };
         /** PartUpdate */
         PartUpdate: {
             /** Name */
@@ -3819,7 +3826,7 @@ export interface components {
             /** Items */
             items: components["schemas"]["PartCostOut"][];
             /** Unpriced */
-            unpriced: number;
+            unpriced: components["schemas"]["PartRefOut"][];
         };
         /** PasswordChange */
         PasswordChange: {

@@ -19,6 +19,9 @@ const FILTER_KEYS: (keyof DashboardFilters)[] = [
   "compare_to",
 ];
 
+// Desde cuántos días sin facturar una orden se marca para que no se olvide.
+const LATE_DAYS = 15;
+
 function difference(now: number, before: number): string {
   const delta = now - before;
   return delta === 0 ? "igual" : delta > 0 ? `+${delta}` : `${delta}`;
@@ -152,13 +155,24 @@ export function DashboardPage() {
                 }))}
                 empty="Sin materiales con precio en el período."
               />
-              {data.parts_cost.unpriced > 0 && (
-                <p className="muted">
-                  {data.parts_cost.unpriced === 1
-                    ? "1 material usado no tiene precio en la lista y no suma."
-                    : `${data.parts_cost.unpriced} materiales usados no tienen precio en la lista y no suman.`}{" "}
-                  <Link to="/catalogos/materiales">Cargar precios</Link>
-                </p>
+              {data.parts_cost.unpriced.length > 0 && (
+                <div className="dashboard__notice">
+                  <p>
+                    {data.parts_cost.unpriced.length === 1
+                      ? "Este material se usó pero no tiene precio, así que no suma:"
+                      : "Estos materiales se usaron pero no tienen precio, así que no suman:"}
+                  </p>
+                  <ul aria-label="Materiales sin precio">
+                    {data.parts_cost.unpriced.map((part) => (
+                      <li key={part.key}>
+                        {part.label}{" "}
+                        <Link to={`/catalogos/materiales?buscar=${encodeURIComponent(part.label)}`}>
+                          Cargar precio
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </section>
             <section className="card dashboard__card" aria-label="Sin facturar">
@@ -166,28 +180,32 @@ export function DashboardPage() {
               {data.unbilled.length === 0 ? (
                 <p className="muted">No hay trabajos terminados sin facturar.</p>
               ) : (
-                <table className="parts__table">
-                  <thead>
-                    <tr>
-                      <th scope="col">Orden</th>
-                      <th scope="col">Cliente</th>
-                      <th scope="col">Cerrada</th>
-                      <th scope="col">Días</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.unbilled.map((order) => (
-                      <tr key={order.id}>
-                        <td>
-                          <Link to={`/ordenes/${order.id}`}>N° {order.number}</Link>
-                        </td>
-                        <td>{order.client_name}</td>
-                        <td>{order.closed_at ? formatDate(order.closed_at) : "-"}</td>
-                        <td>{order.days ?? "-"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <ul className="unbilled">
+                  {data.unbilled.map((order) => (
+                    <li key={order.id}>
+                      <Link to={`/ordenes/${order.id}`} className="unbilled__number">
+                        N° {order.number}
+                      </Link>
+                      <span className="unbilled__client">
+                        {order.client_name}
+                        <small>
+                          {order.closed_at ? `Cerrada el ${formatDate(order.closed_at)}` : "-"}
+                        </small>
+                      </span>
+                      {order.days !== null && order.days !== undefined && (
+                        <span
+                          className={
+                            order.days >= LATE_DAYS
+                              ? "unbilled__age unbilled__age--late"
+                              : "unbilled__age"
+                          }
+                        >
+                          {order.days === 1 ? "1 día" : `${order.days} días`}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               )}
             </section>
             <section className="card dashboard__card" aria-label="Materiales más usados">
@@ -249,28 +267,6 @@ export function DashboardPage() {
                 }))}
                 empty="Ninguna escuadrilla tiene órdenes asignadas."
               />
-            </section>
-            <section
-              className="card dashboard__card dashboard__card--wide"
-              aria-label="Mantenimiento"
-            >
-              <h3>Mantenimiento preventivo</h3>
-              <dl className="dashboard__facts">
-                {(
-                  [
-                    ["Generados", data.maintenance.generated],
-                    ["Pendientes", data.maintenance.pending],
-                    ["Asignados", data.maintenance.assigned],
-                    ["Cerrados", data.maintenance.closed],
-                    ["Cancelados", data.maintenance.cancelled],
-                  ] as const
-                ).map(([label, value]) => (
-                  <div key={label} className="dashboard__fact">
-                    <dt>{label}</dt>
-                    <dd>{value}</dd>
-                  </div>
-                ))}
-              </dl>
             </section>
           </div>
         </>
