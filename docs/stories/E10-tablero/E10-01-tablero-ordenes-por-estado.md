@@ -33,3 +33,4 @@ assumes: []
 
 - `GET /admin/dashboard` (administración y dirección; el técnico recibe 403) devuelve todas las secciones con los mismos filtros: período (por defecto los últimos 30 días), cliente, escuadrilla, tipo de trabajo y tipo de equipo. Sin precios.
 - Las cantidades por estado salen de la misma consulta que el panel de órdenes (E04-05), así coinciden; cada una lleva a `/ordenes?estado=...`. Evolución: creadas y terminadas por semana (lunes a domingo), en barras con leyenda, valor al pasar o enfocar y vista de tabla.
+- **Cambio del 2026-11-18 (Gonza):** el tablero ya no muestra las tarjetas de cantidades por estado, porque repetían las de Órdenes. La API las sigue devolviendo (`by_status`). Las cantidades por estado se ven en Órdenes. El tablero ocupa todo el ancho, con sus seis tarjetas en tres columnas.

@@ -68,13 +68,12 @@ function renderDashboard(search = "") {
 describe("DashboardPage", () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  // E10-01: por estado, con link a la lista; evolución y comparación (E10-08).
-  it("muestra los indicadores y lleva a la lista de un estado", async () => {
+  // E10-01: evolución y comparación (E10-08). Las cantidades por estado están en Órdenes.
+  it("muestra los indicadores sin repetir las cantidades por estado", async () => {
     renderDashboard();
 
-    const pendientes = await screen.findByRole("link", { name: "Pendiente: 4" });
-    expect(pendientes).toHaveAttribute("href", "/ordenes?estado=pending");
-    expect(screen.getByText(/contra 6 y 2: -2 y igual/)).toBeInTheDocument();
+    expect(await screen.findByText(/contra 6 y 2: -2 y igual/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Pendiente: 4" })).not.toBeInTheDocument();
     expect(
       screen.getByRole("img", { name: "Órdenes creadas y terminadas por semana" }),
     ).toBeInTheDocument();
@@ -89,7 +88,7 @@ describe("DashboardPage", () => {
   it("lee y escribe los filtros en la URL", async () => {
     const fetchMock = renderDashboard("?crew_id=c1");
 
-    await screen.findByRole("link", { name: "Pendiente: 4" });
+    await screen.findByText(/contra 6 y 2/);
     const [primero] = fetchMock.mock.calls.map(([r]) => new URL((r as Request).url));
     expect(primero.searchParams.get("crew_id")).toBe("c1");
 

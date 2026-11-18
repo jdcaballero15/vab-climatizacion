@@ -2207,19 +2207,22 @@ button[type="submit"]:hover:not(:disabled),
 }
 
 /* Tablero (E10): una columna en el celular, sin desplazamiento horizontal (E10-07) */
-.dashboard__kpis {
-  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
-}
-
-.dashboard__kpis .kpi {
-  color: inherit;
-  text-decoration: none;
+/* El tablero usa todo el ancho: con el tope de las demás pantallas quedaba un hueco a la derecha. */
+.layout__content:has(.dashboard) {
+  max-width: none;
 }
 
 .dashboard__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
   gap: 1rem;
+}
+
+/* En pantallas anchas, tres columnas fijas: las seis tarjetas quedan en dos filas parejas. */
+@media (min-width: 90rem) {
+  .dashboard__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .dashboard__card {

@@ -3,8 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../app/PageHeader";
 import { useCrews } from "../crews/useCrews";
 import { useEquipmentTypes } from "../equipment-types/useEquipmentTypes";
-import { formatDate, formatDay, ORDER_STATUS_LABELS } from "../orders/labels";
-import type { ListableStatus } from "../orders/types";
+import { formatDate, formatDay } from "../orders/labels";
 import { useWorkTypes } from "../work-types/useWorkTypes";
 import { Ranking, WeeklyChart } from "./charts";
 import { useDashboard, type DashboardFilters } from "./useDashboard";
@@ -124,20 +123,6 @@ export function DashboardPage() {
       {dashboard.isError && <p role="alert">No se pudo cargar el tablero.</p>}
       {data && (
         <>
-          <div className="kpis dashboard__kpis">
-            {data.by_status.map((item) => (
-              <Link
-                key={item.key}
-                to={`/ordenes?estado=${item.key}`}
-                className={`card kpi kpi--${item.key}`}
-                aria-label={`${ORDER_STATUS_LABELS[item.key as ListableStatus]}: ${item.count}`}
-              >
-                <p className="eyebrow">{ORDER_STATUS_LABELS[item.key as ListableStatus]}</p>
-                <p className="kpi__value">{item.count}</p>
-              </Link>
-            ))}
-          </div>
-
           <div className="dashboard__grid">
             <section className="card dashboard__card" aria-label="Evolución">
               <h3>Evolución por semana</h3>
