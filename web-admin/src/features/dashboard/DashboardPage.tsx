@@ -178,7 +178,7 @@ export function DashboardPage() {
                 }))}
                 empty="Sin cierres en el período."
               />
-              <h4>En curso por escuadrilla</h4>
+              <h3>En curso por escuadrilla</h3>
               <Ranking
                 items={data.in_progress_by_crew.map((c) => ({
                   ...c,
@@ -222,16 +222,20 @@ export function DashboardPage() {
             <section className="card dashboard__card" aria-label="Mantenimiento">
               <h3>Mantenimiento preventivo</h3>
               <dl className="dashboard__facts">
-                <dt>Generados</dt>
-                <dd>{data.maintenance.generated}</dd>
-                <dt>Pendientes</dt>
-                <dd>{data.maintenance.pending}</dd>
-                <dt>Asignados</dt>
-                <dd>{data.maintenance.assigned}</dd>
-                <dt>Cerrados</dt>
-                <dd>{data.maintenance.closed}</dd>
-                <dt>Cancelados</dt>
-                <dd>{data.maintenance.cancelled}</dd>
+                {(
+                  [
+                    ["Generados", data.maintenance.generated],
+                    ["Pendientes", data.maintenance.pending],
+                    ["Asignados", data.maintenance.assigned],
+                    ["Cerrados", data.maintenance.closed],
+                    ["Cancelados", data.maintenance.cancelled],
+                  ] as const
+                ).map(([label, value]) => (
+                  <div key={label} className="dashboard__fact">
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
               </dl>
             </section>
 
