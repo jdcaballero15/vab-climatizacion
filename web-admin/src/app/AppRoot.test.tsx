@@ -80,7 +80,7 @@ function renderApp(initialPath = "/") {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  render(
+  return render(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[initialPath]}>
         <AppRoutes />
@@ -100,7 +100,10 @@ function menu() {
   return screen.getByRole("navigation", { name: "Menú principal" });
 }
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  localStorage.clear();
+});
 
 describe("AppRoot", () => {
   it("después de iniciar sesión abre Órdenes y muestra el usuario con su rol", async () => {
@@ -221,6 +224,26 @@ describe("AppRoot", () => {
     // Elegir una sección cierra el menú.
     await userEvent.click(within(menu()).getByRole("link", { name: "Fallas" }));
     expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("la barra lateral arranca abierta, se puede cerrar y recuerda la elección", async () => {
+    stubApi("admin");
+    const { unmount } = renderApp();
+    await iniciarSesion();
+    await screen.findByRole("heading", { name: "Órdenes" });
+    const cerrar = within(menu()).getByRole("button", { name: "Cerrar barra lateral" });
+    expect(cerrar).toHaveAttribute("aria-expanded", "true");
+
+    await userEvent.click(cerrar);
+    const abrir = within(menu()).getByRole("button", { name: "Abrir barra lateral" });
+    expect(abrir).toHaveAttribute("aria-expanded", "false");
+
+    unmount();
+    stubApi("admin");
+    renderApp();
+    await iniciarSesion();
+    await screen.findByRole("heading", { name: "Órdenes" });
+    expect(within(menu()).getByRole("button", { name: "Abrir barra lateral" })).toBeInTheDocument();
   });
 
   // E01-07, criterio 1: con la cookie vigente, recargar deja en la misma pantalla.
