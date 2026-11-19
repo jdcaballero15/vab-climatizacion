@@ -24,10 +24,10 @@ Restricciones:
 - **Ramas.** `develop` sale de `main`, es la rama por defecto de GitHub y está protegida como `main` (PR obligatorio, `ci-ok` en verde, sin borrado ni force push). Las ramas `feat/`, `fix/`, `docs/` y `chore/` salen de `develop` y vuelven por PR con squash.
 - **Publicar.** PR de `develop` a `main`, titulado `chore(release): <resumen>`, con *merge commit* (sin squash) para que las dos ramas compartan la historia. `main` se sigue publicando sola en producción, como hasta ahora.
 - **Arreglo urgente.** Rama `fix/...` desde `main`, PR a `main`, y después un PR de `main` a `develop` para no perderlo.
-- **Servicios.** `render.develop.yaml` (Blueprint aparte; `render.yaml` no cambia) con la API en el plan free y los dos sitios estáticos, desde `develop`, en un **workspace de Render aparte y sin tarjeta**: si se acaba un cupo gratis (horas, minutos de build, ancho de banda), el servicio se frena, pero nada se cobra ni se descuenta del cupo de producción.
+- **Servicios.** `render.develop.yaml` (Blueprint aparte; `render.yaml` no cambia) con la API en el plan free y los dos sitios estáticos, desde `develop`, en el **mismo workspace de Render que producción**, como ambiente *develop* del proyecto `vab-refrigeracion`. Los servicios gratis no se cobran; comparten con producción el cupo gratis del workspace (horas, minutos de build, ancho de banda). Así, cuando la cuenta pase al cliente (ADR 0004), los dos ambientes se mueven juntos.
 - **Base.** Proyecto gratis de Neon (región AWS us-east-1), conexión directa. Las migraciones corren al arrancar la API, igual que en producción.
 - **Archivos.** Bucket `vab-ot-files-dev` en R2, privado, sin lock, con un token solo para ese bucket.
-- **Datos.** Solo ficticios (`python -m app.demo_data`), cargados desde una máquina local porque el plan free no tiene *Shell*. `APP_ENV=develop`: el código solo trata distinto `production`.
+- **Datos.** Solo ficticios (`python -m app.demo_data`, sin `create_admin` antes), cargados desde una máquina local con Docker porque el plan free no tiene *Shell*. `APP_ENV=develop`: el código solo trata distinto `production`.
 - **Sin crons** en develop: no tienen plan gratis. El mantenimiento se genera con "Generar ahora".
 
 ## Alternativas consideradas
@@ -36,7 +36,7 @@ Restricciones:
 |---|---|---|
 | `main` a develop y producción por tag con aprobación (E00-06) | Una sola rama, más ordenado | Hay que sacar el despliegue automático de producción y armar un workflow de aprobación: más trabajo y más riesgo sobre producción ahora. Puede venir después sobre esta base. |
 | Un ambiente por PR (*Preview Environments* de Render) | Cada cambio se prueba aislado | Es pago. |
-| Develop en el mismo workspace de Render que producción | Un solo panel | Comparte cupos con producción, que tiene tarjeta: pasarse se cobra. |
+| Develop en un workspace de Render aparte, sin tarjeta | Si se acaba un cupo, develop se frena sin cobrar nada | Dos paneles y dos traspasos. Los servicios no se pueden mover entre workspaces, así que al pasar la cuenta al cliente habría que rehacer develop por separado. Se eligió el mismo workspace el 2026-11-19. |
 | Base gratis de Render | Todo en Render | Se borra a los 30 días: habría que recrearla y recargarla cada mes. |
 
 ## Consecuencias
@@ -44,7 +44,7 @@ Restricciones:
 **Positivas**
 - Cada cambio se ve desplegado antes de que llegue al cliente.
 - Producción se despliega igual que antes: nada cambia en su configuración.
-- Develop no puede generar costo ni tocar datos de producción.
+- Develop no toca datos de producción y sus servicios están en planes gratis.
 
 **Negativas o costo que aceptamos**
 - La API de develop se duerme sin uso y tarda cerca de un minuto en despertar.
@@ -52,8 +52,8 @@ Restricciones:
 - Con `develop` como rama por defecto, "Cierra #N" cierra el issue cuando el PR llega a develop, no a producción. Para este equipo alcanza: la historia está terminada cuando pasó las pruebas. La sincronización de historias (`stories-sync.yml`) sigue en `push` a `main`.
 
 **Qué se vuelve más difícil de ahora en adelante**
-- Cada cambio se compila dos veces (develop y producción). Se acepta porque develop tiene su propio cupo.
-- Si un cupo gratis se acaba, develop queda frenado hasta el mes siguiente.
+- Cada cambio se compila dos veces (develop y producción), y los dos ambientes comparten los minutos de build y el ancho de banda gratis del workspace. Si develop los gasta, producción podría pasar a pagar el excedente: revisar el uso en *Billing* de vez en cuando.
+- El workspace Hobby admite 25 servicios: develop ocupa tres.
 
 ## Impacto en las reglas del repositorio
 
