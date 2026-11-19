@@ -5789,6 +5789,51 @@
         }
       }
     },
+    "/admin/invoices/{invoice_id}/pdf": {
+      "get": {
+        "tags": [
+          "facturas"
+        ],
+        "summary": "Get Invoice Detail",
+        "description": "Detalle de la factura en PDF: lo facturado de cada orden. No es la factura\nelectrónica, que sigue saliendo del sistema de facturación del cliente.",
+        "operationId": "get_invoice_detail_admin_invoices__invoice_id__pdf_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/pdf": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/crews": {
       "get": {
         "tags": [
