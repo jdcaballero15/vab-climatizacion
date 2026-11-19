@@ -116,11 +116,11 @@ Un merge a `develop` despliega en el ambiente develop, y un merge a `main` (la p
 
 ## Ambiente develop
 
-Para probar los cambios ya desplegados antes de que lleguen al cliente (ADR 0011). Se despliega solo desde la rama `develop` y **no cuesta nada**: todo en planes gratis y en cuentas sin tarjeta, salvo el bucket, que entra en el cupo gratis de R2.
+Para probar los cambios ya desplegados antes de que lleguen al cliente (ADR 0011). Se despliega solo desde la rama `develop` y **no cuesta nada**: todo en planes gratis (la base de Neon, sin tarjeta) y el bucket dentro del cupo gratis de R2. Los servicios de Render están en el mismo workspace que producción, en el proyecto `vab-refrigeracion`, ambiente *develop*: así, cuando se traspase la cuenta al cliente, se mueven juntos.
 
 | Pieza | Dónde | Notas |
 |---|---|---|
-| `vab-ot-dev-api` | Render, workspace aparte, plan free | Se duerme a los 15 minutos sin uso y tarda cerca de un minuto en despertar. Sin *Shell*. |
+| `vab-ot-dev-api` | Render, mismo workspace que producción, plan free | Se duerme a los 15 minutos sin uso y tarda cerca de un minuto en despertar. Sin *Shell*. |
 | `vab-ot-dev-admin`, `vab-ot-dev-tecnico` | Render, sitios estáticos | Reglas `/api/*` hacia `vab-ot-dev-api`. |
 | Base | Neon, plan gratis, AWS us-east-1 | 0,5 GB. Se suspende sin uso y despierta en segundos. |
 | Archivos | R2, bucket `vab-ot-files-dev` | Misma cuenta que producción, token propio. Sin lock: se puede vaciar. |
@@ -132,22 +132,34 @@ Lo que no puede pasar: que develop use la base, el bucket o las claves de produc
 1. **GitHub.** `develop` creada desde `main`, protegida con un ruleset (PR obligatorio, `ci-ok` en verde, sin borrado ni force push) y como rama por defecto. Hecho el 2026-11-19.
 2. **Neon.** Cuenta en el plan gratis, sin tarjeta. *New project* `vab-ot-dev`, región AWS US East (N. Virginia), la versión de Postgres más cercana a producción (18). En *Connect*, **sin *Connection pooling*** (el pooler no se lleva bien con asyncpg ni con las migraciones). Copiar la URL y **sacarle `&channel_binding=require`**: asyncpg no lo acepta. `sslmode=require` sí queda, la API lo convierte. Guardarla en el gestor de contraseñas, nunca en el repositorio ni en el chat.
 3. **Cloudflare R2.** *Create bucket* `vab-ot-files-dev`, ubicación *Automatic*, sin acceso público ni lock. Token *Object Read & Write* solo para ese bucket. CORS como en [Bucket de archivos](#bucket-de-archivos-cloudflare-r2), con los orígenes `https://vab-ot-dev-admin.onrender.com` y `https://vab-ot-dev-tecnico.onrender.com`.
-4. **Render.** *New workspace* (plan gratis), **sin tarjeta**: si se acaba un cupo, develop se frena, pero no se cobra ni consume el cupo de producción. Si Render exige tarjeta para el workspace, usar una cuenta de Render aparte en el plan gratis. Ahí: *New* > *Blueprint*, el repositorio, rama `develop`, *Blueprint path* `render.develop.yaml`. **Antes de confirmar, revisar que los tres servicios digan Free.** Cargar `DATABASE_URL` (Neon) y `S3_ENDPOINT_URL`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` (R2).
+4. **Render.** En el workspace de producción: *Blueprints* (menú lateral) > *New Blueprint Instance*, o directo en `https://dashboard.render.com/select-repo?type=blueprint`. Si avisa que se supera el límite de 25 servicios del plan Hobby, borrar antes los servicios que no se usan. Elegir el repositorio, rama `develop`, *Blueprint path* `render.develop.yaml`. **Antes de confirmar, revisar que los tres servicios digan Free.** Cargar `DATABASE_URL` (Neon) y `S3_ENDPOINT_URL` (`https://<account id>.r2.cloudflarestorage.com`), `S3_ACCESS_KEY`, `S3_SECRET_KEY` (R2). Al terminar, seleccionar los tres servicios > *Move* > proyecto `vab-refrigeracion`, ambiente *develop*. Los servicios gratis no suman al cobro, pero comparten el cupo gratis del workspace (horas, minutos de build, ancho de banda).
 5. **Direcciones.** Si algún nombre quedó con sufijo, corregir `CORS_ORIGINS` de la API, el destino de las reglas `/api/*` de los dos sitios y el CORS del bucket.
 6. **Comprobar.** `https://vab-ot-dev-api.onrender.com/health/ready` y `https://<cada sitio>/api/health/ready` responden `{"status":"ready","database":"ok"}` (la primera vez puede tardar un minuto).
-7. **Datos, desde una máquina local** (sin *Shell* en el plan free). Las tablas ya las creó la API al arrancar. Desde `backend/`, con las variables en la terminal (no en un archivo del repositorio):
+7. **Datos, desde una máquina local** (sin *Shell* en el plan free), con Docker y la misma imagen de la API. Las tablas ya las creó la API al arrancar.
 
-   ```bash
-   export APP_ENV=develop APP_SECRET_KEY=solo-para-comandos-locales
-   export DATABASE_URL='<url de Neon>'
-   export S3_ENDPOINT_URL='<endpoint>' S3_ACCESS_KEY='<id>' S3_SECRET_KEY='<secret>'
-   export S3_BUCKET=vab-ot-files-dev S3_REGION=auto
-   python -m app.check_storage                                   # "Bucket OK"
-   python -m app.create_admin --email <correo> --nombre "<nombre>"
-   SEED_PASSWORD='<contraseña de prueba>' python -m app.demo_data   # datos ficticios
+   Crear un archivo de variables **fuera del repositorio** (por ejemplo `~/vab-dev.env`), sin comillas:
+
+   ```
+   APP_ENV=develop
+   APP_SECRET_KEY=solo-para-comandos-locales
+   DATABASE_URL=<url de Neon>
+   S3_ENDPOINT_URL=<endpoint>
+   S3_ACCESS_KEY=<id>
+   S3_SECRET_KEY=<secret>
+   S3_BUCKET=vab-ot-files-dev
+   S3_REGION=auto
+   SEED_PASSWORD=<contraseña de prueba, 8 caracteres o más>
    ```
 
-   `demo_data` se niega con `APP_ENV=production` y si la base ya tiene datos.
+   Desde la raíz del repositorio:
+
+   ```bash
+   docker build -t vab-ot-dev-tools backend
+   docker run --rm --env-file ~/vab-dev.env vab-ot-dev-tools python -m app.check_storage   # "Bucket OK"
+   docker run --rm --env-file ~/vab-dev.env vab-ot-dev-tools python -m app.demo_data       # usuarios de prueba
+   ```
+
+   Al terminar, **borrar el archivo de variables**. `demo_data` crea los usuarios de prueba `@ot-demo.com` (administrador, dirección y cuatro técnicos), todos con `SEED_PASSWORD`; los clientes y las órdenes se cargan desde la administración. **No correr `create_admin` antes:** `demo_data` se niega si la base ya tiene algún usuario, y también con `APP_ENV=production`.
 
 ### Rehacer los datos
 
