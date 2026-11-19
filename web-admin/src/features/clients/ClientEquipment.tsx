@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 
@@ -341,6 +342,7 @@ export function ClientEquipment({ clientId }: { clientId: string }) {
   const createEquipment = useCreateEquipment(clientId);
   const [nuevo, setNuevo] = useState<EquipmentCreate>(EMPTY_EQUIPMENT);
   const [missing, setMissing] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   // Sin elección, el alta va al primer domicilio activo.
   const values = {
     ...nuevo,
@@ -354,7 +356,12 @@ export function ClientEquipment({ clientId }: { clientId: string }) {
     if (problem) {
       return;
     }
-    createEquipment.mutate(values, { onSuccess: () => setNuevo(EMPTY_EQUIPMENT) });
+    createEquipment.mutate(values, {
+      onSuccess: () => {
+        setNuevo(EMPTY_EQUIPMENT);
+        setAdding(false);
+      },
+    });
   }
 
   return (
@@ -398,31 +405,48 @@ export function ClientEquipment({ clientId }: { clientId: string }) {
         </ul>
       )}
 
-      <form className="clients__form" onSubmit={handleCreate} aria-label="Agregar equipo">
-        {sites.some((site) => site.is_active) ? (
-          <EquipmentFields
-            idPrefix={`new-equipment-${clientId}`}
-            values={values}
-            choices={choices}
-            onChange={setNuevo}
-          />
-        ) : (
-          <p>Para agregar equipos, el cliente necesita un domicilio activo.</p>
-        )}
-        {missing && (
-          <p className="clients__error" role="alert">
-            {missing}
-          </p>
-        )}
-        {createEquipment.isError && (
-          <p className="clients__error" role="alert">
-            {createEquipment.error.message}
-          </p>
-        )}
-        <button type="submit" disabled={createEquipment.isPending}>
-          Agregar equipo
+      {!adding ? (
+        <button type="button" className="clients__add" onClick={() => setAdding(true)}>
+          <Plus size={16} aria-hidden="true" />
+          Nuevo equipo
         </button>
-      </form>
+      ) : (
+        <form className="clients__form" onSubmit={handleCreate} aria-label="Agregar equipo">
+          {sites.some((site) => site.is_active) ? (
+            <EquipmentFields
+              idPrefix={`new-equipment-${clientId}`}
+              values={values}
+              choices={choices}
+              onChange={setNuevo}
+            />
+          ) : (
+            <p>Para agregar equipos, el cliente necesita un domicilio activo.</p>
+          )}
+          {missing && (
+            <p className="clients__error" role="alert">
+              {missing}
+            </p>
+          )}
+          {createEquipment.isError && (
+            <p className="clients__error" role="alert">
+              {createEquipment.error.message}
+            </p>
+          )}
+          <button type="submit" disabled={createEquipment.isPending}>
+            Agregar equipo
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              createEquipment.reset();
+              setMissing(null);
+              setAdding(false);
+            }}
+          >
+            Cancelar
+          </button>
+        </form>
+      )}
     </section>
   );
 }
