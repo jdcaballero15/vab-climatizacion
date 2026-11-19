@@ -24,3 +24,7 @@ assumes: []
 1. **Dado:** un tag `vMAJOR.MINOR.PATCH`. **Cuando:** se crea. **Entonces:** el workflow espera una aprobación manual antes de desplegar.
 2. **Dado:** un despliegue fallido. **Cuando:** falla el chequeo de salud. **Entonces:** se revierte a la versión anterior.
 3. **Dado:** una versión desplegada. **Cuando:** se consulta el endpoint de versión. **Entonces:** devuelve el tag y el commit.
+
+## Notas técnicas
+
+- Desde el 2026-11-19 hay un ambiente develop (ADR 0011): la rama `develop` se despliega sola en un ambiente gratis con datos ficticios, y se publica en producción con un PR de `develop` a `main`. Esta historia, si se retoma, cambiaría ese último paso (el merge a `main`) por un tag con aprobación.

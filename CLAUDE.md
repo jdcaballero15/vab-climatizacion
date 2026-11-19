@@ -45,7 +45,7 @@ cd backend && pytest -k <nombre>   # un test puntual
 
 ## Reglas absolutas (las bloquea un hook o el CI)
 
-1. Nunca se escribe ni se commitea sobre `main`: todo entra por PR.
+1. Nunca se escribe ni se commitea sobre `main` ni `develop`: todo entra por PR.
 2. Nunca credenciales, tokens ni `.env` en el repo (hook `guard_edit`, gitleaks).
 3. Nunca `--no-verify`, force push ni saltear el CI.
 4. Nunca carpetas nuevas en la raíz sin un ADR aprobado (`ALLOWED_TOPLEVEL` en `.claude/hooks/guard_edit.py`).
@@ -59,7 +59,7 @@ Para verificar que los hooks siguen funcionando: `bash .claude/hooks/test_guards
 
 1. Leé la historia y verificá que `status: ready` y que no tenga `blocked_by`. Si está bloqueada o en borrador, **frená y avisá**, no implementes.
 2. Si falta información o hay una contradicción entre documentos, **preguntá o dejala como decisión pendiente**. No inventes requisitos.
-3. Rama `feat/EXX-NN-descripcion-corta` desde `main`. Un PR por historia.
+3. Rama `feat/EXX-NN-descripcion-corta` desde `develop`, con PR a `develop`. Un PR por historia. A `main` solo llegan las publicaciones (`develop` -> `main`) y los arreglos urgentes (ADR 0011).
 4. Escribí primero los tests de los criterios de aceptación.
 5. Implementá respetando las capas de `backend/README.md`.
 6. Corré `make lint` y `make test`. Todo en verde antes del PR.

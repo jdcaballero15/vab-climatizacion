@@ -5,7 +5,8 @@ Este documento es la fuente de verdad del workflow. Los agentes de IA lo siguen 
 ## Flujo de trabajo
 
 ```
-Historia (docs/stories) -> Issue -> Rama -> PR -> CI + revisión -> Squash merge a main -> Staging -> Producción
+Historia (docs/stories) -> Issue -> Rama desde develop -> PR -> CI + revisión -> Squash merge a develop
+  -> ambiente develop (se prueba) -> PR develop -> main (merge commit) -> Producción
 ```
 
 ### 1. Historias primero
@@ -17,7 +18,12 @@ Historia (docs/stories) -> Issue -> Rama -> PR -> CI + revisión -> Squash merge
 
 ### 2. Ramas
 
-Desarrollo basado en tronco (trunk-based): `main` siempre está desplegable y las ramas viven poco.
+Dos ramas largas, las dos protegidas (PR obligatorio y `ci-ok` en verde; ADR 0011):
+
+- **`develop`**: la rama por defecto. Todo el trabajo sale de acá y vuelve acá por PR. Cada merge se publica solo en el ambiente develop.
+- **`main`**: lo que está en producción. Solo recibe publicaciones desde `develop` y arreglos urgentes.
+
+Las ramas de trabajo viven poco.
 
 | Prefijo | Uso | Ejemplo |
 |---|---|---|
@@ -44,7 +50,7 @@ Tipos: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `ci`, `perf`.
 
 - Un PR por historia, lo más chico posible. Si pasa de unas 400 líneas de código, partirlo.
 - Completar la plantilla: historia, qué cambia, cómo se probó, checklist de la Definición de Terminado.
-- Título en formato Conventional Commits. Se hace **squash merge**, así que el título queda como mensaje en `main`.
+- Base del PR: `develop`. Título en formato Conventional Commits. Se hace **squash merge**, así que el título queda como mensaje en `develop`.
 - CI en verde (check `ci-ok`) y revisión de Claude resuelta o descartada con justificación.
 - Cambios en `docs/stories/` y `docs/domain/` los revisa el analista de negocio (ver `.github/CODEOWNERS`).
 
@@ -57,10 +63,13 @@ Ver [docs/workflow/definition-of-done.md](docs/workflow/definition-of-done.md). 
 | Entorno | Qué despliega | Cuándo |
 |---|---|---|
 | Local | Docker Compose | siempre |
-| Staging | `main` | automático en cada merge |
-| Producción | Tag `vMAJOR.MINOR.PATCH` | manual, con aprobación |
+| Develop | `develop` | automático en cada merge, con datos ficticios |
+| Producción | `main` | automático en cada merge (la publicación por tag con aprobación queda para E00-06) |
 
-El proveedor de hosting se define en la historia E00-05 y en [ADR 0004](docs/architecture/adr/0004-hosting-paas-postgres-administrado.md).
+- **Publicar en producción:** PR de `develop` a `main`, titulado `chore(release): <resumen>`, con **merge commit** (no squash), para que las dos ramas compartan la historia.
+- **Arreglo urgente de producción:** rama `fix/...` desde `main`, PR a `main` (squash) y, en cuanto entra, un PR de `main` a `develop` (merge commit) para no perderlo.
+
+Hosting en la historia E00-05 y en [ADR 0004](docs/architecture/adr/0004-hosting-paas-postgres-administrado.md); el ambiente develop en [ADR 0011](docs/architecture/adr/0011-ambiente-develop.md) y en [docs/workflow/despliegue.md](docs/workflow/despliegue.md#ambiente-develop).
 
 ## Reglas de código
 

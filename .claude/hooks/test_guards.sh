@@ -16,6 +16,9 @@ expect_allow() {
 bash_cmd() { printf '{"tool_input":{"command":"%s"}}' "$1"; }
 
 expect_deny guard_bash.py "push a main" "$(bash_cmd 'git push origin main')"
+expect_deny guard_bash.py "push a develop" "$(bash_cmd 'git push origin develop')"
+expect_deny guard_bash.py "push a develop por refspec" "$(bash_cmd 'git push origin HEAD:refs/heads/develop')"
+expect_allow guard_bash.py "push de rama con develop en el nombre" "$(bash_cmd 'git push -u origin chore/ambiente-develop')"
 expect_deny guard_bash.py "force push" "$(bash_cmd 'git push --force origin feat/x')"
 expect_deny guard_bash.py "no-verify" "$(bash_cmd 'git commit --no-verify -m x')"
 expect_deny guard_bash.py "rama mal nombrada" "$(bash_cmd 'git checkout -b mi-rama')"
@@ -25,10 +28,11 @@ expect_allow guard_bash.py "push de rama" "$(bash_cmd 'git push -u origin feat/E
 
 edit() { printf '{"tool_input":{"file_path":"%s","content":"%s"}}' "$1" "$2"; }
 
-# En main (el CI de cada push) guard_edit bloquea toda escritura: se comprueba, y el resto
-# se prueba en un worktree temporal sin rama, como en un PR.
-if [ "$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" = "main" ]; then
-  expect_deny guard_edit.py "escribir en main" "$(edit "$PWD/docs/x.md" 'a - b')"
+# En main o develop (el CI de cada push) guard_edit bloquea toda escritura: se comprueba, y
+# el resto se prueba en un worktree temporal sin rama, como en un PR.
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+if [ "$branch" = "main" ] || [ "$branch" = "develop" ]; then
+  expect_deny guard_edit.py "escribir en $branch" "$(edit "$PWD/docs/x.md" 'a - b')"
   tmp="$(mktemp -d)"
   git worktree add --quiet --detach "$tmp/repo" HEAD
   trap 'git worktree remove --force "$tmp/repo"; rm -rf "$tmp"' EXIT

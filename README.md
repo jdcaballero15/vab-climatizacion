@@ -54,7 +54,7 @@ API en http://localhost:8000 (docs en `/docs`). Mailpit en http://localhost:8025
 ## Cómo trabajamos, en breve
 
 1. Toda tarea sale de una **historia** en `docs/stories/` (con su issue en GitHub).
-2. Rama corta desde `main`: `feat/E04-03-asignar-orden`.
+2. Rama corta desde `develop`: `feat/E04-03-asignar-orden`.
 3. Commits con Conventional Commits, PR chico, CI en verde, squash merge.
 4. Las historias y las reglas de dominio las valida el analista de negocio antes de implementarse.
 

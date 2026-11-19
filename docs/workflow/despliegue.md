@@ -4,7 +4,7 @@ Cómo se publica el sistema en Render (E00-05, ADR 0004) y cómo se cargan los d
 
 **Cómo está hoy:** los servicios de producción se crearon **a mano** en el panel, sin el Blueprint, en una cuenta de MendoData (no del cliente; ver [Traspaso de las cuentas al cliente](#traspaso-de-las-cuentas-al-cliente)). Render no lee `render.yaml`: sirve de referencia de cómo va cada servicio (planes, comandos, horarios, variables), y cualquier cambio de servicio se hace a mano en el panel y se anota también en `render.yaml`.
 
-Hoy hay **un solo entorno**, que es el de producción. Staging y la publicación por tag con aprobación (E00-06) llegan después.
+Hay **dos entornos en internet**: producción (desde `main`, lo que sigue en este documento) y develop (desde `develop`, con datos ficticios, para probar antes de publicar; ver [Ambiente develop](#ambiente-develop) y ADR 0011). La publicación por tag con aprobación (E00-06) llega después.
 
 ## Servicios
 
@@ -112,7 +112,46 @@ Se corre **desde la máquina que tiene los archivos**, así los archivos con dat
 
 ## Cada cambio
 
-Un merge a `main` despliega solo los servicios que cambiaron (a `main` solo llega lo que pasó el CI en su PR). La API corre las migraciones al arrancar; si una migración falla, la versión nueva no arranca y Render sigue con la anterior.
+Un merge a `develop` despliega en el ambiente develop, y un merge a `main` (la publicación, con un PR de `develop` a `main`) despliega en producción. En los dos casos se despliegan solo los servicios que cambiaron, y a las dos ramas solo llega lo que pasó el CI en su PR. La API corre las migraciones al arrancar; si una migración falla, la versión nueva no arranca y Render sigue con la anterior. Por eso una migración se prueba primero en develop.
+
+## Ambiente develop
+
+Para probar los cambios ya desplegados antes de que lleguen al cliente (ADR 0011). Se despliega solo desde la rama `develop` y **no cuesta nada**: todo en planes gratis y en cuentas sin tarjeta, salvo el bucket, que entra en el cupo gratis de R2.
+
+| Pieza | Dónde | Notas |
+|---|---|---|
+| `vab-ot-dev-api` | Render, workspace aparte, plan free | Se duerme a los 15 minutos sin uso y tarda cerca de un minuto en despertar. Sin *Shell*. |
+| `vab-ot-dev-admin`, `vab-ot-dev-tecnico` | Render, sitios estáticos | Reglas `/api/*` hacia `vab-ot-dev-api`. |
+| Base | Neon, plan gratis, AWS us-east-1 | 0,5 GB. Se suspende sin uso y despierta en segundos. |
+| Archivos | R2, bucket `vab-ot-files-dev` | Misma cuenta que producción, token propio. Sin lock: se puede vaciar. |
+
+Lo que no puede pasar: que develop use la base, el bucket o las claves de producción, o que tenga datos reales. **Nunca se copia producción a develop.** No hay crons (copia nocturna ni mantenimiento): el mantenimiento se genera con "Generar ahora".
+
+### Armado (una persona, no el agente)
+
+1. **GitHub.** `develop` creada desde `main`, protegida con un ruleset (PR obligatorio, `ci-ok` en verde, sin borrado ni force push) y como rama por defecto. Hecho el 2026-11-19.
+2. **Neon.** Cuenta en el plan gratis, sin tarjeta. *New project* `vab-ot-dev`, región AWS US East (N. Virginia), la versión de Postgres más cercana a producción (18). En *Connect*, **sin *Connection pooling*** (el pooler no se lleva bien con asyncpg ni con las migraciones). Copiar la URL y **sacarle `&channel_binding=require`**: asyncpg no lo acepta. `sslmode=require` sí queda, la API lo convierte. Guardarla en el gestor de contraseñas, nunca en el repositorio ni en el chat.
+3. **Cloudflare R2.** *Create bucket* `vab-ot-files-dev`, ubicación *Automatic*, sin acceso público ni lock. Token *Object Read & Write* solo para ese bucket. CORS como en [Bucket de archivos](#bucket-de-archivos-cloudflare-r2), con los orígenes `https://vab-ot-dev-admin.onrender.com` y `https://vab-ot-dev-tecnico.onrender.com`.
+4. **Render.** *New workspace* (plan gratis), **sin tarjeta**: si se acaba un cupo, develop se frena, pero no se cobra ni consume el cupo de producción. Si Render exige tarjeta para el workspace, usar una cuenta de Render aparte en el plan gratis. Ahí: *New* > *Blueprint*, el repositorio, rama `develop`, *Blueprint path* `render.develop.yaml`. **Antes de confirmar, revisar que los tres servicios digan Free.** Cargar `DATABASE_URL` (Neon) y `S3_ENDPOINT_URL`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` (R2).
+5. **Direcciones.** Si algún nombre quedó con sufijo, corregir `CORS_ORIGINS` de la API, el destino de las reglas `/api/*` de los dos sitios y el CORS del bucket.
+6. **Comprobar.** `https://vab-ot-dev-api.onrender.com/health/ready` y `https://<cada sitio>/api/health/ready` responden `{"status":"ready","database":"ok"}` (la primera vez puede tardar un minuto).
+7. **Datos, desde una máquina local** (sin *Shell* en el plan free). Las tablas ya las creó la API al arrancar. Desde `backend/`, con las variables en la terminal (no en un archivo del repositorio):
+
+   ```bash
+   export APP_ENV=develop APP_SECRET_KEY=solo-para-comandos-locales
+   export DATABASE_URL='<url de Neon>'
+   export S3_ENDPOINT_URL='<endpoint>' S3_ACCESS_KEY='<id>' S3_SECRET_KEY='<secret>'
+   export S3_BUCKET=vab-ot-files-dev S3_REGION=auto
+   python -m app.check_storage                                   # "Bucket OK"
+   python -m app.create_admin --email <correo> --nombre "<nombre>"
+   SEED_PASSWORD='<contraseña de prueba>' python -m app.demo_data   # datos ficticios
+   ```
+
+   `demo_data` se niega con `APP_ENV=production` y si la base ya tiene datos.
+
+### Rehacer los datos
+
+Si los datos ficticios quedaron desordenados: en Neon, borrar la base y crearla de nuevo con el mismo nombre, volver a desplegar la API para que corra las migraciones, y repetir el paso 7. Si el bucket crece, se vacía desde Cloudflare.
 
 ## Traspaso de las cuentas al cliente
 
@@ -139,4 +178,4 @@ Lo hace la persona responsable, con el cliente; el agente puede guiar en el pane
 ## Pendiente
 
 - Traspaso de las cuentas al cliente (sección anterior).
-- Staging aparte y publicación por tag con aprobación: E00-06.
+- Publicación por tag con aprobación: E00-06. El ambiente develop ya cubre la prueba antes de publicar (ADR 0011).

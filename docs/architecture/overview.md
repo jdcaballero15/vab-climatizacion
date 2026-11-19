@@ -69,7 +69,7 @@ flowchart LR
 
 - CI en cada PR: lint, tipos, tests con Postgres real, validación de historias.
 - Revisión automática de PR con Claude contra las reglas de dominio.
-- Staging automático desde `main`, producción por tag con aprobación.
+- Ambiente develop automático desde `develop` (gratis, datos ficticios) y producción automática desde `main`, que recibe las publicaciones por PR (ADR 0011). La publicación por tag con aprobación queda para E00-06.
 - Observabilidad mínima: logs estructurados sin datos personales, alerta de caída, reporte de errores.
 - Backups diarios y prueba de restauración trimestral (historia E00-07).
 
