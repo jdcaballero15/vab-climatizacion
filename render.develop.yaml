@@ -35,7 +35,7 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: CORS_ORIGINS
-        value: https://vab-ot-dev-admin.onrender.com,https://vab-ot-dev-tecnico.onrender.com
+        value: https://vab-ot-dev-admin-3ja6.onrender.com,https://vab-ot-dev-tecnico-qffc.onrender.com
       # Bucket de develop en Cloudflare R2, con un token solo para ese bucket.
       - key: S3_ENDPOINT_URL
         sync: false
@@ -64,7 +64,7 @@ services:
       # Antes que la de index.html: reenvía las llamadas a la API sin el prefijo /api.
       - type: rewrite
         source: /api/*
-        destination: https://vab-ot-dev-api.onrender.com/*
+        destination: https://vab-ot-dev-api-3f01.onrender.com/*
       - type: rewrite
         source: /*
         destination: /index.html
@@ -89,7 +89,7 @@ services:
       # Antes que la de index.html: reenvía las llamadas a la API sin el prefijo /api.
       - type: rewrite
         source: /api/*
-        destination: https://vab-ot-dev-api.onrender.com/*
+        destination: https://vab-ot-dev-api-3f01.onrender.com/*
       - type: rewrite
         source: /*
         destination: /index.html

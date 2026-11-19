@@ -116,14 +116,16 @@ Un merge a `develop` despliega en el ambiente develop, y un merge a `main` (la p
 
 ## Ambiente develop
 
-Para probar los cambios ya desplegados antes de que lleguen al cliente (ADR 0011). Se despliega solo desde la rama `develop` y **no cuesta nada**: todo en planes gratis (la base de Neon, sin tarjeta) y el bucket dentro del cupo gratis de R2. Los servicios de Render están en el mismo workspace que producción, en el proyecto `vab-refrigeracion`, ambiente *develop*: así, cuando se traspase la cuenta al cliente, se mueven juntos.
+Para probar los cambios ya desplegados antes de que lleguen al cliente (ADR 0011). Se despliega solo desde la rama `develop` y **no cuesta nada**: todo en planes gratis (la base de Neon, sin tarjeta) y el bucket dentro del cupo gratis de R2. Los servicios de Render están en el workspace del cliente (plan Hobby), donde también va producción: los dos ambientes juntos, cada uno en su ambiente del proyecto `vab-refrigeracion`.
 
 | Pieza | Dónde | Notas |
 |---|---|---|
-| `vab-ot-dev-api` | Render, mismo workspace que producción, plan free | Se duerme a los 15 minutos sin uso y tarda cerca de un minuto en despertar. Sin *Shell*. |
+| `vab-ot-dev-api` | Render, workspace del cliente, plan free | Se duerme a los 15 minutos sin uso y tarda cerca de un minuto en despertar. Sin *Shell*. |
 | `vab-ot-dev-admin`, `vab-ot-dev-tecnico` | Render, sitios estáticos | Reglas `/api/*` hacia `vab-ot-dev-api`. |
 | Base | Neon, plan gratis, AWS us-east-1 | 0,5 GB. Se suspende sin uso y despierta en segundos. |
 | Archivos | R2, bucket `vab-ot-files-dev` | Misma cuenta que producción, token propio. Sin lock: se puede vaciar. |
+
+Direcciones actuales (Render les agregó sufijo porque los nombres seguían ocupados en el workspace anterior): API `https://vab-ot-dev-api-3f01.onrender.com`, administración `https://vab-ot-dev-admin-3ja6.onrender.com`, técnico `https://vab-ot-dev-tecnico-qffc.onrender.com`. Son las que figuran en `render.develop.yaml` y en el CORS del bucket.
 
 Lo que no puede pasar: que develop use la base, el bucket o las claves de producción, o que tenga datos reales. **Nunca se copia producción a develop.** No hay crons (copia nocturna ni mantenimiento): el mantenimiento se genera con "Generar ahora".
 
@@ -134,7 +136,7 @@ Lo que no puede pasar: que develop use la base, el bucket o las claves de produc
 3. **Cloudflare R2.** *Create bucket* `vab-ot-files-dev`, ubicación *Automatic*, sin acceso público ni lock. Token *Object Read & Write* solo para ese bucket. CORS como en [Bucket de archivos](#bucket-de-archivos-cloudflare-r2), con los orígenes `https://vab-ot-dev-admin.onrender.com` y `https://vab-ot-dev-tecnico.onrender.com`.
 4. **Render.** En el workspace de producción: *Blueprints* (menú lateral) > *New Blueprint Instance*, o directo en `https://dashboard.render.com/select-repo?type=blueprint`. Si avisa que se supera el límite de 25 servicios del plan Hobby, borrar antes los servicios que no se usan. Elegir el repositorio, rama `develop`, *Blueprint path* `render.develop.yaml`. **Antes de confirmar, revisar que los tres servicios digan Free.** Cargar `DATABASE_URL` (Neon) y `S3_ENDPOINT_URL` (`https://<account id>.r2.cloudflarestorage.com`), `S3_ACCESS_KEY`, `S3_SECRET_KEY` (R2). Al terminar, seleccionar los tres servicios > *Move* > proyecto `vab-refrigeracion`, ambiente *develop*. Los servicios gratis no suman al cobro, pero comparten el cupo gratis del workspace (horas, minutos de build, ancho de banda).
 5. **Direcciones.** Si algún nombre quedó con sufijo, corregir `CORS_ORIGINS` de la API, el destino de las reglas `/api/*` de los dos sitios y el CORS del bucket.
-6. **Comprobar.** `https://vab-ot-dev-api.onrender.com/health/ready` y `https://<cada sitio>/api/health/ready` responden `{"status":"ready","database":"ok"}` (la primera vez puede tardar un minuto).
+6. **Comprobar.** `https://vab-ot-dev-api-3f01.onrender.com/health/ready` y `https://<cada sitio>/api/health/ready` responden `{"status":"ready","database":"ok"}` (la primera vez puede tardar un minuto).
 7. **Datos, desde una máquina local** (sin *Shell* en el plan free), con Docker y la misma imagen de la API. Las tablas ya las creó la API al arrancar.
 
    Crear un archivo de variables **fuera del repositorio** (por ejemplo `~/vab-dev.env`), sin comillas:
