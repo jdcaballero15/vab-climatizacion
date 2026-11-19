@@ -1,6 +1,6 @@
 # Ambiente develop - diseño
 
-Fecha: 2026-11-15. Estado: aprobado el 2026-11-19, con un cambio: los servicios de Render van en un **workspace aparte y sin tarjeta**, para que develop no consuma los cupos de producción ni pueda generar un cobro. La decisión queda en el ADR 0011.
+Fecha: 2026-11-15. Estado: aprobado el 2026-11-19. Al armarlo cambiaron dos cosas, que quedan en el ADR 0011 y en `docs/workflow/despliegue.md`: los servicios de Render van en el **mismo workspace que producción** (ambiente *develop* del proyecto `vab-refrigeracion`), y los datos se cargan solo con `python -m app.demo_data` (sin `create_admin` antes), con Docker.
 
 ## Para qué
 
