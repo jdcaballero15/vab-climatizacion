@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, develop]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -208,11 +208,13 @@ jobs:
             echo "El titulo del PR debe ser Conventional Commits, por ejemplo: feat(backend): asignar orden (E04-03)"
             exit 1
           fi
+      # develop y main también: la publicación (develop -> main) y la vuelta de un arreglo
+      # urgente (main -> develop) son PR entre las dos ramas (ADR 0011).
       - name: Nombre de rama
         env:
           BRANCH: ${{ github.head_ref }}
         run: |
-          if ! echo "$BRANCH" | grep -Eq '^(feat|fix|docs|chore|refactor|test|ci|perf|dependabot|claude)/.+'; then
+          if ! echo "$BRANCH" | grep -Eq '^((feat|fix|docs|chore|refactor|test|ci|perf|dependabot|claude)/.+|develop|main)$'; then
             echo "La rama '$BRANCH' no sigue el esquema tipo/descripcion (ver CONTRIBUTING.md)."
             exit 1
           fi

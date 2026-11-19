@@ -5,7 +5,7 @@ Reglas:
   1. No escribir archivos de secretos (.env reales, claves, certificados).
   2. No crear directorios nuevos en la raiz sin un ADR aprobado (ALLOWED_TOPLEVEL).
   3. No usar el guion largo (raya) en documentos del repo: se usa guion simple.
-  4. No escribir sobre `main`.
+  4. No escribir sobre `main` ni `develop`.
 
 Salida de emergencia: OT_UNSAFE=1 (solo con autorizacion explicita).
 """
@@ -34,6 +34,7 @@ SECRET_NAME = re.compile(r"(^\.env(\..+)?$|\.(pem|key|p12|crt|pfx)$)")
 SECRET_ALLOWED = re.compile(r"^\.env\.example$")
 LONG_DASHES = (chr(0x2014), chr(0x2013))
 DOC_SUFFIXES = {".md", ".yml", ".yaml", ".dbml", ".txt"}
+PROTECTED_BRANCHES = {"main", "develop"}
 
 
 def deny(reason: str) -> None:
@@ -119,9 +120,10 @@ def main() -> None:
                 "ALLOWED_TOPLEVEL en .claude/hooks/guard_edit.py (plantilla: "
                 "docs/architecture/adr/0000-template.md)."
             )
-        if current_branch() == "main":
+        branch = current_branch()
+        if branch in PROTECTED_BRANCHES:
             deny(
-                "BLOQUEADO: no se escribe sobre 'main'.\n"
+                f"BLOQUEADO: no se escribe sobre '{branch}'.\n"
                 "Creá una rama de trabajo: git checkout -b feat/EXX-NN-descripcion"
             )
 

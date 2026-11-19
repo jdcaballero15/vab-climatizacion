@@ -1,6 +1,6 @@
 # Ambiente develop - diseño
 
-Fecha: 2026-11-15. Estado: borrador, falta la aprobación.
+Fecha: 2026-11-15. Estado: aprobado el 2026-11-19, con un cambio: los servicios de Render van en un **workspace aparte y sin tarjeta**, para que develop no consuma los cupos de producción ni pueda generar un cobro. La decisión queda en el ADR 0011.
 
 ## Para qué
 

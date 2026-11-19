@@ -1,0 +1,102 @@
+# Blueprint del ambiente develop (ADR 0011): API y los dos sitios, desde la rama develop.
+# Producción no se toca: su referencia es render.yaml.
+# Paso a paso: docs/workflow/despliegue.md, sección "Ambiente develop".
+#
+# Todo en planes gratis, en un workspace de Render aparte y sin tarjeta: si se acaba un
+# cupo gratis, el servicio se frena, pero no hay cobro. Antes de confirmar el Blueprint,
+# revisar que los tres servicios digan Free.
+#
+# La base es un proyecto gratis de Neon (fuera de Render) y los archivos van al bucket
+# vab-ot-files-dev. Solo datos ficticios: nunca una copia de producción.
+# Sin crons (no hay plan gratis): el mantenimiento se genera con "Generar ahora".
+#
+# Las direcciones públicas salen del nombre de cada servicio (https://<nombre>.onrender.com).
+# Si Render le agrega un sufijo a un nombre, hay que corregir CORS_ORIGINS, el destino de
+# las reglas /api/* y el CORS del bucket con las direcciones reales.
+
+services:
+  - type: web
+    name: vab-ot-dev-api
+    runtime: docker
+    plan: free # se duerme a los 15 minutos sin uso y tarda cerca de un minuto en despertar
+    region: virginia
+    branch: develop
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health/ready
+    autoDeploy: true
+    envVars:
+      # Distinto de production: permite cargar datos ficticios (python -m app.demo_data).
+      - key: APP_ENV
+        value: develop
+      - key: APP_SECRET_KEY
+        generateValue: true
+      # URL directa de Neon (sin pooler), sin "&channel_binding=require". Se carga en el panel.
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://vab-ot-dev-admin.onrender.com,https://vab-ot-dev-tecnico.onrender.com
+      # Bucket de develop en Cloudflare R2, con un token solo para ese bucket.
+      - key: S3_ENDPOINT_URL
+        sync: false
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      - key: S3_BUCKET
+        value: vab-ot-files-dev
+      - key: S3_REGION
+        value: auto
+
+  - type: web
+    name: vab-ot-dev-admin
+    runtime: static
+    branch: develop
+    rootDir: web-admin
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeploy: true
+    envVars:
+      # La API por /api del mismo sitio: la cookie del refresh token es del mismo sitio (ADR 0010).
+      - key: VITE_API_URL
+        value: /api
+    routes:
+      # Antes que la de index.html: reenvía las llamadas a la API sin el prefijo /api.
+      - type: rewrite
+        source: /api/*
+        destination: https://vab-ot-dev-api.onrender.com/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+
+  - type: web
+    name: vab-ot-dev-tecnico
+    runtime: static
+    branch: develop
+    rootDir: pwa-tecnico
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeploy: true
+    envVars:
+      # La API por /api del mismo sitio: la cookie del refresh token es del mismo sitio (ADR 0010).
+      - key: VITE_API_URL
+        value: /api
+    routes:
+      # Antes que la de index.html: reenvía las llamadas a la API sin el prefijo /api.
+      - type: rewrite
+        source: /api/*
+        destination: https://vab-ot-dev-api.onrender.com/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /sw.js
+        name: Cache-Control
+        value: no-cache
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache

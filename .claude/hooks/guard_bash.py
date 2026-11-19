@@ -2,9 +2,9 @@
 """Hook PreToolUse (Bash): bloquea comandos que rompen el workflow del repositorio.
 
 Reglas (ver CLAUDE.md y CONTRIBUTING.md):
-  1. No commitear estando en `main`.
-  2. No pushear directo a `main`: todo entra por Pull Request.
-  3. No reescribir historia (force push, reset --hard, rebase) sobre `main`.
+  1. No commitear estando en `main` ni en `develop`.
+  2. No pushear directo a `main` ni a `develop`: todo entra por Pull Request.
+  3. No reescribir historia (force push, reset --hard, rebase) sobre `main` ni `develop`.
   4. No saltear los chequeos (--no-verify, SKIP=).
   5. Las ramas nuevas siguen el esquema tipo/descripcion.
   6. No borrados recursivos sobre rutas demasiado amplias.
@@ -21,7 +21,7 @@ import re
 import subprocess
 import sys
 
-PROTECTED_BRANCHES = {"main"}
+PROTECTED_BRANCHES = {"main", "develop"}
 
 # El ID de la historia (E04-03) puede ir en mayusculas al principio de la descripcion.
 BRANCH_NAMING = re.compile(
@@ -95,13 +95,15 @@ def check_push(cmd: str) -> None:
 
     forced = bool(re.search(r"(^|\s)(--force\b|--force-with-lease\b|-f\b)", cmd))
     protected_target = re.search(
-        r"\b(origin|upstream)\s+(?:\+?\S+:)?(main)\b", cmd
-    ) or re.search(r"\bpush\b[^|;&]*\b(main)\b", cmd)
+        r"\b(origin|upstream)\s+(?:\+?\S+:)?(?:refs/heads/)?(main|develop)(?![\w/.-])", cmd
+    ) or re.search(r"\bpush\b[^|;&]*(?<![\w/.-])(main|develop)(?![\w/.-])", cmd)
 
     if protected_target:
+        target = protected_target.group(protected_target.lastindex or 0)
         deny(
-            "BLOQUEADO: push directo a 'main'.\n"
-            "Nadie escribe directo en main: todo entra por Pull Request con CI en verde.\n\n"
+            f"BLOQUEADO: push directo a '{target}'.\n"
+            "Nadie escribe directo en main ni en develop: todo entra por Pull Request "
+            "con CI en verde.\n\n"
             "Subí tu rama y abrí el PR:\n"
             "    git push -u origin <tu-rama>\n"
             "    gh pr create"
@@ -124,7 +126,7 @@ def check_history(cmd: str) -> None:
     if branch in PROTECTED_BRANCHES:
         deny(
             f"BLOQUEADO: '{dangerous.group(0)}' sobre la rama protegida '{branch}'.\n"
-            "Para deshacer algo que ya está en main usá:\n"
+            f"Para deshacer algo que ya está en {branch} usá:\n"
             "    git revert <sha>\n"
             "que deja registro del cambio en lugar de borrarlo."
         )
