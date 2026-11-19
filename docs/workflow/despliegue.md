@@ -8,6 +8,8 @@ Hoy hay **un solo entorno**, que es el de producción. Staging y la publicación
 
 ## Servicios
 
+Producción está en el workspace de Render del cliente (Blueprint `vab-ot`). Render agregó sufijo a los nombres porque seguían ocupados en el workspace anterior: API `https://vab-ot-api-hweo.onrender.com`, administración `https://vab-ot-admin-kjrm.onrender.com`, técnico `https://vab-ot-tecnico-7vg6.onrender.com`. Son las que figuran en `render.yaml` y las que van en el CORS del bucket `vab-ot-files`.
+
 | Servicio | Tipo | Qué es |
 |---|---|---|
 | `vab-ot-db` | Postgres 18 | La base. Solo acepta conexiones desde Render, salvo que se habilite una IP (ver importación). |
