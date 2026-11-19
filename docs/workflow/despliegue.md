@@ -120,10 +120,12 @@ Para probar los cambios ya desplegados antes de que lleguen al cliente (ADR 0011
 
 | Pieza | Dónde | Notas |
 |---|---|---|
-| `vab-ot-dev-api` | Render, workspace aparte, plan free | Se duerme a los 15 minutos sin uso y tarda cerca de un minuto en despertar. Sin *Shell*. |
+| `vab-ot-dev-api` | Render, workspace del cliente (Hobby), plan free | Se duerme a los 15 minutos sin uso y tarda cerca de un minuto en despertar. Sin *Shell*. |
 | `vab-ot-dev-admin`, `vab-ot-dev-tecnico` | Render, sitios estáticos | Reglas `/api/*` hacia `vab-ot-dev-api`. |
 | Base | Neon, plan gratis, AWS us-east-1 | 0,5 GB. Se suspende sin uso y despierta en segundos. |
 | Archivos | R2, bucket `vab-ot-files-dev` | Misma cuenta que producción, token propio. Sin lock: se puede vaciar. |
+
+Direcciones actuales (Render les agregó sufijo porque los nombres seguían ocupados en el workspace anterior): API `https://vab-ot-dev-api-3f01.onrender.com`, administración `https://vab-ot-dev-admin-3ja6.onrender.com`, técnico `https://vab-ot-dev-tecnico-qffc.onrender.com`. Son las que figuran en `render.develop.yaml` y en el CORS del bucket.
 
 Lo que no puede pasar: que develop use la base, el bucket o las claves de producción, o que tenga datos reales. **Nunca se copia producción a develop.** No hay crons (copia nocturna ni mantenimiento): el mantenimiento se genera con "Generar ahora".
 
@@ -134,7 +136,7 @@ Lo que no puede pasar: que develop use la base, el bucket o las claves de produc
 3. **Cloudflare R2.** *Create bucket* `vab-ot-files-dev`, ubicación *Automatic*, sin acceso público ni lock. Token *Object Read & Write* solo para ese bucket. CORS como en [Bucket de archivos](#bucket-de-archivos-cloudflare-r2), con los orígenes `https://vab-ot-dev-admin.onrender.com` y `https://vab-ot-dev-tecnico.onrender.com`.
 4. **Render.** *New workspace* (plan gratis), **sin tarjeta**: si se acaba un cupo, develop se frena, pero no se cobra ni consume el cupo de producción. Si Render exige tarjeta para el workspace, usar una cuenta de Render aparte en el plan gratis. Ahí: *New* > *Blueprint*, el repositorio, rama `develop`, *Blueprint path* `render.develop.yaml`. **Antes de confirmar, revisar que los tres servicios digan Free.** Cargar `DATABASE_URL` (Neon) y `S3_ENDPOINT_URL`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` (R2).
 5. **Direcciones.** Si algún nombre quedó con sufijo, corregir `CORS_ORIGINS` de la API, el destino de las reglas `/api/*` de los dos sitios y el CORS del bucket.
-6. **Comprobar.** `https://vab-ot-dev-api.onrender.com/health/ready` y `https://<cada sitio>/api/health/ready` responden `{"status":"ready","database":"ok"}` (la primera vez puede tardar un minuto).
+6. **Comprobar.** `https://vab-ot-dev-api-3f01.onrender.com/health/ready` y `https://<cada sitio>/api/health/ready` responden `{"status":"ready","database":"ok"}` (la primera vez puede tardar un minuto).
 7. **Datos, desde una máquina local** (sin *Shell* en el plan free). Las tablas ya las creó la API al arrancar. Desde `backend/`, con las variables en la terminal (no en un archivo del repositorio):
 
    ```bash
