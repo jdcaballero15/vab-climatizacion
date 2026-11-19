@@ -149,6 +149,21 @@ async function abrirAlta() {
   await userEvent.click(screen.getByRole("button", { name: "Nuevo cliente" }));
 }
 
+/** Pasa a una pestaña de la ficha y devuelve su sección. */
+async function seccion(nombre: string) {
+  await userEvent.click(await screen.findByRole("tab", { name: new RegExp(`^${nombre}`) }));
+  return within(await screen.findByRole("region", { name: nombre }));
+}
+
+const PESTAÑA = { domicilio: "Domicilios", equipo: "Equipos", contacto: "Contactos" };
+
+/** Abre el alta de un domicilio, equipo o contacto desde su pestaña. */
+async function abrirNuevo(cosa: keyof typeof PESTAÑA) {
+  await seccion(PESTAÑA[cosa]);
+  await userEvent.click(screen.getByRole("button", { name: `Nuevo ${cosa}` }));
+  return within(screen.getByRole("form", { name: `Agregar ${cosa}` }));
+}
+
 afterEach(() => vi.restoreAllMocks());
 
 describe("ClientsPage", () => {
@@ -220,7 +235,8 @@ describe("ClientsPage", () => {
       notes: null,
     });
     // El cliente recién creado se abre para cargarle contactos.
-    expect(await screen.findByText("Cliente N° 1: Cliente Nuevo")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Cliente Nuevo" })).toBeInTheDocument();
+    expect(screen.getByText("Cliente N° 1")).toBeInTheDocument();
     // El alta se cierra hasta que se pida otro.
     expect(screen.queryByRole("form", { name: "Nuevo cliente" })).not.toBeInTheDocument();
   });
@@ -270,7 +286,8 @@ describe("ClientsPage", () => {
     renderClients();
 
     await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
-    const ficha = within(await screen.findByRole("form", { name: "Editar cliente" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Editar datos" }));
+    const ficha = within(screen.getByRole("form", { name: "Editar datos del cliente" }));
     await userEvent.selectOptions(ficha.getByLabelText("Segmento"), "business");
     await userEvent.selectOptions(ficha.getByLabelText("Condición fiscal"), "monotributo");
     await userEvent.click(ficha.getByRole("button", { name: "Guardar cambios" }));
@@ -302,10 +319,11 @@ describe("ClientsPage", () => {
     renderClients();
 
     await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
+    await seccion("Contactos");
     expect(await screen.findByText("Ana Pérez")).toBeInTheDocument();
     expect(screen.getByText("Informe mensual")).toBeInTheDocument();
 
-    const alta = within(screen.getByRole("form", { name: "Agregar contacto" }));
+    const alta = await abrirNuevo("contacto");
     await userEvent.type(alta.getByLabelText("Teléfono"), "3855000000");
     await userEvent.click(alta.getByRole("button", { name: "Agregar contacto" }));
 
@@ -344,7 +362,7 @@ describe("ClientsPage", () => {
     renderClients();
 
     await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
-    const alta = within(await screen.findByRole("form", { name: "Agregar contacto" }));
+    const alta = await abrirNuevo("contacto");
     await userEvent.type(alta.getByLabelText("Nombre del contacto"), "Beto");
     await userEvent.click(alta.getByLabelText("Recibe el informe mensual"));
     await userEvent.click(alta.getByRole("button", { name: "Agregar contacto" }));
@@ -374,6 +392,7 @@ describe("ClientsPage", () => {
     renderClients();
 
     await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
+    await seccion("Contactos");
     await userEvent.click(await screen.findByRole("button", { name: "Editar Ana Pérez" }));
     const edicion = within(screen.getByRole("form", { name: "Editar Ana Pérez" }));
     await userEvent.type(edicion.getByLabelText("Teléfono"), "123");
@@ -412,7 +431,7 @@ describe("ClientsPage", () => {
     async function abrirFicha() {
       renderClients();
       await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
-      return within(await screen.findByRole("region", { name: "Domicilios" }));
+      return await seccion("Domicilios");
     }
 
     // Criterios 3 y 5: todos los domicilios, con etiqueta, dirección, referencia y mapa.
@@ -438,9 +457,9 @@ describe("ClientsPage", () => {
           ? json({ ...SEDE, id: "s3" }, 201)
           : undefined,
       );
-      const domicilios = await abrirFicha();
+      await abrirFicha();
 
-      const alta = within(domicilios.getByRole("form", { name: "Agregar domicilio" }));
+      const alta = await abrirNuevo("domicilio");
       await userEvent.type(alta.getByLabelText("Etiqueta"), "Depósito");
       await userEvent.type(alta.getByLabelText("Dirección"), "Ruta 9 km 5, La Banda");
       await userEvent.click(alta.getByRole("button", { name: "Agregar domicilio" }));
@@ -456,9 +475,9 @@ describe("ClientsPage", () => {
     // Criterio 8: la dirección es obligatoria, también en el cliente.
     it("no manda un domicilio sin dirección", async () => {
       const fetchMock = conDomicilios();
-      const domicilios = await abrirFicha();
+      await abrirFicha();
 
-      const alta = within(domicilios.getByRole("form", { name: "Agregar domicilio" }));
+      const alta = await abrirNuevo("domicilio");
       await userEvent.type(alta.getByLabelText("Dirección"), "   ");
       await userEvent.click(alta.getByRole("button", { name: "Agregar domicilio" }));
 
@@ -532,11 +551,12 @@ describe("ClientsPage", () => {
         return undefined;
       });
       await abrirFicha();
+      await seccion("Contactos");
 
       const ana = within(await screen.findByRole("listitem", { name: "Ana Pérez" }));
       expect(await ana.findByText("Sede central")).toBeInTheDocument();
 
-      const alta = within(screen.getByRole("form", { name: "Agregar contacto" }));
+      const alta = await abrirNuevo("contacto");
       const selector = alta.getByLabelText("Domicilio");
       // Los domicilios inactivos no se ofrecen para asociar contactos nuevos.
       expect(
@@ -584,7 +604,7 @@ describe("ClientsPage", () => {
     async function abrirEquipos() {
       renderClients();
       await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
-      return within(await screen.findByRole("region", { name: "Equipos" }));
+      return await seccion("Equipos");
     }
 
     // Criterio 6: ubicación y tipo primero, después código, domicilio, marca y modelo.
@@ -621,7 +641,7 @@ describe("ClientsPage", () => {
       conEquipos();
       renderClients();
       await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
-      const domicilios = within(await screen.findByRole("region", { name: "Domicilios" }));
+      const domicilios = await seccion("Domicilios");
 
       const sede = within(await domicilios.findByRole("listitem", { name: "Sede central" }));
       expect(sede.getByText("2 equipos")).toBeInTheDocument();
@@ -636,9 +656,9 @@ describe("ClientsPage", () => {
           ? json({ ...SPLIT, id: "e3", internal_code: "EA1064203" }, 201)
           : undefined,
       );
-      const equipos = await abrirEquipos();
+      await abrirEquipos();
 
-      const alta = within(equipos.getByRole("form", { name: "Agregar equipo" }));
+      const alta = await abrirNuevo("equipo");
       const domicilio = await alta.findByLabelText("Domicilio");
       await within(domicilio).findByRole("option", { name: "Sede central" });
       expect(
@@ -668,9 +688,9 @@ describe("ClientsPage", () => {
     // Criterio 9: la ubicación es obligatoria, también en el cliente.
     it("no manda un equipo sin ubicación ni tipo", async () => {
       const fetchMock = conEquipos();
-      const equipos = await abrirEquipos();
+      await abrirEquipos();
 
-      const alta = within(equipos.getByRole("form", { name: "Agregar equipo" }));
+      const alta = await abrirNuevo("equipo");
       await userEvent.type(alta.getByLabelText("Ubicación"), "   ");
       await userEvent.click(alta.getByRole("button", { name: "Agregar equipo" }));
 
@@ -715,9 +735,9 @@ describe("ClientsPage", () => {
             )
           : undefined,
       );
-      const equipos = await abrirEquipos();
+      await abrirEquipos();
 
-      const alta = within(equipos.getByRole("form", { name: "Agregar equipo" }));
+      const alta = await abrirNuevo("equipo");
       await within(await alta.findByLabelText("Domicilio")).findByRole("option", {
         name: "Sede central",
       });
@@ -794,7 +814,7 @@ describe("ClientsPage", () => {
     async function abrirHistorial() {
       renderClients();
       await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
-      return within(await screen.findByRole("region", { name: "Historial" }));
+      return await seccion("Historial");
     }
 
     function pagina(items: ClientOrder[], total = items.length, offset = 0) {
@@ -909,6 +929,7 @@ describe("ClientsPage", () => {
       });
       renderClients();
       await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
+      await seccion("Historial");
 
       expect(await screen.findByText("Importada de Persat")).toBeInTheDocument();
       await userEvent.click(
@@ -972,7 +993,7 @@ describe("ClientsPage", () => {
       expect(new URL(busqueda.url).searchParams.get("q")).toBe("hotel");
 
       await user.click(within(equipos).getByRole("button"));
-      expect(await screen.findByText("Cliente N° 10642: Hotel Ficticio")).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { name: "Hotel Ficticio" })).toBeInTheDocument();
       expect(screen.queryByRole("list", { name: "Clientes encontrados" })).not.toBeInTheDocument();
     });
 
@@ -1051,7 +1072,7 @@ describe("ClientsPage", () => {
     async function abrirCliente() {
       renderClients();
       await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
-      return within(await screen.findByRole("region", { name: "Baja y unificación" }));
+      return await seccion("Baja y unificación");
     }
 
     it("da de baja al cliente y muestra el error si tiene órdenes abiertas", async () => {
@@ -1122,7 +1143,7 @@ describe("ClientsPage", () => {
       );
       renderClients();
       await userEvent.click(await screen.findByRole("button", { name: "Ver Hotel Ficticio" }));
-      const equipos = within(await screen.findByRole("region", { name: "Equipos" }));
+      const equipos = await seccion("Equipos");
 
       await userEvent.click(
         await equipos.findByRole("button", { name: "Pasar EA1064201 a otro cliente" }),
