@@ -935,12 +935,18 @@ describe("OrdersPage", () => {
       });
     });
 
-    it("factura varias terminadas juntas", async () => {
+    it("factura varias terminadas juntas y descarga el detalle", async () => {
       const user = userEvent.setup();
+      Object.assign(URL, { createObjectURL: () => "blob:x", revokeObjectURL: () => undefined });
       const fetchMock = porEstado();
       const original = fetchMock.getMockImplementation()!;
       fetchMock.mockImplementation(async (request: Request) => {
         const url = new URL(request.url);
+        if (url.pathname.endsWith(`/admin/invoices/${FACTURA.id}/pdf`)) {
+          return new Response(new Blob(["%PDF"]), {
+            headers: { "Content-Type": "application/pdf" },
+          });
+        }
         if (url.pathname.endsWith("/admin/invoices") && request.method === "POST") {
           return json({ ...FACTURA, order_numbers: [3, 9] }, 201);
         }
@@ -970,6 +976,9 @@ describe("OrdersPage", () => {
         issued_on: businessToday(),
         order_ids: ["o3", "o9"],
       });
+      await waitFor(() =>
+        expect(calls(fetchMock, "GET", `/admin/invoices/${FACTURA.id}/pdf`)).toHaveLength(1),
+      );
     });
 
     it("registra el cobro de una facturada con fecha y medio", async () => {

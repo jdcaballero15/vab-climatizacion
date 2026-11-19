@@ -1,12 +1,13 @@
-"""Armado de los PDF (E09): comprobantes de retiro y devolución e informe mensual.
+"""Armado de los PDF: comprobantes de retiro y devolución, informe mensual (E09) y
+detalle de factura (E04-09).
 
-Funciones puras: reciben los datos ya leídos y devuelven los bytes. Nunca llevan precios
-(decisión de Gonza del 2026-11-10). Con fuentes base de PDF (latin-1): alcanzan para el
-español.
+Funciones puras: reciben los datos ya leídos y devuelven los bytes. Los de E09 nunca llevan
+precios (decisión de Gonza del 2026-11-10); el detalle de factura es el único con importes
+y es para administración. Con fuentes base de PDF (latin-1): alcanzan para el español.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime, time
 from io import BytesIO
 
 from fpdf import FPDF
@@ -50,6 +51,33 @@ class MonthlyReportData:
     lines: list[ReportLine]
     # Fecha fija para que el mismo período dé el mismo archivo (criterio 4).
     generated_for: datetime
+
+
+@dataclass(frozen=True)
+class InvoiceLine:
+    description: str
+    # Vacíos en mano de obra y otros cargos: solo los materiales llevan cantidad y precio.
+    quantity: str
+    unit_price: str
+    amount: str
+
+
+@dataclass(frozen=True)
+class InvoiceOrder:
+    number: int
+    client: str
+    site: str
+    work: str
+    lines: list[InvoiceLine]
+    total: str
+
+
+@dataclass(frozen=True)
+class InvoiceDetailData:
+    number: str
+    issued_on: date
+    orders: list[InvoiceOrder]
+    total: str
 
 
 def _latin(text: str) -> str:
@@ -140,4 +168,48 @@ def build_monthly_report(data: MonthlyReportData) -> bytes:
         for width, value in zip(widths, values, strict=True):
             pdf.cell(width, 6, pdf.fit(value or "-", width - 2), border=1)
         pdf.ln()
+    return pdf.output_bytes()
+
+
+def build_invoice_detail(data: InvoiceDetailData) -> bytes:
+    """Detalle de lo facturado, orden por orden, para pasarlo al sistema de facturación o
+    mandárselo al cliente. No reemplaza la factura electrónica (E04-09)."""
+    pdf = _Document(
+        f"Detalle de la factura {data.number}", datetime.combine(data.issued_on, time())
+    )
+    pdf.field("Fecha", f"{data.issued_on:%d/%m/%Y}")
+    pdf.field("Órdenes", ", ".join(f"N° {order.number}" for order in data.orders))
+    widths = (100, 22, 34, 34)
+    for order in data.orders:
+        pdf.ln(4)
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.cell(0, 7, _latin(f"Orden N° {order.number}"), new_x="LMARGIN", new_y="NEXT")
+        pdf.field("Cliente", order.client)
+        pdf.field("Domicilio", order.site)
+        pdf.field("Trabajo", order.work)
+        pdf.set_font("Helvetica", "B", 9)
+        for width, header in zip(
+            widths, ("Concepto", "Cantidad", "Precio", "Importe"), strict=True
+        ):
+            pdf.cell(width, 7, _latin(header), border=1, align="L" if width == 100 else "R")
+        pdf.ln()
+        pdf.set_font("Helvetica", "", 9)
+        for line in order.lines:
+            pdf.cell(widths[0], 6, pdf.fit(line.description, widths[0] - 2), border=1)
+            for width, value in zip(
+                widths[1:], (line.quantity, line.unit_price, line.amount), strict=True
+            ):
+                pdf.cell(width, 6, _latin(value), border=1, align="R")
+            pdf.ln()
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.cell(sum(widths[:3]), 7, "Total de la orden", border=1, align="R")
+        pdf.cell(widths[3], 7, _latin(order.total), border=1, align="R")
+        pdf.ln()
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.cell(sum(widths[:3]), 8, "Total facturado", align="R")
+    pdf.cell(widths[3], 8, _latin(data.total), align="R", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(6)
+    pdf.set_font("Helvetica", "I", 8)
+    pdf.multi_cell(0, 5, _latin("Documento no válido como factura."))
     return pdf.output_bytes()

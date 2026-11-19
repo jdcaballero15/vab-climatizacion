@@ -31,7 +31,7 @@ import { RepairOrderForm } from "./RepairOrderForm";
 import { ReturnOrderForm } from "./ReturnOrderForm";
 import { UnassignOrderForm } from "./UnassignOrderForm";
 import type { ListableStatus, OrderFilters, OrderListItem, OrderView } from "./types";
-import { PAGE_SIZE, useOrderCounts, useOrderList } from "./useOrders";
+import { PAGE_SIZE, useInvoicePdf, useOrderCounts, useOrderList } from "./useOrders";
 
 type RowAction = {
   orderId: string;
@@ -207,6 +207,7 @@ export function OrdersPage({ readOnly = false }: { readOnly?: boolean }) {
   const [filterClient, setFilterClient] = useState<ClientSummary | null>(null);
   const [selected, setSelected] = useState<Map<string, OrderListItem>>(new Map());
   const [invoicing, setInvoicing] = useState(false);
+  const invoicePdf = useInvoicePdf();
   const [action, setAction] = useState<RowAction | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -557,12 +558,18 @@ export function OrdersPage({ readOnly = false }: { readOnly?: boolean }) {
                 setNotice(
                   `Factura ${invoice.number} registrada: ${invoice.order_numbers
                     .map((n) => `N° ${n}`)
-                    .join(", ")} pasaron a Facturadas.`,
+                    .join(", ")} pasaron a Facturadas. Se descarga el detalle en PDF.`,
                 );
+                invoicePdf.mutate(invoice);
               }}
             />
           )}
           {notice && <p role="status">{notice}</p>}
+          {invoicePdf.isError && (
+            <p className="clients__error" role="alert">
+              {invoicePdf.error.message} Bajalo desde la orden, en Facturadas.
+            </p>
+          )}
           {page.isLoading && <p className="muted">Cargando órdenes…</p>}
           {page.isError && <p role="alert">No se pudieron cargar las órdenes {statusName}.</p>}
           {page.data && items.length === 0 && (

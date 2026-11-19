@@ -240,6 +240,26 @@ async def test_una_factura_para_varias_ordenes(mundo: Mundo) -> None:
     )
 
 
+# Al facturar sale el detalle en PDF, con lo facturado de cada orden.
+async def test_detalle_de_la_factura_en_pdf(mundo: Mundo) -> None:
+    m = mundo
+    orden = await _terminada(m)
+    await _aprobar(m, orden.id)
+    assert (await _put(m.admin, orden.id, IMPORTES)).status_code == 200
+    factura = (await _facturar(m, orden, numero="A-0001/123")).json()
+
+    response = await _send(m.admin, "GET", f"/admin/invoices/{factura['id']}/pdf")
+    tecnico = await _send(m.celular, "GET", f"/admin/invoices/{factura['id']}/pdf")
+    inexistente = await _send(m.admin, "GET", f"/admin/invoices/{uuid.uuid4()}/pdf")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert 'filename="factura-A-0001-123.pdf"' in response.headers["content-disposition"]
+    assert response.content.startswith(b"%PDF")
+    assert tecnico.status_code == 403
+    assert inexistente.status_code == 404
+
+
 # Criterio 2 y E04-08: sin aprobar, o sin terminar, no se factura ninguna.
 async def test_si_una_no_se_puede_no_se_factura_ninguna(mundo: Mundo) -> None:
     m = mundo
