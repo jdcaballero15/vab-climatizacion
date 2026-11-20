@@ -76,3 +76,9 @@ Se entrega en dos PR: backend primero, web-admin después.
 - web-admin (PR 2): sección "Clientes" en la página de inicio, solo para administración. Listado de a 50 con número, nombre y segmento, filtro por segmento y páginas. Formulario de alta y ficha de edición con el mismo componente (`ClientForm`): al guardar un nombre nuevo o cambiado consulta `/similar` y, si hay parecidos, los muestra con "Guardar igual" o "Cancelar". Contactos en la ficha (alta y edición); los errores del backend se muestran con su mensaje. Al crear un cliente se abre su ficha para cargarle contactos.
 - Probado en el navegador contra el backend real (2026-10-26): alta con número asignado, aviso de parecido con otro acento y otras mayúsculas, contacto del informe sin email rechazado con el mensaje del backend y después aceptado con email, cambio de segmento reflejado en el listado.
 - Fuera de alcance: dar de baja un contacto (no está en los criterios; llega con E03-07) y el esquema del técnico (llega con E03-02).
+
+## Ficha ordenada (Gonza, 2026-11-19)
+
+- La ficha se veía como una sola columna con todos los formularios abiertos. Ahora: arriba los datos del cliente para leer (segmento, CUIT o DNI, condición fiscal y observaciones) con "Editar datos"; abajo pestañas Domicilios, Equipos, Contactos (con cuántos hay), Historial, Informe del mes y Baja y unificación.
+- Las altas de domicilio, equipo y contacto se abren con "Nuevo …" y se cierran al guardar o cancelar.
+- Con un cliente abierto, la lista, la búsqueda y los filtros se ocultan; "Volver a la lista" los trae de nuevo.
