@@ -483,6 +483,85 @@
         ]
       }
     },
+    "/admin/users/deactivated": {
+      "get": {
+        "tags": [
+          "usuarios"
+        ],
+        "summary": "List Deactivated Users",
+        "description": "Los dados de baja, para poder reactivarlos (E01-08).",
+        "operationId": "list_deactivated_users_admin_users_deactivated_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserAdminOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Deactivated Users Admin Users Deactivated Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/admin/users/{user_id}/reactivate": {
+      "post": {
+        "tags": [
+          "usuarios"
+        ],
+        "summary": "Reactivate User",
+        "operationId": "reactivate_user_admin_users__user_id__reactivate_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAdminOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/users/{user_id}/unlock": {
       "post": {
         "tags": [
@@ -14369,6 +14448,18 @@
               }
             ],
             "title": "Locked Until"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
           }
         },
         "type": "object",

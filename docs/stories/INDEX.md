@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 124 historias.** done: 102, draft: 10, icebox: 12
+**Total: 125 historias.** done: 103, draft: 10, icebox: 12
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -33,6 +33,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E01-05](E01-acceso/E01-05-restablecer-la-contrasena-de-un-usuario.md) | Restablecer la contraseña de un usuario | Debería | M | done | admin, technician, owner | - | - | E01-03, E01-07 |
 | [E01-06](E01-acceso/E01-06-bloqueo-temporal-por-intentos-fallidos.md) | Bloqueo temporal por intentos fallidos | Debería | S | done | admin, technician, owner | - | - | E01-01 |
 | [E01-07](E01-acceso/E01-07-mantener-la-sesion-al-recargar-o-reabrir.md) | Mantener la sesión al recargar o reabrir | Debe | M | done | admin, technician, owner | - | - | E01-02 |
+| [E01-08](E01-acceso/E01-08-reactivar-un-usuario-dado-de-baja.md) | Reactivar un usuario dado de baja | Debería | S | done | admin, owner | - | - | E01-03 |
 
 ## E02 Catálogos
 

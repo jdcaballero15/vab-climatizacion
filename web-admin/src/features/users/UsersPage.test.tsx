@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -42,7 +42,9 @@ describe("UsersPage", () => {
   it("lista los usuarios existentes", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => json([EXISTENTE])),
+      vi.fn(async (request: Request) =>
+        json(new URL(request.url).pathname.endsWith("/deactivated") ? [] : [EXISTENTE]),
+      ),
     );
     renderUsers();
 
@@ -114,5 +116,51 @@ describe("UsersPage", () => {
     expect(screen.queryByText(/se cierran todas sus sesiones/)).not.toBeInTheDocument();
     const methods = fetchMock.mock.calls.map((call) => (call as unknown as [Request])[0].method);
     expect(methods).not.toContain("POST");
+  });
+
+  // E01-08: los dados de baja aparecen aparte y se reactivan desde ahí.
+  it("lista los dados de baja y los reactiva", async () => {
+    const user = userEvent.setup();
+    const baja: UserAdmin = {
+      id: "u2",
+      email: "beto@ot-demo.com",
+      full_name: "Beto Ficticio",
+      role: "technician",
+      is_active: false,
+      must_change_password: false,
+      deleted_at: "2026-11-20T15:00:00Z",
+    };
+    let reactivado = false;
+    const posts: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (request: Request) => {
+        const path = new URL(request.url).pathname;
+        if (request.method === "POST") {
+          posts.push(path);
+          reactivado = true;
+          return json({ ...baja, is_active: true, deleted_at: null });
+        }
+        if (path.endsWith("/deactivated")) {
+          return json(reactivado ? [] : [baja]);
+        }
+        return json(
+          reactivado ? [EXISTENTE, { ...baja, is_active: true, deleted_at: null }] : [EXISTENTE],
+        );
+      }),
+    );
+    renderUsers();
+
+    const seccion = await screen.findByRole("region", { name: "Dados de baja" });
+    expect(
+      await within(seccion).findByRole("cell", { name: "beto@ot-demo.com" }),
+    ).toBeInTheDocument();
+
+    await user.click(within(seccion).getByRole("button", { name: "Reactivar" }));
+
+    expect(posts).toEqual(["/api/admin/users/u2/reactivate"]);
+    expect(await screen.findByText("No hay usuarios dados de baja.")).toBeInTheDocument();
+    const activos = screen.getByRole("table", { name: "Usuarios activos" });
+    expect(within(activos).getByRole("cell", { name: "beto@ot-demo.com" })).toBeInTheDocument();
   });
 });

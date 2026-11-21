@@ -35,6 +35,23 @@ async def list_users(session: SessionDep, _: AdminOrOwner) -> list[UserAdminOut]
     return [await _with_lock(session, user) for user in await users_service.list_users(session)]
 
 
+# Antes de /{user_id}: si no, "deactivated" se toma como un id.
+@router.get("/deactivated", response_model=list[UserAdminOut])
+async def list_deactivated_users(session: SessionDep, _: AdminOrOwner) -> list[UserAdminOut]:
+    """Los dados de baja, para poder reactivarlos (E01-08)."""
+    users = await users_service.list_deactivated_users(session)
+    return [UserAdminOut.model_validate(user) for user in users]
+
+
+@router.post("/{user_id}/reactivate", response_model=UserAdminOut)
+async def reactivate_user(user_id: uuid.UUID, session: SessionDep, _: AdminOrOwner) -> UserAdminOut:
+    try:
+        user = await users_service.reactivate_user(session, user_id)
+    except users_service.UserNotFoundError:
+        raise _not_found() from None
+    return await _with_lock(session, user)
+
+
 @router.post("/{user_id}/unlock", response_model=UserAdminOut)
 async def unlock_user(user_id: uuid.UUID, session: SessionDep, _: AdminOrOwner) -> UserAdminOut:
     """Levanta el bloqueo por intentos fallidos (E01-06, criterio 3)."""

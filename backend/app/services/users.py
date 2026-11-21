@@ -84,6 +84,25 @@ async def deactivate_user(session: AsyncSession, user_id: uuid.UUID) -> None:
     await session.commit()
 
 
+async def list_deactivated_users(session: AsyncSession) -> Sequence[User]:
+    return await UserRepository(session).list_deactivated()
+
+
+async def reactivate_user(session: AsyncSession, user_id: uuid.UUID) -> User:
+    """Deshace la baja (E01-08): vuelve activo, con su rol y la contraseña que tenía.
+
+    Si ya estaba activo no cambia nada. Si no recuerda la contraseña, se restablece aparte.
+    """
+    user = await UserRepository(session).get(user_id, include_deleted=True)
+    if user is None:
+        raise UserNotFoundError
+    user.deleted_at = None
+    user.is_active = True
+    await session.commit()
+    await session.refresh(user)
+    return user
+
+
 async def reset_password(session: AsyncSession, user_id: uuid.UUID, actor: User) -> str:
     """Pone una contraseña temporal, cierra las sesiones del usuario y la devuelve (E01-05).
 
