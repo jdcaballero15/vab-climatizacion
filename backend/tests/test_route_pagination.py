@@ -16,6 +16,7 @@ MAX_PAGE_SIZE = 200
 UNPAGINATED = {
     # Catálogos y equipo de trabajo: decenas de registros, se eligen de una lista.
     "/admin/users": "usuarios de la empresa",
+    "/admin/users/deactivated": "usuarios dados de baja",
     "/admin/work-types": "catálogo",
     "/admin/work-types/{work_type_id}/tasks": "tareas de un tipo de trabajo",
     "/admin/equipment-types": "catálogo",

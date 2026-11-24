@@ -19,3 +19,13 @@ class UserRepository(BaseRepository[User]):
         stmt = self._select().order_by(func.lower(self.model.full_name), self.model.id)
         result = await self.session.execute(stmt)
         return result.scalars().all()
+
+    async def list_deactivated(self) -> Sequence[User]:
+        """Los dados de baja (E01-08), por nombre como la lista de activos."""
+        stmt = (
+            self._select(include_deleted=True)
+            .where(self.model.deleted_at.is_not(None))
+            .order_by(func.lower(self.model.full_name), self.model.id)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()

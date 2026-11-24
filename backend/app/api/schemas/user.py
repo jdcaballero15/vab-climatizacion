@@ -29,6 +29,8 @@ class UserAdminOut(BaseModel):
     must_change_password: bool
     # Bloqueada por intentos fallidos (E01-06): hasta cuándo; administración la desbloquea.
     locked_until: datetime | None = None
+    # Fecha de baja (E01-08): solo la tienen los que aparecen en la lista de dados de baja.
+    deleted_at: datetime | None = None
 
 
 class PasswordResetOut(BaseModel):

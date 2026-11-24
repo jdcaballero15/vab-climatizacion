@@ -4,6 +4,8 @@ import { api } from "../../api/client";
 import type { PasswordReset, UserAdmin, UserCreate } from "./types";
 
 const USERS_KEY = ["users"] as const;
+// Cuelga de USERS_KEY: dar de baja o reactivar recarga las dos listas.
+const DEACTIVATED_KEY = [...USERS_KEY, "deactivated"] as const;
 
 export function useUsers() {
   return useQuery<UserAdmin[]>({
@@ -12,6 +14,20 @@ export function useUsers() {
       const { data, error } = await api.GET("/admin/users");
       if (error || !data) {
         throw new Error("no se pudieron cargar los usuarios");
+      }
+      return data;
+    },
+  });
+}
+
+/** Los dados de baja, para reactivarlos (E01-08). */
+export function useDeactivatedUsers() {
+  return useQuery<UserAdmin[]>({
+    queryKey: DEACTIVATED_KEY,
+    queryFn: async () => {
+      const { data, error } = await api.GET("/admin/users/deactivated");
+      if (error || !data) {
+        throw new Error("no se pudieron cargar los usuarios dados de baja");
       }
       return data;
     },
@@ -46,6 +62,22 @@ export function useDeactivateUser() {
       });
       if (error) {
         throw new Error("no se pudo dar de baja el usuario");
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+  });
+}
+
+/** Deshace la baja (E01-08): vuelve con su rol y la contraseña que tenía. */
+export function useReactivateUser() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: async (userId) => {
+      const { error } = await api.POST("/admin/users/{user_id}/reactivate", {
+        params: { path: { user_id: userId } },
+      });
+      if (error) {
+        throw new Error("no se pudo reactivar el usuario");
       }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),

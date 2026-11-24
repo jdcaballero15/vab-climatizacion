@@ -7,6 +7,8 @@ import {
   EmailAlreadyExistsError,
   useCreateUser,
   useDeactivateUser,
+  useDeactivatedUsers,
+  useReactivateUser,
   useUnlockUser,
   useUsers,
 } from "./useUsers";
@@ -19,7 +21,12 @@ const ROLE_LABELS: Record<UserRole, string> = {
   owner: "Dirección",
 };
 
+const DATE = new Intl.DateTimeFormat("es-AR", { dateStyle: "short" });
 const TIME = new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit" });
+
+function formatDate(iso: string): string {
+  return DATE.format(new Date(iso));
+}
 
 function formatTime(iso: string): string {
   return TIME.format(new Date(iso));
@@ -32,6 +39,8 @@ export function UsersPage() {
   const createUser = useCreateUser();
   const deactivateUser = useDeactivateUser();
   const unlockUser = useUnlockUser();
+  const deactivated = useDeactivatedUsers();
+  const reactivateUser = useReactivateUser();
   const [resetting, setResetting] = useState<string | null>(null);
 
   const [fullName, setFullName] = useState("");
@@ -127,7 +136,7 @@ export function UsersPage() {
       {users.isError && <p role="alert">No se pudieron cargar los usuarios.</p>}
 
       {users.data && (
-        <table className="users__table">
+        <table className="users__table" aria-label="Usuarios activos">
           <thead>
             <tr>
               <th>Nombre</th>
@@ -194,6 +203,54 @@ export function UsersPage() {
           </tbody>
         </table>
       )}
+
+      <section className="users__deactivated" aria-labelledby="users-deactivated-title">
+        <h3 id="users-deactivated-title">Dados de baja</h3>
+        {deactivated.isLoading && <p>Cargando…</p>}
+        {deactivated.isError && (
+          <p role="alert">No se pudieron cargar los usuarios dados de baja.</p>
+        )}
+        {reactivateUser.isError && (
+          <p className="users__error" role="alert">
+            No se pudo reactivar el usuario. Probá de nuevo.
+          </p>
+        )}
+        {deactivated.data?.length === 0 && <p>No hay usuarios dados de baja.</p>}
+        {deactivated.data && deactivated.data.length > 0 && (
+          <table className="users__table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th>Baja</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {deactivated.data.map((user) => (
+                <tr key={user.id}>
+                  <td>{user.full_name}</td>
+                  <td>{user.email}</td>
+                  <td>{ROLE_LABELS[user.role]}</td>
+                  <td>{user.deleted_at && formatDate(user.deleted_at)}</td>
+                  <td>
+                    <div className="users__actions">
+                      <button
+                        type="button"
+                        onClick={() => reactivateUser.mutate(user.id)}
+                        disabled={reactivateUser.isPending}
+                      >
+                        Reactivar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
     </section>
   );
 }
