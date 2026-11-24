@@ -218,6 +218,28 @@ export function useCreateInvoice() {
   });
 }
 
+/** Descarga el detalle de la factura en PDF: lo facturado de cada orden. No es la factura
+ * electrónica, que sigue saliendo del sistema de facturación del cliente. */
+export function useInvoicePdf() {
+  return useMutation<void, Error, Pick<Invoice, "id" | "number">>({
+    mutationFn: async (invoice) => {
+      const { data, error } = await api.GET("/admin/invoices/{invoice_id}/pdf", {
+        params: { path: { invoice_id: invoice.id } },
+        parseAs: "blob",
+      });
+      if (error || !data) {
+        throw saveError(error, "No se pudo armar el detalle de la factura.");
+      }
+      const url = URL.createObjectURL(data as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `factura-${invoice.number.replace(/[^\p{L}\p{N}-]/gu, "-")}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    },
+  });
+}
+
 /** Corrige número o fecha de una factura (E04-09, criterio 4). */
 export function useUpdateInvoice(invoiceId: string) {
   const queryClient = useQueryClient();

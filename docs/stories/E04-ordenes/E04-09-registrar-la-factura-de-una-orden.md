@@ -41,3 +41,9 @@ assumes: [D-004]
 - Tablas `invoice` y `work_order_invoice` (una factura vigente por orden). `POST /admin/invoices` pasa las órdenes a Facturada con un evento "Factura N del dd/mm/aaaa"; `PUT /admin/invoices/{id}` corrige número o fecha y deja `invoice_corrected` en la línea de tiempo de cada orden.
 - La migración `b3f1d7a9c524` pasa las marcadas "Facturada" en el cobro mínimo de E04-14 a una factura propia y al estado Facturada (sin número, "S/N"). El estado de cobro aparte (`billing_status`) desaparece.
 - Facturada, la mano de obra y los cargos ya no se editan.
+
+## Detalle de la factura en PDF (Gonza, 2026-11-19)
+
+- Al facturar se descarga un PDF con el detalle: por cada orden, cliente, domicilio, trabajo, materiales con cantidad y precio, mano de obra, otros cargos y total; al final, el total facturado. Lleva la leyenda "Documento no válido como factura": la factura electrónica sigue saliendo del sistema de facturación del cliente.
+- Se puede volver a bajar desde la orden con "Descargar detalle (PDF)". Solo administración.
+- `GET /admin/invoices/{id}/pdf` lo arma al pedirlo (`billing.invoice_detail_pdf`, `pdf.build_invoice_detail`); con la orden facturada los importes ya no cambian, así que sale igual cada vez.

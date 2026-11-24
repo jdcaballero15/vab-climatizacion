@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.api.deps import SessionDep, require_role
 from app.api.schemas.work_order import InvoiceCreate, InvoiceOut, InvoiceUpdate
@@ -38,6 +38,26 @@ async def update_invoice(
         return await billing_service.update_invoice(session, invoice_id, payload, admin)
     except billing_service.InvoiceNotFoundError:
         raise _error(404, "invoice_not_found", "No se encontró la factura.") from None
+
+
+@router.get(
+    "/{invoice_id}/pdf",
+    response_class=Response,
+    responses={200: {"content": {"application/pdf": {}}}},
+)
+async def get_invoice_detail(invoice_id: uuid.UUID, session: SessionDep, _: AdminOnly) -> Response:
+    """Detalle de la factura en PDF: lo facturado de cada orden. No es la factura
+    electrónica, que sigue saliendo del sistema de facturación del cliente."""
+    try:
+        number, content = await billing_service.invoice_detail_pdf(session, invoice_id)
+    except billing_service.InvoiceNotFoundError:
+        raise _error(404, "invoice_not_found", "No se encontró la factura.") from None
+    filename = "factura-" + "".join(c if c.isalnum() or c == "-" else "-" for c in number)
+    return Response(
+        content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}.pdf"'},
+    )
 
 
 def _error(status_code: int, code: str, message: str) -> HTTPException:

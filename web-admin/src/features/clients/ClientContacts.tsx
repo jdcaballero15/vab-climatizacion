@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { siteName } from "./labels";
@@ -165,14 +166,20 @@ export function ClientContacts({ clientId }: { clientId: string }) {
   const sites = useSites(clientId).data ?? [];
   const createContact = useCreateContact(clientId);
   const [nuevo, setNuevo] = useState<ContactCreate>(EMPTY_CONTACT);
+  const [adding, setAdding] = useState(false);
 
   function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    createContact.mutate(nuevo, { onSuccess: () => setNuevo(EMPTY_CONTACT) });
+    createContact.mutate(nuevo, {
+      onSuccess: () => {
+        setNuevo(EMPTY_CONTACT);
+        setAdding(false);
+      },
+    });
   }
 
   return (
-    <section className="clients__contacts">
+    <section className="clients__contacts" aria-label="Contactos">
       <h4>Contactos</h4>
 
       {contacts.isLoading && <p>Cargando contactos…</p>}
@@ -186,22 +193,38 @@ export function ClientContacts({ clientId }: { clientId: string }) {
         </ul>
       )}
 
-      <form className="clients__form" onSubmit={handleCreate} aria-label="Agregar contacto">
-        <ContactFields
-          idPrefix={`new-contact-${clientId}`}
-          values={nuevo}
-          sites={sites}
-          onChange={setNuevo}
-        />
-        {createContact.isError && (
-          <p className="clients__error" role="alert">
-            {createContact.error.message}
-          </p>
-        )}
-        <button type="submit" disabled={createContact.isPending}>
-          Agregar contacto
+      {!adding ? (
+        <button type="button" className="clients__add" onClick={() => setAdding(true)}>
+          <Plus size={16} aria-hidden="true" />
+          Nuevo contacto
         </button>
-      </form>
+      ) : (
+        <form className="clients__form" onSubmit={handleCreate} aria-label="Agregar contacto">
+          <ContactFields
+            idPrefix={`new-contact-${clientId}`}
+            values={nuevo}
+            sites={sites}
+            onChange={setNuevo}
+          />
+          {createContact.isError && (
+            <p className="clients__error" role="alert">
+              {createContact.error.message}
+            </p>
+          )}
+          <button type="submit" disabled={createContact.isPending}>
+            Agregar contacto
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              createContact.reset();
+              setAdding(false);
+            }}
+          >
+            Cancelar
+          </button>
+        </form>
+      )}
     </section>
   );
 }

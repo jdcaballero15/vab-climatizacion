@@ -26,6 +26,8 @@ from app.api.schemas.work_order import (
     PaymentOut,
     PaymentVoid,
 )
+from app.db.models.catalog import WorkType
+from app.db.models.client import Client, ClientSite
 from app.db.models.user import User
 from app.db.models.work_order import (
     Invoice,
@@ -42,7 +44,7 @@ from app.domain.work_order import (
     OrderStatus,
     WorkOrderEventType,
 )
-from app.services import order_materials
+from app.services import order_materials, pdf
 from app.services.work_orders import (
     WorkOrderNotFoundError,
     get_work_order,
@@ -249,6 +251,78 @@ async def update_invoice(
         await record_event(session, order, WorkOrderEventType.invoice_corrected, actor, note)
     await session.commit()
     return await _invoice_out(session, invoice)
+
+
+async def invoice_detail_pdf(session: AsyncSession, invoice_id: uuid.UUID) -> tuple[str, bytes]:
+    """Número y PDF con el detalle de lo facturado: materiales, mano de obra y otros cargos
+    de cada orden. Se arma al pedirlo; con la orden facturada los importes ya no cambian."""
+    invoice = await session.scalar(
+        select(Invoice).where(Invoice.id == invoice_id, Invoice.deleted_at.is_(None))
+    )
+    if invoice is None:
+        raise InvoiceNotFoundError
+    orders = sorted(await _invoice_orders(session, invoice.id), key=lambda o: o.number)
+    amounts = await billing_by_order(session, [o.id for o in orders])
+    blocks: list[pdf.InvoiceOrder] = []
+    for order in orders:
+        client = await session.get(Client, order.client_id)
+        site = await session.get(ClientSite, order.client_site_id)
+        work_type = await session.get(WorkType, order.work_type_id)
+        lines = [
+            pdf.InvoiceLine(
+                description=line.name,
+                quantity=" ".join(
+                    filter(None, (order_materials.quantity_text(line.quantity), line.unit))
+                ),
+                unit_price=_money(line.unit_price) if line.unit_price is not None else "-",
+                amount=_money(line.subtotal) if line.subtotal is not None else "-",
+            )
+            for line in (await order_materials.get_materials(session, order.id)).lines
+        ]
+        billing = amounts[order.id]
+        if billing.labor_amount:
+            lines.append(_amount_line("Mano de obra", billing.labor_amount))
+        charges = (
+            await session.scalars(
+                select(WorkOrderCharge)
+                .where(
+                    WorkOrderCharge.work_order_id == order.id,
+                    WorkOrderCharge.deleted_at.is_(None),
+                )
+                .order_by(WorkOrderCharge.created_at)
+            )
+        ).all()
+        lines += [_amount_line(charge.description, charge.amount) for charge in charges]
+        blocks.append(
+            pdf.InvoiceOrder(
+                number=order.number,
+                client=f"{client.name} (N° {client.number})" if client else "",
+                site=(site.label + " · " if site and site.label else "")
+                + (site.address if site else ""),
+                work=" · ".join(
+                    part
+                    for part in (work_type.name if work_type else "", order.description)
+                    if part
+                ),
+                lines=lines,
+                total=_money(billing.total),
+            )
+        )
+    content = pdf.build_invoice_detail(
+        pdf.InvoiceDetailData(
+            number=invoice.number,
+            issued_on=invoice.issued_on,
+            orders=blocks,
+            total=_money(sum((amounts[o.id].total for o in orders), Decimal("0"))),
+        )
+    )
+    return invoice.number, content
+
+
+def _amount_line(description: str, amount: Decimal) -> pdf.InvoiceLine:
+    return pdf.InvoiceLine(
+        description=description, quantity="", unit_price="", amount=_money(amount.quantize(CENTS))
+    )
 
 
 # --- Cobro (E04-10) ---

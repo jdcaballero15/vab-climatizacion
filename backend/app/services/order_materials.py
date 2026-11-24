@@ -99,7 +99,7 @@ async def add_line(
         )
     )
     name = part.name if part else data.other_text
-    note = f"Agregado: {name}, {_qty(data.quantity)} {part.unit if part else ''}".rstrip()
+    note = f"Agregado: {name}, {quantity_text(data.quantity)} {part.unit if part else ''}".rstrip()
     return await _commit_change(session, order, actor, note)
 
 
@@ -113,7 +113,9 @@ async def update_line(
     order = await _editable(session, order_id)
     line = await _line(session, order, line_id)
     name, unit = await _label(session, line)
-    note = f"{name}: {_qty(line.quantity)} -> {_qty(data.quantity)} {unit}".rstrip()
+    note = (
+        f"{name}: {quantity_text(line.quantity)} -> {quantity_text(data.quantity)} {unit}".rstrip()
+    )
     line.quantity = data.quantity
     return await _commit_change(session, order, actor, note)
 
@@ -125,7 +127,7 @@ async def remove_line(
     line = await _line(session, order, line_id)
     name, unit = await _label(session, line)
     line.deleted_at = datetime.now(UTC)
-    note = f"Sacado: {name}, {_qty(line.quantity)} {unit}".rstrip()
+    note = f"Sacado: {name}, {quantity_text(line.quantity)} {unit}".rstrip()
     return await _commit_change(session, order, actor, note)
 
 
@@ -320,6 +322,6 @@ async def _commit_change(
     return await _materials(session, order)
 
 
-def _qty(quantity: Decimal) -> str:
+def quantity_text(quantity: Decimal) -> str:
     """Cantidad como la escribe la oficina: 1,5 y no 1.500."""
     return f"{quantity.normalize():f}".replace(".", ",")

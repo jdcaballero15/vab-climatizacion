@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { equipmentCountLabel, siteName } from "./labels";
@@ -104,6 +105,7 @@ export function ClientSites({ clientId }: { clientId: string }) {
   const createSite = useCreateSite(clientId);
   const [nuevo, setNuevo] = useState<SiteCreate>(EMPTY_SITE);
   const [invalid, setInvalid] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -112,7 +114,12 @@ export function ClientSites({ clientId }: { clientId: string }) {
       return;
     }
     setInvalid(false);
-    createSite.mutate(nuevo, { onSuccess: () => setNuevo(EMPTY_SITE) });
+    createSite.mutate(nuevo, {
+      onSuccess: () => {
+        setNuevo(EMPTY_SITE);
+        setAdding(false);
+      },
+    });
   }
 
   return (
@@ -130,22 +137,39 @@ export function ClientSites({ clientId }: { clientId: string }) {
         </ul>
       )}
 
-      <form className="clients__form" onSubmit={handleCreate} aria-label="Agregar domicilio">
-        <SiteFields idPrefix={`new-site-${clientId}`} values={nuevo} onChange={setNuevo} />
-        {invalid && (
-          <p className="clients__error" role="alert">
-            La dirección es obligatoria.
-          </p>
-        )}
-        {createSite.isError && (
-          <p className="clients__error" role="alert">
-            {createSite.error.message}
-          </p>
-        )}
-        <button type="submit" disabled={createSite.isPending}>
-          Agregar domicilio
+      {!adding ? (
+        <button type="button" className="clients__add" onClick={() => setAdding(true)}>
+          <Plus size={16} aria-hidden="true" />
+          Nuevo domicilio
         </button>
-      </form>
+      ) : (
+        <form className="clients__form" onSubmit={handleCreate} aria-label="Agregar domicilio">
+          <SiteFields idPrefix={`new-site-${clientId}`} values={nuevo} onChange={setNuevo} />
+          {invalid && (
+            <p className="clients__error" role="alert">
+              La dirección es obligatoria.
+            </p>
+          )}
+          {createSite.isError && (
+            <p className="clients__error" role="alert">
+              {createSite.error.message}
+            </p>
+          )}
+          <button type="submit" disabled={createSite.isPending}>
+            Agregar domicilio
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              createSite.reset();
+              setInvalid(false);
+              setAdding(false);
+            }}
+          >
+            Cancelar
+          </button>
+        </form>
+      )}
     </section>
   );
 }

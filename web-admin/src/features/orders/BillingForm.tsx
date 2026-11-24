@@ -3,7 +3,13 @@ import { useState, type FormEvent } from "react";
 import { formatDateTime, formatDay, formatMoney, PAYMENT_METHOD_LABELS, toAmount } from "./labels";
 import { ApproveOrder, OrderMaterials } from "./OrderMaterials";
 import type { Billing, Charge, OrderListItem } from "./types";
-import { useChangeCharge, useCharges, useOrderBilling, useSaveBilling } from "./useOrders";
+import {
+  useChangeCharge,
+  useCharges,
+  useInvoicePdf,
+  useOrderBilling,
+  useSaveBilling,
+} from "./useOrders";
 
 type BillingOrder = Pick<OrderListItem, "id" | "number" | "status">;
 
@@ -45,7 +51,7 @@ export function BillingForm({ order, readOnly }: { order: BillingOrder; readOnly
         <span>Total</span> <strong>{formatMoney(billing.data.total)}</strong>
       </p>
       {!readOnly && <ApproveOrder orderId={order.id} />}
-      <InvoiceAndPayment billing={billing.data} />
+      <InvoiceAndPayment billing={billing.data} readOnly={readOnly} />
     </section>
   );
 }
@@ -247,19 +253,37 @@ function ChargeForm({
   );
 }
 
-function InvoiceAndPayment({ billing }: { billing: Billing }) {
+function InvoiceAndPayment({ billing, readOnly }: { billing: Billing; readOnly?: boolean }) {
+  const download = useInvoicePdf();
   if (!billing.invoice) {
     return <p className="muted">Sin facturar.</p>;
   }
   const { invoice, payment } = billing;
   return (
-    <p>
-      Factura {invoice.number} del {formatDay(invoice.issued_on)}
-      {invoice.order_numbers.length > 1 &&
-        ` (cubre las órdenes ${invoice.order_numbers.map((n) => `N° ${n}`).join(", ")})`}
-      {payment &&
-        `. Cobrada el ${formatDay(payment.paid_on)} (${PAYMENT_METHOD_LABELS[payment.method]})`}
-      .
-    </p>
+    <>
+      <p>
+        Factura {invoice.number} del {formatDay(invoice.issued_on)}
+        {invoice.order_numbers.length > 1 &&
+          ` (cubre las órdenes ${invoice.order_numbers.map((n) => `N° ${n}`).join(", ")})`}
+        {payment &&
+          `. Cobrada el ${formatDay(payment.paid_on)} (${PAYMENT_METHOD_LABELS[payment.method]})`}
+        .
+      </p>
+      {!readOnly && (
+        <button
+          type="button"
+          className="btn--sm"
+          disabled={download.isPending}
+          onClick={() => download.mutate(invoice)}
+        >
+          {download.isPending ? "Armando…" : "Descargar detalle (PDF)"}
+        </button>
+      )}
+      {download.isError && (
+        <p className="clients__error" role="alert">
+          {download.error.message}
+        </p>
+      )}
+    </>
   );
 }
