@@ -275,6 +275,15 @@ def test_sin_datos_el_encabezado_lleva_solo_el_nombre() -> None:
     assert b"VAB Climatizaci" in texto
 
 
+def test_el_encabezado_lleva_el_logo() -> None:
+    con_logo = _recibo(pdf.DEFAULT_COMPANY)
+    sin_logo = _recibo(pdf.CompanyHeader(logo=None))
+
+    assert pdf.LOGO.exists()
+    assert b"/Subtype /Image" in con_logo
+    assert b"/Subtype /Image" not in sin_logo
+
+
 @pytest.mark.parametrize(
     ("cuit", "domicilio", "linea"),
     [("20-00000000-1", "", "CUIT 20-00000000-1"), ("", "Calle Ficticia s/n", "Calle Ficticia s/n")],

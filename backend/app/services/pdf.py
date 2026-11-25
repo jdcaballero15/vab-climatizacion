@@ -9,19 +9,24 @@ y es para administración. Con fuentes base de PDF (latin-1): alcanzan para el e
 from dataclasses import dataclass, field
 from datetime import date, datetime, time
 from io import BytesIO
+from pathlib import Path
 
 from fpdf import FPDF
 
 from app.core.config import Settings
 
+# El ícono del logo de VAB, azul sobre transparente (E09-07).
+LOGO = Path(__file__).resolve().parent.parent / "assets" / "logo.png"
+
 
 @dataclass(frozen=True)
 class CompanyHeader:
-    """Quién emite el PDF (E09-07): nombre y, si están cargados, CUIT y domicilio."""
+    """Quién emite el PDF (E09-07): logo, nombre y, si están cargados, CUIT y domicilio."""
 
     name: str = "VAB Climatización"
     tax_id: str | None = None
     address: str | None = None
+    logo: Path | None = LOGO
 
     def details(self) -> str | None:
         """La línea debajo del nombre: "CUIT ... · domicilio", o None si no hay datos."""
@@ -30,7 +35,9 @@ class CompanyHeader:
         return text or None
 
 
-# Sin datos de configuración: solo el nombre.
+_LOGO_HEIGHT = 16  # mm
+
+# Sin datos de configuración: logo y nombre.
 DEFAULT_COMPANY = CompanyHeader()
 
 
@@ -119,16 +126,28 @@ class _Document(FPDF):
         self.set_author(_latin(company.name))
         self.set_auto_page_break(auto=True, margin=15)
         self.add_page()
-        self.set_font("Helvetica", "B", 16)
-        self.cell(0, 10, _latin(company.name), new_x="LMARGIN", new_y="NEXT")
-        details = company.details()
-        if details:
-            self.set_font("Helvetica", "", 9)
-            self.cell(0, 5, _latin(details), new_x="LMARGIN", new_y="NEXT")
-            self.ln(2)
+        self._header(company)
         self.set_font("Helvetica", "B", 13)
         self.cell(0, 8, _latin(title), new_x="LMARGIN", new_y="NEXT")
         self.ln(2)
+
+    def _header(self, company: CompanyHeader) -> None:
+        """Logo a la izquierda; al lado, el nombre y la línea de CUIT y domicilio."""
+        top = self.get_y()
+        indent = self.l_margin
+        if company.logo is not None and company.logo.exists():
+            self.image(str(company.logo), x=self.l_margin, y=top, h=_LOGO_HEIGHT)
+            indent += _LOGO_HEIGHT + 4
+        self.set_xy(indent, top + 1)
+        self.set_font("Helvetica", "B", 16)
+        self.cell(0, 9, _latin(company.name), new_x="LMARGIN", new_y="NEXT")
+        details = company.details()
+        if details:
+            self.set_x(indent)
+            self.set_font("Helvetica", "", 9)
+            self.cell(0, 5, _latin(details), new_x="LMARGIN", new_y="NEXT")
+        bottom = top + _LOGO_HEIGHT if indent > self.l_margin else self.get_y()
+        self.set_y(max(self.get_y(), bottom) + 3)
 
     def field(self, label: str, value: str) -> None:
         self.set_font("Helvetica", "B", 10)
