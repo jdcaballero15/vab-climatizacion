@@ -37,9 +37,11 @@ from app.db.models.work_order import (
     WorkOrderInvoice,
     WorkOrderPayment,
 )
+from app.db.repositories.work_order import WorkOrderRepository
 from app.domain.work_order import (
     PAYMENT_METHOD_LABELS,
     OrderAction,
+    OrderFilters,
     OrderSource,
     OrderStatus,
     WorkOrderEventType,
@@ -421,10 +423,11 @@ async def billing_by_order(
             )
         ).all()
     }
+    # Hasta aprobar, el total de materiales sigue la lista: se recalcula al listar.
+    materials = await order_materials.materials_totals(session, order_ids)
     out: dict[uuid.UUID, BillingAdminOut] = {}
     for order_id in order_ids:
-        # Hasta aprobar, el total de materiales sigue la lista: se recalcula al listar.
-        parts = await order_materials.materials_total(session, order_id)
+        parts = materials[order_id]
         billing, name = labor.get(order_id, (None, None))
         labor_amount = (
             billing.labor_amount.quantize(CENTS) if billing is not None else Decimal("0.00")
@@ -441,6 +444,16 @@ async def billing_by_order(
             payment=payments.get(order_id),
         )
     return out
+
+
+async def amount_total(
+    session: AsyncSession, status: OrderStatus, *, filters: OrderFilters | None = None
+) -> Decimal:
+    """Suma de los totales de las órdenes del panel en ese estado, de todas las páginas;
+    el mismo total que muestra cada una (E04-15)."""
+    order_ids = await WorkOrderRepository(session).ids_by_status(status, filters=filters)
+    billings = await billing_by_order(session, order_ids)
+    return sum((billing.total for billing in billings.values()), Decimal("0.00"))
 
 
 async def _invoices_by_order(

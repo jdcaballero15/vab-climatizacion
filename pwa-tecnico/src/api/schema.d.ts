@@ -3710,6 +3710,8 @@ export interface components {
             limit: number;
             /** Offset */
             offset: number;
+            /** Amount Total */
+            amount_total?: string | null;
         };
         /**
          * OrderMaintenanceOut

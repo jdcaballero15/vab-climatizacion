@@ -239,6 +239,18 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         result = await self.session.execute(stmt)
         return result.all(), total or 0
 
+    async def ids_by_status(
+        self, status: OrderStatus, *, filters: OrderFilters | None = None
+    ) -> list[uuid.UUID]:
+        """Todas las órdenes del panel en ese estado, sin paginar, para sumarlas (E04-15)."""
+        stmt = select(self.model.id).where(
+            self.model.status == status,
+            self.model.source != OrderSource.persat,
+            self.model.deleted_at.is_(None),
+            *self._panel_filters(filters),
+        )
+        return list((await self.session.scalars(stmt)).all())
+
     def _panel_filters(self, filters: OrderFilters | None) -> list[ColumnElement[bool]]:
         """Filtros del panel (E04-05): la escuadrilla es la de la última asignación y el
         período, días de Argentina sobre el evento de creación."""

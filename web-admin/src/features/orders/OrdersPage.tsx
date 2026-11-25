@@ -24,7 +24,7 @@ import { BillingForm } from "./BillingForm";
 import { ClientPicker } from "./ClientPicker";
 import { ClosureDetail } from "./ClosureDetail";
 import { EditInvoiceForm, NewInvoiceForm, PaymentForm, VoidPaymentForm } from "./InvoiceForms";
-import { formatDay, initials, LIST_STATUS_LABELS } from "./labels";
+import { formatDay, formatMoney, initials, LIST_STATUS_LABELS } from "./labels";
 import { OrderCard, type CardAction } from "./OrderCard";
 import { OrderForm } from "./OrderForm";
 import { RepairOrderForm } from "./RepairOrderForm";
@@ -472,7 +472,17 @@ export function OrdersPage({ readOnly = false }: { readOnly?: boolean }) {
         <div className="orders__main">
           <div className="orders__list-header">
             <h3 id="orders-list-title">Órdenes {statusName}</h3>
-            {page.data && <span className="muted">{total} en total</span>}
+            {page.data && (
+              <span className="muted">
+                {total} en total
+                {page.data.amount_total != null && (
+                  <>
+                    {" · "}
+                    <strong>{formatMoney(page.data.amount_total)}</strong>
+                  </>
+                )}
+              </span>
+            )}
           </div>
           {status !== "in_workshop" && (
             <div className="orders__filters" role="group" aria-label="Filtros del panel">
