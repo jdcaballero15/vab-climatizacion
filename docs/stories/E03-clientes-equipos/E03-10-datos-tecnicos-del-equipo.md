@@ -7,7 +7,7 @@ priority: should
 status: done
 roles: [admin, technician]
 size: S
-areas: [backend, web-admin, pwa-tecnico]
+areas: [backend, web-admin, pwa]
 depends_on: [E03-03]
 blocked_by: []
 assumes: [D-002]
@@ -47,5 +47,5 @@ assumes: [D-002]
 
 ## Fuera de alcance
 
-- Que el técnico dé de alta el equipo desde el celular: E05-15.
+- Que el técnico dé de alta el equipo desde el celular: va en una historia aparte de E05.
 - Convertir frigorías a otras unidades (BTU, kW, toneladas).

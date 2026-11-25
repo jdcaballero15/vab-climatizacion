@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 126 historias.** done: 104, draft: 10, icebox: 12
+**Total: 127 historias.** done: 105, draft: 10, icebox: 12
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -63,6 +63,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E03-07](E03-clientes-equipos/E03-07-baja-logica-y-restauracion-de-clientes-y-equipos.md) | Baja lógica y restauración de clientes y equipos | Debería | S | done | admin | - | - | E03-01, E03-03 |
 | [E03-08](E03-clientes-equipos/E03-08-unificar-dos-clientes.md) | Unificar dos clientes | Debería | M | done | admin | - | D-002 | E03-02, E03-03, E03-07 |
 | [E03-09](E03-clientes-equipos/E03-09-pasar-un-equipo-a-otro-cliente.md) | Pasar un equipo a otro cliente | Debería | M | done | admin | - | D-002 | E03-03 |
+| [E03-10](E03-clientes-equipos/E03-10-datos-tecnicos-del-equipo.md) | Datos técnicos del equipo: frigorías, gas y alimentación | Debería | S | done | admin, technician | - | D-002 | E03-03 |
 
 ## E04 Órdenes de trabajo (administración)
 
