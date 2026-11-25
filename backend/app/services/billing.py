@@ -26,6 +26,7 @@ from app.api.schemas.work_order import (
     PaymentOut,
     PaymentVoid,
 )
+from app.core.config import get_settings
 from app.db.models.catalog import WorkType
 from app.db.models.client import Client, ClientSite
 from app.db.models.user import User
@@ -316,7 +317,8 @@ async def invoice_detail_pdf(session: AsyncSession, invoice_id: uuid.UUID) -> tu
             issued_on=invoice.issued_on,
             orders=blocks,
             total=_money(sum((amounts[o.id].total for o in orders), Decimal("0"))),
-        )
+        ),
+        pdf.company_header(get_settings()),
     )
     return invoice.number, content
 

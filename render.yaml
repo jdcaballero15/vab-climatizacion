@@ -58,6 +58,12 @@ services:
         value: vab-ot-backups
       - key: BACKUP_S3_REGION
         value: auto
+      # Encabezado de los PDF (E09-07): CUIT y domicilio de la empresa. Se cargan en el
+      # panel de Render, no en el repositorio (es público).
+      - key: COMPANY_TAX_ID
+        sync: false
+      - key: COMPANY_ADDRESS
+        sync: false
 
   # Corrida nocturna (app/nightly_run.py): copia de la base al bucket vab-ot-backups (E00-07,
   # docs/workflow/backups.md) y después las órdenes de mantenimiento de la semana (E07-04).

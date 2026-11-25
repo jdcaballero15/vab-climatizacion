@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 127 historias.** done: 105, draft: 10, icebox: 12
+**Total: 128 historias.** done: 106, draft: 10, icebox: 12
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -147,6 +147,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E09-04](E09-comprobantes-informes/E09-04-generar-el-informe-mensual-de-un-cliente.md) | Generar el informe mensual de un cliente | Debe | M | done | admin | - | - | E04-06 |
 | [E09-05](E09-comprobantes-informes/E09-05-enviar-el-informe-mensual-por-mail-a-cada-cliente.md) | Enviar el informe mensual por mail a cada cliente | Debe | M | draft | admin | - | - | E09-04, E00-10, E00-11, E03-01 |
 | [E09-06](E09-comprobantes-informes/E09-06-previsualizar-y-reenviar-el-informe-mensual.md) | Previsualizar y reenviar el informe mensual | Podría | S | draft | admin | - | - | E09-05 |
+| [E09-07](E09-comprobantes-informes/E09-07-datos-de-la-empresa-en-los-pdf.md) | Datos de la empresa en el encabezado de los PDF | Debería | S | done | admin | - | - | E09-01, E09-02, E09-04, E04-09 |
 
 ## E10 Tablero de seguimiento
 
