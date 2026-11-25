@@ -40,6 +40,29 @@ class EquipmentCreate(BaseModel):
     power_supply: PowerSupply | None = None
 
 
+class EquipmentTechnicianCreate(BaseModel):
+    """Lo que carga la escuadrilla desde el celular (E05-15): el domicilio es el de la orden."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    equipment_type_id: uuid.UUID
+    location_note: LocationNote
+    brand: OptionalText = None
+    model: OptionalText = None
+    capacity_frigorias: Frigorias | None = None
+    refrigerant: Refrigerant | None = None
+    power_supply: PowerSupply | None = None
+
+
+class EquipmentTypeTechnicianOut(BaseModel):
+    """Un tipo de equipo para elegir en el celular (E05-15)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+
+
 class EquipmentUpdate(BaseModel):
     """Solo se cambian los campos enviados; un dato opcional en null se borra."""
 

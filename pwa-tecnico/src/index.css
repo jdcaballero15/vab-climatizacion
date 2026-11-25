@@ -1238,3 +1238,33 @@ button:disabled {
   color: var(--text-secondary);
   font-size: 0.9rem;
 }
+
+/* E05-15: cargar el equipo de una orden que no tiene. */
+.add-equipment__open {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.add-equipment {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.875rem;
+  border-radius: var(--radius-sm);
+  background: rgb(255 255 255 / 55%);
+}
+
+.add-equipment h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.add-equipment label {
+  margin-top: 0.25rem;
+  font-weight: 600;
+}
+
+.add-equipment .order-start__actions {
+  margin-top: 0.5rem;
+}

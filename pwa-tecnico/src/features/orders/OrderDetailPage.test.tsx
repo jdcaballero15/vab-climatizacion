@@ -416,3 +416,113 @@ describe("OrderDetailPage", () => {
     });
   });
 });
+
+describe("OrderDetailPage, agregar el equipo (E05-15)", () => {
+  const TIPOS = [
+    { id: "t1", name: "Aire acondicionado" },
+    { id: "t2", name: "Heladera comercial" },
+  ];
+  const AGREGADO = {
+    location_note: "Living",
+    equipment_type_name: "Aire acondicionado",
+    brand: "Marca Ficticia",
+    model: null,
+    capacity_frigorias: 3000,
+    refrigerant: "R410A",
+    power_supply: "220",
+  } as const;
+
+  function porRuta(post: () => Response) {
+    const fetchMock = vi.fn<(request: Request) => Promise<Response>>(async (request) => {
+      const url = new URL(request.url);
+      if (url.pathname.endsWith("/tech/equipment-types")) {
+        return json(TIPOS);
+      }
+      if (request.method === "POST" && url.pathname.endsWith("/equipment")) {
+        return post();
+      }
+      return json(detail({ equipment: null }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+
+  function posts(fetchMock: ReturnType<typeof porRuta>) {
+    return fetchMock.mock.calls
+      .map(([request]) => request)
+      .filter((request) => request.method === "POST");
+  }
+
+  // Criterio 1: se carga con tipo, ubicación y datos técnicos, y se ve en el detalle.
+  it("carga el equipo de una orden sin equipo y lo muestra", async () => {
+    const user = userEvent.setup();
+    const fetchMock = porRuta(() => json(detail({ equipment: AGREGADO }), 201));
+    renderDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Agregar equipo" }));
+    await screen.findByRole("option", { name: "Aire acondicionado" });
+    await user.selectOptions(screen.getByLabelText("Tipo"), "t1");
+    await user.type(screen.getByLabelText("Ubicación"), "Living");
+    await user.type(screen.getByLabelText("Marca"), "Marca Ficticia");
+    await user.type(screen.getByLabelText("Frigorías"), "3000");
+    await user.selectOptions(screen.getByLabelText("Gas"), "R410A");
+    await user.selectOptions(screen.getByLabelText("Alimentación"), "220");
+    await user.click(screen.getByRole("button", { name: "Guardar equipo" }));
+
+    expect(
+      await screen.findByText("Living · Aire acondicionado · Marca Ficticia"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("3.000 frigorías · Gas R410A · 220 V")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Agregar equipo" })).not.toBeInTheDocument();
+    const [post] = posts(fetchMock);
+    expect(new URL(post.url).pathname).toMatch(new RegExp(`/tech/orders/${ORDER_ID}/equipment$`));
+    expect(await post.json()).toEqual({
+      equipment_type_id: "t1",
+      location_note: "Living",
+      brand: "Marca Ficticia",
+      model: null,
+      capacity_frigorias: 3000,
+      refrigerant: "R410A",
+      power_supply: "220",
+    });
+  });
+
+  // Criterio 5: tipo y ubicación son obligatorios, también en el celular.
+  it("no manda sin tipo ni ubicación", async () => {
+    const user = userEvent.setup();
+    const fetchMock = porRuta(() => json({}, 500));
+    renderDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Agregar equipo" }));
+    await user.click(screen.getByRole("button", { name: "Guardar equipo" }));
+
+    expect(await screen.findByText("Falta el tipo y la ubicación.")).toBeInTheDocument();
+    expect(posts(fetchMock)).toHaveLength(0);
+  });
+
+  // Criterio 3: si la oficina ya le puso uno, el mensaje del backend.
+  it("muestra el error del backend y conserva lo escrito", async () => {
+    const user = userEvent.setup();
+    porRuta(() =>
+      json({ detail: { code: "order_has_equipment", message: "La orden ya tiene equipo." } }, 409),
+    );
+    renderDetail();
+
+    await user.click(await screen.findByRole("button", { name: "Agregar equipo" }));
+    await screen.findByRole("option", { name: "Aire acondicionado" });
+    await user.selectOptions(screen.getByLabelText("Tipo"), "t1");
+    await user.type(screen.getByLabelText("Ubicación"), "Living");
+    await user.click(screen.getByRole("button", { name: "Guardar equipo" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("La orden ya tiene equipo.");
+    expect(screen.getByLabelText("Ubicación")).toHaveValue("Living");
+  });
+
+  it("con equipo no ofrece agregar otro", async () => {
+    stubFetch(() => json(detail()));
+    renderDetail();
+
+    await screen.findByText("N° 3");
+    expect(screen.queryByRole("button", { name: "Agregar equipo" })).not.toBeInTheDocument();
+  });
+});

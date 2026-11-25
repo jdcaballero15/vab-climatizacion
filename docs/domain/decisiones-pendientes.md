@@ -85,6 +85,11 @@ Preguntas abiertas para el cliente:
 
 Respondido por Gonza (2026-10-28): al pasar a otro cliente el equipo **recibe un código nuevo** con el número del cliente nuevo, y queda registro del traslado y del código anterior (E03-09).
 
+Cambio pedido por el cliente (Agus, 2026-11-24; confirmado por Gonza el 2026-11-25):
+
+- **La escuadrilla sí puede cargar el equipo** de una orden que no tiene, desde el celular. Queda en el domicilio de la orden, con el código del sistema, y en la línea de tiempo figura que lo cargó la escuadrilla (E05-15). Cambiar o sacar el equipo sigue siendo de la oficina (E04-12).
+- **Frigorías, gas y alimentación pasan a ser datos propios del equipo**, ya no van en observaciones (E03-10).
+
 ### D-003 Edición de catálogos
 
 La decisión original era sobre listas de SharePoint ("editables de las dos formas" con columnas de elección). En un sistema a medida **ese problema desaparece**: la única puerta de entrada es la app, con las mismas validaciones.

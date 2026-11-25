@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import type { components } from "../../api/schema";
+import { AddEquipment } from "./AddEquipment";
 import { dueLabel, equipmentTechnical, statusLabel, workshopStageText } from "./labels";
 import { useOrderDetail } from "./useOrderDetail";
 import { useStartOrder } from "./useStartOrder";
@@ -119,6 +120,8 @@ function OrderDetail({ order }: { order: OrderDetail }) {
         <dt>Para</dt>
         <dd className={due.overdue ? "order-card__day--overdue" : undefined}>{due.text}</dd>
       </dl>
+      {/* E05-15: sin equipo, la escuadrilla lo puede cargar. */}
+      {!order.equipment && <AddEquipment orderId={order.id} />}
 
       {order.description && (
         <section className="order-detail__section">
