@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { PageHeader } from "../../app/PageHeader";
 import { formatDate, formatDateTime, ORDER_STATUS_LABELS } from "../orders/labels";
+import { POWER_SUPPLY_LABELS, REFRIGERANT_LABELS } from "./labels";
 import { useEquipmentFile } from "./useClients";
 
 /**
@@ -63,6 +64,24 @@ export function EquipmentFilePage() {
             <>
               <dt>Número de serie</dt>
               <dd>{equipment.serial_number}</dd>
+            </>
+          )}
+          {equipment.capacity_frigorias != null && (
+            <>
+              <dt>Frigorías</dt>
+              <dd>{equipment.capacity_frigorias.toLocaleString("es-AR")}</dd>
+            </>
+          )}
+          {equipment.refrigerant && (
+            <>
+              <dt>Gas</dt>
+              <dd>{REFRIGERANT_LABELS[equipment.refrigerant]}</dd>
+            </>
+          )}
+          {equipment.power_supply && (
+            <>
+              <dt>Alimentación</dt>
+              <dd>{POWER_SUPPLY_LABELS[equipment.power_supply]}</dd>
             </>
           )}
           {equipment.deleted_at && (

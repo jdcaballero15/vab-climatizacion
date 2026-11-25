@@ -42,6 +42,9 @@ const EQUIPO_1: Equipment = {
   model: "X1",
   serial_number: null,
   notes: null,
+  capacity_frigorias: null,
+  refrigerant: null,
+  power_supply: null,
 };
 const EQUIPO_2: Equipment = {
   ...EQUIPO_1,

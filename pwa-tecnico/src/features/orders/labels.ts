@@ -82,3 +82,19 @@ export const STAGE_DONE_LABELS: Record<WorkshopStage, string> = {
   workshop: "Trabajo en el galpón terminado",
   delivery: "Devolución hecha",
 };
+
+type OrderEquipment = NonNullable<Order["equipment"]>;
+
+/** "3.000 frigorías · Gas R410A · 220 V", con lo que tenga cargado (E03-10); null si nada. */
+export function equipmentTechnical(
+  equipment: Pick<OrderEquipment, "capacity_frigorias" | "refrigerant" | "power_supply">,
+): string | null {
+  const parts = [
+    equipment.capacity_frigorias != null &&
+      `${equipment.capacity_frigorias.toLocaleString("es-AR")} frigorías`,
+    equipment.refrigerant &&
+      `Gas ${equipment.refrigerant === "other" ? "otro" : equipment.refrigerant}`,
+    equipment.power_supply && `${equipment.power_supply} V`,
+  ].filter((part): part is string => Boolean(part));
+  return parts.length ? parts.join(" · ") : null;
+}

@@ -418,6 +418,10 @@ class EquipmentTechnicianOut(BaseModel):
     equipment_type_name: str
     brand: str | None
     model: str | None
+    # Datos técnicos (E03-10): no son precios ni historial.
+    capacity_frigorias: int | None = None
+    refrigerant: str | None = None
+    power_supply: str | None = None
 
 
 class OrderTechnicianOut(BaseModel):

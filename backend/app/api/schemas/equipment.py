@@ -2,9 +2,17 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Any
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, StringConstraints, field_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+)
 
 from app.api.schemas.client import Notes, blank_to_none
+from app.domain.equipment import PowerSupply, Refrigerant
 from app.domain.work_order import OrderStatus
 
 # Obligatoria: un texto vacío pasa a None y se rechaza con 422.
@@ -12,6 +20,8 @@ LocationNote = Annotated[str, BeforeValidator(blank_to_none), StringConstraints(
 OptionalText = Annotated[
     Annotated[str, StringConstraints(max_length=255)] | None, BeforeValidator(blank_to_none)
 ]
+# Frigorías enteras y positivas (E03-10); el tope solo descarta errores de tipeo.
+Frigorias = Annotated[int, Field(strict=True, gt=0, le=10_000_000)]
 
 
 # extra="forbid": el código lo genera el sistema; mandarlo es un error, no se ignora en silencio.
@@ -25,6 +35,9 @@ class EquipmentCreate(BaseModel):
     model: OptionalText = None
     serial_number: OptionalText = None
     notes: Notes = None
+    capacity_frigorias: Frigorias | None = None
+    refrigerant: Refrigerant | None = None
+    power_supply: PowerSupply | None = None
 
 
 class EquipmentUpdate(BaseModel):
@@ -39,6 +52,9 @@ class EquipmentUpdate(BaseModel):
     model: OptionalText = None
     serial_number: OptionalText = None
     notes: Notes = None
+    capacity_frigorias: Frigorias | None = None
+    refrigerant: Refrigerant | None = None
+    power_supply: PowerSupply | None = None
 
     @field_validator("client_site_id", "equipment_type_id", "location_note")
     @classmethod
@@ -60,6 +76,9 @@ class EquipmentAdminOut(BaseModel):
     model: str | None
     serial_number: str | None
     notes: str | None
+    capacity_frigorias: int | None
+    refrigerant: Refrigerant | None
+    power_supply: PowerSupply | None
     # Dado de baja (E03-07); se restaura desde la lista de dados de baja.
     deleted_at: datetime | None = None
 

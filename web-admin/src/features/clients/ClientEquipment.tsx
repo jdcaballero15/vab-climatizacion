@@ -5,8 +5,15 @@ import { Link } from "react-router-dom";
 import { useEquipmentTypes } from "../equipment-types/useEquipmentTypes";
 import type { EquipmentType } from "../equipment-types/types";
 import { ClientPicker } from "../orders/ClientPicker";
-import { siteName } from "./labels";
-import type { ClientSummary, Equipment, EquipmentCreate, Site } from "./types";
+import { POWER_SUPPLY_LABELS, REFRIGERANT_LABELS, siteName, technicalSummary } from "./labels";
+import type {
+  ClientSummary,
+  Equipment,
+  EquipmentCreate,
+  PowerSupply,
+  Refrigerant,
+  Site,
+} from "./types";
 import {
   useCreateEquipment,
   useEquipment,
@@ -23,6 +30,9 @@ const EMPTY_EQUIPMENT: EquipmentCreate = {
   model: null,
   serial_number: null,
   notes: null,
+  capacity_frigorias: null,
+  refrigerant: null,
+  power_supply: null,
 };
 
 interface Choices {
@@ -102,12 +112,58 @@ function EquipmentFields({ idPrefix, values, choices, onChange }: EquipmentField
         onChange={(event) => optional("serial_number", event.target.value)}
         maxLength={255}
       />
+      <label htmlFor={id("frigorias")}>Frigorías</label>
+      <input
+        id={id("frigorias")}
+        type="number"
+        inputMode="numeric"
+        min={1}
+        step={1}
+        value={values.capacity_frigorias ?? ""}
+        onChange={(event) =>
+          onChange({
+            ...values,
+            capacity_frigorias: event.target.value ? Number(event.target.value) : null,
+          })
+        }
+        placeholder="3000"
+      />
+      <label htmlFor={id("refrigerant")}>Gas</label>
+      <select
+        id={id("refrigerant")}
+        value={values.refrigerant ?? ""}
+        onChange={(event) =>
+          onChange({ ...values, refrigerant: (event.target.value || null) as Refrigerant | null })
+        }
+      >
+        <option value="">Sin dato</option>
+        {Object.entries(REFRIGERANT_LABELS).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+      <label htmlFor={id("power")}>Alimentación</label>
+      <select
+        id={id("power")}
+        value={values.power_supply ?? ""}
+        onChange={(event) =>
+          onChange({ ...values, power_supply: (event.target.value || null) as PowerSupply | null })
+        }
+      >
+        <option value="">Sin dato</option>
+        {Object.entries(POWER_SUPPLY_LABELS).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
       <label htmlFor={id("notes")}>Observaciones</label>
       <textarea
         id={id("notes")}
         value={values.notes ?? ""}
         onChange={(event) => optional("notes", event.target.value)}
-        placeholder="Potencia, subtipo, gas refrigerante"
+        placeholder="Subtipo u otros datos"
         maxLength={2000}
       />
     </>
@@ -130,9 +186,30 @@ function missingFields(values: EquipmentCreate): string | null {
 
 // Solo los campos editables: el backend rechaza el código y el id.
 function editable(equipment: Equipment): EquipmentCreate {
-  const { client_site_id, equipment_type_id, location_note, brand, model, serial_number, notes } =
-    equipment;
-  return { client_site_id, equipment_type_id, location_note, brand, model, serial_number, notes };
+  const {
+    client_site_id,
+    equipment_type_id,
+    location_note,
+    brand,
+    model,
+    serial_number,
+    notes,
+    capacity_frigorias,
+    refrigerant,
+    power_supply,
+  } = equipment;
+  return {
+    client_site_id,
+    equipment_type_id,
+    location_note,
+    brand,
+    model,
+    serial_number,
+    notes,
+    capacity_frigorias,
+    refrigerant,
+    power_supply,
+  };
 }
 
 interface EquipmentRowProps {
@@ -291,6 +368,7 @@ function EquipmentRow({ clientId, equipment, choices }: EquipmentRowProps) {
       {site && <span>{siteName(site)}</span>}
       {equipment.brand && <span>{equipment.brand}</span>}
       {equipment.model && <span>{equipment.model}</span>}
+      {technicalSummary(equipment) && <span>{technicalSummary(equipment)}</span>}
       <button
         type="button"
         aria-label={`Editar ${code}`}
