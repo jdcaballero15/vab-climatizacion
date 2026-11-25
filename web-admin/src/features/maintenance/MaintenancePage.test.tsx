@@ -61,6 +61,9 @@ const EQUIPO = {
   model: null,
   serial_number: null,
   notes: null,
+  capacity_frigorias: null,
+  refrigerant: null,
+  power_supply: null,
 };
 const TIPOS = [
   { id: "w1", name: "Reparación", is_active: true },

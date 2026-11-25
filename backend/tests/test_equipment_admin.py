@@ -302,6 +302,71 @@ async def test_editar_borra_opcionales_en_null(
     assert editado.json()["notes"] is None
 
 
+# E03-10: frigorías, gas y alimentación, opcionales y de una lista.
+async def test_datos_tecnicos_se_cargan_editan_y_borran(
+    admin: User, cliente: Client, sede: ClientSite, aire: EquipmentType
+) -> None:
+    async with _client() as client:
+        creado = await _crear(
+            client,
+            admin,
+            cliente.id,
+            **_minimo(sede, aire),
+            capacity_frigorias=3000,
+            refrigerant="R410A",
+            power_supply="220",
+        )
+        editado = await client.patch(
+            f"{EQUIPMENT_URL}/{creado['id']}",
+            json={"refrigerant": "R32", "power_supply": None},
+            headers=_auth(admin),
+        )
+        listado = await client.get(_equipment_url(cliente.id), headers=_auth(admin))
+
+    assert (creado["capacity_frigorias"], creado["refrigerant"], creado["power_supply"]) == (
+        3000,
+        "R410A",
+        "220",
+    )
+    assert editado.status_code == 200, editado.text
+    assert (editado.json()["capacity_frigorias"], editado.json()["refrigerant"]) == (3000, "R32")
+    assert editado.json()["power_supply"] is None
+    assert listado.json()[0]["refrigerant"] == "R32"
+
+
+async def test_equipo_sin_datos_tecnicos_los_trae_vacios(
+    admin: User, cliente: Client, sede: ClientSite, aire: EquipmentType
+) -> None:
+    async with _client() as client:
+        creado = await _crear(client, admin, cliente.id, **_minimo(sede, aire))
+
+    assert creado["capacity_frigorias"] is None
+    assert creado["refrigerant"] is None
+    assert creado["power_supply"] is None
+
+
+@pytest.mark.parametrize(
+    "dato",
+    [
+        {"refrigerant": "R999"},
+        {"power_supply": "110"},
+        {"capacity_frigorias": 0},
+        {"capacity_frigorias": -3000},
+        {"capacity_frigorias": 2500.5},
+        {"capacity_frigorias": "3000"},
+    ],
+)
+async def test_datos_tecnicos_invalidos_se_rechazan(
+    admin: User, cliente: Client, sede: ClientSite, aire: EquipmentType, dato: dict
+) -> None:
+    async with _client() as client:
+        response = await client.post(
+            _equipment_url(cliente.id), json={**_minimo(sede, aire), **dato}, headers=_auth(admin)
+        )
+
+    assert response.status_code == 422
+
+
 # Criterio 6: listado del cliente ordenado por ubicación, con filtro por domicilio.
 async def test_listado_del_cliente_con_filtro_por_domicilio(
     admin: User, cliente: Client, sede: ClientSite, aire: EquipmentType

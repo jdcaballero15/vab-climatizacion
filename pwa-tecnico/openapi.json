@@ -10343,6 +10343,53 @@
             ],
             "title": "Notes"
           },
+          "capacity_frigorias": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity Frigorias"
+          },
+          "refrigerant": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "R22",
+                  "R410A",
+                  "R32",
+                  "R407C",
+                  "R404A",
+                  "R134a",
+                  "R290",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refrigerant"
+          },
+          "power_supply": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "220",
+                  "380"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Power Supply"
+          },
           "deleted_at": {
             "anyOf": [
               {
@@ -10366,7 +10413,10 @@
           "brand",
           "model",
           "serial_number",
-          "notes"
+          "notes",
+          "capacity_frigorias",
+          "refrigerant",
+          "power_supply"
         ],
         "title": "EquipmentAdminOut"
       },
@@ -10467,6 +10517,55 @@
               }
             ],
             "title": "Notes"
+          },
+          "capacity_frigorias": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity Frigorias"
+          },
+          "refrigerant": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "R22",
+                  "R410A",
+                  "R32",
+                  "R407C",
+                  "R404A",
+                  "R134a",
+                  "R290",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refrigerant"
+          },
+          "power_supply": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "220",
+                  "380"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Power Supply"
           }
         },
         "additionalProperties": false,
@@ -10770,6 +10869,39 @@
               }
             ],
             "title": "Model"
+          },
+          "capacity_frigorias": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity Frigorias"
+          },
+          "refrigerant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refrigerant"
+          },
+          "power_supply": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Power Supply"
           }
         },
         "type": "object",
@@ -10990,6 +11122,55 @@
               }
             ],
             "title": "Notes"
+          },
+          "capacity_frigorias": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity Frigorias"
+          },
+          "refrigerant": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "R22",
+                  "R410A",
+                  "R32",
+                  "R407C",
+                  "R404A",
+                  "R134a",
+                  "R290",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refrigerant"
+          },
+          "power_supply": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "220",
+                  "380"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Power Supply"
           }
         },
         "additionalProperties": false,

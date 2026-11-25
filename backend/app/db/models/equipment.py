@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import TimestampedBase
@@ -27,6 +27,10 @@ class Equipment(TimestampedBase):
     model: Mapped[str | None] = mapped_column(String(255), nullable=True)
     serial_number: Mapped[str | None] = mapped_column(String(255), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Datos técnicos (E03-10); los valores válidos están en app.domain.equipment.
+    capacity_frigorias: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    refrigerant: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    power_supply: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
 
 class EquipmentTransfer(TimestampedBase):

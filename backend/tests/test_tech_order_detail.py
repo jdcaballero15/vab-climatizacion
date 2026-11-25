@@ -203,6 +203,9 @@ async def test_detalle_de_una_orden_de_mi_escuadrilla(
         "equipment_type_name": "Aire acondicionado",
         "brand": "Marca Ficticia",
         "model": "X1",
+        "capacity_frigorias": None,
+        "refrigerant": None,
+        "power_supply": None,
     }
     # Solo las activas, por nombre (como en administración).
     assert body["tasks"] == ["Diagnosticar la falla", "Probar el funcionamiento"]

@@ -198,6 +198,9 @@ async def test_cada_orden_trae_lo_de_la_tarjeta(
         location_note="Habitación 12",
         brand="Marca Ficticia",
         model="X1",
+        capacity_frigorias=3000,
+        refrigerant="R410A",
+        power_supply="220",
     )
     await _seed([equipo])
     con_equipo = await _orden(sede, reparacion, escuadrilla, equipment=equipo)
@@ -221,6 +224,9 @@ async def test_cada_orden_trae_lo_de_la_tarjeta(
         "equipment_type_name": "Aire acondicionado",
         "brand": "Marca Ficticia",
         "model": "X1",
+        "capacity_frigorias": 3000,
+        "refrigerant": "R410A",
+        "power_supply": "220",
     }
     assert segunda["id"] == str(sin_equipo.id)
     assert segunda["equipment"] is None

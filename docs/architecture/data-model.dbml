@@ -261,7 +261,10 @@ Table equipment {
   serial_number varchar
   internal_code varchar [unique, not null, note: 'Código interno único en toda la empresa, lo genera el sistema. Texto sin largo fijo (D-002)']
   location_note varchar [not null, note: 'Ubicación dentro del cliente, lo que se muestra primero (D-002)']
-  notes text [note: 'Observaciones: potencia, subtipo, gas o lo que no tenga campo propio']
+  notes text [note: 'Observaciones: subtipo o lo que no tenga campo propio']
+  capacity_frigorias int [note: 'Potencia en frigorías (E03-10)']
+  refrigerant varchar(20) [note: 'Gas: R22, R410A, R32, R407C, R404A, R134a, R290 u other (E03-10)']
+  power_supply varchar(10) [note: '220 o 380 (E03-10)']
 }
 
 // ---------- Órdenes de trabajo ----------

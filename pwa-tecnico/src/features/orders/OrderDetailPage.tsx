@@ -3,7 +3,7 @@ import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import type { components } from "../../api/schema";
-import { dueLabel, statusLabel, workshopStageText } from "./labels";
+import { dueLabel, equipmentTechnical, statusLabel, workshopStageText } from "./labels";
 import { useOrderDetail } from "./useOrderDetail";
 import { useStartOrder } from "./useStartOrder";
 
@@ -55,6 +55,7 @@ function OrderDetail({ order }: { order: OrderDetail }) {
         .filter(Boolean)
         .join(" · ")
     : "Sin equipo";
+  const technical = order.equipment ? equipmentTechnical(order.equipment) : null;
 
   return (
     <article className="order-detail">
@@ -109,6 +110,12 @@ function OrderDetail({ order }: { order: OrderDetail }) {
         )}
         <dt>Equipo</dt>
         <dd>{equipment}</dd>
+        {technical && (
+          <>
+            <dt>Datos del equipo</dt>
+            <dd>{technical}</dd>
+          </>
+        )}
         <dt>Para</dt>
         <dd className={due.overdue ? "order-card__day--overdue" : undefined}>{due.text}</dd>
       </dl>

@@ -685,6 +685,9 @@ async def _technician_orders(
                     equipment_type_name=equipment_type_name or "",
                     brand=equipment.brand,
                     model=equipment.model,
+                    capacity_frigorias=equipment.capacity_frigorias,
+                    refrigerant=equipment.refrigerant,
+                    power_supply=equipment.power_supply,
                 )
                 if equipment is not None
                 else None

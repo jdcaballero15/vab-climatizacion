@@ -75,6 +75,9 @@ const SPLIT: Equipment = {
   model: "Split 3000",
   serial_number: null,
   notes: null,
+  capacity_frigorias: null,
+  refrigerant: null,
+  power_supply: null,
 };
 const FREEZER: Equipment = {
   ...SPLIT,
@@ -682,6 +685,9 @@ describe("ClientsPage", () => {
         model: null,
         serial_number: null,
         notes: null,
+        capacity_frigorias: null,
+        refrigerant: null,
+        power_supply: null,
       });
     });
 
@@ -696,6 +702,43 @@ describe("ClientsPage", () => {
 
       expect(await alta.findByText("Falta el tipo de equipo y la ubicación.")).toBeInTheDocument();
       expect(calls(fetchMock, "POST", "/c1/equipment")).toHaveLength(0);
+    });
+
+    // E03-10: frigorías, gas y alimentación.
+    it("carga los datos técnicos y los muestra en la lista", async () => {
+      const fetchMock = conEquipos((request, url) =>
+        url.pathname.endsWith("/admin/equipment/e1") && request.method === "PATCH"
+          ? json({ ...SPLIT, capacity_frigorias: 3000, refrigerant: "R410A", power_supply: "220" })
+          : undefined,
+      );
+      const equipos = await abrirEquipos();
+
+      await userEvent.click(await equipos.findByRole("button", { name: "Editar EA1064201" }));
+      const edicion = within(equipos.getByRole("form", { name: "Editar EA1064201" }));
+      await userEvent.type(edicion.getByLabelText("Frigorías"), "3000");
+      await userEvent.selectOptions(edicion.getByLabelText("Gas"), "R410A");
+      await userEvent.selectOptions(edicion.getByLabelText("Alimentación"), "220");
+      await userEvent.click(edicion.getByRole("button", { name: "Guardar" }));
+
+      await waitFor(() => expect(calls(fetchMock, "PATCH", "/admin/equipment/e1")).toHaveLength(1));
+      expect(await calls(fetchMock, "PATCH", "/admin/equipment/e1")[0].json()).toMatchObject({
+        capacity_frigorias: 3000,
+        refrigerant: "R410A",
+        power_supply: "220",
+      });
+    });
+
+    it("muestra los datos técnicos en la lista", async () => {
+      conEquipos((request, url) =>
+        url.pathname.endsWith("/c1/equipment") && request.method === "GET"
+          ? json([
+              { ...SPLIT, capacity_frigorias: 3000, refrigerant: "R410A", power_supply: "220" },
+            ])
+          : undefined,
+      );
+      const equipos = await abrirEquipos();
+
+      expect(await equipos.findByText("3.000 frigorías · Gas R410A · 220 V")).toBeInTheDocument();
     });
 
     // Criterio 5: editar y mudar sin mandar el código ni campos de más.
@@ -723,6 +766,9 @@ describe("ClientsPage", () => {
         model: "Split 3000",
         serial_number: null,
         notes: null,
+        capacity_frigorias: null,
+        refrigerant: null,
+        power_supply: null,
       });
     });
 

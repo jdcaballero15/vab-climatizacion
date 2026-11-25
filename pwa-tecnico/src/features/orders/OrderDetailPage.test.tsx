@@ -34,6 +34,9 @@ function detail(overrides: Partial<OrderDetail> = {}): OrderDetail {
       equipment_type_name: "Aire acondicionado",
       brand: "Marca Ficticia",
       model: "X1",
+      capacity_frigorias: null,
+      refrigerant: null,
+      power_supply: null,
     },
     tasks: ["Diagnosticar la falla", "Probar el funcionamiento"],
     return_reason: null,
@@ -95,6 +98,33 @@ describe("OrderDetailPage", () => {
     expect(
       screen.getByText("Habitación 12 · Aire acondicionado · Marca Ficticia X1"),
     ).toBeInTheDocument();
+  });
+
+  // E03-10: frigorías, gas y alimentación, si están cargados.
+  it("muestra los datos técnicos del equipo", async () => {
+    const base = detail();
+    stubFetch(() =>
+      json({
+        ...base,
+        equipment: {
+          ...base.equipment,
+          capacity_frigorias: 3000,
+          refrigerant: "R410A",
+          power_supply: "220",
+        },
+      }),
+    );
+    renderDetail();
+
+    expect(await screen.findByText("3.000 frigorías · Gas R410A · 220 V")).toBeInTheDocument();
+  });
+
+  it("sin datos técnicos no muestra la fila", async () => {
+    stubFetch(() => json(detail()));
+    renderDetail();
+
+    await screen.findByText("N° 3");
+    expect(screen.queryByText("Datos del equipo")).not.toBeInTheDocument();
   });
 
   // Criterio 3: tareas del tipo de trabajo, de solo lectura.

@@ -2950,6 +2950,12 @@ export interface components {
             serial_number: string | null;
             /** Notes */
             notes: string | null;
+            /** Capacity Frigorias */
+            capacity_frigorias: number | null;
+            /** Refrigerant */
+            refrigerant: ("R22" | "R410A" | "R32" | "R407C" | "R404A" | "R134a" | "R290" | "other") | null;
+            /** Power Supply */
+            power_supply: ("220" | "380") | null;
             /** Deleted At */
             deleted_at?: string | null;
         };
@@ -2989,6 +2995,12 @@ export interface components {
             serial_number?: string | null;
             /** Notes */
             notes?: string | null;
+            /** Capacity Frigorias */
+            capacity_frigorias?: number | null;
+            /** Refrigerant */
+            refrigerant?: ("R22" | "R410A" | "R32" | "R407C" | "R404A" | "R134a" | "R290" | "other") | null;
+            /** Power Supply */
+            power_supply?: ("220" | "380") | null;
         };
         /**
          * EquipmentFileOut
@@ -3097,6 +3109,12 @@ export interface components {
             brand: string | null;
             /** Model */
             model: string | null;
+            /** Capacity Frigorias */
+            capacity_frigorias?: number | null;
+            /** Refrigerant */
+            refrigerant?: string | null;
+            /** Power Supply */
+            power_supply?: string | null;
         };
         /**
          * EquipmentTransferCreate
@@ -3170,6 +3188,12 @@ export interface components {
             serial_number?: string | null;
             /** Notes */
             notes?: string | null;
+            /** Capacity Frigorias */
+            capacity_frigorias?: number | null;
+            /** Refrigerant */
+            refrigerant?: ("R22" | "R410A" | "R32" | "R407C" | "R404A" | "R134a" | "R290" | "other") | null;
+            /** Power Supply */
+            power_supply?: ("220" | "380") | null;
         };
         /** FailureAdminOut */
         FailureAdminOut: {
