@@ -12553,6 +12553,17 @@
           "offset": {
             "type": "integer",
             "title": "Offset"
+          },
+          "amount_total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount Total"
           }
         },
         "type": "object",

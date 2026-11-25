@@ -277,6 +277,9 @@ class OrderListPage(BaseModel):
     total: int
     limit: int
     offset: int
+    # Suma de los totales de todas las páginas, solo en terminadas, facturadas y cobradas
+    # (E04-15).
+    amount_total: Decimal | None = None
 
 
 class ClientOrderOut(BaseModel):

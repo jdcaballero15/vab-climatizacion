@@ -1718,6 +1718,27 @@ describe("OrdersPage", () => {
 });
 
 // E04-12: el equipo de la orden.
+describe("OrdersPage, totales de las cerradas (E04-15)", () => {
+  it("en Facturadas muestra la cantidad y la suma de todas las páginas", async () => {
+    const user = userEvent.setup();
+    mockApi((request, url) => {
+      if (!(url.pathname.endsWith("/admin/orders") && request.method === "GET")) {
+        return undefined;
+      }
+      return url.searchParams.get("status") === "invoiced"
+        ? json({ ...pendingPage([FACTURADA], 3), amount_total: "35000.50" })
+        : json({ ...pendingPage([]), amount_total: null });
+    });
+    renderOrders();
+
+    expect(await screen.findByText("0 en total")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Facturadas" }));
+
+    await screen.findByRole("list", { name: "Órdenes facturadas" });
+    expect(screen.getByText(/3 en total/)).toHaveTextContent(/3 en total · \$\s35\.000,50/);
+  });
+});
+
 describe("OrdersPage, equipo de la orden", () => {
   // Criterio 1: al crear, los equipos del domicilio elegido.
   it("al crear ofrece los equipos del domicilio y manda el elegido", async () => {

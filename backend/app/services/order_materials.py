@@ -5,6 +5,7 @@ aprobarla se estampa ese precio en part_usage.unit_price y ya no cambia (ADR 000
 """
 
 import uuid
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -78,6 +79,48 @@ async def get_materials(session: AsyncSession, order_id: uuid.UUID) -> OrderMate
 async def materials_total(session: AsyncSession, order_id: uuid.UUID) -> Decimal:
     order = await get_work_order(session, order_id)
     return (await _materials(session, order)).total
+
+
+async def materials_totals(
+    session: AsyncSession, order_ids: Sequence[uuid.UUID]
+) -> dict[uuid.UUID, Decimal]:
+    """El total de materials_total para muchas órdenes con tres consultas, no tres por orden.
+
+    Mismas reglas que _materials: precio estampado si la orden está aprobada y, si no o si
+    falta, el vigente; las líneas sin precio no suman.
+    """
+    usages = (
+        await session.scalars(
+            select(PartUsage).where(
+                PartUsage.work_order_id.in_(order_ids),
+                PartUsage.part_id.is_not(None),
+                PartUsage.deleted_at.is_(None),
+            )
+        )
+    ).all()
+    approved = set(
+        (
+            await session.scalars(
+                select(WorkOrderEvent.work_order_id).where(
+                    WorkOrderEvent.work_order_id.in_({usage.work_order_id for usage in usages}),
+                    WorkOrderEvent.event_type == WorkOrderEventType.review_approved,
+                    WorkOrderEvent.deleted_at.is_(None),
+                )
+            )
+        ).all()
+    )
+    prices = await parts_service.current_price_map(
+        session, list({usage.part_id for usage in usages if usage.part_id is not None})
+    )
+    totals = dict.fromkeys(order_ids, Decimal("0"))
+    for usage in usages:
+        if usage.part_id is None:
+            continue
+        stamped = usage.unit_price if usage.work_order_id in approved else None
+        price = stamped if stamped is not None else prices.get(usage.part_id)
+        if price is not None:
+            totals[usage.work_order_id] += (price * usage.quantity).quantize(Decimal("0.01"))
+    return {order_id: total.quantize(Decimal("0.01")) for order_id, total in totals.items()}
 
 
 async def is_approved(session: AsyncSession, order_id: uuid.UUID) -> bool:

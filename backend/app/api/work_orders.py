@@ -211,11 +211,17 @@ async def list_work_orders(
     items, total = await work_orders_service.list_by_status(
         session, OrderStatus(status), filters=filters, limit=limit, offset=offset
     )
+    amount_total = None
     if OrderStatus(status) in billing_service.CLOSED_STATUSES:
         billings = await billing_service.billing_by_order(session, [item.id for item in items])
         for item in items:
             item.billing = billings.get(item.id)
-    return OrderListPage(items=items, total=total, limit=limit, offset=offset)
+        amount_total = await billing_service.amount_total(
+            session, OrderStatus(status), filters=filters
+        )
+    return OrderListPage(
+        items=items, total=total, limit=limit, offset=offset, amount_total=amount_total
+    )
 
 
 # Va antes de las rutas con /{order_id}: si no, "in-workshop" se toma como un id.

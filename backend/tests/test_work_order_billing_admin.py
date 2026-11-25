@@ -558,3 +558,55 @@ async def test_orden_de_reparacion_exige_origen_cerrado_y_del_mismo_cliente(mund
     assert no_cerrada.json()["detail"]["code"] == "source_order_not_closed"
     assert de_otro.status_code == 422
     assert de_otro.json()["detail"]["code"] == "source_order_of_another_client"
+
+
+# E04-15: cantidad y suma de las cerradas, con los filtros y de todas las páginas.
+async def test_cobradas_traen_la_suma_de_todas_las_paginas(mundo: Mundo) -> None:
+    m = mundo
+    for _ in range(2):
+        orden = await _terminada(m)
+        assert (await _put(m.admin, orden.id, IMPORTES)).status_code == 200
+        await _aprobar(m, orden.id)
+        assert (await _facturar(m, orden, numero=f"A-{orden.number}")).status_code == 201
+        await _post(m.admin, f"{ORDERS_URL}/{orden.id}/payment", {"paid_on": HOY, "method": "cash"})
+
+    body = (await _get(m.admin, f"{ORDERS_URL}?status=paid&limit=1")).json()
+
+    assert len(body["items"]) == 1
+    assert body["total"] == 2
+    assert body["amount_total"] == "70001.00"
+
+
+async def test_la_suma_usa_el_mismo_total_que_cada_orden(mundo: Mundo) -> None:
+    m = mundo
+    orden = await _terminada(m, materiales="1000.25")
+    await _put(m.admin, orden.id, IMPORTES)
+    cargo = {"description": "Viático", "amount": "500"}
+    assert (await _post(m.admin, f"{ORDERS_URL}/{orden.id}/charges", cargo)).status_code == 201
+    await _terminada(m, materiales=None)
+
+    body = (await _get(m.admin, f"{ORDERS_URL}?status=done")).json()
+
+    por_orden = sum(Decimal(item["billing"]["total"]) for item in body["items"])
+    assert Decimal(body["amount_total"]) == por_orden == Decimal("21500.25")
+
+
+async def test_la_suma_respeta_los_filtros(mundo: Mundo) -> None:
+    m = mundo
+    orden = await _facturada(m)
+    otro_cliente = Client(id=uuid.uuid4(), number="20001", name="Hotel Ficticio")
+    await _seed([otro_cliente])
+    base = f"{ORDERS_URL}?status=invoiced"
+
+    propio = (await _get(m.admin, f"{base}&client_id={orden.client_id}")).json()
+    ajeno = (await _get(m.admin, f"{base}&client_id={otro_cliente.id}")).json()
+
+    assert (propio["total"], propio["amount_total"]) == (1, "15000.50")
+    assert (ajeno["total"], ajeno["amount_total"]) == (0, "0.00")
+
+
+@pytest.mark.parametrize("status", ["pending", "assigned", "in_progress", "cancelled"])
+async def test_abiertas_y_canceladas_no_suman_importes(mundo: Mundo, status: str) -> None:
+    body = (await _get(mundo.admin, f"{ORDERS_URL}?status={status}")).json()
+
+    assert body["amount_total"] is None

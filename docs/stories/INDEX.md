@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 125 historias.** done: 103, draft: 10, icebox: 12
+**Total: 126 historias.** done: 104, draft: 10, icebox: 12
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -82,6 +82,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E04-12](E04-ordenes/E04-12-asociar-un-equipo-a-la-orden.md) | Asociar un equipo a la orden | Debe | S | done | admin | - | D-002 | E04-02, E03-03 |
 | [E04-13](E04-ordenes/E04-13-abrir-una-orden-de-reparacion-desde-un-cierre.md) | Abrir una orden de reparación desde un cierre | Debería | S | done | admin | - | - | E04-02, E04-08 |
 | [E04-14](E04-ordenes/E04-14-importes-y-estado-de-cobro-minimo.md) | Importes y estado de cobro de una orden terminada (versión mínima) | Debe | S | done | admin | - | D-004 | E04-08, E00-04 |
+| [E04-15](E04-ordenes/E04-15-totales-de-las-ordenes-cerradas.md) | Totales de las órdenes cerradas | Debería | S | done | admin, owner | - | - | E04-05, E04-14 |
 
 ## E05 App del técnico
 
