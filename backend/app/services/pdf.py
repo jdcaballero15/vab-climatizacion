@@ -9,10 +9,44 @@ y es para administración. Con fuentes base de PDF (latin-1): alcanzan para el e
 from dataclasses import dataclass, field
 from datetime import date, datetime, time
 from io import BytesIO
+from pathlib import Path
 
 from fpdf import FPDF
 
-COMPANY = "VAB Climatización"
+from app.core.config import Settings
+
+# El ícono del logo de VAB, azul sobre transparente (E09-07).
+LOGO = Path(__file__).resolve().parent.parent / "assets" / "logo.png"
+
+
+@dataclass(frozen=True)
+class CompanyHeader:
+    """Quién emite el PDF (E09-07): logo, nombre y, si están cargados, CUIT y domicilio."""
+
+    name: str = "VAB Climatización"
+    tax_id: str | None = None
+    address: str | None = None
+    logo: Path | None = LOGO
+
+    def details(self) -> str | None:
+        """La línea debajo del nombre: "CUIT ... · domicilio", o None si no hay datos."""
+        parts = [f"CUIT {self.tax_id}" if self.tax_id else None, self.address]
+        text = " · ".join(part for part in parts if part)
+        return text or None
+
+
+_LOGO_HEIGHT = 16  # mm
+
+# Sin datos de configuración: logo y nombre.
+DEFAULT_COMPANY = CompanyHeader()
+
+
+def company_header(settings: Settings) -> CompanyHeader:
+    return CompanyHeader(
+        name=settings.company_name.strip() or CompanyHeader.name,
+        tax_id=settings.company_tax_id.strip() or None,
+        address=settings.company_address.strip() or None,
+    )
 
 
 @dataclass(frozen=True)
@@ -85,18 +119,35 @@ def _latin(text: str) -> str:
 
 
 class _Document(FPDF):
-    def __init__(self, title: str, created: datetime) -> None:
+    def __init__(self, title: str, created: datetime, company: CompanyHeader) -> None:
         super().__init__(format="A4")
         self.set_creation_date(created)
         self.set_title(_latin(title))
-        self.set_author(_latin(COMPANY))
+        self.set_author(_latin(company.name))
         self.set_auto_page_break(auto=True, margin=15)
         self.add_page()
-        self.set_font("Helvetica", "B", 16)
-        self.cell(0, 10, _latin(COMPANY), new_x="LMARGIN", new_y="NEXT")
+        self._header(company)
         self.set_font("Helvetica", "B", 13)
         self.cell(0, 8, _latin(title), new_x="LMARGIN", new_y="NEXT")
         self.ln(2)
+
+    def _header(self, company: CompanyHeader) -> None:
+        """Logo a la izquierda; al lado, el nombre y la línea de CUIT y domicilio."""
+        top = self.get_y()
+        indent = self.l_margin
+        if company.logo is not None and company.logo.exists():
+            self.image(str(company.logo), x=self.l_margin, y=top, h=_LOGO_HEIGHT)
+            indent += _LOGO_HEIGHT + 4
+        self.set_xy(indent, top + 1)
+        self.set_font("Helvetica", "B", 16)
+        self.cell(0, 9, _latin(company.name), new_x="LMARGIN", new_y="NEXT")
+        details = company.details()
+        if details:
+            self.set_x(indent)
+            self.set_font("Helvetica", "", 9)
+            self.cell(0, 5, _latin(details), new_x="LMARGIN", new_y="NEXT")
+        bottom = top + _LOGO_HEIGHT if indent > self.l_margin else self.get_y()
+        self.set_y(max(self.get_y(), bottom) + 3)
 
     def field(self, label: str, value: str) -> None:
         self.set_font("Helvetica", "B", 10)
@@ -117,9 +168,9 @@ class _Document(FPDF):
         return bytes(self.output())
 
 
-def build_receipt(data: ReceiptData) -> bytes:
+def build_receipt(data: ReceiptData, company: CompanyHeader = DEFAULT_COMPANY) -> bytes:
     """Comprobante de retiro o devolución con la firma del cliente (E09-01, E09-02)."""
-    pdf = _Document(f"{data.title} - Orden N° {data.order_number}", data.done_at)
+    pdf = _Document(f"{data.title} - Orden N° {data.order_number}", data.done_at, company)
     pdf.field("Cliente", f"{data.client_name} (N° {data.client_number})")
     pdf.field("Domicilio", data.site)
     pdf.field("Equipo", data.equipment or "Sin equipo cargado")
@@ -142,10 +193,12 @@ def build_receipt(data: ReceiptData) -> bytes:
     return pdf.output_bytes()
 
 
-def build_monthly_report(data: MonthlyReportData) -> bytes:
+def build_monthly_report(
+    data: MonthlyReportData, company: CompanyHeader = DEFAULT_COMPANY
+) -> bytes:
     """Informe mensual del cliente: cada trabajo con fecha, equipo, tipo, falla y
     reparación; sin precios (E09-04)."""
-    pdf = _Document(f"Informe de trabajos - {data.period}", data.generated_for)
+    pdf = _Document(f"Informe de trabajos - {data.period}", data.generated_for, company)
     pdf.field("Cliente", f"{data.client_name} (N° {data.client_number})")
     pdf.field("Trabajos", str(len(data.lines)))
     pdf.ln(3)
@@ -171,11 +224,13 @@ def build_monthly_report(data: MonthlyReportData) -> bytes:
     return pdf.output_bytes()
 
 
-def build_invoice_detail(data: InvoiceDetailData) -> bytes:
+def build_invoice_detail(
+    data: InvoiceDetailData, company: CompanyHeader = DEFAULT_COMPANY
+) -> bytes:
     """Detalle de lo facturado, orden por orden, para pasarlo al sistema de facturación o
     mandárselo al cliente. No reemplaza la factura electrónica (E04-09)."""
     pdf = _Document(
-        f"Detalle de la factura {data.number}", datetime.combine(data.issued_on, time())
+        f"Detalle de la factura {data.number}", datetime.combine(data.issued_on, time()), company
     )
     pdf.field("Fecha", f"{data.issued_on:%d/%m/%Y}")
     pdf.field("Órdenes", ", ".join(f"N° {order.number}" for order in data.orders))

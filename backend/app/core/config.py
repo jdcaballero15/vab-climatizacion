@@ -55,6 +55,11 @@ class Settings(BaseSettings):
     signed_url_ttl_seconds: int = 300
     # Días desde el cierre para que una terminada sin facturar se destaque (E04-05).
     billing_overdue_days: int = 7
+    # Encabezado de los PDF (E09-07). Vacíos, el PDF lleva solo el nombre. Se cargan en el
+    # hosting: el repositorio es público y el CUIT es de una persona.
+    company_name: str = "VAB Climatización"
+    company_tax_id: str = ""
+    company_address: str = ""
     upload_max_bytes: int = 5 * 1024 * 1024
     upload_allowed_types: str = "image/jpeg,image/png,image/webp,application/pdf"
 

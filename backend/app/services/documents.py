@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
+from app.core.config import get_settings
 from app.core.dates import BUSINESS_TZ
 from app.core.storage import ObjectStorage
 from app.db.models.catalog import Failure, Repair, WorkType
@@ -102,7 +103,7 @@ async def receipt_url(
     if existing is not None:
         return storage.download_url(existing)
     data = await _receipt_data(session, storage, order, kind)
-    content = pdf.build_receipt(data)
+    content = pdf.build_receipt(data, pdf.company_header(get_settings()))
     file = StoredFile(
         purpose=kind.value,
         object_key=f"documents/{order.id}/{kind.value}-{uuid.uuid4()}.pdf",
@@ -296,7 +297,8 @@ async def monthly_report(
             period=f"{_MONTHS[month - 1]} de {year}",
             lines=lines,
             generated_for=end,
-        )
+        ),
+        pdf.company_header(get_settings()),
     )
 
 

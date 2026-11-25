@@ -3,7 +3,9 @@
 El bucket es un falso en memoria: el PDF se arma en el servidor y no hace falta MinIO.
 """
 
+import re
 import uuid
+import zlib
 from collections.abc import AsyncGenerator, Iterator
 from dataclasses import fields
 from datetime import UTC, datetime
@@ -16,6 +18,7 @@ from httpx import ASGITransport, AsyncClient, Response
 from PIL import Image
 from sqlalchemy import func, select, text, update
 
+from app.core.config import Settings
 from app.core.sensitive_fields import FORBIDDEN_TECHNICIAN_FIELDS
 from app.core.storage import get_storage
 from app.db.models.catalog import Failure, Repair
@@ -217,6 +220,78 @@ def test_el_pdf_no_lleva_precios_y_trae_el_trabajo() -> None:
     for data_class in (pdf.ReceiptData, pdf.ReportLine, pdf.MonthlyReportData):
         nombres = {campo.name for campo in fields(data_class)}
         assert not nombres & FORBIDDEN_TECHNICIAN_FIELDS
+
+
+def _texto(contenido: bytes) -> bytes:
+    """El texto de las páginas: fpdf2 comprime cada flujo con zlib."""
+    flujos = re.findall(rb"stream\r?\n(.*?)\r?\nendstream", contenido, re.DOTALL)
+    partes = []
+    for flujo in flujos:
+        try:
+            partes.append(zlib.decompress(flujo))
+        except zlib.error:
+            partes.append(flujo)
+    return b"".join(partes)
+
+
+def _recibo(company: pdf.CompanyHeader) -> bytes:
+    return pdf.build_receipt(
+        pdf.ReceiptData(
+            title="Comprobante de retiro",
+            order_number=7,
+            client_name="Hotel Ficticio",
+            client_number="10642",
+            site="Calle 1",
+            equipment=None,
+            done_at=datetime(2026, 11, 5, 12, 0, tzinfo=UTC),
+            crew="Escuadrilla 1",
+            technicians=[],
+            condition=None,
+            signer_name="Rosa Ficticia",
+            signature_png=None,
+        ),
+        company,
+    )
+
+
+# E09-07: CUIT y domicilio de la empresa, desde la configuración, debajo del nombre.
+def test_encabezado_con_cuit_y_domicilio() -> None:
+    settings = Settings(company_tax_id=" 20-00000000-1 ", company_address="Calle Ficticia s/n")
+    empresa = pdf.company_header(settings)
+
+    assert empresa.details() == "CUIT 20-00000000-1 · Calle Ficticia s/n"
+    texto = _texto(_recibo(empresa))
+    assert b"CUIT 20-00000000-1" in texto
+    assert b"Calle Ficticia s/n" in texto
+
+
+def test_sin_datos_el_encabezado_lleva_solo_el_nombre() -> None:
+    empresa = pdf.company_header(Settings(company_tax_id="", company_address=""))
+
+    assert empresa == pdf.DEFAULT_COMPANY
+    assert empresa.details() is None
+    texto = _texto(_recibo(empresa))
+    assert b"CUIT" not in texto
+    assert b"VAB Climatizaci" in texto
+
+
+def test_el_encabezado_lleva_el_logo() -> None:
+    con_logo = _recibo(pdf.DEFAULT_COMPANY)
+    sin_logo = _recibo(pdf.CompanyHeader(logo=None))
+
+    assert pdf.LOGO.exists()
+    assert b"/Subtype /Image" in con_logo
+    assert b"/Subtype /Image" not in sin_logo
+
+
+@pytest.mark.parametrize(
+    ("cuit", "domicilio", "linea"),
+    [("20-00000000-1", "", "CUIT 20-00000000-1"), ("", "Calle Ficticia s/n", "Calle Ficticia s/n")],
+)
+def test_encabezado_con_un_solo_dato(cuit: str, domicilio: str, linea: str) -> None:
+    empresa = pdf.company_header(Settings(company_tax_id=cuit, company_address=domicilio))
+
+    assert empresa.details() == linea
 
 
 # E09-04: el informe del mes lista los trabajos terminados del cliente; mismo período, mismo
