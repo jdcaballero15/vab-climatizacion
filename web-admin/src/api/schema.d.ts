@@ -1642,6 +1642,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tech/orders/{order_id}/equipment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Equipment To My Order
+         * @description La escuadrilla carga el equipo de una orden suya que no tiene (E05-15).
+         */
+        post: operations["add_equipment_to_my_order_tech_orders__order_id__equipment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tech/equipment-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Equipment Types */
+        get: operations["list_equipment_types_tech_equipment_types_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files": {
         parameters: {
             query?: never;
@@ -3099,6 +3136,29 @@ export interface components {
             /** Deleted */
             deleted: boolean;
         };
+        /**
+         * EquipmentTechnicianCreate
+         * @description Lo que carga la escuadrilla desde el celular (E05-15): el domicilio es el de la orden.
+         */
+        EquipmentTechnicianCreate: {
+            /**
+             * Equipment Type Id
+             * Format: uuid
+             */
+            equipment_type_id: string;
+            /** Location Note */
+            location_note: string;
+            /** Brand */
+            brand?: string | null;
+            /** Model */
+            model?: string | null;
+            /** Capacity Frigorias */
+            capacity_frigorias?: number | null;
+            /** Refrigerant */
+            refrigerant?: ("R22" | "R410A" | "R32" | "R407C" | "R404A" | "R134a" | "R290" | "other") | null;
+            /** Power Supply */
+            power_supply?: ("220" | "380") | null;
+        };
         /** EquipmentTechnicianOut */
         EquipmentTechnicianOut: {
             /** Location Note */
@@ -3159,6 +3219,19 @@ export interface components {
         };
         /** EquipmentTypeCreate */
         EquipmentTypeCreate: {
+            /** Name */
+            name: string;
+        };
+        /**
+         * EquipmentTypeTechnicianOut
+         * @description Un tipo de equipo para elegir en el celular (E05-15).
+         */
+        EquipmentTypeTechnicianOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
             /** Name */
             name: string;
         };
@@ -8475,6 +8548,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_equipment_to_my_order_tech_orders__order_id__equipment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentTechnicianCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetailTechnicianOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_equipment_types_tech_equipment_types_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentTypeTechnicianOut"][];
                 };
             };
         };

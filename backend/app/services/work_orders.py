@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.client import ClientSiteTechnicianOut, site_map_url
+from app.api.schemas.equipment import EquipmentCreate, EquipmentTechnicianCreate
 from app.api.schemas.work_order import (
     AssignmentCreate,
     CancellationAdminOut,
@@ -72,6 +73,7 @@ from app.domain.work_order import (
 )
 from app.services import catalog as catalog_service
 from app.services import clients as clients_service
+from app.services import equipment as equipment_service
 
 
 class WorkOrderNotFoundError(Exception):
@@ -91,6 +93,10 @@ class EquipmentNotAvailableError(Exception):
 
 class OrderNotEditableError(Exception):
     """La orden ya se inició: su equipo no se cambia (E04-12)."""
+
+
+class OrderHasEquipmentError(Exception):
+    """La orden ya tiene equipo: la escuadrilla no agrega otro (E05-15)."""
 
 
 class WorkTypeInactiveError(Exception):
@@ -642,6 +648,44 @@ async def start_for_crew_user(
         if detail.status != OrderStatus.in_progress:
             raise
         return detail
+    return await get_for_crew_user(session, user, order_id)
+
+
+async def add_equipment_for_crew_user(
+    session: AsyncSession, user: User, order_id: uuid.UUID, data: EquipmentTechnicianCreate
+) -> OrderDetailTechnicianOut:
+    """La escuadrilla carga el equipo de una orden suya que no tiene (E05-15).
+
+    El equipo queda en el domicilio de la orden, como si lo hubiera dado de alta la oficina.
+    Mismo filtro que el detalle: otra escuadrilla o una orden cerrada dan 404.
+    """
+    detail = await get_for_crew_user(session, user, order_id)
+    if detail.equipment is not None:
+        raise OrderHasEquipmentError
+    order = await get_work_order(session, order_id)
+    equipment = await equipment_service.create_equipment(
+        session,
+        order.client_id,
+        EquipmentCreate(client_site_id=order.client_site_id, **data.model_dump()),
+    )
+    repo = WorkOrderRepository(session)
+    # Si mientras tanto se cerró o la oficina le puso uno, el equipo queda en el cliente
+    # sin asociar: es un equipo real del domicilio.
+    if not await repo.update_equipment_if(
+        order.id, equipment.id, statuses=CREW_OPEN_STATUSES, only_if_empty=True
+    ):
+        raise OrderHasEquipmentError
+    repo.add_event(
+        WorkOrderEvent(
+            work_order_id=order.id,
+            event_type=WorkOrderEventType.equipment_changed,
+            actor_id=user.id,
+            note=(
+                f"Equipo: {NO_EQUIPMENT} -> {equipment.internal_code} (cargado por la escuadrilla)"
+            ),
+        )
+    )
+    await session.commit()
     return await get_for_crew_user(session, user, order_id)
 
 

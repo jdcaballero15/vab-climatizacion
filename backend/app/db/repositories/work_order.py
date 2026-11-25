@@ -100,15 +100,20 @@ class WorkOrderRepository(BaseRepository[WorkOrder]):
         equipment_id: uuid.UUID | None,
         *,
         statuses: frozenset[OrderStatus],
+        only_if_empty: bool = False,
     ) -> bool:
-        """Cambia el equipo solo si la orden sigue en uno de esos estados (E04-12)."""
+        """Cambia el equipo solo si la orden sigue en uno de esos estados (E04-12) y, con
+        only_if_empty, si todavía no tiene equipo (E05-15)."""
+        conditions = [
+            self.model.id == order_id,
+            self.model.status.in_(statuses),
+            self.model.deleted_at.is_(None),
+        ]
+        if only_if_empty:
+            conditions.append(self.model.equipment_id.is_(None))
         stmt = (
             update(self.model)
-            .where(
-                self.model.id == order_id,
-                self.model.status.in_(statuses),
-                self.model.deleted_at.is_(None),
-            )
+            .where(*conditions)
             .values(equipment_id=equipment_id)
             .returning(self.model.id)
             .execution_options(synchronize_session=False)

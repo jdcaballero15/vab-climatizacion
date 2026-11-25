@@ -20,6 +20,7 @@ UNPAGINATED = {
     "/admin/work-types": "catálogo",
     "/admin/work-types/{work_type_id}/tasks": "tareas de un tipo de trabajo",
     "/admin/equipment-types": "catálogo",
+    "/tech/equipment-types": "catálogo, para el celular",
     "/admin/failures": "catálogo",
     "/admin/repairs": "catálogo",
     "/admin/parts": "catálogo de materiales (cientos, filtrado en pantalla)",

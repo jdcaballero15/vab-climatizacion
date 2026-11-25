@@ -2,7 +2,7 @@
 
 > Generado por `python3 scripts/validate_stories.py --write-index`. No editar a mano.
 
-**Total: 127 historias.** done: 105, draft: 10, icebox: 12
+**Total: 128 historias.** done: 106, draft: 10, icebox: 12
 
 Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = decisión con propuesta vigente en la que se apoya.
 
@@ -100,6 +100,7 @@ Leyenda: **Bloq.** = decisión abierta que impide implementarla. **Supone** = de
 | [E05-12](E05-app-tecnico/E05-12-cierre-de-orden-idempotente.md) | Cierre de orden idempotente | Debe | S | done | technician | - | - | E05-04, E04-01 |
 | [E05-13](E05-app-tecnico/E05-13-no-perder-un-cierre-si-se-corta-la-conexion.md) | No perder un cierre si se corta la conexión | Debe | M | done | technician | - | - | E05-04, E05-12, E05-06 |
 | [E05-14](E05-app-tecnico/E05-14-ver-las-ordenes-hechas-esta-semana.md) | Ver las órdenes hechas esta semana | Debería | S | done | technician | - | - | E05-01, E05-04 |
+| [E05-15](E05-app-tecnico/E05-15-agregar-el-equipo-desde-el-celular.md) | Agregar el equipo desde el celular | Debería | M | done | technician | - | D-002, D-013 | E03-10, E04-12, E05-02 |
 
 ## E06 Órdenes de taller
 
