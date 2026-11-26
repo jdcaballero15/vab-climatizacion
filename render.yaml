@@ -35,7 +35,7 @@ services:
           name: vab-ot-db
           property: connectionString
       - key: CORS_ORIGINS
-        value: https://vab-ot-admin.onrender.com,https://vab-ot-tecnico.onrender.com
+        value: https://vab-ot-admin-kjrm.onrender.com,https://vab-ot-tecnico-7vg6.onrender.com
       # Bucket en Cloudflare R2 (E00-09). Los valores se cargan en el panel de Render.
       - key: S3_ENDPOINT_URL
         sync: false
@@ -113,7 +113,7 @@ services:
       # Antes que la de index.html: reenvía las llamadas a la API sin el prefijo /api.
       - type: rewrite
         source: /api/*
-        destination: https://vab-ot-api.onrender.com/*
+        destination: https://vab-ot-api-hweo.onrender.com/*
       # Las rutas de la app (/ordenes, /clientes) las resuelve React.
       - type: rewrite
         source: /*
@@ -138,7 +138,7 @@ services:
       # Antes que la de index.html: reenvía las llamadas a la API sin el prefijo /api.
       - type: rewrite
         source: /api/*
-        destination: https://vab-ot-api.onrender.com/*
+        destination: https://vab-ot-api-hweo.onrender.com/*
       - type: rewrite
         source: /*
         destination: /index.html
